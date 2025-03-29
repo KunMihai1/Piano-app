@@ -31,4 +31,5 @@
 *.out
 *.app
 Builds/VisualStudio2022/
+JuceLibraryCode/
 
