@@ -1,0 +1,145 @@
+#pragma once
+
+#include <JuceHeader.h>
+#include "settingsWindow.h"
+#include "BinaryData.h"
+#include "MidiHandler.h"
+#include "KeyboardUI.h"
+
+class CustomLookAndFeel : public juce::LookAndFeel_V4
+{
+public:
+    juce::Font getTextButtonFont(juce::TextButton& button, int buttonHeight) override
+    {
+        return juce::Font(30.0f, juce::Font::bold);
+    }
+
+    void drawButtonBackground(juce::Graphics& g,
+        juce::Button& button,
+        const juce::Colour& backgroundColour,
+        bool isMouseOverButton,
+        bool isButtonDown) override
+    {
+        g.fillAll(backgroundColour);
+    }
+};
+
+//==============================================================================
+/*
+    This component lives inside our window, and this is where you should put all
+    your controls and content.
+*/
+class MainComponent : public juce::Component
+{
+public:
+    //==============================================================================
+    MainComponent();
+    ~MainComponent() override;
+
+    //==============================================================================
+    void paint(juce::Graphics&) override;
+    void resized() override;
+    bool isMouseDownInsideLabel = false;
+
+private:
+    int initialWidth = 0;
+    int initialHeight = 0;
+
+    int xPlay=750, yPlay=690;
+
+    bool hasBeenResized = false;
+
+    void focusGained(FocusChangeType) override;
+    void toggleSettingsPanel();
+    void toggleSettingsButton();
+    void toggleMIDIButton();
+    void togglePlayButton();
+    void toggleMIDIsettingsIcon();
+    void toggleHPanel();
+    void toggleHomeButton();
+    void toggleForPlaying();
+
+    void settingsInit();
+    void playButtonInit();
+    void keyBoardUIinit(int min, int max);
+    void panelInit();
+    void midiIconInit();
+    void midiSettingsInit();
+    void headerPanelInit();
+    void homeButtonInit();
+
+    bool openingDevicesForPlay();
+
+    //==============================================================================
+    // Your private member variables go here...
+    CustomLookAndFeel customLookAndFeel;
+    juce::Image cachedImageMainWindow;
+    juce::Image playBackground;
+    juce::Image currentBackground;
+    juce::Label helpIcon;
+    juce::TooltipWindow tooltipWindow{ this, 200 };
+
+
+    const juce::MidiInput* deviceOpenedIN = nullptr; 
+    const juce::MidiOutput* deviceOpenedOUT = nullptr;
+    MidiDevice MIDIDevice{};
+    MidiHandler midiHandler{MIDIDevice};
+    std::vector<std::string> devicesIN;
+    std::vector<std::string> devicesOUT;
+
+    //UI->refresh button+label of AVAILABLE DEVICES
+
+    //UI->settings
+    juce::TextButton settingsButton{ "Settings" };
+    juce::TextButton midiButton{ "MIDI Settings" };
+    juce::TextButton playButton{ "Play" };
+    juce::TextButton homeButton{ "Home" };
+    //juce::Component settingsPanel{};
+
+    //UI->windows
+
+    std::unique_ptr<MIDIWindow> midiWindow = { nullptr };
+
+    KeyboardUI keyboard{midiHandler};
+    bool keyboardInitialized = false;
+
+
+
+private:
+    struct Panel : public juce::Component
+    {
+        void paint(juce::Graphics& g) override
+        {
+            juce::Colour translucentGray = juce::Colour::fromRGBA(169, 169, 169, 204); // Semi-transparent gray (80% opacity)
+            juce::Colour option = juce::Colour::fromRGBA(50, 100, 95, 170);
+
+            juce::Colour subtleBorderColor = juce::Colour::fromRGBA(169, 169, 169, 200);
+            juce::Colour secondBorder = juce::Colour::fromRGBA(140, 140, 140, 220);
+
+            g.fillAll(option); // Background of the panel
+            g.setColour(subtleBorderColor);
+            g.drawRect(getLocalBounds(),3);
+
+        }
+    };
+
+    Panel settingsPanel;
+
+    struct headerPanel : public::juce::Component
+    {
+        void paint(juce::Graphics& g) override {
+            juce::Colour startColour = juce::Colour(128, 0, 32);   // Deep Burgundy
+            juce::Colour endColour = juce::Colour(212, 175, 55);  // Metallic Gold
+            //juce::Colour startColour = juce::Colour(160, 40, 60); // Softer burgundy
+            //juce::Colour endColour = juce::Colour(210, 165, 100); // Lighter gold
+            juce::ColourGradient gradient(startColour, 0, 0, endColour, 0, 50, false);
+            g.setGradientFill(gradient);
+            g.fillAll();
+        }
+    };
+
+    headerPanel headerPanel;
+
+    JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
+};
+

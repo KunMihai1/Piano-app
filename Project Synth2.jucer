@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<JUCERPROJECT id="UGzfVC" name="Project Synth2" projectType="guiapp" useAppConfig="0"
+              addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
+  <MAINGROUP id="vwDzJM" name="Project Synth2">
+    <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
+      <FILE id="PtBlQW" name="playingBackground.png" compile="0" resource="1"
+            file="Photos/playingBackground.png"/>
+      <FILE id="z5Flfw" name="questionMark.png" compile="0" resource="1"
+            file="Photos/questionMark.png"/>
+      <FILE id="NiufiE" name="MainWindow.png" compile="0" resource="1" file="Photos/MainWindow.png"/>
+    </GROUP>
+    <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="XnnPrB" name="InstrumentHandler.cpp" compile="1" resource="0"
+            file="Source/InstrumentHandler.cpp"/>
+      <FILE id="UMmTJT" name="InstrumentHandler.h" compile="0" resource="0"
+            file="Source/InstrumentHandler.h"/>
+      <FILE id="gevnkJ" name="MidiDevicesDB.cpp" compile="1" resource="0"
+            file="Source/MidiDevicesDB.cpp"/>
+      <FILE id="QnlFvU" name="KeyboardUI.cpp" compile="1" resource="0" file="Source/KeyboardUI.cpp"/>
+      <FILE id="HtNlxP" name="KeyboardUI.h" compile="0" resource="0" file="Source/KeyboardUI.h"/>
+      <FILE id="IoBJ9L" name="MidiDevicesDB.h" compile="0" resource="0" file="Source/MidiDevicesDB.h"/>
+      <FILE id="r3G7fK" name="MidiHandler.h" compile="0" resource="0" file="Source/MidiHandler.h"/>
+      <FILE id="MsdNwG" name="SettingsWindow.cpp" compile="1" resource="0"
+            file="Source/SettingsWindow.cpp"/>
+      <FILE id="HfIBRO" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
+      <FILE id="OQf8Oe" name="SettingsWindow.h" compile="0" resource="0"
+            file="Source/SettingsWindow.h"/>
+      <FILE id="raiann" name="MidiHandler.cpp" compile="1" resource="0" file="Source/MidiHandler.cpp"/>
+      <FILE id="J92BVY" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
+      <FILE id="jn7l0T" name="MainComponent.cpp" compile="1" resource="0"
+            file="Source/MainComponent.cpp"/>
+    </GROUP>
+  </MAINGROUP>
+  <MODULES>
+    <MODULE id="juce_analytics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_animation" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_utils" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_box2d" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_cryptography" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_dsp" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_javascript" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_midi_ci" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_opengl" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_osc" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_product_unlocking" showAllCode="1" useLocalCopy="0"
+            useGlobalPath="1"/>
+    <MODULE id="juce_video" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+  </MODULES>
+  <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
+  <EXPORTFORMATS>
+    <VS2022 targetFolder="Builds/VisualStudio2022">
+      <CONFIGURATIONS>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="Project Synth2"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="Project Synth2"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_analytics" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_animation" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_utils" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_box2d" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_dsp" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_extra" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_javascript" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_midi_ci" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_opengl" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_osc" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_product_unlocking" path="../../JUCE/JUCE/modules"/>
+        <MODULEPATH id="juce_video" path="../../JUCE/JUCE/modules"/>
+      </MODULEPATHS>
+    </VS2022>
+  </EXPORTFORMATS>
+</JUCERPROJECT>
