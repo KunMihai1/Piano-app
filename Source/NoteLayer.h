@@ -64,8 +64,6 @@ private:
         float yPosition = 0.0f;
         float height = 0.0f;
         float initialHeight = 0.0f;
-        float fadeRate = 1.0f;
-        float fadeTime = 1.0f;
 
         float alpha = 1.0f;
         bool isFalling = false;

@@ -305,6 +305,6 @@ bool MainComponent::openingDevicesForPlay()
         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open output device.", "OK");
         return false;
     }
-    this->deviceOpenedOUT = &this->MIDIDevice.getDeviceOUT();
+    this->deviceOpenedOUT = this->MIDIDevice.getDeviceOUT();
     return true;
 }

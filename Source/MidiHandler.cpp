@@ -239,9 +239,9 @@ const juce::MidiInput& MidiDevice::getDeviceIN() const
 	return *this->currentDeviceUSEDin;
 }
 
-const juce::MidiOutput& MidiDevice::getDeviceOUT() const
+juce::MidiOutput* MidiDevice::getDeviceOUT()
 {
-	return *this->currentDeviceUSEDout;
+	return currentDeviceUSEDout.get();
 }
 
 void MidiDevice::setVolume(const float vValue) 
@@ -290,13 +290,27 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	if (message.isNoteOn())
 	{
 		int note = message.getNoteNumber();
-		float velocity = message.getVelocity();
+		float velocity = message.getFloatVelocity();
+
+		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(velocity);
+
+		if (auto midiOut = midiDevice.getDeviceOUT())
+		{
+			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
+		}
+
 		listeners.call(&Listener::noteOnReceived, note);
 		juce::Logger::writeToLog("Note On received: " + juce::String(note));
 	}
 	else if (message.isNoteOff())
 	{
 		int note = message.getNoteNumber();
+		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(message.getFloatVelocity());
+
+		if (auto midiOut = midiDevice.getDeviceOUT())
+		{
+			midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note, velocityByte));
+		}
 
 		listeners.call(&Listener::noteOffReceived, note);
 		juce::Logger::writeToLog("Note Off received: " + juce::String(note));
@@ -305,6 +319,11 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	{
 		int controller = message.getControllerNumber();
 		int value = message.getControllerValue();
+
+		if (auto midiOut = midiDevice.getDeviceOUT())
+		{
+			midiOut->sendMessageNow(message);
+		}
 	}
 }
 
