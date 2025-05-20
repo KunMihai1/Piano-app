@@ -12,7 +12,6 @@
 
 #include "MidiHandler.h"
 #include "KeyboardUI.h"
-#include <juce_opengl/juce_opengl.h>
 
 class NoteLayer : public juce::Component, public MidiHandler::Listener, public juce::Timer, private juce::OpenGLRenderer
 {
@@ -33,6 +32,9 @@ public:
     void openGLContextClosing() override;
 
 private:
+    void updateParticles();
+    void spawnParticlesForNote(int midiNote);
+
     struct Particle {
         juce::Point<float> pos;
         juce::Point<float> velocity;
@@ -42,6 +44,8 @@ private:
     };
 
     KeyboardUI& keyBoardUI;
+    juce::Colour noteColourUser;
+    juce::Colour particleColourUser;
 
     juce::OpenGLContext openGLContext;
     std::unique_ptr<juce::OpenGLShaderProgram> shader;
@@ -49,7 +53,7 @@ private:
     juce::OpenGLShaderProgram::Attribute* pointSizeAttr = nullptr;
     juce::OpenGLShaderProgram::Attribute* colourAttr = nullptr;
 
-    juce::OpenGLBuffer vbo;
+    GLuint particleVBO = 0;
     std::vector<Particle> particles;
 
 
