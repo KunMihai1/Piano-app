@@ -5,12 +5,6 @@
 #include "BinaryData.h"
 #include "MidiHandler.h"
 #include "KeyboardUI.h"
-
-#include <JuceHeader.h>
-#include "settingsWindow.h"
-#include "BinaryData.h"
-#include "MidiHandler.h"
-#include "KeyboardUI.h"
 #include "NoteLayer.h"
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
@@ -18,6 +12,7 @@ class CustomLookAndFeel : public juce::LookAndFeel_V4
 public:
     juce::Font getTextButtonFont(juce::TextButton& button, int buttonHeight) override
     {
+        juce::ignoreUnused(button, buttonHeight);
         return juce::Font(30.0f, juce::Font::bold);
     }
 
@@ -25,8 +20,9 @@ public:
         juce::Button& button,
         const juce::Colour& backgroundColour,
         bool isMouseOverButton,
-        bool isButtonDown) override
+        bool isButtonDown) override 
     {
+        juce::ignoreUnused(button, isMouseOverButton, isButtonDown);
         g.fillAll(backgroundColour);
     }
 };
