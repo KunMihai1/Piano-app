@@ -1,4 +1,4 @@
-/*
+﻿/*
   ==============================================================================
 
     NoteLayer.cpp
@@ -62,7 +62,7 @@ void NoteLayer::noteOnReceived(int midiNote)
 
                 activeNotes[midiNote] = newNote;
 
-                spawnParticlesForNote(midiNote);
+                //spawnParticlesForNote(midiNote);
 
                 if(!isTimerRunning())
                     startTimerHz(60);
@@ -78,12 +78,12 @@ void NoteLayer::noteOffReceived(int midiNote)
             if (it != activeNotes.end())
             {
                 it->second.isFalling = true;
-                it->second.hasStartedShrinking = false;
-                it->second.driftTime = 0.0f;
-                it->second.elapsedFall = 0.0f;
                 it->second.alpha = 1.0f;
                 it->second.initialHeight = it->second.height;
-                
+                const float shrinkSpeed = 150.0f;
+                it->second.fadeTime = it->second.initialHeight / shrinkSpeed;
+                it->second.fadeRate = 1.0f / it->second.fadeTime;
+
                 DBG(this->getHeight()<<"\n");
                 DBG("Initial height"<<it->second.initialHeight);
                 fallingNotes.push_back(it->second);
@@ -106,7 +106,7 @@ void NoteLayer::newOpenGLContextCreated()
             vColour = colour;
         }
     )VERT";
-
+    /*
     const char* fragmentSource = R"FRAG(
     #ifdef GL_ES
     precision mediump float;
@@ -119,6 +119,34 @@ void NoteLayer::newOpenGLContextCreated()
         gl_FragColor = vColour;
     }
     )FRAG";
+    */
+    const char* fragmentSource = R"FRAG(
+#ifdef GL_ES
+precision mediump float;
+#endif
+
+varying vec4 vColour;
+varying vec2 vTexCoord;
+uniform float uTime;
+
+void main()
+{
+    // Normalize texture coordinates to range [0.0, 1.0]
+    vec2 uv = vTexCoord;
+
+    // Calculate distance from the center
+    float dist = length(uv - vec2(0.5));
+
+    // Apply smoothstep for soft radial falloff
+    float alpha = smoothstep(0.4, 0.6, dist);
+
+    // Introduce a time-based color shift using sine wave modulation
+    vec3 color = vColour.rgb * (0.5 + 0.5 * sin(uTime + dist * 10.0));
+
+    // Output the final color with alpha transparency
+    gl_FragColor = vec4(color, alpha);
+}
+)FRAG";
 
     shader = std::make_unique<juce::OpenGLShaderProgram>(openGLContext);
     if (!shader->addVertexShader(vertexSource) || !shader->addFragmentShader(fragmentSource) || !shader->link())
@@ -169,7 +197,7 @@ void NoteLayer::renderOpenGL()
 
         for (const auto& p : particles)
         {
-            verts.push_back({ p.pos.x, p.pos.y, p.size,
+            verts.push_back({ p.pos.x, p.pos.y, p.size*0.5f,
                               p.colour.getFloatRed(),
                               p.colour.getFloatGreen(),
                               p.colour.getFloatBlue(),
@@ -258,10 +286,11 @@ void NoteLayer::spawnParticlesForNote(int midiNote)
 
     // Convert pixel center to NDC [-1, 1]
     float x_ndc = (keyBounds.getCentreX() / (float)getWidth()) * 2.0f - 1.0f;
-    float y_ndc = 1.0f - (keyBounds.getY() / (float)getHeight()) * 2.0f;
+    float y_ndc = -(1.0f - (keyBounds.getY() / (float)getHeight()) * 2.0f);
+    y_ndc += 0.05f;
     juce::Point<float> pos(x_ndc, y_ndc);
 
-    for (int i = 0; i < 10; i++)
+    for (int i = 0; i < 5; i++)
     {
         Particle p;
         p.pos = pos;
@@ -290,10 +319,13 @@ void NoteLayer::visibilityChanged()
 void NoteLayer::timerCallback()
 {
     const float dt = 1.0f / 60.0f;
-    const float riseSpeed = 350.0f;
-    const float fadeSpeed = 350.0f;
-    const float fadeTime = 5.0f;
-    const float fadeRate = 1.0f / fadeTime;
+    const float riseSpeed = 400.0f;
+    const float fadeSpeedBase = 400.0f;
+    const float fadeTimeBase = 6.0f;
+    const float shrinkSpeedBase = 150.0f;
+    const float windowHeight = static_cast<float>(getHeight());
+
+    const float maxNoteHeight = getHeight(); // or getHeight() if dynamic
 
     for (auto& pair : activeNotes)
     {
@@ -302,26 +334,69 @@ void NoteLayer::timerCallback()
         n.yPosition -= riseSpeed * dt;
         n.height += riseSpeed * dt;
 
-        n.bounds.setY(static_cast<int>(round(n.yPosition)));
-        n.bounds.setHeight(static_cast<int>(round(n.height)));
+        // Clamp growth
+        if (n.height > maxNoteHeight)
+        {
+            float bottom = n.yPosition + n.height;
+            n.height = maxNoteHeight;
+            n.yPosition = bottom - n.height;
+        }
+
+        n.bounds.setY(static_cast<int>(std::round(n.yPosition)));
+        n.bounds.setHeight(static_cast<int>(std::round(n.height)));
+
+        spawnParticlesForNote(pair.first);
     }
 
-    for (auto it = fallingNotes.begin(); it != fallingNotes.end();)
+    // Update falling notes (released notes)
+    for (auto it = fallingNotes.begin(); it != fallingNotes.end(); )
     {
         AnimatedNote& n = *it;
 
-        n.alpha -= dt * fadeRate;
+        // Scale fade time and fade rate based on initial height relative to window height
+        float fadeTimeScaled = fadeTimeBase * (n.initialHeight / windowHeight);
+        fadeTimeScaled = std::max(1.0f, fadeTimeScaled); // minimum 1 sec fade
+        float fadeRateScaled = 1.0f / fadeTimeScaled;
 
-        n.yPosition -= fadeSpeed * dt;
-        n.bounds.setY(static_cast<int>(round(n.yPosition)));
+        // Scale shrink speed similarly
+        float shrinkSpeedScaled = shrinkSpeedBase * (n.initialHeight / windowHeight);
 
-        if (it->alpha <= 0.0f)
+        // Fade alpha
+        n.alpha = std::max(0.0f, n.alpha - dt * fadeRateScaled);
+
+        // Move upward
+        n.yPosition -= fadeSpeedBase * dt;
+
+        // Shrink height WITHOUT clamping to 1.0f here
+        float bottom = n.yPosition + n.height;
+        n.height -= shrinkSpeedScaled * dt;
+
+        // Clamp height not below tiny positive number internally
+        if (n.height < 0.01f)
+            n.height = 0.01f;
+
+        // Keep bottom fixed so note shrinks upwards
+        n.yPosition = bottom - n.height;
+
+        // Clamp height for rendering (at least 1 pixel)
+        int yInt = static_cast<int>(std::round(n.yPosition));
+        int hInt = std::max(1, static_cast<int>(std::round(n.height)));
+        n.bounds.setY(yInt);
+        n.bounds.setHeight(hInt);
+
+        // Erase note if fully faded OR fully shrunk internally
+        if (n.alpha <= 0.001f || n.height <= 0.01f)
         {
-            DBG("NOTE OFF ");
+            DBG("NOTE OFF");
             it = fallingNotes.erase(it);
         }
-        else ++it;
+        else
+        {
+            ++it;
+        }
     }
+
+
     updateParticles();
 
     if (!particles.empty() || !activeNotes.empty() || !fallingNotes.empty())
@@ -329,7 +404,8 @@ void NoteLayer::timerCallback()
         openGLContext.triggerRepaint();
         repaint();
     }
-    else {
+    else
+    {
         stopTimer();
     }
 }
