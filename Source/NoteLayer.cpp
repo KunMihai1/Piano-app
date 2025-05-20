@@ -62,8 +62,6 @@ void NoteLayer::noteOnReceived(int midiNote)
 
                 activeNotes[midiNote] = newNote;
 
-                //spawnParticlesForNote(midiNote);
-
                 if(!isTimerRunning())
                     startTimerHz(60);
             }
@@ -80,11 +78,7 @@ void NoteLayer::noteOffReceived(int midiNote)
                 it->second.isFalling = true;
                 it->second.alpha = 1.0f;
                 it->second.initialHeight = it->second.height;
-                const float shrinkSpeed = 150.0f;
-                it->second.fadeTime = it->second.initialHeight / shrinkSpeed;
-                it->second.fadeRate = 1.0f / it->second.fadeTime;
 
-                DBG(this->getHeight()<<"\n");
                 DBG("Initial height"<<it->second.initialHeight);
                 fallingNotes.push_back(it->second);
                 activeNotes.erase(it);

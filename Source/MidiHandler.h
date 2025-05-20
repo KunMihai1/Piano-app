@@ -27,7 +27,7 @@ public:
 	void setDeviceOUT(const int index);
 
 	const juce::MidiInput& getDeviceIN() const;
-	const juce::MidiOutput& getDeviceOUT() const;
+	juce::MidiOutput* getDeviceOUT();
 
 
 	void setVolume(const float vValue);
