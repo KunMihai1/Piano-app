@@ -120,11 +120,24 @@ void NoteLayer::newOpenGLContextCreated()
     positionAttr = new juce::OpenGLShaderProgram::Attribute(*shader, "position");
     pointSizeAttr = new juce::OpenGLShaderProgram::Attribute(*shader, "pointSize");
     colourAttr = new juce::OpenGLShaderProgram::Attribute(*shader, "colour");
+
+    if (openGLContext.isActive())
+    {
+        glEnable(GL_PROGRAM_POINT_SIZE);
+        glViewport(0, 0, getWidth(), getHeight());
+    }
+    else {
+        openGLContext.makeActive();
+        glEnable(GL_PROGRAM_POINT_SIZE);
+        glViewport(0, 0, getWidth(), getHeight());
+    }
     openGLContext.extensions.glGenBuffers(1, &particleVBO);
 }
 
 void NoteLayer::renderOpenGL()
 {
+    DBG("renderOpenGL() called");
+
     if (shader != nullptr && particleVBO != 0 && !particles.empty())
     {
         glClearColor(0.f, 0.f, 0.f, 0.f);
@@ -197,6 +210,13 @@ void NoteLayer::openGLContextClosing()
     colourAttr = nullptr;
 
     shader.reset();
+}
+
+void NoteLayer::resetState()
+{
+    this->activeNotes.clear();
+    this->fallingNotes.clear();
+    this->particles.clear();
 }
 
 void NoteLayer::updateParticles()
@@ -287,6 +307,19 @@ void NoteLayer::timerCallback()
     }
     updateParticles();
 
+    /*
+    particles.clear();
+
+    // Place one test particle in center of screen (NDC = [0,0])
+    Particle p;
+    p.pos = { 0.0f, 0.0f };     // center in NDC
+    p.velocity = { 0.0f, 0.0f };     // no motion
+    p.size = 40.0f;             // big so you can see it
+    p.colour = juce::Colours::red;
+    p.life = 1.0f;
+    particles.push_back(p);
+
+    */
     if (!particles.empty() || !activeNotes.empty() || !fallingNotes.empty())
     {
         openGLContext.triggerRepaint();
@@ -294,5 +327,18 @@ void NoteLayer::timerCallback()
     }
     else {
         stopTimer();
+    }
+}
+
+void NoteLayer::resized()
+{
+    if (openGLContext.isActive())
+    {
+        glViewport(0, 0, getWidth(), getHeight());
+    }
+    else
+    {
+        openGLContext.makeActive();
+        glViewport(0, 0, getWidth(), getHeight());
     }
 }
