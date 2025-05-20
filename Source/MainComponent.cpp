@@ -13,7 +13,7 @@ MainComponent::MainComponent()
     currentBackground = cachedImageMainWindow;
 
     setBounds(0, 0, juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getWidth(),
-        juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getHeight()-40);
+        juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getHeight() - 40);
 
 
 
@@ -37,7 +37,7 @@ void MainComponent::paint(juce::Graphics& g)
     g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
     if (currentBackground.isValid())
     {
-        juce::Rectangle<float> bounds=getLocalBounds().toFloat();
+        juce::Rectangle<float> bounds = getLocalBounds().toFloat();
         auto imageWidth = (float)cachedImageMainWindow.getWidth();
         auto imageHeight = (float)cachedImageMainWindow.getHeight();
         auto scale = juce::jmax(bounds.getWidth() / imageWidth, bounds.getHeight() / imageHeight);
@@ -48,7 +48,7 @@ void MainComponent::paint(juce::Graphics& g)
         g.setColour(juce::Colours::grey);
         g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
         g.drawImage(currentBackground, juce::Rectangle<float>(x, y, newWidth, newHeight));
-        
+
 
     }
 
@@ -62,9 +62,9 @@ void MainComponent::resized()
     // This is called when the MainComponent is resized.
     // If you add any child components, this is where you should
     // update their positions.
-   
-   
-    playButton.setBounds(getWidth()/2-210, getHeight()/2+170, 75, 35);
+
+
+    playButton.setBounds(getWidth() / 2 - 210, getHeight() / 2 + 170, 75, 35);
     settingsButton.setBounds(0, 0, 250, 70);
     settingsPanel.setBounds(0, 70, 250, getHeight());
     midiButton.setBounds(0, 5, 200, 50);
@@ -81,10 +81,10 @@ void MainComponent::focusGained(FocusChangeType)
 
 void MainComponent::toggleSettingsPanel()
 {
-    if (settingsPanel.isVisible()){
+    if (settingsPanel.isVisible()) {
         settingsPanel.setVisible(false);
     }
-    else{
+    else {
         settingsPanel.setVisible(true);
     }
 }
@@ -161,7 +161,7 @@ void MainComponent::playButtonInit()
 {
     playButton.setButtonText("Play");
     playButton.setLookAndFeel(&this->customLookAndFeel);
-    playButton.setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack); 
+    playButton.setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     playButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     playButton.onClick = [this] {
         MIDIDevice.getAvailableDevicesMidiIN(devicesIN);
@@ -176,6 +176,7 @@ void MainComponent::playButtonInit()
                 keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
             else {
                 keyboard.setVisible(true);
+                this->noteLayer->setVisible(true);
             }
             toggleForPlaying();
         }
@@ -191,6 +192,10 @@ void MainComponent::keyBoardUIinit(int min, int max)
     keyboard.setBounds(0, getHeight() - 200, getWidth(), 200);
 
     this->keyboard.set_min_and_max(min, max);
+    noteLayer = std::make_unique<NoteLayer>(this->keyboard);
+    noteLayer->setBounds(0, 50, getWidth(), getHeight() - 200 - 50);
+    addAndMakeVisible(noteLayer.get());
+
     this->keyboard.repaint();
 }
 
@@ -205,7 +210,7 @@ void MainComponent::midiIconInit()
 {
     //addAndMakeVisible(tooltipWindow);
     helpIcon.setFont(juce::Font(30.0f));  // Set the font size
-    helpIcon.setColour(juce::Label::textColourId, juce::Colours::lightgrey.withAlpha(0.9f)); 
+    helpIcon.setColour(juce::Label::textColourId, juce::Colours::lightgrey.withAlpha(0.9f));
     helpIcon.setTooltip("This setting helps you adjust/select:\n *The volume\n *The reverb\n *The input device\n *The output device ");
     helpIcon.setJustificationType(juce::Justification::left);
     settingsPanel.addAndMakeVisible(helpIcon);
@@ -254,6 +259,7 @@ void MainComponent::homeButtonInit()
         togglePlayButton();
         toggleSettingsButton();
         keyboard.setVisible(false);
+        this->noteLayer->setVisible(false);
     };
 
     headerPanel.addAndMakeVisible(homeButton);
@@ -285,14 +291,14 @@ bool MainComponent::openingDevicesForPlay()
 
 
 
-    result= this->MIDIDevice.deviceOpenIN(indexIN, &midiHandler);
+    result = this->MIDIDevice.deviceOpenIN(indexIN, &midiHandler);
     if (!result)
     {
         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open input device.", "OK");
         return false;
     }
     this->deviceOpenedIN = &this->MIDIDevice.getDeviceIN();
-    result=this->MIDIDevice.deviceOpenOUT(indexOUT);
+    result = this->MIDIDevice.deviceOpenOUT(indexOUT);
     if (!result)
     {
         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open output device.", "OK");

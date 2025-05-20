@@ -6,6 +6,13 @@
 #include "MidiHandler.h"
 #include "KeyboardUI.h"
 
+#include <JuceHeader.h>
+#include "settingsWindow.h"
+#include "BinaryData.h"
+#include "MidiHandler.h"
+#include "KeyboardUI.h"
+#include "NoteLayer.h"
+
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
@@ -45,7 +52,7 @@ private:
     int initialWidth = 0;
     int initialHeight = 0;
 
-    int xPlay=750, yPlay=690;
+    int xPlay = 750, yPlay = 690;
 
     bool hasBeenResized = false;
 
@@ -80,10 +87,10 @@ private:
     juce::TooltipWindow tooltipWindow{ this, 200 };
 
 
-    const juce::MidiInput* deviceOpenedIN = nullptr; 
+    const juce::MidiInput* deviceOpenedIN = nullptr;
     const juce::MidiOutput* deviceOpenedOUT = nullptr;
     MidiDevice MIDIDevice{};
-    MidiHandler midiHandler{MIDIDevice};
+    MidiHandler midiHandler{ MIDIDevice };
     std::vector<std::string> devicesIN;
     std::vector<std::string> devicesOUT;
 
@@ -100,7 +107,8 @@ private:
 
     std::unique_ptr<MIDIWindow> midiWindow = { nullptr };
 
-    KeyboardUI keyboard{midiHandler};
+    KeyboardUI keyboard{ midiHandler };
+    std::unique_ptr<NoteLayer> noteLayer;
     bool keyboardInitialized = false;
 
 
@@ -118,7 +126,7 @@ private:
 
             g.fillAll(option); // Background of the panel
             g.setColour(subtleBorderColor);
-            g.drawRect(getLocalBounds(),3);
+            g.drawRect(getLocalBounds(), 3);
 
         }
     };
