@@ -20,6 +20,7 @@ public:
     ~NoteLayer();
     void visibilityChanged() override;
     void timerCallback() override;
+    void resized() override;
 
 
     void paint(juce::Graphics& g) override;
@@ -30,6 +31,7 @@ public:
     void newOpenGLContextCreated() override;
     void renderOpenGL() override;
     void openGLContextClosing() override;
+    void resetState();
 
 private:
     void updateParticles();

@@ -260,6 +260,7 @@ void MainComponent::homeButtonInit()
         toggleSettingsButton();
         keyboard.setVisible(false);
         this->noteLayer->setVisible(false);
+        this->noteLayer->resetState();
     };
 
     headerPanel.addAndMakeVisible(homeButton);
