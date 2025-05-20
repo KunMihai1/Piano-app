@@ -60,12 +60,16 @@ private:
 
 
     struct AnimatedNote {
-        juce::Rectangle<int> bounds = { 0,0,0,0 };
+        juce::Rectangle<int> bounds = { 0, 0, 0, 0 };
         float yPosition = 0.0f;
         float height = 0.0f;
-
+        float initialHeight = 0.0f;
         float alpha = 1.0f;
         bool isFalling = false;
+
+        float elapsedFall = 0.0f;
+        float driftTime = 0.0f;
+        bool hasStartedShrinking = false;
     };
 
     std::unordered_map<int, AnimatedNote> activeNotes;

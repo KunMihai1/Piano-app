@@ -31,6 +31,8 @@ NoteLayer::~NoteLayer()
 
 void NoteLayer::paint(juce::Graphics& g)
 {
+
+    g.reduceClipRegion(getLocalBounds());
     for (const auto& [midiNote, note] : activeNotes)
     {
         g.setColour(juce::Colours::green.withAlpha(0.8f));
@@ -76,6 +78,14 @@ void NoteLayer::noteOffReceived(int midiNote)
             if (it != activeNotes.end())
             {
                 it->second.isFalling = true;
+                it->second.hasStartedShrinking = false;
+                it->second.driftTime = 0.0f;
+                it->second.elapsedFall = 0.0f;
+                it->second.alpha = 1.0f;
+                it->second.initialHeight = it->second.height;
+                
+                DBG(this->getHeight()<<"\n");
+                DBG("Initial height"<<it->second.initialHeight);
                 fallingNotes.push_back(it->second);
                 activeNotes.erase(it);
             }
@@ -98,16 +108,16 @@ void NoteLayer::newOpenGLContextCreated()
     )VERT";
 
     const char* fragmentSource = R"FRAG(
-        #ifdef GL_ES
-        precision mediump float;
-        #endif
-        varying vec4 vColour;
-        void main()
-        {
-            float dist = length(gl_PointCoord - vec2(0.5));
-            float alpha = smoothstep(0.5, 0.0, dist);
-            gl_FragColor = vColour * alpha;
-        }
+    #ifdef GL_ES
+    precision mediump float;
+    #endif
+
+    varying vec4 vColour;
+
+    void main()
+    {
+        gl_FragColor = vColour;
+    }
     )FRAG";
 
     shader = std::make_unique<juce::OpenGLShaderProgram>(openGLContext);
@@ -124,11 +134,15 @@ void NoteLayer::newOpenGLContextCreated()
     if (openGLContext.isActive())
     {
         glEnable(GL_PROGRAM_POINT_SIZE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glViewport(0, 0, getWidth(), getHeight());
     }
     else {
         openGLContext.makeActive();
         glEnable(GL_PROGRAM_POINT_SIZE);
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glViewport(0, 0, getWidth(), getHeight());
     }
     openGLContext.extensions.glGenBuffers(1, &particleVBO);
@@ -167,6 +181,7 @@ void NoteLayer::renderOpenGL()
 
         if (positionAttr != nullptr)
         {
+
             openGLContext.extensions.glVertexAttribPointer(positionAttr->attributeID, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (GLvoid*)offsetof(Vertex, x));
             openGLContext.extensions.glEnableVertexAttribArray(positionAttr->attributeID);
         }
@@ -244,7 +259,6 @@ void NoteLayer::spawnParticlesForNote(int midiNote)
     // Convert pixel center to NDC [-1, 1]
     float x_ndc = (keyBounds.getCentreX() / (float)getWidth()) * 2.0f - 1.0f;
     float y_ndc = 1.0f - (keyBounds.getY() / (float)getHeight()) * 2.0f;
-
     juce::Point<float> pos(x_ndc, y_ndc);
 
     for (int i = 0; i < 10; i++)
@@ -302,24 +316,14 @@ void NoteLayer::timerCallback()
         n.bounds.setY(static_cast<int>(round(n.yPosition)));
 
         if (it->alpha <= 0.0f)
+        {
+            DBG("NOTE OFF ");
             it = fallingNotes.erase(it);
+        }
         else ++it;
     }
     updateParticles();
 
-    /*
-    particles.clear();
-
-    // Place one test particle in center of screen (NDC = [0,0])
-    Particle p;
-    p.pos = { 0.0f, 0.0f };     // center in NDC
-    p.velocity = { 0.0f, 0.0f };     // no motion
-    p.size = 40.0f;             // big so you can see it
-    p.colour = juce::Colours::red;
-    p.life = 1.0f;
-    particles.push_back(p);
-
-    */
     if (!particles.empty() || !activeNotes.empty() || !fallingNotes.empty())
     {
         openGLContext.triggerRepaint();
