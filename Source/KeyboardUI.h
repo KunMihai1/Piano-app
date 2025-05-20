@@ -1,18 +1,19 @@
 /*
   ==============================================================================
 
-    keyboardUI.h
-    Created: 26 Mar 2025 9:45:11pm
+    NoteLayer.h
+    Created: 20 May 2025 1:20:49am
     Author:  Kisuke
 
   ==============================================================================
 */
+
+#pragma once
+
 #include "MidiHandler.h"
 #include <juce_gui_basics/juce_gui_basics.h>
 #include <unordered_map>
 #include <vector>
-
-class KeyboardUI; // Forward declaration with correct capitalization
 
 class KeyboardUI : public juce::Component, public MidiHandler::Listener
 {
