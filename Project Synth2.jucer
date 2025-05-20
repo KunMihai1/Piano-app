@@ -11,6 +11,8 @@
       <FILE id="NiufiE" name="MainWindow.png" compile="0" resource="1" file="Photos/MainWindow.png"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="iqvpAW" name="NoteLayer.cpp" compile="1" resource="0" file="Source/NoteLayer.cpp"/>
+      <FILE id="cFN9eI" name="NoteLayer.h" compile="0" resource="0" file="Source/NoteLayer.h"/>
       <FILE id="XnnPrB" name="InstrumentHandler.cpp" compile="1" resource="0"
             file="Source/InstrumentHandler.cpp"/>
       <FILE id="UMmTJT" name="InstrumentHandler.h" compile="0" resource="0"

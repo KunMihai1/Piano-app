@@ -8,7 +8,7 @@
   ==============================================================================
 */
 
-#include "keyboardUI.h"
+#include "KeyboardUI.h"
 
 KeyboardUI::KeyboardUI(MidiHandler& midiHandler) : midiHandler{ midiHandler }
 {
@@ -19,10 +19,53 @@ KeyboardUI::KeyboardUI(MidiHandler& midiHandler) : midiHandler{ midiHandler }
 KeyboardUI::~KeyboardUI()
 {
     midiHandler.removeListener(this);
-    stopTimer();
 }
 
 void KeyboardUI::paint(juce::Graphics& g)
+{
+    paintKeyboard(g);
+
+    /*
+    for (const auto& [midiNote, note] : activeNotes)
+    {
+        g.setColour(juce::Colours::green.withAlpha(0.8f));
+        g.fillRect(note.bounds);
+    }
+    for (const auto& note : fallingNotes)
+    {
+        g.setColour(juce::Colours::green.withAlpha(note.alpha));
+        g.fillRect(note.bounds);
+    }
+    */
+}
+
+
+
+void KeyboardUI::set_min_and_max(const int min, const int max)
+{
+    this->min_draw = min;
+    this->max_draw = max;
+}
+
+void KeyboardUI::noteOnReceived(int midiNote)
+{
+    juce::MessageManager::callAsync([this, midiNote]
+        {
+            keys[midiNote].isActive = true;
+            repaint(keys[midiNote].bounds);
+        });
+}
+
+void KeyboardUI::noteOffReceived(int midiNote)
+{
+    juce::MessageManager::callAsync([this, midiNote]
+        {
+            keys[midiNote].isActive = false;
+            repaint(keys[midiNote].bounds);
+        });
+}
+
+void KeyboardUI::paintKeyboard(juce::Graphics& g)
 {
     float whiteKeyWidth = static_cast<float>(getWidth() / 52) + 0.92f;
     float keyHeight = static_cast<float>(getHeight());
@@ -165,11 +208,11 @@ void KeyboardUI::paint(juce::Graphics& g)
     else {
         for (const auto& [key, MidiNote] : keys)
         {
-            if (MidiNote.isActive) 
+            if (MidiNote.isActive)
             {
                 g.setColour(juce::Colours::green);
             }
-            else 
+            else
             {
                 if (MidiNote.type == "white")
                 {
@@ -188,94 +231,4 @@ void KeyboardUI::paint(juce::Graphics& g)
             g.drawRect(MidiNote.bounds);
         }
     }
-    for (const auto& [midiNote, note] : activeNotes)
-    {
-        g.setColour(juce::Colours::green.withAlpha(0.8f));
-        g.drawRect(note.bounds);
-    }
-    for (const auto& note : fallingNotes)
-    {
-        g.setColour(juce::Colours::green.withAlpha(note.alpha));
-        g.drawRect(note.bounds);
-    }
-}
-
-    
-
-void KeyboardUI::set_min_and_max(const int min, const int max)
-{
-    this->min_draw = min;
-    this->max_draw = max;
-}
-
-void KeyboardUI::noteOnReceived(int midiNote)
-{
-    juce::MessageManager::callAsync([this, midiNote]
-        {
-            if (activeNotes.find(midiNote) == activeNotes.end())
-            {
-                animatedNote newNote;
-                newNote.bounds = keys[midiNote].bounds;
-                activeNotes[midiNote] = newNote;
-            }
-            activeNotes[midiNote].bounds.setHeight(10);
-            activeNotes[midiNote].bounds.setY(keys[midiNote].bounds.getY()-50);
-
-            keys[midiNote].isActive = true;
-            repaint(keys[midiNote].bounds);
-        });
-}
-
-void KeyboardUI::noteOffReceived(int midiNote)
-{
-    juce::MessageManager::callAsync([this, midiNote]
-        {
-            auto it = activeNotes.find(midiNote);
-            if (it!= activeNotes.end())
-            {
-                it->second.isFalling = true;
-                fallingNotes.push_back(it->second);
-                activeNotes.erase(it);
-            }
-            keys[midiNote].isActive = false;
-            repaint(keys[midiNote].bounds);
-        });
-}
-
-void KeyboardUI::visibilityChanged()
-{
-    //if (!isVisible())
-    //   stopTimer();
-    //else startTimerHz(2);
-}
-
-void KeyboardUI::timerCallback()
-{
-    bool needsRepaint = false;
-    for (auto it = activeNotes.begin(); it != activeNotes.end();)
-    {
-        juce::Rectangle<int> oldBoundsActive = it->second.bounds;
-        oldBoundsActive.setHeight(oldBoundsActive.getHeight() +2);
-        oldBoundsActive.setY(oldBoundsActive.getY() -2);
-        repaint(oldBoundsActive);
-    }
-    for (auto it = fallingNotes.begin(); it != fallingNotes.end();)
-    {
-        juce::Rectangle<int> oldBounds = it->bounds;
-        it->bounds.translate(0, -1);
-        it->alpha -= 0.01f;
-
-        if (it->alpha <= 0.0f)
-        {
-            repaint(oldBounds);
-            it = fallingNotes.erase(it);
-        }
-        else {
-            repaint(it->bounds);
-            ++it;
-        }
-        needsRepaint = true;
-    }
-    if (needsRepaint)
-        repaint();
 }
