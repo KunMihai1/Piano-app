@@ -85,13 +85,6 @@ void MIDIWindow::timerCallback()
         populateCBOUT();
     }
 
-    float newVolumeValue = static_cast<float>(this->volumeSlider.getValue());
-    float newReverbValue = static_cast<float>(this->reverbSlider.getValue());
-
-    if (newVolumeValue != MIDIDevice.getVolume())
-        MIDIDevice.setVolume(newVolumeValue);
-    if (newReverbValue != MIDIDevice.getReverb())
-        MIDIDevice.setReverb(newReverbValue);
 
 }
 
@@ -196,6 +189,14 @@ void MIDIWindow::slidersInit()
     volumeLabel.setText("Volume scale", juce::dontSendNotification);
     settingsPanel.addAndMakeVisible(volumeLabel);
     volumeLabel.setVisible(false);
+
+    this->volumeSlider.onValueChange = [this] {
+        MIDIDevice.setVolume(volumeSlider.getValue());
+    };
+
+    this->reverbSlider.onValueChange = [this] {
+        MIDIDevice.setReverb(reverbSlider.getValue());
+    };
 }
 
 void MIDIWindow::devicesCBinit()

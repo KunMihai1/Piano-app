@@ -32,7 +32,7 @@ public:
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
-class MainComponent : public juce::Component
+class MainComponent : public juce::Component, public juce::ChangeListener
 {
 public:
     //==============================================================================
@@ -43,6 +43,7 @@ public:
     void paint(juce::Graphics&) override;
     void resized() override;
     bool isMouseDownInsideLabel = false;
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
 private:
     int initialWidth = 0;
@@ -51,6 +52,7 @@ private:
     int xPlay = 750, yPlay = 690;
 
     bool hasBeenResized = false;
+    void initalizeSaveFileForUser();
 
     void focusGained(FocusChangeType) override;
     void toggleSettingsPanel();
@@ -61,6 +63,7 @@ private:
     void toggleHPanel();
     void toggleHomeButton();
     void toggleForPlaying();
+    void toggleColourSelectorButton();
 
     void settingsInit();
     void playButtonInit();
@@ -70,11 +73,17 @@ private:
     void midiSettingsInit();
     void headerPanelInit();
     void homeButtonInit();
+    void colourSelectorButtonInit();
 
     bool openingDevicesForPlay();
+   
+    void showColourSelector();
 
     //==============================================================================
     // Your private member variables go here...
+    juce::ApplicationProperties appProperties;
+    juce::PropertiesFile* propertiesFile = nullptr;
+
     CustomLookAndFeel customLookAndFeel;
     juce::Image cachedImageMainWindow;
     juce::Image playBackground;
@@ -97,6 +106,8 @@ private:
     juce::TextButton midiButton{ "MIDI Settings" };
     juce::TextButton playButton{ "Play" };
     juce::TextButton homeButton{ "Home" };
+    juce::TextButton colourSelectorButton{ "Select colour" };
+    juce::ColourSelector* colourSelector;
     //juce::Component settingsPanel{};
 
     //UI->windows

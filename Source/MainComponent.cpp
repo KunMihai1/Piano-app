@@ -16,7 +16,6 @@ MainComponent::MainComponent()
         juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getHeight() - 40);
 
 
-
     MIDIDevice.getAvailableDevicesMidiIN(this->devicesIN);
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
 
@@ -71,6 +70,31 @@ void MainComponent::resized()
     helpIcon.setBounds(210, 20, 100, 20);
     headerPanel.setBounds(0, 0, getWidth(), 50);
     homeButton.setBounds(10, 10, 75, 30);
+    colourSelectorButton.setBounds(90, 10, 100, 30);
+}
+
+void MainComponent::changeListenerCallback(juce::ChangeBroadcaster* source)
+{
+    if (source == colourSelector)
+    {
+        auto newColor = colourSelector->getCurrentColour();
+        DBG("Colour changed to: " << newColor.toString());
+        this->noteLayer->setColourParticle(newColor);
+    }
+}
+
+void MainComponent::initalizeSaveFileForUser()
+{
+    juce::PropertiesFile::Options options;
+    options.applicationName= "Synth Piano 2";
+    options.filenameSuffix = "settigns";
+    options.folderName="MK";
+    options.osxLibrarySubFolder = "Application Support";
+    options.commonToAllUsers = false;
+
+    appProperties.setStorageParameters(options);
+    propertiesFile = appProperties.getUserSettings();
+
 }
 
 void MainComponent::focusGained(FocusChangeType)
@@ -124,6 +148,7 @@ void MainComponent::toggleHPanel()
     else headerPanel.setVisible(true);
 
     toggleHomeButton();
+    toggleColourSelectorButton();
 }
 
 void MainComponent::toggleHomeButton()
@@ -131,6 +156,13 @@ void MainComponent::toggleHomeButton()
     if (homeButton.isVisible())
         homeButton.setVisible(false);
     else homeButton.setVisible(true);
+}
+
+void MainComponent::toggleColourSelectorButton()
+{
+    if (colourSelectorButton.isVisible())
+        colourSelectorButton.setVisible(false);
+    else colourSelectorButton.setVisible(true);
 }
 
 void MainComponent::toggleForPlaying()
@@ -156,6 +188,7 @@ void MainComponent::settingsInit()
     midiSettingsInit();
     midiIconInit();
 }
+
 
 void MainComponent::playButtonInit()
 {
@@ -185,6 +218,22 @@ void MainComponent::playButtonInit()
     playButton.setVisible(false);
 }
 
+void MainComponent::colourSelectorButtonInit()
+{
+    colourSelectorButton.setButtonText("Colour Picker");
+    /*
+    colourSelector->setCurrentColour(juce::Colours::hotpink);
+    colourSelector->addChangeListener(this);
+    headerPanel.addAndMakeVisible(colourSelector.get());
+    colourSelector->setVisible(false);
+    */
+    colourSelectorButton.onClick = [this] {
+        showColourSelector();
+    };
+    headerPanel.addAndMakeVisible(colourSelectorButton);
+    colourSelectorButton.setVisible(false);
+}
+
 void MainComponent::keyBoardUIinit(int min, int max)
 {
     keyboardInitialized = true;
@@ -208,7 +257,6 @@ void MainComponent::panelInit()
 
 void MainComponent::midiIconInit()
 {
-    //addAndMakeVisible(tooltipWindow);
     helpIcon.setFont(juce::Font(30.0f));  // Set the font size
     helpIcon.setColour(juce::Label::textColourId, juce::Colours::lightgrey.withAlpha(0.9f));
     helpIcon.setTooltip("This setting helps you adjust/select:\n *The volume\n *The reverb\n *The input device\n *The output device ");
@@ -243,6 +291,7 @@ void MainComponent::headerPanelInit()
     headerPanel.setVisible(false);
 
     homeButtonInit();
+    colourSelectorButtonInit();
 }
 
 void MainComponent::homeButtonInit()
@@ -307,4 +356,21 @@ bool MainComponent::openingDevicesForPlay()
     }
     this->deviceOpenedOUT = this->MIDIDevice.getDeviceOUT();
     return true;
+}
+
+void MainComponent::showColourSelector()
+{
+    colourSelector = new juce::ColourSelector(
+        juce::ColourSelector::showSliders |
+        juce::ColourSelector::showColourAtTop |
+        juce::ColourSelector::showColourspace
+        );
+    colourSelector->setName("Colour Picker");
+    colourSelector->setColour(juce::ColourSelector::backgroundColourId, juce::Colours::transparentBlack);
+    colourSelector->addChangeListener(this);
+    colourSelector->setSize(500, 300);
+    auto area1 = juce::Rectangle<int>(0, 0, 500, 50);
+    auto area = juce::Rectangle<int>(colourSelectorButton.getX() - 25, 0, 500, getHeight() - 50 - 200);
+    juce::CallOutBox::launchAsynchronously(std::unique_ptr<juce::ColourSelector>(colourSelector), area1, this);
+    noteLayer->setVisible(false);
 }

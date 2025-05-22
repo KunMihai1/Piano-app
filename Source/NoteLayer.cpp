@@ -21,6 +21,12 @@ NoteLayer::NoteLayer(KeyboardUI& referenceKeyboard) : keyBoardUI{ referenceKeybo
 
     openGLContext.setRenderer(this);
     openGLContext.attachTo(*this);
+
+    float hue = 0.12f;            // yellow-gold hue
+    float saturation = 0.85f + juce::Random::getSystemRandom().nextFloat() * 0.1f;  // 0.85 - 0.95
+    float brightness = 0.9f + juce::Random::getSystemRandom().nextFloat() * 0.1f;   // 0.9 - 1.0
+    float alpha = 0.6f + juce::Random::getSystemRandom().nextFloat() * 0.4f;        // 0.6 - 1.0
+    this->particleColourUser = juce::Colour::fromHSV(hue, saturation, brightness, alpha);
 }
 
 NoteLayer::~NoteLayer()
@@ -35,13 +41,20 @@ void NoteLayer::paint(juce::Graphics& g)
     g.reduceClipRegion(getLocalBounds());
     for (const auto& [midiNote, note] : activeNotes)
     {
-        g.setColour(juce::Colours::green.withAlpha(0.8f));
+        g.setColour(juce::Colours::transparentBlack.withAlpha(0.1f));
         g.fillRoundedRectangle(note.bounds.toFloat(), 6.0f);
+
+        g.setColour(juce::Colours::whitesmoke.withAlpha(1.0f));
+        g.drawRoundedRectangle(note.bounds.toFloat(), 6.0f, 1.5f); // 1.5f = outline thickness
     }
     for (const auto& note : fallingNotes)
     {
-        g.setColour(juce::Colours::green.withAlpha(note.alpha));
+        g.setColour(juce::Colours::transparentBlack.withAlpha(note.alpha));
         g.fillRoundedRectangle(note.bounds.toFloat(), 6.0f);
+
+        // Outline for falling notes
+        g.setColour(juce::Colours::whitesmoke.withAlpha(note.alpha));
+        g.drawRoundedRectangle(note.bounds.toFloat(), 6.0f, 1.5f);;
     }
 }
 
@@ -51,6 +64,8 @@ void NoteLayer::noteOnReceived(int midiNote)
         {
             if (activeNotes.find(midiNote) == activeNotes.end())
             {
+                if (!this->isVisible())
+                    this->setVisible(true);
                 AnimatedNote newNote;
                 newNote.bounds = keyBoardUI.keys[midiNote].bounds;
 
@@ -90,30 +105,18 @@ void NoteLayer::newOpenGLContextCreated()
 {
     const char* vertexSource = R"VERT(
         attribute vec2 position;
-        attribute float pointSize;
-        attribute vec4 colour;
-        varying vec4 vColour;
-        void main()
-        {
-            gl_PointSize = pointSize;
-            gl_Position = vec4(position, 0.0, 1.0);
-            vColour = colour;
-        }
-    )VERT";
-    /*
-    const char* fragmentSource = R"FRAG(
-    #ifdef GL_ES
-    precision mediump float;
-    #endif
-
+    attribute float pointSize;
+    attribute vec4 colour;
     varying vec4 vColour;
 
     void main()
     {
-        gl_FragColor = vColour;
+        gl_PointSize = pointSize;
+        gl_Position = vec4(position, 0.0, 1.0);
+        vColour = colour;
     }
-    )FRAG";
-    */
+    )VERT";
+
     const char* fragmentSource = R"FRAG(
 #ifdef GL_ES
 precision mediump float;
@@ -133,6 +136,7 @@ void main()
 
     // Apply smoothstep for soft radial falloff
     float alpha = smoothstep(0.4, 0.6, dist);
+    //float alpha = smoothstep(0.5, 0.0, dist);
 
     // Introduce a time-based color shift using sine wave modulation
     vec3 color = vColour.rgb * (0.5 + 0.5 * sin(uTime + dist * 10.0));
@@ -172,7 +176,6 @@ void main()
 
 void NoteLayer::renderOpenGL()
 {
-    DBG("renderOpenGL() called");
 
     if (shader != nullptr && particleVBO != 0 && !particles.empty())
     {
@@ -256,6 +259,11 @@ void NoteLayer::resetState()
     this->particles.clear();
 }
 
+void NoteLayer::setColourParticle(juce::Colour& colour)
+{
+    this->particleColourUser = colour;
+}
+
 void NoteLayer::updateParticles()
 {
     float dt = 1.0f / 60.0f;
@@ -284,19 +292,26 @@ void NoteLayer::spawnParticlesForNote(int midiNote)
     y_ndc += 0.05f;
     juce::Point<float> pos(x_ndc, y_ndc);
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 0; i < 1; i++)
     {
         Particle p;
         p.pos = pos;
 
         // Velocity should be small since NDC is from -1 to 1
+        /*
         p.velocity = {
             (juce::Random::getSystemRandom().nextFloat() * 2.0f - 1.0f) * 0.5f,  // horizontal velocity in NDC units/sec
             -(juce::Random::getSystemRandom().nextFloat() * 1.0f)                // vertical velocity in NDC units/sec
         };
+        */
+        p.velocity = {
+        (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.1f, // subtle wiggle
+        juce::Random::getSystemRandom().nextFloat() * 0.8f - 0.3f   // upward, fast
+        };
 
-        p.size = 10.0f + juce::Random::getSystemRandom().nextFloat() * 5.0f; // size in pixels
-        p.colour = juce::Colour::fromHSV(juce::Random::getSystemRandom().nextFloat(), 1.0f, 1.0f, 1.0f);
+        p.size = 1.0f + juce::Random::getSystemRandom().nextFloat() * 8.0f;
+
+        p.colour = this->particleColourUser;
         p.life = 1.0f;
         particles.push_back(p);
     }
