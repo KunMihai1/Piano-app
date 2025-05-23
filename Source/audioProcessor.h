@@ -9,12 +9,15 @@
 */
 
 #pragma once
+#include "Synth.h"
 #include <JuceHeader.h>
+#include "MidiHandler.h"
+
 
 class ReverbProcessor : public juce::AudioProcessor
 {
 public:
-    ReverbProcessor();
+    ReverbProcessor(MidiHandler& midiHandlerReference);
     ~ReverbProcessor() override {}
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
@@ -29,8 +32,17 @@ public:
     bool isBusesLayoutSupported(const BusesLayout& layouts) const override;
     void getStateInformation(juce::MemoryBlock& destData) override;
     void setStateInformation(const void* data, int sizeInBytes) override;
+    juce::AudioProcessorEditor* createEditor() override;
+    bool hasEditor() const override;
     void setReverbAmmount(float ammount);
+    int getNumPrograms() override;
+    int getCurrentProgram() override;
+    void setCurrentProgram(int index) override;
+    const juce::String getProgramName(int index) override;
+    void changeProgramName(int index, const juce::String& newName) override;
 
 private:
+    MidiHandler& midiHandler;
+    MySynth reverbSynth;
     juce::Reverb reverb;
 };

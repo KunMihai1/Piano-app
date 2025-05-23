@@ -10,7 +10,7 @@ MidiDevice::~MidiDevice()
 	this->currentDevicesIN.clear();
 	this->CachedDevicesOUT.clear();
 	this->currentDevicesOUT.clear();
-	if (this -> currentDeviceIDin)
+	if (this -> currentDeviceUSEDin)
 	{
 		this->currentDeviceUSEDin->stop();
 		currentDeviceUSEDin.reset();
@@ -98,6 +98,7 @@ void MidiDevice::refreshDeviceList(int choice)
 					this->currentDevicesIN.push_back(newDevices[i].name.toStdString());
 			}
 			this->devicesChange = true;
+			this->currentDevicesIN.push_back("PC Keyboard");
 		}
 		else
 			this->devicesChange = false;
@@ -300,7 +301,7 @@ const juce::String& MidiDevice::get_identifier() const
 }
 
 MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device }, dataBase{} {
-	audioProc = std::make_unique<ReverbProcessor>();
+	
 }
 
 MidiHandler::~MidiHandler()
@@ -309,6 +310,10 @@ MidiHandler::~MidiHandler()
 
 void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce::MidiMessage& message)
 {
+	const juce::ScopedLock lock(midiMutex);
+
+	juce::MidiMessage processedMessage = message;
+
 	if (message.isNoteOn())
 	{
 		int note = message.getNoteNumber();
@@ -327,9 +332,11 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		}
 
 		listeners.call(&Listener::noteOnReceived, note);
-		//juce::Logger::writeToLog("Note On received: " + juce::String(note));
 	}
-	else if (message.isNoteOff())
+
+	incomingMidiMessages.addEvent(processedMessage, 0);
+
+	if (message.isNoteOff())
 	{
 		int note = message.getNoteNumber();
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(message.getFloatVelocity());
@@ -340,8 +347,34 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		}
 
 		listeners.call(&Listener::noteOffReceived, note);
-		//juce::Logger::writeToLog("Note Off received: " + juce::String(note));
 	}
+}
+
+void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample, int numSamples) {
+	DBG("getNextMidiBlock called");
+	const juce::ScopedLock lock(midiMutex);
+	destBuffer.addEvents(incomingMidiMessages, startSample, numSamples, 0);
+	incomingMidiMessages.clear();
+	DBG("getNextMidiBlock: " << destBuffer.getNumEvents());
+
+}
+
+void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
+	auto midiOut = midiDevice.getDeviceOUT();
+	if (midiOut)
+	{
+		midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocity));
+	}
+	listeners.call(&Listener::noteOnReceived, note);
+}
+
+void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
+	auto midiOut = midiDevice.getDeviceOUT();
+	if (midiOut)
+	{
+		midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note));
+	}
+	listeners.call(&Listener::noteOffReceived,note);
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)

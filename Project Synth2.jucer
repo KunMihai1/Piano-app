@@ -11,6 +11,14 @@
       <FILE id="NiufiE" name="MainWindow.png" compile="0" resource="1" file="Photos/MainWindow.png"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="ZZkI5J" name="keyListener.cpp" compile="1" resource="0" file="Source/keyListener.cpp"/>
+      <FILE id="VuWhA6" name="keyListener.h" compile="0" resource="0" file="Source/keyListener.h"/>
+      <FILE id="gycLDS" name="SynthSound.cpp" compile="1" resource="0" file="Source/SynthSound.cpp"/>
+      <FILE id="vH6ZQ1" name="SynthSound.h" compile="0" resource="0" file="Source/SynthSound.h"/>
+      <FILE id="wDfkTH" name="SynthVoice.cpp" compile="1" resource="0" file="Source/SynthVoice.cpp"/>
+      <FILE id="ujOnE9" name="SynthVoice.h" compile="0" resource="0" file="Source/SynthVoice.h"/>
+      <FILE id="woG07v" name="Synth.cpp" compile="1" resource="0" file="Source/Synth.cpp"/>
+      <FILE id="wfK7hc" name="Synth.h" compile="0" resource="0" file="Source/Synth.h"/>
       <FILE id="wykBtg" name="audioProcessor.cpp" compile="1" resource="0"
             file="Source/audioProcessor.cpp"/>
       <FILE id="p65jRZ" name="audioProcessor.h" compile="0" resource="0"
