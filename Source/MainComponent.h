@@ -68,6 +68,7 @@ private:
     void toggleHomeButton();
     void toggleForPlaying();
     void toggleColourSelectorButton();
+    void toggleInstrumentSelectorButton();
 
     void settingsInit();
     void playButtonInit();
@@ -78,10 +79,12 @@ private:
     void headerPanelInit();
     void homeButtonInit();
     void colourSelectorButtonInit();
+    void instrumentSelectorButtonInit();
 
     bool openingDevicesForPlay();
    
     void showColourSelector();
+    void showInstrumentSelector();
 
     //==============================================================================
     // Your private member variables go here...
@@ -114,8 +117,9 @@ private:
     juce::TextButton playButton{ "Play" };
     juce::TextButton homeButton{ "Home" };
     juce::TextButton colourSelectorButton{ "Select colour" };
+    juce::TextButton instrumentSelectorButton{ "Select instrument" };
     juce::ColourSelector* colourSelector;
-    //juce::Component settingsPanel{};
+
 
     //UI->windows
 
