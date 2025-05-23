@@ -300,7 +300,7 @@ const juce::String& MidiDevice::get_identifier() const
 }
 
 MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device }, dataBase{} {
-	setupReverb();
+	audioProc = std::make_unique<ReverbProcessor>();
 }
 
 MidiHandler::~MidiHandler()
@@ -322,6 +322,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 
 		if (auto midiOut = midiDevice.getDeviceOUT())
 		{
+
 			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
 		}
 
@@ -343,21 +344,10 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	}
 }
 
-void MidiHandler::processBlock(juce::AudioBuffer<float>& audioBuffer, juce::MidiBuffer& midiBuffer)
-{
-	reverbFromJuce.processStereo(audioBuffer.getWritePointer(0), audioBuffer.getWritePointer(1), audioBuffer.getNumSamples());
-}
-
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)
 {
 	int nrKeys = dataBase.getNrKeysPidVid(vid, pid);
 	setPlayableRange(nrKeys);
-}
-
-void MidiHandler::setReverbAudioEng(float ammount)
-{
-	reverbParams.wetLevel = ammount;
-	reverbFromJuce.setParameters(reverbParams);
 }
 
 void MidiHandler::setPlayableRange(int nrKeys)
@@ -382,14 +372,4 @@ void MidiHandler::setPlayableRange(int nrKeys)
 		midiDevice.set_minNote(21);
 		midiDevice.set_maxNote(108);
 	}
-}
-
-void MidiHandler::setupReverb()
-{
-	reverbParams.roomSize = 0.5f;
-	reverbParams.wetLevel = 0.3f;
-	reverbParams.dryLevel = 0.7f;
-	reverbParams.width = 1.0f;
-	reverbParams.damping = 0.5f;
-	reverbFromJuce.setParameters(reverbParams);
 }

@@ -227,7 +227,7 @@ void MainComponent::playButtonInit()
             MIDIDevice.changeVolumeInstrument();
             MIDIDevice.changeReverbInstrument();
             float normalized = MIDIDevice.getReverb() / 100.0f;
-            midiHandler.setReverbAudioEng(normalized);
+            //midiHandler.setReverbAudioEng(normalized);
             if (!keyboardInitialized)
                 keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
             else {
