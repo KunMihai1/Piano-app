@@ -416,6 +416,8 @@ void NoteLayer::timerCallback()
     }
     else
     {
+        openGLContext.triggerRepaint();
+        repaint();
         stopTimer();
     }
 }

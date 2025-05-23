@@ -3,7 +3,6 @@
 #include <JuceHeader.h>
 #include "MidiDevicesDB.h"
 #include "InstrumentHandler.h"
-#include "audioProcessor.h"
 
 class MidiDevice {
 public:
@@ -36,6 +35,8 @@ public:
 	float getReverb() const;
 	int get_minNote() const;
 	int get_maxNote() const;
+	void set_minNote(const int minNoteReceived);
+	void set_maxNote(int maxNoteReceived);
 	void changeVolumeInstrument();
 	void changeReverbInstrument();
 
@@ -46,8 +47,6 @@ public:
 private:
 	friend class MidiHandler;
 	void refreshDeviceList(int choice = 0);
-	void set_minNote(const int minNoteReceived);
-	void set_maxNote(int maxNoteReceived);
 
 	std::vector<std::string> currentDevicesIN;
 	juce::Array<juce::MidiDeviceInfo> CachedDevicesIN;
@@ -86,6 +85,10 @@ public:
 
 	void addListener(Listener* listener) { listeners.add(listener); }
 	void removeListener(Listener* listener) { listeners.remove(listener); }
+	void getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample, int numSamples);
+
+	void noteOnKeyboard(int note, juce::uint8 velocity);
+	void noteOffKeyboard(int note, juce::uint8 velocity);
 
 private:
 	void setPlayableRange(int nrKeys);
@@ -96,6 +99,7 @@ private:
 	InstrumentHandler instrumentHandler;
 
 	bool receivedValidNote = false;
-	std::unique_ptr<ReverbProcessor> audioProc;
+	juce::MidiBuffer incomingMidiMessages;
+	juce::CriticalSection midiMutex;
 
 };

@@ -76,6 +76,35 @@ void MainComponent::resized()
     colourSelectorButton.setBounds(90, 10, 100, 30);
 }
 
+bool MainComponent::keyPressed(const juce::KeyPress& key)
+{
+    if (!usingKeyboardInput)
+        return false;
+
+
+    int midiNote = -1;
+
+    switch (key.getKeyCode())
+    {
+    case 'A': midiNote = 60; break; // C4
+    case 'W': midiNote = 61; break; // C#4
+    case 'S': midiNote = 62; break; // D4
+    case 'E': midiNote = 63; break; // D#4
+    case 'D': midiNote = 64; break; // E4
+    case 'F': midiNote = 65; break; // F4
+    case 'T': midiNote = 66; break; // F#4
+    case 'G': midiNote = 67; break; // G4
+    case 'Y': midiNote = 68; break; // G#4
+    case 'H': midiNote = 69; break; // A4
+    case 'U': midiNote = 70; break; // A#4
+    case 'J': midiNote = 71; break; // B4
+    case 'K': midiNote = 72; break; // C5
+    }
+
+    midiHandler.noteOnKeyboard(midiNote, 127);
+    return true;
+}
+
 void MainComponent::changeListenerCallback(juce::ChangeBroadcaster* source)
 {
     if (source == colourSelector)
@@ -97,7 +126,6 @@ void MainComponent::initalizeSaveFileForUser()
 
     appProperties.setStorageParameters(options);
     propertiesFile = appProperties.getUserSettings();
-
 }
 
 void MainComponent::loadSettings()
@@ -219,6 +247,9 @@ void MainComponent::playButtonInit()
         MIDIDevice.getAvailableDevicesMidiIN(devicesIN);
         MIDIDevice.getAvailableDevicesMidiOUT(devicesOUT);
         if (openingDevicesForPlay()) {
+            //audioDeviceManager.initialiseWithDefaultDevices(0, 2);
+            //audioProcessorPlayer.setProcessor(&revProcessor);
+            //audioDeviceManager.addAudioCallback(&audioProcessorPlayer);
             midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
             currentBackground = playBackground;
             repaint();
@@ -363,15 +394,24 @@ bool MainComponent::openingDevicesForPlay()
     int indexOUT = this->MIDIDevice.getDeviceIndexOUT();
     bool result;
 
-
-
-    result = this->MIDIDevice.deviceOpenIN(indexIN, &midiHandler);
-    if (!result)
+    if (this->MIDIDevice.getDeviceNameBasedOnIndex(indexIN, 0) == "PC Keyboard")
     {
-        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open input device.", "OK");
-        return false;
+        //here is the case where user selects keyboard from pc.
+        this->MIDIDevice.set_minNote(60);
+        this->MIDIDevice.set_maxNote(72);
+        this->usingKeyboardInput = true;
+        this->grabKeyboardFocus();
     }
-    this->deviceOpenedIN = &this->MIDIDevice.getDeviceIN();
+    else {
+        this->usingKeyboardInput = false;
+        result = this->MIDIDevice.deviceOpenIN(indexIN, &midiHandler);
+        if (!result)
+        {
+            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open input device.", "OK");
+            return false;
+        }
+        this->deviceOpenedIN = &this->MIDIDevice.getDeviceIN();
+    }
     result = this->MIDIDevice.deviceOpenOUT(indexOUT);
     if (!result)
     {

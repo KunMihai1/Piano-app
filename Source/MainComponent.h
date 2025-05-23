@@ -6,6 +6,7 @@
 #include "MidiHandler.h"
 #include "KeyboardUI.h"
 #include "NoteLayer.h"
+#include "audioProcessor.h"
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -44,6 +45,8 @@ public:
     void resized() override;
     bool isMouseDownInsideLabel = false;
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+    bool keyPressed(const juce::KeyPress& key) override;
+    //bool keyStateChanged(const juce::KeyPress& key) override;
 
 private:
     int initialWidth = 0;
@@ -98,6 +101,8 @@ private:
     const juce::MidiOutput* deviceOpenedOUT = nullptr;
     MidiDevice MIDIDevice{};
     MidiHandler midiHandler{ MIDIDevice };
+    //ReverbProcessor revProcessor{ midiHandler };
+
     std::vector<std::string> devicesIN;
     std::vector<std::string> devicesOUT;
 
@@ -119,6 +124,11 @@ private:
     KeyboardUI keyboard{ midiHandler };
     std::unique_ptr<NoteLayer> noteLayer;
     bool keyboardInitialized = false;
+
+    juce::AudioDeviceManager audioDeviceManager;
+    juce::AudioProcessorPlayer audioProcessorPlayer;
+
+    bool usingKeyboardInput = false;
 
 
 
