@@ -6,8 +6,10 @@ class MidiDevice;
 class MIDIWindow : public juce::DocumentWindow, public juce::ComboBox::Listener, public juce::Timer
 {
 public:
-	MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesListIN, std::vector<std::string>& devicesListOUT);
+	MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesListIN, std::vector<std::string>& devicesListOUT, juce::PropertiesFile* prop);
 	~MIDIWindow() override;
+	void volumeSliderSetValue(double value);
+	void reverbSliderSetValue(double value);
 
 private:
 	void visibilityChanged() override;
@@ -36,6 +38,7 @@ private:
 	MidiDevice& MIDIDevice;
 	std::vector<std::string>& devicesListIN;
 	std::vector<std::string>& devicesListOUT;
+	juce::PropertiesFile* propertyFile;
 
 	juce::Slider reverbSlider;
 	juce::Label reverbLabel;

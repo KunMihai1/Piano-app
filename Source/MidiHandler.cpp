@@ -274,12 +274,34 @@ int MidiDevice::get_maxNote() const
 	return this->maxNote;
 }
 
+void MidiDevice::changeVolumeInstrument()
+{
+	float volume1 = this->getVolume();
+	float normalizedVolume = juce::jlimit(0.0f, 1.0f, volume1 / 100.0f);
+	juce::uint8 midiValue = static_cast<juce::uint8>(juce::jlimit(0, 127, int(normalizedVolume * 127.0f)));
+
+	juce::MidiMessage volumeMessage = juce::MidiMessage::controllerEvent(1, 7, midiValue);
+	DBG("Changed to:" + juce::String(midiValue));
+	this->currentDeviceUSEDout->sendMessageNow(volumeMessage);
+}
+
+void MidiDevice::changeReverbInstrument()
+{
+	float reverb1 = this->getReverb();
+	float normalizedReverb = juce::jlimit(0.0f, 1.0f, reverb1 / 100.0f);
+	juce::uint8 midiValue= static_cast<juce::uint8>(juce::jlimit(0, 127, int(normalizedReverb * 127.0f)));
+	juce::MidiMessage reverbMessage = juce::MidiMessage::controllerEvent(1, 91, midiValue);
+	this->currentDeviceUSEDout->sendMessageNow(reverbMessage);
+}
+
 const juce::String& MidiDevice::get_identifier() const
 {
 	return this->identifier;
 }
 
-MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device }, dataBase{} {}
+MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device }, dataBase{} {
+	setupReverb();
+}
 
 MidiHandler::~MidiHandler()
 {
@@ -292,7 +314,11 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		int note = message.getNoteNumber();
 		float velocity = message.getFloatVelocity();
 
-		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(velocity);
+		float volume = this->midiDevice.getVolume();
+		DBG("VOLUME="+ juce::String(volume));
+		float scaledVelocity = juce::jlimit(0.0f, 1.0f, velocity * volume);
+
+		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(scaledVelocity);
 
 		if (auto midiOut = midiDevice.getDeviceOUT())
 		{
@@ -300,7 +326,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		}
 
 		listeners.call(&Listener::noteOnReceived, note);
-		juce::Logger::writeToLog("Note On received: " + juce::String(note));
+		//juce::Logger::writeToLog("Note On received: " + juce::String(note));
 	}
 	else if (message.isNoteOff())
 	{
@@ -313,24 +339,25 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		}
 
 		listeners.call(&Listener::noteOffReceived, note);
-		juce::Logger::writeToLog("Note Off received: " + juce::String(note));
+		//juce::Logger::writeToLog("Note Off received: " + juce::String(note));
 	}
-	else if (message.isController())
-	{
-		int controller = message.getControllerNumber();
-		int value = message.getControllerValue();
+}
 
-		if (auto midiOut = midiDevice.getDeviceOUT())
-		{
-			midiOut->sendMessageNow(message);
-		}
-	}
+void MidiHandler::processBlock(juce::AudioBuffer<float>& audioBuffer, juce::MidiBuffer& midiBuffer)
+{
+	reverbFromJuce.processStereo(audioBuffer.getWritePointer(0), audioBuffer.getWritePointer(1), audioBuffer.getNumSamples());
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)
 {
 	int nrKeys = dataBase.getNrKeysPidVid(vid, pid);
 	setPlayableRange(nrKeys);
+}
+
+void MidiHandler::setReverbAudioEng(float ammount)
+{
+	reverbParams.wetLevel = ammount;
+	reverbFromJuce.setParameters(reverbParams);
 }
 
 void MidiHandler::setPlayableRange(int nrKeys)
@@ -355,4 +382,14 @@ void MidiHandler::setPlayableRange(int nrKeys)
 		midiDevice.set_minNote(21);
 		midiDevice.set_maxNote(108);
 	}
+}
+
+void MidiHandler::setupReverb()
+{
+	reverbParams.roomSize = 0.5f;
+	reverbParams.wetLevel = 0.3f;
+	reverbParams.dryLevel = 0.7f;
+	reverbParams.width = 1.0f;
+	reverbParams.damping = 0.5f;
+	reverbFromJuce.setParameters(reverbParams);
 }

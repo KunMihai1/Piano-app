@@ -22,7 +22,6 @@ public:
     void timerCallback() override;
     void resized() override;
 
-
     void paint(juce::Graphics& g) override;
 
     void noteOnReceived(int midiNote) override;
@@ -73,4 +72,6 @@ private:
 
     std::unordered_map<int, AnimatedNote> activeNotes;
     std::vector<AnimatedNote> fallingNotes;
+
+    bool isActive;
 };

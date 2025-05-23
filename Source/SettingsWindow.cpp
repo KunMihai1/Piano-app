@@ -1,9 +1,9 @@
 #include "SettingsWindow.h"
 #include "MidiHandler.h"
 
-MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesListIN, std::vector<std::string>& devicesListOUT)
+MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesListIN, std::vector<std::string>& devicesListOUT, juce::PropertiesFile* prop)
     : juce::DocumentWindow{ "MIDI Settings", juce::Colours::darkgrey, DocumentWindow::closeButton },
-    MIDIDevice{ mdevice }, devicesListIN{ devicesListIN }, devicesListOUT{devicesListOUT}
+    MIDIDevice{ mdevice }, devicesListIN{ devicesListIN }, devicesListOUT{ devicesListOUT }, propertyFile{ prop }
 {
     setUsingNativeTitleBar(false);
     setResizable(false, false);
@@ -21,6 +21,16 @@ MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesLis
 MIDIWindow::~MIDIWindow()
 {
     stopTimer();
+}
+
+void MIDIWindow::volumeSliderSetValue(double value)
+{
+    this->volumeSlider.setValue(value);
+}
+
+void MIDIWindow::reverbSliderSetValue(double value)
+{
+    this->reverbSlider.setValue(value);
 }
 
 void MIDIWindow::visibilityChanged()
@@ -59,7 +69,6 @@ void MIDIWindow::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
         {
             this->MIDIDevice.setDeviceOUT(index);
             lastIndexOUT = index + 1;
-            
         }
     }
 }
@@ -191,10 +200,20 @@ void MIDIWindow::slidersInit()
     volumeLabel.setVisible(false);
 
     this->volumeSlider.onValueChange = [this] {
+        if (propertyFile)
+        {
+            propertyFile->setValue("midiVolume", volumeSlider.getValue());
+            propertyFile->saveIfNeeded();
+        }
         MIDIDevice.setVolume(volumeSlider.getValue());
     };
 
     this->reverbSlider.onValueChange = [this] {
+        if (propertyFile)
+        {
+            propertyFile->setValue("midiReverb", reverbSlider.getValue());
+            propertyFile->saveIfNeeded();
+        }
         MIDIDevice.setReverb(reverbSlider.getValue());
     };
 }

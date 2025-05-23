@@ -22,6 +22,7 @@ NoteLayer::NoteLayer(KeyboardUI& referenceKeyboard) : keyBoardUI{ referenceKeybo
     openGLContext.setRenderer(this);
     openGLContext.attachTo(*this);
 
+    isActive = true;
     float hue = 0.12f;            // yellow-gold hue
     float saturation = 0.85f + juce::Random::getSystemRandom().nextFloat() * 0.1f;  // 0.85 - 0.95
     float brightness = 0.9f + juce::Random::getSystemRandom().nextFloat() * 0.1f;   // 0.9 - 1.0
@@ -64,7 +65,7 @@ void NoteLayer::noteOnReceived(int midiNote)
         {
             if (activeNotes.find(midiNote) == activeNotes.end())
             {
-                if (!this->isVisible())
+                if (!this->isVisible() && keyBoardUI.isVisible())
                     this->setVisible(true);
                 AnimatedNote newNote;
                 newNote.bounds = keyBoardUI.keys[midiNote].bounds;

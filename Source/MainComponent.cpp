@@ -8,6 +8,8 @@ MainComponent::MainComponent()
     settingsInit();
     playButtonInit();
     togglePlayButton();
+    initalizeSaveFileForUser();
+    loadSettings();
     cachedImageMainWindow = juce::ImageFileFormat::loadFrom(BinaryData::MainWindow_png, BinaryData::MainWindow_pngSize);
     playBackground = juce::ImageFileFormat::loadFrom(BinaryData::playingBackground_png, BinaryData::playingBackground_pngSize);
     currentBackground = cachedImageMainWindow;
@@ -18,6 +20,7 @@ MainComponent::MainComponent()
 
     MIDIDevice.getAvailableDevicesMidiIN(this->devicesIN);
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
+    this->toFront(true);
 
 }
 
@@ -87,14 +90,30 @@ void MainComponent::initalizeSaveFileForUser()
 {
     juce::PropertiesFile::Options options;
     options.applicationName= "Synth Piano 2";
-    options.filenameSuffix = "settigns";
-    options.folderName="MK";
+    options.filenameSuffix = "settings";
+    options.folderName="Piano Enjoyers";
     options.osxLibrarySubFolder = "Application Support";
     options.commonToAllUsers = false;
 
     appProperties.setStorageParameters(options);
     propertiesFile = appProperties.getUserSettings();
 
+}
+
+void MainComponent::loadSettings()
+{
+    if (propertiesFile)
+    {
+        double savedVolume = propertiesFile->getDoubleValue("midiVolume", 1.0);
+        double savedReverb = propertiesFile->getDoubleValue("midiReverb", 1.0);
+        if (midiWindow)
+        {
+            this->midiWindow->volumeSliderSetValue(savedVolume);
+            this->midiWindow->reverbSliderSetValue(savedReverb);
+        }
+        this->MIDIDevice.setVolume(savedVolume);
+        this->MIDIDevice.setReverb(savedReverb);
+    }
 }
 
 void MainComponent::focusGained(FocusChangeType)
@@ -205,6 +224,10 @@ void MainComponent::playButtonInit()
             repaint();
             headerPanelInit();
             toggleHPanel();
+            MIDIDevice.changeVolumeInstrument();
+            MIDIDevice.changeReverbInstrument();
+            float normalized = MIDIDevice.getReverb() / 100.0f;
+            midiHandler.setReverbAudioEng(normalized);
             if (!keyboardInitialized)
                 keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
             else {
@@ -272,7 +295,8 @@ void MainComponent::midiSettingsInit()
     midiButton.onClick = [this] {
         if (!midiWindow)
         {
-            midiWindow = { std::make_unique<MIDIWindow>(this->MIDIDevice, this->devicesIN, this->devicesOUT) };
+            midiWindow =  std::make_unique<MIDIWindow>(this->MIDIDevice,devicesIN,devicesOUT,propertiesFile);
+            loadSettings();
         }
         else {
             midiWindow->setVisible(true);
@@ -372,5 +396,7 @@ void MainComponent::showColourSelector()
     auto area1 = juce::Rectangle<int>(0, 0, 500, 50);
     auto area = juce::Rectangle<int>(colourSelectorButton.getX() - 25, 0, 500, getHeight() - 50 - 200);
     juce::CallOutBox::launchAsynchronously(std::unique_ptr<juce::ColourSelector>(colourSelector), area1, this);
+    noteLayer->resetState();
+    noteLayer->repaint();
     noteLayer->setVisible(false);
 }
