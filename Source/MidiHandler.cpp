@@ -303,7 +303,6 @@ const juce::String& MidiDevice::get_identifier() const
 }
 
 MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device }, dataBase{} {
-	
 }
 
 MidiHandler::~MidiHandler()
@@ -329,7 +328,9 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 
 		if (auto midiOut = midiDevice.getDeviceOUT())
 		{
-
+			auto ccMessage = juce::MidiMessage::controllerEvent(1, 91, 80);
+			midiOut->sendMessageNow(ccMessage);
+			midiOut->sendMessageNow(juce::MidiMessage::controllerEvent(1, 74, 100));
 			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
 		}
 
@@ -377,6 +378,13 @@ void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
 		midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note));
 	}
 	listeners.call(&Listener::noteOffReceived,note);
+}
+
+void MidiHandler::setProgramNumber(int toSetNumber) {
+	this->programNumber = toSetNumber;
+	auto midiOut = this->midiDevice.getDeviceOUT();
+	if (midiOut)
+		midiOut->sendMessageNow(juce::MidiMessage::programChange(1, toSetNumber));
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)

@@ -1,6 +1,4 @@
 #include "MainComponent.h"
-#include "MidiHandler.h"
-#include "KeyboardUI.h"
 
 //==============================================================================
 MainComponent::MainComponent()
@@ -72,6 +70,7 @@ void MainComponent::resized()
     headerPanel.setBounds(0, 0, getWidth(), 50);
     homeButton.setBounds(10, 10, 75, 30);
     colourSelectorButton.setBounds(90, 10, 100, 30);
+    instrumentSelectorButton.setBounds(195, 10, 100, 30);
 }
 
 void MainComponent::changeListenerCallback(juce::ChangeBroadcaster* source)
@@ -165,6 +164,7 @@ void MainComponent::toggleHPanel()
 
     toggleHomeButton();
     toggleColourSelectorButton();
+    toggleInstrumentSelectorButton();
 }
 
 void MainComponent::toggleHomeButton()
@@ -179,6 +179,13 @@ void MainComponent::toggleColourSelectorButton()
     if (colourSelectorButton.isVisible())
         colourSelectorButton.setVisible(false);
     else colourSelectorButton.setVisible(true);
+}
+
+void MainComponent::toggleInstrumentSelectorButton()
+{
+    if (instrumentSelectorButton.isVisible())
+        instrumentSelectorButton.setVisible(false);
+    else instrumentSelectorButton.setVisible(true);
 }
 
 void MainComponent::toggleForPlaying()
@@ -226,7 +233,8 @@ void MainComponent::playButtonInit()
             toggleHPanel();
             MIDIDevice.changeVolumeInstrument();
             MIDIDevice.changeReverbInstrument();
-            float normalized = MIDIDevice.getReverb() / 100.0f;
+            midiHandler.setProgramNumber(37);
+            //float normalized = MIDIDevice.getReverb() / 100.0f;
             //midiHandler.setReverbAudioEng(normalized);
             if (!keyboardInitialized)
                 keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
@@ -243,18 +251,24 @@ void MainComponent::playButtonInit()
 
 void MainComponent::colourSelectorButtonInit()
 {
-    colourSelectorButton.setButtonText("Colour Picker");
-    /*
-    colourSelector->setCurrentColour(juce::Colours::hotpink);
-    colourSelector->addChangeListener(this);
-    headerPanel.addAndMakeVisible(colourSelector.get());
-    colourSelector->setVisible(false);
-    */
+    colourSelectorButton.setButtonText("Particle colours");
+
     colourSelectorButton.onClick = [this] {
         showColourSelector();
     };
     headerPanel.addAndMakeVisible(colourSelectorButton);
     colourSelectorButton.setVisible(false);
+}
+
+void MainComponent::instrumentSelectorButtonInit()
+{
+    instrumentSelectorButton.setButtonText("Instruments");
+
+    instrumentSelectorButton.onClick = [this] {
+        showInstrumentSelector();
+    };
+    headerPanel.addAndMakeVisible(instrumentSelectorButton);
+    instrumentSelectorButton.setVisible(false);
 }
 
 void MainComponent::keyBoardUIinit(int min, int max)
@@ -316,6 +330,7 @@ void MainComponent::headerPanelInit()
 
     homeButtonInit();
     colourSelectorButtonInit();
+    instrumentSelectorButtonInit();
 }
 
 void MainComponent::homeButtonInit()
@@ -408,4 +423,9 @@ void MainComponent::showColourSelector()
     noteLayer->resetState();
     noteLayer->repaint();
     noteLayer->setVisible(false);
+}
+
+void MainComponent::showInstrumentSelector()
+{
+
 }

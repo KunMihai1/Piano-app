@@ -89,6 +89,7 @@ public:
 
 	void noteOnKeyboard(int note, juce::uint8 velocity);
 	void noteOffKeyboard(int note, juce::uint8 velocity);
+	void setProgramNumber(int toSetNumber);
 
 private:
 	void setPlayableRange(int nrKeys);
@@ -101,5 +102,6 @@ private:
 	bool receivedValidNote = false;
 	juce::MidiBuffer incomingMidiMessages;
 	juce::CriticalSection midiMutex;
+	int programNumber = 0;
 
 };

@@ -24,19 +24,6 @@ KeyboardUI::~KeyboardUI()
 void KeyboardUI::paint(juce::Graphics& g)
 {
     paintKeyboard(g);
-
-    /*
-    for (const auto& [midiNote, note] : activeNotes)
-    {
-        g.setColour(juce::Colours::green.withAlpha(0.8f));
-        g.fillRect(note.bounds);
-    }
-    for (const auto& note : fallingNotes)
-    {
-        g.setColour(juce::Colours::green.withAlpha(note.alpha));
-        g.fillRect(note.bounds);
-    }
-    */
 }
 
 
@@ -208,6 +195,7 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
     else {
         for (const auto& [key, MidiNote] : keys)
         {
+            int ok = 0;
             if (MidiNote.isActive)
             {
                 g.setColour(juce::Colours::green);
@@ -217,18 +205,34 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
                 if (MidiNote.type == "white")
                 {
                     if (key<min_draw || key>max_draw)
+                    {
                         g.setColour(juce::Colours::white.withAlpha(0.5f));
-                    else g.setColour(juce::Colours::white);
+                        ok = 1;
+                    }
+                    else {
+                        g.setColour(juce::Colours::white);
+                        ok = 0;
+                    }
                 }
                 else {
                     if (key<min_draw || key>max_draw)
+                    {
                         g.setColour(juce::Colours::black.withAlpha(0.5f));
-                    else g.setColour(juce::Colours::black);
+                        ok = 1;
+                    }
+                    else
+                    {
+                        g.setColour(juce::Colours::black);
+                        ok = 0;
+                    }
                 }
             }
             g.fillRect(MidiNote.bounds);
-            g.setColour(juce::Colours::black);
-            g.drawRect(MidiNote.bounds);
+            if (ok == 0)
+            {
+                g.setColour(juce::Colours::black);
+                g.drawRect(MidiNote.bounds);
+            }
         }
     }
 }
