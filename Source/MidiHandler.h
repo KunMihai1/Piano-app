@@ -3,7 +3,7 @@
 #include <JuceHeader.h>
 #include "MidiDevicesDB.h"
 #include "InstrumentHandler.h"
-
+#include "audioProcessor.h"
 
 class MidiDevice {
 public:
@@ -71,12 +71,11 @@ private:
 	int minNote, maxNote;
 };
 
-class MidiHandler :public juce::MidiInputCallback, public juce::AudioProcessor {
+class MidiHandler :public juce::MidiInputCallback {
 public:
 	MidiHandler(MidiDevice& device);
 	~MidiHandler();
 	void handleIncomingMidiMessage(juce::MidiInput* source, const juce::MidiMessage& message) override;
-	void processBlock(juce::AudioBuffer<float>& audioBuffer, juce::MidiBuffer& midiBuffer) override;	
 
 	void handlePlayableRange(const juce::String& vid, const juce:: String& pid);
 
@@ -87,7 +86,6 @@ public:
 
 	void addListener(Listener* listener) { listeners.add(listener); }
 	void removeListener(Listener* listener) { listeners.remove(listener); }
-	void setReverbAudioEng(float ammount);
 
 private:
 	void setPlayableRange(int nrKeys);
@@ -98,9 +96,6 @@ private:
 	InstrumentHandler instrumentHandler;
 
 	bool receivedValidNote = false;
-	juce::Reverb reverbFromJuce;
-	juce::Reverb::Parameters reverbParams;
-
-	void setupReverb();
+	std::unique_ptr<ReverbProcessor> audioProc;
 
 };
