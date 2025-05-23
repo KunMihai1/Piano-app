@@ -38,7 +38,6 @@ NoteLayer::~NoteLayer()
 
 void NoteLayer::paint(juce::Graphics& g)
 {
-
     g.reduceClipRegion(getLocalBounds());
     for (const auto& [midiNote, note] : activeNotes)
     {
@@ -177,11 +176,10 @@ void main()
 
 void NoteLayer::renderOpenGL()
 {
-
+    glClearColor(0.f, 0.f, 0.f, 0.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     if (shader != nullptr && particleVBO != 0 && !particles.empty())
     {
-        glClearColor(0.f, 0.f, 0.f, 0.f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         shader->use();
 
         struct Vertex {
@@ -416,6 +414,7 @@ void NoteLayer::timerCallback()
     }
     else
     {
+        
         openGLContext.triggerRepaint();
         repaint();
         stopTimer();

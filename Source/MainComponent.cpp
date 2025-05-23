@@ -16,7 +16,7 @@ MainComponent::MainComponent()
 
     setBounds(0, 0, juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getWidth(),
         juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getHeight() - 40);
-
+    this->addKeyListener(&this->keyListener);
 
     MIDIDevice.getAvailableDevicesMidiIN(this->devicesIN);
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
@@ -51,9 +51,7 @@ void MainComponent::paint(juce::Graphics& g)
         g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
         g.drawImage(currentBackground, juce::Rectangle<float>(x, y, newWidth, newHeight));
 
-
     }
-
     g.setFont(juce::FontOptions(16.0f));
     g.setColour(juce::Colours::white);
 
@@ -74,35 +72,6 @@ void MainComponent::resized()
     headerPanel.setBounds(0, 0, getWidth(), 50);
     homeButton.setBounds(10, 10, 75, 30);
     colourSelectorButton.setBounds(90, 10, 100, 30);
-}
-
-bool MainComponent::keyPressed(const juce::KeyPress& key)
-{
-    if (!usingKeyboardInput)
-        return false;
-
-
-    int midiNote = -1;
-
-    switch (key.getKeyCode())
-    {
-    case 'A': midiNote = 60; break; // C4
-    case 'W': midiNote = 61; break; // C#4
-    case 'S': midiNote = 62; break; // D4
-    case 'E': midiNote = 63; break; // D#4
-    case 'D': midiNote = 64; break; // E4
-    case 'F': midiNote = 65; break; // F4
-    case 'T': midiNote = 66; break; // F#4
-    case 'G': midiNote = 67; break; // G4
-    case 'Y': midiNote = 68; break; // G#4
-    case 'H': midiNote = 69; break; // A4
-    case 'U': midiNote = 70; break; // A#4
-    case 'J': midiNote = 71; break; // B4
-    case 'K': midiNote = 72; break; // C5
-    }
-
-    midiHandler.noteOnKeyboard(midiNote, 127);
-    return true;
 }
 
 void MainComponent::changeListenerCallback(juce::ChangeBroadcaster* source)
@@ -399,11 +368,11 @@ bool MainComponent::openingDevicesForPlay()
         //here is the case where user selects keyboard from pc.
         this->MIDIDevice.set_minNote(60);
         this->MIDIDevice.set_maxNote(72);
-        this->usingKeyboardInput = true;
+        this->keyListener.setIsKeyboardInput(true);
         this->grabKeyboardFocus();
     }
     else {
-        this->usingKeyboardInput = false;
+        this->keyListener.setIsKeyboardInput(false);
         result = this->MIDIDevice.deviceOpenIN(indexIN, &midiHandler);
         if (!result)
         {

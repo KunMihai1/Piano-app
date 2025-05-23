@@ -2,7 +2,9 @@
 #include "InstrumentHandler.h"
 #include "MidiDevicesDB.h"
 
-MidiDevice::MidiDevice() : reverb{ 50.0f }, volume{ 50.0f }, currentDeviceIDin{ 0 }, currentDeviceIDout{ 0 }, identifier{ "" }, minNote{ 0 }, maxNote{ 127 } {}
+MidiDevice::MidiDevice() : reverb{ 50.0f }, volume{ 50.0f }, currentDeviceIDin{ 0 }, currentDeviceIDout{ 0 }, identifier{ "" }, minNote{ 0 }, maxNote{ 127 } {
+	this->currentDevicesIN.push_back("PC Keyboard");
+}
 
 MidiDevice::~MidiDevice()
 {
