@@ -53,6 +53,8 @@ private:
 
     bool hasBeenResized = false;
     void initalizeSaveFileForUser();
+    void loadSettings();
+
 
     void focusGained(FocusChangeType) override;
     void toggleSettingsPanel();
