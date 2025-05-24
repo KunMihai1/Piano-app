@@ -30,7 +30,7 @@ public:
 private:
     MidiHandler& midiHandler;
     int startNoteKeyboardInput = 60;
-    int finishNoteKeyboardInput = 75;
+    int finishNoteKeyboardInput = 77;
     int mapKeyMidi(const juce::KeyPress& key);
     std::unordered_map<int, int> keyToInt;  
     std::unordered_map<int, int> intToKey;
