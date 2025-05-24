@@ -28,6 +28,14 @@ MainComponent::~MainComponent()
         this->MIDIDevice.deviceCloseIN();
     if (this->MIDIDevice.isOpenOUT())
         this->MIDIDevice.deviceCloseOUT();
+    if (treeView != nullptr && treeView->getRootItem() != nullptr)
+    {
+        DBG("Deleting root item dest main: " << treeView->getRootItem()->getUniqueName());
+        treeView->deleteRootItem();
+        treeView->deleteRootItem();
+    }
+    else
+        DBG("No root item to delete destructor main");
 }
 
 //==============================================================================
@@ -37,22 +45,20 @@ void MainComponent::paint(juce::Graphics& g)
     g.fillAll(getLookAndFeel().findColour(juce::ResizableWindow::backgroundColourId));
     if (currentBackground.isValid())
     {
-        juce::Rectangle<float> bounds = getLocalBounds().toFloat();
-        auto imageWidth = (float)cachedImageMainWindow.getWidth();
-        auto imageHeight = (float)cachedImageMainWindow.getHeight();
-        auto scale = juce::jmax(bounds.getWidth() / imageWidth, bounds.getHeight() / imageHeight);
-        auto newWidth = imageWidth * scale;
-        auto newHeight = imageHeight * scale;
-        auto x = (bounds.getWidth() - newWidth) * 0.5f;
-        auto y = (bounds.getHeight() - newHeight) * 0.5f;
-        g.setColour(juce::Colours::grey);
-        g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
-        g.drawImage(currentBackground, juce::Rectangle<float>(x, y, newWidth, newHeight));
-
+            juce::Rectangle<float> bounds = getLocalBounds().toFloat();
+            auto imageWidth = (float)cachedImageMainWindow.getWidth();
+            auto imageHeight = (float)cachedImageMainWindow.getHeight();
+            auto scale = juce::jmax(bounds.getWidth() / imageWidth, bounds.getHeight() / imageHeight);
+            auto newWidth = imageWidth * scale;
+            auto newHeight = imageHeight * scale;
+            auto x = (bounds.getWidth() - newWidth) * 0.5f;
+            auto y = (bounds.getHeight() - newHeight) * 0.5f;
+            g.setColour(juce::Colours::grey);
+            g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+            g.drawImage(currentBackground, juce::Rectangle<float>(x, y, newWidth, newHeight));
+        g.setFont(juce::FontOptions(16.0f));
+        g.setColour(juce::Colours::white);
     }
-    g.setFont(juce::FontOptions(16.0f));
-    g.setColour(juce::Colours::white);
-
 }
 
 void MainComponent::resized()
@@ -71,6 +77,15 @@ void MainComponent::resized()
     homeButton.setBounds(10, 10, 75, 30);
     colourSelectorButton.setBounds(90, 10, 100, 30);
     instrumentSelectorButton.setBounds(195, 10, 100, 30);
+    if (noteLayer)
+    {
+        noteLayer->toFront(false);
+        noteLayer->setAlwaysOnTop(true);
+        noteLayer->setOpaque(true);
+        keyboard.toFront(false);
+        keyboard.setAlwaysOnTop(true);
+        keyboard.setOpaque(true);
+    }   
 }
 
 void MainComponent::changeListenerCallback(juce::ChangeBroadcaster* source)
@@ -114,8 +129,10 @@ void MainComponent::loadSettings()
 
 void MainComponent::focusGained(FocusChangeType)
 {
-    resized();  // Force layout update
-    repaint();  // Redraw everything
+    if (noteLayer)
+    {
+        noteLayer->toFront(false);
+    }
 }
 
 void MainComponent::toggleSettingsPanel()
@@ -231,6 +248,7 @@ void MainComponent::playButtonInit()
             repaint();
             headerPanelInit();
             toggleHPanel();
+            inWhichState = false;
             MIDIDevice.changeVolumeInstrument();
             MIDIDevice.changeReverbInstrument();
             midiHandler.setProgramNumber(37);
@@ -343,7 +361,7 @@ void MainComponent::homeButtonInit()
 
         toggleHPanel();
         toggleHomeButton();
-
+        inWhichState = true;
         togglePlayButton();
         toggleSettingsButton();
         keyboard.setVisible(false);
@@ -354,6 +372,107 @@ void MainComponent::homeButtonInit()
     headerPanel.addAndMakeVisible(homeButton);
     homeButton.setVisible(false);
 
+}
+
+juce::Image MainComponent::getImageForInstruments(const std::string& type)
+{
+    const void* binaryData=nullptr;
+    size_t binaryDataSize = 0;
+    if (type == "AGP")
+    {
+        binaryData = BinaryData::AcousticGrandPiano_png;
+        binaryDataSize = BinaryData::AcousticGrandPiano_pngSize;
+    }
+    else if (type == "EP")
+    {
+        binaryData = BinaryData::ElectricPiano_png;
+        binaryDataSize = BinaryData::ElectricPiano_pngSize;
+    }
+    else if (type == "ACB")
+    {
+        binaryData = BinaryData::AcousticBass_png;
+        binaryDataSize = BinaryData::AcousticBass_pngSize;
+    }
+    else if (type == "EBF")
+    {
+        binaryData = BinaryData::ElectricBass_png;
+        binaryDataSize = BinaryData::ElectricBass_pngSize;
+    }
+    else if (type == "EBP")
+    {
+        binaryData = BinaryData::ElectricBass2_png;
+        binaryDataSize = BinaryData::ElectricBass2_pngSize;
+    }
+    else if (type == "FTB")
+    {
+        binaryData = BinaryData::FretlessBass_png;
+        binaryDataSize = BinaryData::FretlessBass_pngSize;
+    }
+    else if (type == "SLB1")
+    {
+        binaryData = BinaryData::SlapBass_png;
+        binaryDataSize = BinaryData::SlapBass_pngSize;
+    }
+    else if (type == "SLB2")
+    {
+        binaryData = BinaryData::SlapBass2_png;
+        binaryDataSize = BinaryData::SlapBass2_pngSize;
+    }
+    else if (type == "SYB1")
+    {
+        binaryData = BinaryData::SynthBass_png;
+        binaryDataSize = BinaryData::SynthBass_pngSize;
+    }
+    else if (type == "SYB2")
+    {
+        binaryData = BinaryData::SynthBass2_png;
+        binaryDataSize = BinaryData::SynthBass2_pngSize;
+    }
+    if (binaryData)
+    {
+        juce::MemoryInputStream imageStream{ binaryData,binaryDataSize,false };
+        juce::Image img = juce::ImageFileFormat::loadFrom(imageStream);
+        return img;
+    }
+    return juce::Image();
+}
+
+void MainComponent::buildTree()
+{
+    auto dummyRoot = std::make_unique< InstrumentTreeItem>("Instruments");
+
+    auto rootPianos = std::make_unique<InstrumentTreeItem>( "Pianos" );
+    rootPianos->addSubItem(createInstrumentItem(getImageForInstruments("AGP"), "Acoustic Grand Piano", 0));
+    rootPianos->addSubItem(createInstrumentItem(getImageForInstruments("EP"),"Electric Piano", 4));
+    rootPianos->setOpen(false);
+    dummyRoot->addSubItem(rootPianos.release());
+
+    auto rootBasses = std::make_unique<InstrumentTreeItem>( "Basses" );
+    rootBasses->addSubItem(createInstrumentItem(getImageForInstruments("ACB"),"Acoustic Bass", 32));
+    rootBasses->addSubItem(createInstrumentItem(getImageForInstruments("EBF"),"Electric Bass (finger)", 33));
+    rootBasses->addSubItem(createInstrumentItem(getImageForInstruments("EBP"),"Electric Bass (pick)", 34));
+    rootBasses->addSubItem(createInstrumentItem(getImageForInstruments("FTB"),"Fretless Bass", 35));
+    rootBasses->addSubItem(createInstrumentItem(getImageForInstruments("SLB1"),"Slap Bass 1", 36));
+    rootBasses->addSubItem(createInstrumentItem(getImageForInstruments("SLB2"),"Slap Bass 2", 37));
+    rootBasses->addSubItem(createInstrumentItem(getImageForInstruments("SYB1"),"Synth Bass 1", 38));
+    rootBasses->addSubItem(createInstrumentItem(getImageForInstruments("SYB2"),"Synth Bass 2", 39));
+    rootBasses->setOpen(false);
+    dummyRoot->addSubItem(rootBasses.release());
+    
+    dummyRoot->setOpen(true);
+    treeView->setRootItem(dummyRoot.release());
+    
+}
+
+InstrumentTreeItem* MainComponent::createInstrumentItem(const juce::Image& img, const juce::String& name, int program)
+{
+    auto item = std::make_unique<InstrumentTreeItem>(img,name,program);
+    item->onProgramSelected = [&](int programNumber)
+    {
+        midiHandler.setProgramNumber(programNumber);
+    };
+
+    return item.release();
 }
 
 bool MainComponent::openingDevicesForPlay()
@@ -427,5 +546,25 @@ void MainComponent::showColourSelector()
 
 void MainComponent::showInstrumentSelector()
 {
-
+    if (treeView == nullptr)
+    {
+        treeView = std::make_unique<juce::TreeView>();
+        treeView->setSize(500, 300);
+    }
+    if (treeView->getRootItem() != nullptr)
+    {
+        treeView->deleteRootItem();
+        DBG("deleting root from show");
+    }
+    else DBG("not deleting root from show");
+    buildTree();
+    treeView->setColour(juce::TreeView::backgroundColourId, juce::Colours::white);
+    auto area1 = juce::Rectangle<int>(0, 0, 500, 50);
+    
+    auto holder = std::make_unique<TreeViewHolder>(treeView.get());
+    holder->setOpaque(true);
+    juce::CallOutBox::launchAsynchronously(std::move(holder), area1, this);
+    noteLayer->resetState();
+    noteLayer->repaint();
+    noteLayer->setVisible(false);
 }

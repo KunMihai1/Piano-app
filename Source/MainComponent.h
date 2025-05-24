@@ -8,6 +8,7 @@
 #include "NoteLayer.h"
 #include "audioProcessor.h"
 #include "keyListener.h"
+#include "InstrumentTreeItem.h"
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -80,7 +81,11 @@ private:
     void homeButtonInit();
     void colourSelectorButtonInit();
     void instrumentSelectorButtonInit();
+    
 
+    juce::Image getImageForInstruments(const std::string& type);
+    void buildTree();
+    InstrumentTreeItem* createInstrumentItem(const juce::Image& img, const juce::String& name, int program);
     bool openingDevicesForPlay();
    
     void showColourSelector();
@@ -119,6 +124,7 @@ private:
     juce::TextButton colourSelectorButton{ "Select colour" };
     juce::TextButton instrumentSelectorButton{ "Select instrument" };
     juce::ColourSelector* colourSelector;
+    std::unique_ptr<juce::TreeView> treeView=nullptr;
 
 
     //UI->windows
@@ -132,6 +138,7 @@ private:
     juce::AudioDeviceManager audioDeviceManager;
     juce::AudioProcessorPlayer audioProcessorPlayer;
 
+    bool inWhichState = true;
     bool usingKeyboardInput = false;
 
 

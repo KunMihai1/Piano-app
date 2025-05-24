@@ -23,6 +23,7 @@ KeyboardUI::~KeyboardUI()
 
 void KeyboardUI::paint(juce::Graphics& g)
 {
+    g.fillAll(juce::Colours::black);
     paintKeyboard(g);
 }
 
@@ -54,6 +55,7 @@ void KeyboardUI::noteOffReceived(int midiNote)
 
 void KeyboardUI::paintKeyboard(juce::Graphics& g)
 {
+
     float whiteKeyWidth = static_cast<float>(getWidth() / 52) + 0.92f;
     float keyHeight = static_cast<float>(getHeight());
     juce::Array<int> whiteKeyPositions;
