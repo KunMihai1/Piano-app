@@ -240,9 +240,6 @@ void MainComponent::playButtonInit()
         MIDIDevice.getAvailableDevicesMidiIN(devicesIN);
         MIDIDevice.getAvailableDevicesMidiOUT(devicesOUT);
         if (openingDevicesForPlay()) {
-            //audioDeviceManager.initialiseWithDefaultDevices(0, 2);
-            //audioProcessorPlayer.setProcessor(&revProcessor);
-            //audioDeviceManager.addAudioCallback(&audioProcessorPlayer);
             midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
             currentBackground = playBackground;
             repaint();
@@ -252,14 +249,14 @@ void MainComponent::playButtonInit()
             MIDIDevice.changeVolumeInstrument();
             MIDIDevice.changeReverbInstrument();
             midiHandler.setProgramNumber(37);
-            //float normalized = MIDIDevice.getReverb() / 100.0f;
-            //midiHandler.setReverbAudioEng(normalized);
             if (!keyboardInitialized)
                 keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
             else {
                 keyboard.setVisible(true);
                 this->noteLayer->setVisible(true);
             }
+            keyboard.setIsDrawn(false);
+            keyboard.repaint();
             toggleForPlaying();
         }
     };
@@ -458,7 +455,39 @@ void MainComponent::buildTree()
     rootBasses->addSubItem(createInstrumentItem(getImageForInstruments("SYB2"),"Synth Bass 2", 39));
     rootBasses->setOpen(false);
     dummyRoot->addSubItem(rootBasses.release());
-    
+
+    auto rootGuitars = std::make_unique<InstrumentTreeItem>("Guitars");
+    rootGuitars->addSubItem(createInstrumentItem(getImageForInstruments("ACB"),"Nylon Acoustic Guitar",24));
+    rootGuitars->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Steel Acoustic Guitar", 25));
+    rootGuitars->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Jazz Electric Guitar", 26));
+    rootGuitars->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Clean Electric Guitar", 27));
+    rootGuitars->setOpen(false);
+    dummyRoot->addSubItem(rootGuitars.release());
+
+    auto woodWinds = std::make_unique<InstrumentTreeItem>("WoodWinds");
+    woodWinds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Flute", 73));
+    woodWinds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Clarinet", 71));
+    woodWinds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Oboe", 68));
+    woodWinds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Bassoon", 70));
+    woodWinds->setOpen(false);
+    dummyRoot->addSubItem(woodWinds.release());
+
+    auto rootBrass = std::make_unique<InstrumentTreeItem>("Brass");
+    rootBrass->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Trumpet", 56));
+    rootBrass->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Trombone", 57));
+    rootBrass->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "French Horn", 60));
+    rootBrass->setOpen(false);
+    dummyRoot->addSubItem(rootBrass.release());
+
+
+    auto rootStrings = std::make_unique<InstrumentTreeItem>("Strings");
+    rootStrings->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Violin", 40));
+    rootStrings->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Viola", 41));
+    rootStrings->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Cello", 42));
+    rootStrings->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Contrabass", 43));
+    rootStrings->setOpen(false);
+    dummyRoot->addSubItem(rootStrings.release());
+
     dummyRoot->setOpen(true);
     treeView->setRootItem(dummyRoot.release());
     
