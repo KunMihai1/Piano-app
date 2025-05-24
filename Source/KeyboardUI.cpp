@@ -112,7 +112,7 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
         else  g.setColour(juce::Colours::black);
     }
     else
-        g.setColour(juce::Colours::black.withAlpha(0.5f));
+        g.setColour(juce::Colours::black.withAlpha(1.0f));
 
     g.fillRect(static_cast<int>(firstBlackKeyX), 0, static_cast<int>(blackKeyWidth), static_cast<int>(blackKeyHeight));
     keys[22].bounds = juce::Rectangle<int>(firstBlackKeyX, 0, blackKeyWidth, blackKeyHeight);
@@ -176,7 +176,7 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
                     else g.setColour(juce::Colours::black);
                 }
                 else
-                    g.setColour(juce::Colours::black.withAlpha(0.5f));
+                    g.setColour(juce::Colours::black.withAlpha(1.0f));
 
                 g.fillRect(static_cast<int>(x), 0, static_cast<int>(blackKeyWidth), static_cast<int>(blackKeyHeight));
                 keys[21 + noteAccount].bounds = juce::Rectangle<int>(x, 0, blackKeyWidth, blackKeyHeight);
@@ -198,7 +198,9 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
     }
 
     if (!isDrawn)
+    {
         isDrawn = true;
+    }
     else {
         for (const auto& [key, MidiNote] : keys)
         {
@@ -206,6 +208,7 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
             if (MidiNote.isActive)
             {
                 g.setColour(juce::Colours::green);
+                g.fillRect(MidiNote.bounds);
             }
             else
             {
@@ -224,7 +227,7 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
                 else {
                     if (key<min_draw || key>max_draw)
                     {
-                        g.setColour(juce::Colours::black.withAlpha(0.5f));
+                        g.setColour(juce::Colours::black.withAlpha(1.0f));
                         ok = 1;
                     }
                     else
