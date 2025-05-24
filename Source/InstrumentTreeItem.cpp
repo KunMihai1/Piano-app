@@ -23,11 +23,17 @@ bool InstrumentTreeItem::mightContainSubItems()
     return getNumSubItems() > 0;
 }
 
+bool InstrumentTreeItem::isSelectable()
+{
+    return instrumentName != "Instruments" && instrumentName != "Pianos" && instrumentName != "Basses" && instrumentName != "Guitars" && 
+        instrumentName != "WoodWinds" && instrumentName!="Brass" && instrumentName!="Strings";
+}
+
 void InstrumentTreeItem::paintItem(juce::Graphics& g, int width, int height)
 {
     if (shouldHiglight)
     {
-        if (isSelected())
+        if (isSelected() && isSelectable())
             g.setColour(juce::Colours::goldenrod);
         else g.setColour(juce::Colours::black);
     }
