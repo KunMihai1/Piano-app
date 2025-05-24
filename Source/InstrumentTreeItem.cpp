@@ -25,18 +25,37 @@ bool InstrumentTreeItem::mightContainSubItems()
 
 void InstrumentTreeItem::paintItem(juce::Graphics& g, int width, int height)
 {
-    if (isSelected())
-        g.setColour(juce::Colours::goldenrod);
-    else g.setColour(juce::Colours::black);
+    if (shouldHiglight)
+    {
+        if (isSelected())
+            g.setColour(juce::Colours::goldenrod);
+        else g.setColour(juce::Colours::black);
+    }
+    //g.fillRect(0, 0, width, height);
+
+
     g.drawText(instrumentName, 4, 0, width - 4, height, juce::Justification::centredLeft);
+    if (textBounds.getX() == 0)
+    {
+        textBounds.setX(4);
+        textBounds.setY(0);
+        textBounds.setHeight(height);
+        textBounds.setWidth(width);
+    }
+    shouldHiglight = true;
+}
+
+int InstrumentTreeItem::getItemWidth() const
+{
+    juce::Font font;
+    int textWidth = font.getStringWidth(instrumentName);
+    int padding = 12;
+    return textWidth + padding;
 }
 
 std::unique_ptr<juce::Component> InstrumentTreeItem::createItemComponent()
 {
-    if (img.isValid())
-        return std::make_unique<CustomTreeItemComponent>(img, instrumentName,this);
-    else
-        return nullptr;
+    return nullptr;
 }
 
 juce::String InstrumentTreeItem::getUniqueName() const
@@ -46,11 +65,20 @@ juce::String InstrumentTreeItem::getUniqueName() const
 
 void InstrumentTreeItem::itemClicked(const juce::MouseEvent& e)
 {
-    if (program >= 0)
+    auto clickPos = e.getPosition();
+    //DBG("ccc" << clickPos.toString() << " " << textBounds.toString());
+    if (program >= 0 )
     {
-        if(onProgramSelected)
+        if (clickPos.getX() >= textBounds.getX() && clickPos.getX() <= textBounds.getX() + textBounds.getWidth() &&
+            clickPos.getY() >= textBounds.getY() && clickPos.getY() <= textBounds.getY() + textBounds.getHeight() &&
+            onProgramSelected)
+        {
             onProgramSelected(program);
+            shouldHiglight = true;
+        }
+        else shouldHiglight = false;
     }
+    repaintItem();
 }
 
 InstrumentTreeItem::~InstrumentTreeItem()
@@ -75,32 +103,5 @@ void TreeViewHolder::resized()
     toShow->setIndentSize(12);
 }
 
-CustomTreeItemComponent::CustomTreeItemComponent(const juce::Image& img, const juce::String& text, juce::TreeViewItem* ownerItem): owner{ownerItem}
-{
-    icon.setImage(img.rescaled(16, 16, juce::Graphics::ResamplingQuality::highResamplingQuality));
-    addAndMakeVisible(icon);
-    nameLabel.setText("   "+ text, juce::dontSendNotification);
-    addAndMakeVisible(nameLabel);
-    nameLabel.setJustificationType(juce::Justification::centredRight);
-}
 
-void CustomTreeItemComponent::mouseDown(const juce::MouseEvent& e)
-{
 
-    if (owner)
-    {
-        owner->setSelected(true, true);
-        owner->itemClicked(e);
-    }
-}
-
-void CustomTreeItemComponent::resized()
-{
-    DBG("CustomTreeItemComponent width: " << getWidth());
-    const int iconWidth = 16;
-    const int padding = 4;
-
-    icon.setBounds(0, 4, 16, 16);
-
-    nameLabel.setBounds(150, 0, getWidth() - (iconWidth + padding), getHeight());
-}

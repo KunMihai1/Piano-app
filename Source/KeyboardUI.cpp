@@ -53,6 +53,11 @@ void KeyboardUI::noteOffReceived(int midiNote)
         });
 }
 
+void KeyboardUI::setIsDrawn(bool state)
+{
+    this->isDrawn = state;
+}
+
 void KeyboardUI::paintKeyboard(juce::Graphics& g)
 {
 
