@@ -43,6 +43,7 @@ public:
     ~InstrumentTreeItem() override;
 
 private:
+    bool isSelectable();
     bool shouldHiglight=true;
     int program;
     juce::Image img;
