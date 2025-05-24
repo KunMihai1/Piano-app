@@ -569,6 +569,7 @@ void MainComponent::showColourSelector()
     auto area = juce::Rectangle<int>(colourSelectorButton.getX() - 25, 0, 500, getHeight() - 50 - 200);
     this->keyboard.setIsDrawn(false);
     juce::CallOutBox::launchAsynchronously(std::unique_ptr<juce::ColourSelector>(colourSelector), area1, this);
+    this->keyboard.repaint();
     noteLayer->resetState();
     noteLayer->repaint();
     noteLayer->setVisible(false);
@@ -595,6 +596,7 @@ void MainComponent::showInstrumentSelector()
     holder->setOpaque(true);
     this->keyboard.setIsDrawn(false);
     juce::CallOutBox::launchAsynchronously(std::move(holder), area1, this);
+    this->keyboard.repaint();
     noteLayer->resetState();
     noteLayer->repaint();
     noteLayer->setVisible(false);
