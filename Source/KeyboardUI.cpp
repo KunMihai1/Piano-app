@@ -60,9 +60,6 @@ void KeyboardUI::setIsDrawn(bool state)
 
 void KeyboardUI::paintKeyboard(juce::Graphics& g)
 {
-
-    
-
     if (!isDrawn)
     {
         float whiteKeyWidth = static_cast<float>(getWidth() / 52) + 0.92f;

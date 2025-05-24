@@ -15,6 +15,7 @@ MainComponent::MainComponent()
     setBounds(0, 0, juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getWidth(),
         juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getHeight() - 40);
     this->addKeyListener(&this->keyListener);
+    addKeyListener(this);
 
     MIDIDevice.getAvailableDevicesMidiIN(this->devicesIN);
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
@@ -96,6 +97,48 @@ void MainComponent::changeListenerCallback(juce::ChangeBroadcaster* source)
         DBG("Colour changed to: " << newColor.toString());
         this->noteLayer->setColourParticle(newColor);
     }
+}
+
+bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
+{
+    if (!this->keyListener.getIsKeyboardInput())
+        return false;
+
+    int startNote = this->keyListener.getStartNoteKeyboardInput();
+    int finishNote = this->keyListener.getFinishNoteKeyboardInput();
+    DBG("Start note:" << startNote);
+    DBG("End note:" << finishNote);
+
+    if (key.getKeyCode() == 'Z')
+    {
+        if (startNote >= 24)
+        {
+            this->keyListener.setStartNoteKeyboardInput(startNote - 12);
+            this->keyListener.setFinishNoteKeyboardInput(finishNote - 12);
+            this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
+            this->keyListener.resetState();
+            this->keyboard.setIsDrawn(false);
+            this->keyboard.repaint();
+        }
+    }
+    else if (key.getKeyCode() == 'X')
+    {
+        if (finishNote + 12 <= 108)
+        {
+            this->keyListener.setStartNoteKeyboardInput(startNote + 12);
+            this->keyListener.setFinishNoteKeyboardInput(finishNote + 12);
+        }
+        else {
+            this->keyListener.setStartNoteKeyboardInput(96);
+            this->keyListener.setFinishNoteKeyboardInput(108);
+        }
+
+        this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
+        this->keyListener.resetState();
+        this->keyboard.setIsDrawn(false);
+        this->keyboard.repaint();
+    }
+    return false;
 }
 
 void MainComponent::initalizeSaveFileForUser()
@@ -529,8 +572,8 @@ bool MainComponent::openingDevicesForPlay()
     if (this->MIDIDevice.getDeviceNameBasedOnIndex(indexIN, 0) == "PC Keyboard")
     {
         //here is the case where user selects keyboard from pc.
-        this->MIDIDevice.set_minNote(60);
-        this->MIDIDevice.set_maxNote(72);
+        this->MIDIDevice.set_minNote(keyListener.getStartNoteKeyboardInput());
+        this->MIDIDevice.set_maxNote(keyListener.getFinishNoteKeyboardInput());
         this->keyListener.setIsKeyboardInput(true);
         this->grabKeyboardFocus();
     }

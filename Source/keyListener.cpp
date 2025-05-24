@@ -29,7 +29,7 @@ bool KeyboardListener::keyPressed(const juce::KeyPress& key, juce::Component*)
         allPressedKeys.push_back(midiNote);
         this->midiHandler.noteOnKeyboard(midiNote, 127);
     }
-
+    return false;
 }
 
 bool KeyboardListener::keyStateChanged(bool isKeyDown, juce::Component*)
@@ -44,7 +44,6 @@ bool KeyboardListener::keyStateChanged(bool isKeyDown, juce::Component*)
             allPressedKeys.erase(allPressedKeys.begin() + i);
             this->midiHandler.noteOffKeyboard(note, 127);
         }
-
     }
     return false;
 }
@@ -54,74 +53,169 @@ void KeyboardListener::setIsKeyboardInput(bool state)
     this->isKeyBoardInput = state;
 }
 
+bool KeyboardListener::getIsKeyboardInput()
+{
+    return isKeyBoardInput;
+}
+
+void KeyboardListener::resetState()
+{
+    this->intToKey.clear();
+    this->keyToInt.clear();
+    this->allPressedKeys.clear();
+}
+
+int KeyboardListener::getStartNoteKeyboardInput()
+{
+    return startNoteKeyboardInput;
+}
+
+void KeyboardListener::setStartNoteKeyboardInput(int value)
+{
+    startNoteKeyboardInput = value;
+}
+
+int KeyboardListener::getFinishNoteKeyboardInput()
+{
+    return finishNoteKeyboardInput;
+}
+
+void KeyboardListener::setFinishNoteKeyboardInput(int value)
+{
+    finishNoteKeyboardInput = value;
+}
+
 int KeyboardListener::mapKeyMidi(const juce::KeyPress& key)
 {
     switch (key.getKeyCode())
     {
         case 'A'://60
-            keyToInt[key.getKeyCode()] = 60;
-            intToKey[60] = key.getKeyCode();
-            return 60;
+            if (startNoteKeyboardInput >= 24)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput;
+                intToKey[startNoteKeyboardInput] = key.getKeyCode();
+                return startNoteKeyboardInput;
+            }
+            else return -1;
 
         case 'W':
-            keyToInt[key.getKeyCode()] = 61;
-            intToKey[61] = key.getKeyCode();
-            return 61;
+            if (startNoteKeyboardInput >= 24)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 1;
+                intToKey[startNoteKeyboardInput + 1] = key.getKeyCode();
+                return startNoteKeyboardInput + 1;
+            }
+            else return -1;
 
         case 'S':
-            keyToInt[key.getKeyCode()] = 62;
-            intToKey[62] = key.getKeyCode();
-            return 62;
+            if (startNoteKeyboardInput >= 24)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 2;
+                intToKey[startNoteKeyboardInput + 2] = key.getKeyCode();
+                return startNoteKeyboardInput + 2;
+            }
+            else return -1;
 
         case 'E':
-            keyToInt[key.getKeyCode()] = 63;
-            intToKey[63] = key.getKeyCode();
-            return 63;
+            if (startNoteKeyboardInput >= 24)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 3;
+                intToKey[startNoteKeyboardInput + 3] = key.getKeyCode();
+                return startNoteKeyboardInput + 3;
+            }
+            else return -1;
 
         case 'D':
-            keyToInt[key.getKeyCode()] = 64;
-            intToKey[64] = key.getKeyCode();
-            return 64;
+            if (startNoteKeyboardInput >= 24)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 4;
+                intToKey[startNoteKeyboardInput + 4] = key.getKeyCode();
+                return startNoteKeyboardInput + 4;
+            }
+            else return -1;
 
         case 'F':
-            keyToInt[key.getKeyCode()] = 65;
-            intToKey[65] = key.getKeyCode();
-            return 65;
+            if (startNoteKeyboardInput >= 24)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 5;
+                intToKey[startNoteKeyboardInput + 5] = key.getKeyCode();
+                return startNoteKeyboardInput + 5;
+            }
+            else return -1;
 
         case 'T':
-            keyToInt[key.getKeyCode()] = 66;
-            intToKey[66] = key.getKeyCode();
-            return 66;
+            if (startNoteKeyboardInput >= 24)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 6;
+                intToKey[startNoteKeyboardInput + 6] = key.getKeyCode();
+                return startNoteKeyboardInput + 6;
+            }
+            else return -1;
 
         case 'G':
-            keyToInt[key.getKeyCode()] = 67;
-            intToKey[67] = key.getKeyCode();
-            return 67;
+            if (startNoteKeyboardInput >= 24)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 7;
+                intToKey[startNoteKeyboardInput + 7] = key.getKeyCode();
+                return startNoteKeyboardInput + 7;
+            }
+            else return -1;
 
         case 'Y':
-            keyToInt[key.getKeyCode()] = 68;
-            intToKey[68] = key.getKeyCode();
-            return 68;
+            if (startNoteKeyboardInput >= 24)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 8;
+                intToKey[startNoteKeyboardInput + 8] = key.getKeyCode();
+                return startNoteKeyboardInput + 8;
+            }
+            else return -1;
 
         case 'H':
-            keyToInt[key.getKeyCode()] = 69;
-            intToKey[69] = key.getKeyCode();
-            return 69;
+            keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 9;
+            intToKey[startNoteKeyboardInput + 9] = key.getKeyCode();
+            return startNoteKeyboardInput + 9;
 
         case 'U':
-            keyToInt[key.getKeyCode()] = 70;
-            intToKey[70] = key.getKeyCode();
-            return 70;
+            keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 10;
+            intToKey[startNoteKeyboardInput + 10] = key.getKeyCode();
+            return startNoteKeyboardInput + 10;
 
         case 'J':
-            keyToInt[key.getKeyCode()] = 71;
-            intToKey[71] = key.getKeyCode();
-            return 71;
+            keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 11;
+            intToKey[startNoteKeyboardInput + 11] = key.getKeyCode();
+            return startNoteKeyboardInput + 11;
 
         case 'K': 
-            keyToInt[key.getKeyCode()] = 72;
-            intToKey[72] = key.getKeyCode();
-            return 72;
+            keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 12;
+            intToKey[startNoteKeyboardInput + 12] = key.getKeyCode();
+            return startNoteKeyboardInput + 12;
+       
+        case 'L':
+            if (finishNoteKeyboardInput <= 96)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 13;
+                intToKey[startNoteKeyboardInput + 13] = key.getKeyCode();
+                return startNoteKeyboardInput + 13;
+            }
+            else return -1;
+
+        case ';':
+            if (finishNoteKeyboardInput <= 96)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 14;
+                intToKey[startNoteKeyboardInput + 14] = key.getKeyCode();
+                return startNoteKeyboardInput + 14;
+            }
+            else return -1;
+
+        case '\'':
+            if (finishNoteKeyboardInput <= 96)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 15;
+                intToKey[startNoteKeyboardInput + 15] = key.getKeyCode();
+                return startNoteKeyboardInput + 15;
+            }
+            else return -1;
 
         default:
             return -1;

@@ -35,7 +35,7 @@ public:
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
-class MainComponent : public juce::Component, public juce::ChangeListener
+class MainComponent : public juce::Component, public juce::ChangeListener, public juce::KeyListener
 {
 public:
     //==============================================================================
@@ -47,6 +47,7 @@ public:
     void resized() override;
     bool isMouseDownInsideLabel = false;
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+    bool keyPressed(const juce::KeyPress& key, juce::Component*) override;
 
 private:
     int initialWidth = 0;
