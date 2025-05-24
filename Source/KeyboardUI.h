@@ -26,6 +26,7 @@ public:
 
     void noteOnReceived(int midiNote) override;
     void noteOffReceived(int midiNote) override;
+    void setIsDrawn(bool state);
 
 private:
     friend class NoteLayer;

@@ -538,6 +538,7 @@ void MainComponent::showColourSelector()
     colourSelector->setSize(500, 300);
     auto area1 = juce::Rectangle<int>(0, 0, 500, 50);
     auto area = juce::Rectangle<int>(colourSelectorButton.getX() - 25, 0, 500, getHeight() - 50 - 200);
+    this->keyboard.setIsDrawn(false);
     juce::CallOutBox::launchAsynchronously(std::unique_ptr<juce::ColourSelector>(colourSelector), area1, this);
     noteLayer->resetState();
     noteLayer->repaint();
@@ -563,6 +564,7 @@ void MainComponent::showInstrumentSelector()
     
     auto holder = std::make_unique<TreeViewHolder>(treeView.get());
     holder->setOpaque(true);
+    this->keyboard.setIsDrawn(false);
     juce::CallOutBox::launchAsynchronously(std::move(holder), area1, this);
     noteLayer->resetState();
     noteLayer->repaint();

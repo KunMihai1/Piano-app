@@ -12,21 +12,6 @@
 
 #include <JuceHeader.h>
 
-class CustomTreeItemComponent : public juce::Component
-{
-public:
-    CustomTreeItemComponent(const juce::Image& img, const juce::String& text, juce::TreeViewItem* ownerItem);
-
-    void CustomTreeItemComponent::mouseDown(const juce::MouseEvent& e);
-
-    void resized() override;
-
-private:
-    juce::ImageComponent icon;
-    juce::Label nameLabel;
-    juce::TreeViewItem* owner = nullptr;
-};
-
 class TreeViewHolder: public juce::Component {
 public:
     explicit TreeViewHolder(juce::TreeView* treeToShow);
@@ -50,13 +35,17 @@ public:
     //int InstrumentTreeItem::getPreferredWidth() const override;
     bool mightContainSubItems() override;
     void paintItem(juce::Graphics& g, int width, int height) override;
+    int getItemWidth() const override;
+
     std::unique_ptr<juce::Component> createItemComponent() override;
     juce::String getUniqueName() const override;
     void itemClicked(const juce::MouseEvent& e) override;
     ~InstrumentTreeItem() override;
 
 private:
+    bool shouldHiglight=true;
     int program;
     juce::Image img;
     juce::String instrumentName;
+    juce::Rectangle<int> textBounds;
 };
