@@ -83,6 +83,10 @@ private:
     void colourSelectorButtonInit();
     void instrumentSelectorButtonInit();
     
+    void settingsButtonOnClick();
+    void midiButtonOnClick();
+    void homeButtonOnClick();
+    void playButtonOnClick();
 
     juce::Image getImageForInstruments(const std::string& type);
     void buildTree();
@@ -139,7 +143,6 @@ private:
     juce::AudioDeviceManager audioDeviceManager;
     juce::AudioProcessorPlayer audioProcessorPlayer;
 
-    bool inWhichState = true;
     bool usingKeyboardInput = false;
 
 

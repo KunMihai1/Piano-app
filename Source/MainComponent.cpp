@@ -262,7 +262,9 @@ void MainComponent::settingsInit()
 {
     addAndMakeVisible(settingsButton);
     settingsButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
-    settingsButton.onClick = [this] { toggleSettingsPanel(); toggleMIDIButton(); toggleMIDIsettingsIcon(); };
+    settingsButton.onClick = [this] {  
+        settingsButtonOnClick();
+    };
     panelInit();
     midiSettingsInit();
     midiIconInit();
@@ -276,28 +278,7 @@ void MainComponent::playButtonInit()
     playButton.setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     playButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     playButton.onClick = [this] {
-        MIDIDevice.getAvailableDevicesMidiIN(devicesIN);
-        MIDIDevice.getAvailableDevicesMidiOUT(devicesOUT);
-        if (openingDevicesForPlay()) {
-            midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
-            currentBackground = playBackground;
-            repaint();
-            headerPanelInit();
-            toggleHPanel();
-            inWhichState = false;
-            MIDIDevice.changeVolumeInstrument();
-            MIDIDevice.changeReverbInstrument();
-            midiHandler.setProgramNumber(37);
-            if (!keyboardInitialized)
-                keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
-            else {
-                keyboard.setVisible(true);
-                this->noteLayer->setVisible(true);
-            }
-            keyboard.setIsDrawn(false);
-            keyboard.repaint();
-            toggleForPlaying();
-        }
+        playButtonOnClick();
     };
     addAndMakeVisible(this->playButton);
     playButton.setVisible(false);
@@ -361,15 +342,7 @@ void MainComponent::midiSettingsInit()
 {
     midiButton.setButtonText("MIDI Settings");
     midiButton.onClick = [this] {
-        if (!midiWindow)
-        {
-            midiWindow =  std::make_unique<MIDIWindow>(this->MIDIDevice,devicesIN,devicesOUT,propertiesFile);
-            loadSettings();
-        }
-        else {
-            midiWindow->setVisible(true);
-            midiWindow->toFront(true);
-        }
+        midiButtonOnClick();
     };
     settingsPanel.addAndMakeVisible(midiButton);
     midiButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
@@ -392,22 +365,69 @@ void MainComponent::homeButtonInit()
     homeButton.setButtonText("Home");
 
     homeButton.onClick = [this] {
-        currentBackground = cachedImageMainWindow;
-        repaint();
-
-        toggleHPanel();
-        toggleHomeButton();
-        inWhichState = true;
-        togglePlayButton();
-        toggleSettingsButton();
-        keyboard.setVisible(false);
-        this->noteLayer->setVisible(false);
-        this->noteLayer->resetState();
+        homeButtonOnClick();
     };
 
     headerPanel.addAndMakeVisible(homeButton);
     homeButton.setVisible(false);
 
+}
+
+void MainComponent::settingsButtonOnClick()
+{
+    toggleSettingsPanel(); toggleMIDIButton(); toggleMIDIsettingsIcon();
+}
+
+void MainComponent::midiButtonOnClick()
+{
+    if (!midiWindow)
+    {
+        midiWindow = std::make_unique<MIDIWindow>(this->MIDIDevice, devicesIN, devicesOUT, propertiesFile);
+        loadSettings();
+    }
+    else {
+        midiWindow->setVisible(true);
+        midiWindow->toFront(true);
+    }
+}
+
+void MainComponent::homeButtonOnClick()
+{
+    currentBackground = cachedImageMainWindow;
+    repaint();
+
+    toggleHPanel();
+    toggleHomeButton();
+    togglePlayButton();
+    toggleSettingsButton();
+    keyboard.setVisible(false);
+    this->noteLayer->setVisible(false);
+    this->noteLayer->resetState();
+}
+
+void MainComponent::playButtonOnClick()
+{
+    MIDIDevice.getAvailableDevicesMidiIN(devicesIN);
+    MIDIDevice.getAvailableDevicesMidiOUT(devicesOUT);
+    if (openingDevicesForPlay()) {
+        midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
+        currentBackground = playBackground;
+        repaint();
+        headerPanelInit();
+        toggleHPanel();
+        MIDIDevice.changeVolumeInstrument();
+        MIDIDevice.changeReverbInstrument();
+        midiHandler.setProgramNumber(37);
+        if (!keyboardInitialized)
+            keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
+        else {
+            keyboard.setVisible(true);
+            this->noteLayer->setVisible(true);
+        }
+        keyboard.setIsDrawn(false);
+        keyboard.repaint();
+        toggleForPlaying();
+    }
 }
 
 juce::Image MainComponent::getImageForInstruments(const std::string& type)
