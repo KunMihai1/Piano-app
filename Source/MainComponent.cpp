@@ -123,20 +123,16 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
     }
     else if (key.getKeyCode() == 'X')
     {
-        if (finishNote + 12 <= 108)
+        DBG("Finish note" << finishNote);
+        if (finishNote <= 101)
         {
             this->keyListener.setStartNoteKeyboardInput(startNote + 12);
             this->keyListener.setFinishNoteKeyboardInput(finishNote + 12);
+            this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
+            this->keyListener.resetState();
+            this->keyboard.setIsDrawn(false);
+            this->keyboard.repaint();
         }
-        else {
-            this->keyListener.setStartNoteKeyboardInput(96);
-            this->keyListener.setFinishNoteKeyboardInput(108);
-        }
-
-        this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
-        this->keyListener.resetState();
-        this->keyboard.setIsDrawn(false);
-        this->keyboard.repaint();
     }
     return false;
 }

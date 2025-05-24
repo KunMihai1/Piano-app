@@ -190,8 +190,8 @@ int KeyboardListener::mapKeyMidi(const juce::KeyPress& key)
             intToKey[startNoteKeyboardInput + 12] = key.getKeyCode();
             return startNoteKeyboardInput + 12;
        
-        case 'L':
-            if (finishNoteKeyboardInput <= 96)
+        case 'O':
+            if (finishNoteKeyboardInput <= 101)
             {
                 keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 13;
                 intToKey[startNoteKeyboardInput + 13] = key.getKeyCode();
@@ -199,8 +199,8 @@ int KeyboardListener::mapKeyMidi(const juce::KeyPress& key)
             }
             else return -1;
 
-        case ';':
-            if (finishNoteKeyboardInput <= 96)
+        case 'L':
+            if (finishNoteKeyboardInput <= 101)
             {
                 keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 14;
                 intToKey[startNoteKeyboardInput + 14] = key.getKeyCode();
@@ -208,12 +208,30 @@ int KeyboardListener::mapKeyMidi(const juce::KeyPress& key)
             }
             else return -1;
 
-        case '\'':
-            if (finishNoteKeyboardInput <= 96)
+        case 'P':
+            if (finishNoteKeyboardInput <= 101)
             {
                 keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 15;
                 intToKey[startNoteKeyboardInput + 15] = key.getKeyCode();
                 return startNoteKeyboardInput + 15;
+            }
+            else return -1;
+            
+        case ';':
+            if (finishNoteKeyboardInput <= 101)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 16;
+                intToKey[startNoteKeyboardInput + 16] = key.getKeyCode();
+                return startNoteKeyboardInput + 16;
+            }
+            else return -1;
+
+        case '\'':
+            if (finishNoteKeyboardInput <= 101)
+            {
+                keyToInt[key.getKeyCode()] = startNoteKeyboardInput + 17;
+                intToKey[startNoteKeyboardInput + 17] = key.getKeyCode();
+                return startNoteKeyboardInput + 17;
             }
             else return -1;
 
