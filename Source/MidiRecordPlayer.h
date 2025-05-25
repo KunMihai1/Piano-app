@@ -11,11 +11,15 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "MidiHandler.h"
+#include "MidiHandlerAbstractSubject.h"
 
-class MidiRecordPlayer : private juce::Timer
+class MidiRecordPlayer : private juce::Timer, public MidiHandlerListener
 {
 public:
-    MidiRecordPlayer(juce::MidiOutput* midiOut);
+    std::function<void()> notifyFunction;
+
+    MidiRecordPlayer(juce::MidiOutput* midiOut=nullptr);
 
     void startRecording();
 
@@ -25,11 +29,13 @@ public:
 
     void stopPlayBack();
 
-    void processIncomingMessage(juce::MidiMessage& message);
+    void handleIncomingMessage(const juce::MidiMessage& message) override;
 
     void timerCallback() override;
 
     void setOutputDevice(juce::MidiOutput* outputDev);
+    
+    void setProgarmNumber(int newProgram);
 
 private:
 
@@ -46,4 +52,5 @@ private:
 
     juce::MidiOutput* midiOutputDevice=nullptr;
     std::vector<RecordedEvent> allEventsPlayed;
+    int program;
 };

@@ -303,7 +303,6 @@ const juce::String& MidiDevice::get_identifier() const
 }
 
 MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device }, dataBase{} {
-	//addListener(recordPlayer);
 }
 
 MidiHandler::~MidiHandler()
@@ -322,7 +321,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		float velocity = message.getFloatVelocity();
 
 		float volume = this->midiDevice.getVolume();
-		DBG("VOLUME="+ juce::String(volume));
+		//DBG("VOLUME="+ juce::String(volume));
 		float scaledVelocity = juce::jlimit(0.0f, 1.0f, velocity * volume);
 
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(scaledVelocity);
@@ -335,7 +334,11 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
 		}
 
-		listeners.call(&Listener::noteOnReceived, note);
+		listeners.call(&MidiHandlerListener::noteOnReceived, note);
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocityByte));
+
 	}
 
 	incomingMidiMessages.addEvent(processedMessage, 0);
@@ -350,7 +353,8 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 			midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note, velocityByte));
 		}
 
-		listeners.call(&Listener::noteOffReceived, note);
+		listeners.call(&MidiHandlerListener::noteOffReceived, note);
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(1, note, velocityByte));
 	}
 }
 
@@ -369,7 +373,8 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	{
 		midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocity));
 	}
-	listeners.call(&Listener::noteOnReceived, note);
+	listeners.call(&MidiHandlerListener::noteOnReceived, note);
+	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocity));
 }
 
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
@@ -378,34 +383,17 @@ void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
 	{
 		midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note));
 	}
-	listeners.call(&Listener::noteOffReceived,note);
+	listeners.call(&MidiHandlerListener::noteOffReceived,note);
+	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(1, note));
 }
 
 void MidiHandler::setProgramNumber(int toSetNumber) {
 	this->programNumber = toSetNumber;
 	auto midiOut = this->midiDevice.getDeviceOUT();
 	if (midiOut)
+	{
 		midiOut->sendMessageNow(juce::MidiMessage::programChange(1, toSetNumber));
-}
-
-void MidiHandler::setOutputRecorder(juce::MidiOutput* output)
-{
-	this->recordPlayer.setOutputDevice(output);
-}
-
-void MidiHandler::startRecord()
-{
-	this->recordPlayer.startRecording();
-}
-
-void MidiHandler::stopRecord()
-{
-	this->recordPlayer.stopRecording();
-}
-
-void MidiHandler::startPlayback()
-{
-	this->recordPlayer.startPlayBack();
+	}
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)

@@ -3,7 +3,7 @@
 #include <JuceHeader.h>
 #include "MidiDevicesDB.h"
 #include "InstrumentHandler.h"
-#include "MidiRecordPlayer.h"
+#include "MidiHandlerAbstractSubject.h"
 
 class MidiDevice {
 public:
@@ -79,32 +79,22 @@ public:
 
 	void handlePlayableRange(const juce::String& vid, const juce:: String& pid);
 
-	struct Listener {
-		virtual void noteOnReceived(int midiNote) = 0;
-		virtual void noteOffReceived(int midiNote) = 0;
-	};
 
-	void addListener(Listener* listener) { listeners.add(listener); }
-	void removeListener(Listener* listener) { listeners.remove(listener); }
+	void addListener(MidiHandlerListener* listener) { listeners.add(listener); }
+	void removeListener(MidiHandlerListener* listener) { listeners.remove(listener); }
 	void getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample, int numSamples);
 
 	void noteOnKeyboard(int note, juce::uint8 velocity);
 	void noteOffKeyboard(int note, juce::uint8 velocity);
 	void setProgramNumber(int toSetNumber);
-	void setOutputRecorder(juce::MidiOutput* output);
-
-	void startRecord();
-	void stopRecord();
-	void startPlayback();
 
 private:
 	void setPlayableRange(int nrKeys);
-	juce::ListenerList<Listener> listeners;
+	juce::ListenerList<MidiHandlerListener> listeners;
 
 	MidiDevice& midiDevice;
 	MidiDevicesDataBase dataBase;
 	InstrumentHandler instrumentHandler;
-	MidiRecordPlayer recordPlayer{midiDevice.getDeviceOUT()};
 
 	bool receivedValidNote = false;
 	juce::MidiBuffer incomingMidiMessages;

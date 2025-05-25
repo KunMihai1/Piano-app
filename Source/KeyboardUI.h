@@ -15,7 +15,7 @@
 #include <unordered_map>
 #include <vector>
 
-class KeyboardUI : public juce::Component, public MidiHandler::Listener
+class KeyboardUI : public juce::Component, public MidiHandlerListener
 {
 public:
     KeyboardUI(MidiHandler& midiHandler);

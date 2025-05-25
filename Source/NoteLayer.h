@@ -13,7 +13,7 @@
 #include "MidiHandler.h"
 #include "KeyboardUI.h"
 
-class NoteLayer : public juce::Component, public MidiHandler::Listener, public juce::Timer, private juce::OpenGLRenderer
+class NoteLayer : public juce::Component, public MidiHandlerListener , public juce::Timer, private juce::OpenGLRenderer
 {
 public:
     NoteLayer(KeyboardUI& referenceKeyboard);
