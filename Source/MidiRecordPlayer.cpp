@@ -16,16 +16,18 @@ MidiRecordPlayer::MidiRecordPlayer(juce::MidiOutput* midiOut): midiOutputDevice{
 
 void MidiRecordPlayer::startRecording()
 {
-    DBG("Started recording");
     allEventsPlayed.clear();
     recordStartTime = juce::Time::getMillisecondCounterHiRes() * 0.001;
     isRecording = true;
 }
 
-void MidiRecordPlayer::stopRecording()
+bool MidiRecordPlayer::stopRecording()
 {
-    DBG("Stopped recording");
+    if (isRecording == false)
+        return 0;
+
     isRecording = false;
+    return 1;
 }
 
 bool MidiRecordPlayer::startPlayBack()
@@ -89,4 +91,9 @@ void MidiRecordPlayer::setProgarmNumber(int newProgram)
     program = newProgram;
     if (midiOutputDevice)
         midiOutputDevice->sendMessageNow(juce::MidiMessage::programChange(1, newProgram));
+}
+
+std::vector<RecordedEvent>& MidiRecordPlayer::getAllRecordedEvents()
+{
+    return this->allEventsPlayed;
 }

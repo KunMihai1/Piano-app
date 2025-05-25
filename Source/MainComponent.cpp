@@ -42,10 +42,14 @@ MainComponent::~MainComponent()
     else;
         //DBG("No root item to delete destructor main");
     removeKeyListener(this);
-    removeKeyListener(&this->keyListener);
-    midiHandler.removeListener(&recordPlayer);
-    midiHandler.removeListener(noteLayer.get());
-    midiHandler.removeListener(&keyboard);
+    if(&keyListener)
+        removeKeyListener(&this->keyListener);
+    if(&recordPlayer)
+        midiHandler.removeListener(&recordPlayer);
+    if(noteLayer)
+        midiHandler.removeListener(noteLayer.get());
+    if(&keyboard)
+        midiHandler.removeListener(&keyboard);
 }
 
 //==============================================================================
@@ -93,6 +97,7 @@ void MainComponent::resized()
     startRecording.setBounds(1700, 10, 30, 30);
     stopRecording.setBounds(1760, 10, 30, 30);
     startPlayback.setBounds(1820, 10, 25, 30);
+    saveRecording.setBounds(1550, 10, 140, 30);
 
 
     if (noteLayer)
@@ -277,6 +282,13 @@ void MainComponent::toggleRecordButtons()
     else startPlayback.setVisible(true);
 }
 
+void MainComponent::toggleSaveRecordingButton()
+{
+    if (saveRecording.isVisible())
+        saveRecording.setVisible(false);
+    else saveRecording.setVisible(true);
+}
+
 void MainComponent::toggleForPlaying()
 {
     if (this->midiButton.isVisible())
@@ -362,6 +374,7 @@ void MainComponent::recordButtonsInit()
 
     startRecording.onClick = [this] {
         recordPlayer.startRecording();
+        saveRecording.setVisible(false);
 
         if (temporaryPopup)
         {
@@ -373,6 +386,7 @@ void MainComponent::recordButtonsInit()
             headerPanel.addChildComponent(temporaryPopup.get());
             temporaryPopup->setBounds(getWidth() / 2-50, 10, 100, 30);
             temporaryPopup->setFinishedCallBack([this] {
+                //saveRecording.setVisible(true);
                 temporaryPopup.reset();
                 });
             temporaryPopup->setVisible(true);
@@ -380,7 +394,10 @@ void MainComponent::recordButtonsInit()
     };
 
     stopRecording.onClick = [this] {
-        recordPlayer.stopRecording();
+        int result=recordPlayer.stopRecording();
+
+        if(result==1)
+            saveRecording.setVisible(true);
 
         if (temporaryPopup)
         {
@@ -393,6 +410,7 @@ void MainComponent::recordButtonsInit()
             temporaryPopup->setBounds(getWidth() / 2-50, 10, 100, 30);
             temporaryPopup->setFinishedCallBack([this] {
                 temporaryPopup.reset();
+
                 });
             temporaryPopup->setVisible(true);
         }
@@ -419,6 +437,9 @@ void MainComponent::recordButtonsInit()
 
     startPlayback.onClick = [this] {
         int result=recordPlayer.startPlayBack();
+        saveRecording.setVisible(true);
+        if(result==0)
+            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Play recording", "No recorded events to play.");
 
         if (temporaryPopup && result==1)
         {
@@ -448,6 +469,19 @@ void MainComponent::recordButtonsInit()
     stopRecording.setVisible(false);
     startPlayback.setVisible(false);
 
+}
+
+void MainComponent::saveRecordingButtonInit()
+{
+    saveRecording.setButtonText("Save recording");
+
+    saveRecording.onClick = [this]{
+        saveRecordingToFile();
+        };
+
+    saveRecording.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    headerPanel.addAndMakeVisible(saveRecording);
+    saveRecording.setVisible(false);
 }
 
 void MainComponent::keyBoardUIinit(int min, int max)
@@ -504,6 +538,7 @@ void MainComponent::headerPanelInit()
     colourSelectorButtonInit();
     instrumentSelectorButtonInit();
     recordButtonsInit();
+    saveRecordingButtonInit();
 }
 
 void MainComponent::homeButtonInit()
@@ -819,4 +854,59 @@ void MainComponent::showInstrumentSelector()
     noteLayer->resetState();
     noteLayer->repaint();
     noteLayer->setVisible(false);
+}
+
+void MainComponent::saveRecordingToFile(double tempo, const juce::String& fileName = "")
+{
+    std::vector<RecordedEvent> allRecorded = this->recordPlayer.getAllRecordedEvents();
+    if (allRecorded.empty())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,"Save Recording", "No recorded events to save.");
+        return;
+    }
+
+    juce::MidiFile midiFile;
+    const int ticksPerQuarterNote = 960;
+    midiFile.setTicksPerQuarterNote(ticksPerQuarterNote);
+
+    juce::MidiMessageSequence sequence;
+
+    const double secondsPerBeat = 60.0 /tempo;
+    const double ticksPerSecond = ticksPerQuarterNote / secondsPerBeat;
+    const int microsecondsPerQuarterNote = static_cast<int>(60000000 / tempo);
+
+    juce::MidiMessageSequence tempoSequence;
+    tempoSequence.addEvent(juce::MidiMessage::tempoMetaEvent(microsecondsPerQuarterNote), 0);
+    midiFile.addTrack(tempoSequence);
+
+    for (const auto& event : allRecorded)
+    {
+        int tickPosition = static_cast<int>(event.timeFromStart * ticksPerSecond);
+        sequence.addEvent(event.message, tickPosition);
+    }
+
+    midiFile.addTrack(sequence);
+
+    auto settingsFolder = propertiesFile->getFile().getParentDirectory();
+    auto recordingsFolder = settingsFolder.getChildFile("Recordings");
+    if (!recordingsFolder.exists())
+        recordingsFolder.createDirectory();
+
+    auto midiFilePath = recordingsFolder.getChildFile("recording.mid");
+
+    juce::FileOutputStream outputStream(midiFilePath);
+
+    if (outputStream.openedOk())
+    {
+        midiFile.writeTo(outputStream);
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
+            "Save Recording", "Recording saved to:\n" + midiFilePath.getFullPathName());
+
+        //saveButton->setVisible(false);
+    }
+    else
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+            "Save Recording", "Failed to open file for saving.");
+    }
 }
