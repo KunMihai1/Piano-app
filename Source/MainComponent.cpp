@@ -613,6 +613,7 @@ void MainComponent::homeButtonOnClick()
     keyboard.setVisible(false);
     this->noteLayer->setVisible(false);
     this->noteLayer->resetState();
+    this->recordPlayer.stopPlayBack();
 }
 
 void MainComponent::playButtonOnClick()
@@ -928,7 +929,7 @@ void MainComponent::playRecordingFromFile(double tempo)
                 if (!recordPlayer.parseRecordingFromFile(file, errorMsg))
                     juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Play Failed", errorMsg);
                 else
-                    recordPlayer.startPlayBack();
+                    recordPlayer.startRecordingFilePlaying();
             }
             fileChooser.reset();
         });
