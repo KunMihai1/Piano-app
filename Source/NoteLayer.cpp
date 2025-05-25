@@ -17,7 +17,7 @@ using namespace juce::gl;
 NoteLayer::NoteLayer(KeyboardUI& referenceKeyboard) : keyBoardUI{ referenceKeyboard }
 {
     setSize(getWidth(), getHeight());
-    keyBoardUI.midiHandler.addListener(this);
+    //keyBoardUI.midiHandler.addListener(this);
 
     openGLContext.setRenderer(this);
     openGLContext.attachTo(*this);
@@ -32,7 +32,7 @@ NoteLayer::NoteLayer(KeyboardUI& referenceKeyboard) : keyBoardUI{ referenceKeybo
 
 NoteLayer::~NoteLayer()
 {
-    keyBoardUI.midiHandler.removeListener(this);
+    //keyBoardUI.midiHandler.removeListener(this);
     openGLContext.detach();
 }
 

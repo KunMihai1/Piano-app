@@ -13,12 +13,12 @@
 KeyboardUI::KeyboardUI(MidiHandler& midiHandler) : midiHandler{ midiHandler }
 {
     setSize(getWidth(), getHeight());
-    midiHandler.addListener(this);
+    //midiHandler.addListener(this);
 }
 
 KeyboardUI::~KeyboardUI()
 {
-    midiHandler.removeListener(this);
+    //midiHandler.removeListener(this);
 }
 
 void KeyboardUI::paint(juce::Graphics& g)

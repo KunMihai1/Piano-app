@@ -25,7 +25,7 @@ public:
 
     void stopRecording();
 
-    void startPlayBack();
+    bool startPlayBack();
 
     void stopPlayBack();
 

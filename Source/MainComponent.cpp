@@ -19,6 +19,7 @@ MainComponent::MainComponent()
     addKeyListener(this);
 
     midiHandler.addListener(&recordPlayer);
+    midiHandler.addListener(&keyboard);
 
     MIDIDevice.getAvailableDevicesMidiIN(this->devicesIN);
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
@@ -43,6 +44,8 @@ MainComponent::~MainComponent()
     removeKeyListener(this);
     removeKeyListener(&this->keyListener);
     midiHandler.removeListener(&recordPlayer);
+    midiHandler.removeListener(noteLayer.get());
+    midiHandler.removeListener(&keyboard);
 }
 
 //==============================================================================
@@ -415,14 +418,14 @@ void MainComponent::recordButtonsInit()
     };
 
     startPlayback.onClick = [this] {
-        recordPlayer.startPlayBack();
+        int result=recordPlayer.startPlayBack();
 
-        if (temporaryPopup)
+        if (temporaryPopup && result==1)
         {
             temporaryPopup->updateText("Playback started!");
             temporaryPopup->restartTimer();
         }
-        else {
+        else if(temporaryPopup==nullptr) {
             temporaryPopup = std::make_unique<TemporaryMessage>("Playback started!");
             headerPanel.addChildComponent(temporaryPopup.get());
             temporaryPopup->setBounds(getWidth() / 2-50, 10, 100, 30);
@@ -455,6 +458,7 @@ void MainComponent::keyBoardUIinit(int min, int max)
 
     this->keyboard.set_min_and_max(min, max);
     noteLayer = std::make_unique<NoteLayer>(this->keyboard);
+    midiHandler.addListener(noteLayer.get());
     noteLayer->setBounds(0, 50, getWidth(), getHeight() - 200 - 50);
     addAndMakeVisible(noteLayer.get());
 
