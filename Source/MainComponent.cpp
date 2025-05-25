@@ -374,6 +374,8 @@ void MainComponent::recordButtonsInit()
 
     startRecording.onClick = [this] {
         recordPlayer.startRecording();
+        recordPlayer.handleIncomingMessage(juce::MidiMessage::programChange(1, midiHandler.getProgramNumber()));
+
         saveRecording.setVisible(false);
 
         if (temporaryPopup)
@@ -395,7 +397,7 @@ void MainComponent::recordButtonsInit()
 
     stopRecording.onClick = [this] {
         int result=recordPlayer.stopRecording();
-
+        
         if(result==1)
             saveRecording.setVisible(true);
 
@@ -436,8 +438,12 @@ void MainComponent::recordButtonsInit()
     };
 
     startPlayback.onClick = [this] {
+        if (recordPlayer.getIsRecording())
+            recordPlayer.stopRecording();
+
         int result=recordPlayer.startPlayBack();
         saveRecording.setVisible(true);
+
         if(result==0)
             juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Play recording", "No recorded events to play.");
 
@@ -870,15 +876,6 @@ void MainComponent::saveRecordingToFile(double tempo)
     if (!recordingsFolder.exists())
         recordingsFolder.createDirectory();
 
-    //auto midiFilePath = recordingsFolder.getChildFile("recording.mid");
-    /*
-    if (midiFilePath.exists())
-    {
-        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Save Recording", "A file with the same name already exists.");
-        return;
-    }
-    */
-
     juce::MidiFile midiFile;
     const int ticksPerQuarterNote = 960;
     midiFile.setTicksPerQuarterNote(ticksPerQuarterNote);
@@ -929,7 +926,8 @@ void MainComponent::saveRecordingToFile(double tempo)
             }
             else
             {
-                DBG("User cancelled the save dialog");
+                ;
+                //DBG("User cancelled the save dialog");
             }
             fileChooser.reset();
         });
