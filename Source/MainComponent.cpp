@@ -1,10 +1,11 @@
-#include "MainComponent.h"
+﻿#include "MainComponent.h"
 
 //==============================================================================
 MainComponent::MainComponent()
 {
     settingsInit();
     playButtonInit();
+    headerPanelInit();
     togglePlayButton();
     initalizeSaveFileForUser();
     loadSettings();
@@ -31,12 +32,12 @@ MainComponent::~MainComponent()
         this->MIDIDevice.deviceCloseOUT();
     if (treeView != nullptr && treeView->getRootItem() != nullptr)
     {
-        DBG("Deleting root item dest main: " << treeView->getRootItem()->getUniqueName());
+        //DBG("Deleting root item dest main: " << treeView->getRootItem()->getUniqueName());
         treeView->deleteRootItem();
         treeView->deleteRootItem();
     }
-    else
-        DBG("No root item to delete destructor main");
+    else;
+        //DBG("No root item to delete destructor main");
 }
 
 //==============================================================================
@@ -67,9 +68,12 @@ void MainComponent::resized()
     // This is called when the MainComponent is resized.
     // If you add any child components, this is where you should
     // update their positions.
+    int buttonWidth = getWidth() / 16;
+    int buttonHeight = getHeight() / 24;
+    int x = (int)(getWidth() * 0.5 - getWidth() * 0.175);
+    int y = (int)(getHeight() * 0.5 + getHeight() * 0.162);
 
-
-    playButton.setBounds(getWidth() / 2 - 210, getHeight() / 2 + 170, 75, 35);
+    playButton.setBounds(x, y, buttonWidth, buttonHeight);
     settingsButton.setBounds(0, 0, 250, 70);
     settingsPanel.setBounds(0, 70, 250, getHeight());
     midiButton.setBounds(0, 5, 200, 50);
@@ -78,6 +82,11 @@ void MainComponent::resized()
     homeButton.setBounds(10, 10, 75, 30);
     colourSelectorButton.setBounds(90, 10, 100, 30);
     instrumentSelectorButton.setBounds(195, 10, 100, 30);
+    startRecording.setBounds(1700, 10, 30, 30);
+    stopRecording.setBounds(1760, 10, 30, 30);
+    startPlayback.setBounds(1820, 10, 25, 30);
+
+
     if (noteLayer)
     {
         noteLayer->toFront(false);
@@ -94,7 +103,7 @@ void MainComponent::changeListenerCallback(juce::ChangeBroadcaster* source)
     if (source == colourSelector)
     {
         auto newColor = colourSelector->getCurrentColour();
-        DBG("Colour changed to: " << newColor.toString());
+        //DBG("Colour changed to: " << newColor.toString());
         this->noteLayer->setColourParticle(newColor);
     }
 }
@@ -106,8 +115,8 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
 
     int startNote = this->keyListener.getStartNoteKeyboardInput();
     int finishNote = this->keyListener.getFinishNoteKeyboardInput();
-    DBG("Start note:" << startNote);
-    DBG("End note:" << finishNote);
+    //DBG("Start note:" << startNote);
+    //DBG("End note:" << finishNote);
 
     if (key.getKeyCode() == 'Z')
     {
@@ -123,7 +132,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
     }
     else if (key.getKeyCode() == 'X')
     {
-        DBG("Finish note" << finishNote);
+        //DBG("Finish note" << finishNote);
         if (finishNote <= 101)
         {
             this->keyListener.setStartNoteKeyboardInput(startNote + 12);
@@ -154,8 +163,8 @@ void MainComponent::loadSettings()
 {
     if (propertiesFile)
     {
-        double savedVolume = propertiesFile->getDoubleValue("midiVolume", 1.0);
-        double savedReverb = propertiesFile->getDoubleValue("midiReverb", 1.0);
+        double savedVolume = propertiesFile->getDoubleValue("midiVolume", 100.0);
+        double savedReverb = propertiesFile->getDoubleValue("midiReverb", 100.0);
         if (midiWindow)
         {
             this->midiWindow->volumeSliderSetValue(savedVolume);
@@ -221,6 +230,7 @@ void MainComponent::toggleHPanel()
     toggleHomeButton();
     toggleColourSelectorButton();
     toggleInstrumentSelectorButton();
+    toggleRecordButtons();
 }
 
 void MainComponent::toggleHomeButton()
@@ -242,6 +252,21 @@ void MainComponent::toggleInstrumentSelectorButton()
     if (instrumentSelectorButton.isVisible())
         instrumentSelectorButton.setVisible(false);
     else instrumentSelectorButton.setVisible(true);
+}
+
+void MainComponent::toggleRecordButtons()
+{
+    if (startRecording.isVisible())
+        startRecording.setVisible(false);
+    else startRecording.setVisible(true);
+
+    if (stopRecording.isVisible())
+        stopRecording.setVisible(false);
+    else stopRecording.setVisible(true);
+
+    if (startPlayback.isVisible())
+        startPlayback.setVisible(false);
+    else startPlayback.setVisible(true);
 }
 
 void MainComponent::toggleForPlaying()
@@ -306,6 +331,98 @@ void MainComponent::instrumentSelectorButtonInit()
     instrumentSelectorButton.setVisible(false);
 }
 
+void MainComponent::recordButtonsInit()
+{
+    auto xmlRecord = juce::XmlDocument::parse(BinaryData::recordPlayback_svg);
+    recordDrawable = juce::Drawable::createFromSVG(*xmlRecord);
+
+    auto xmlStop = juce::XmlDocument::parse(BinaryData::stopButton_svg);
+    stopDrawable = juce::Drawable::createFromSVG(*xmlStop);
+
+
+    auto xmlPlay = juce::XmlDocument::parse(BinaryData::playButton_svg);
+    playDrawable = juce::Drawable::createFromSVG(*xmlPlay);
+
+    startRecording.setImages(recordDrawable.get());
+    stopRecording.setImages(stopDrawable.get());
+    startPlayback.setImages(playDrawable.get());
+
+    startRecording.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    stopRecording.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    startPlayback.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+
+    startRecording.onClick = [this] {
+        midiHandler.startRecord();
+
+        if (temporaryPopup)
+        {
+            temporaryPopup->updateText("Recording started!");
+            temporaryPopup->restartTimer();
+        }
+        else {
+            temporaryPopup = std::make_unique<TemporaryMessage>("Recording started!");
+            headerPanel.addChildComponent(temporaryPopup.get());
+            temporaryPopup->setBounds(getWidth() / 2-50, 10, 100, 30);
+            temporaryPopup->setFinishedCallBack([this] {
+                temporaryPopup.reset();
+                });
+            temporaryPopup->setVisible(true);
+        }
+    };
+
+    stopRecording.onClick = [this] {
+        midiHandler.stopRecord();
+
+        if (temporaryPopup)
+        {
+            temporaryPopup->updateText("Recording stopped!");
+            temporaryPopup->restartTimer();
+        }
+        else {
+            temporaryPopup = std::make_unique<TemporaryMessage>("Recording stopped!");
+            headerPanel.addChildComponent(temporaryPopup.get());
+            temporaryPopup->setBounds(getWidth() / 2-50, 10, 100, 30);
+            temporaryPopup->setFinishedCallBack([this] {
+                temporaryPopup.reset();
+                });
+            temporaryPopup->setVisible(true);
+        }
+    };
+
+    startPlayback.onClick = [this] {
+        midiHandler.startPlayback();
+
+        if (temporaryPopup)
+        {
+            temporaryPopup->updateText("Playback started!");
+            temporaryPopup->restartTimer();
+        }
+        else {
+            temporaryPopup = std::make_unique<TemporaryMessage>("Playback started!");
+            headerPanel.addChildComponent(temporaryPopup.get());
+            temporaryPopup->setBounds(getWidth() / 2-50, 10, 100, 30);
+            temporaryPopup->setFinishedCallBack([this] {
+                temporaryPopup.reset();
+                });
+            temporaryPopup->setVisible(true);
+        }
+    };
+
+    startRecording.setColour(juce::TextButton::buttonColourId, juce::Colours::red);
+    stopRecording.setColour(juce::TextButton::buttonColourId, juce::Colours::darkgrey);
+    startPlayback.setColour(juce::TextButton::buttonColourId, juce::Colours::green);
+
+    headerPanel.addAndMakeVisible(startRecording);
+    headerPanel.addAndMakeVisible(stopRecording);
+    headerPanel.addAndMakeVisible(startPlayback);
+
+    startRecording.setVisible(false);
+    stopRecording.setVisible(false);
+    startPlayback.setVisible(false);
+
+}
+
 void MainComponent::keyBoardUIinit(int min, int max)
 {
     keyboardInitialized = true;
@@ -358,6 +475,7 @@ void MainComponent::headerPanelInit()
     homeButtonInit();
     colourSelectorButtonInit();
     instrumentSelectorButtonInit();
+    recordButtonsInit();
 }
 
 void MainComponent::homeButtonInit()
@@ -397,7 +515,7 @@ void MainComponent::homeButtonOnClick()
     repaint();
 
     toggleHPanel();
-    toggleHomeButton();
+
     togglePlayButton();
     toggleSettingsButton();
     keyboard.setVisible(false);
@@ -413,17 +531,27 @@ void MainComponent::playButtonOnClick()
         midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
         currentBackground = playBackground;
         repaint();
-        headerPanelInit();
         toggleHPanel();
         MIDIDevice.changeVolumeInstrument();
         MIDIDevice.changeReverbInstrument();
         midiHandler.setProgramNumber(37);
+
         if (!keyboardInitialized)
+        {
             keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
+        }
         else {
             keyboard.setVisible(true);
             this->noteLayer->setVisible(true);
         }
+
+        if (this->keyListener.getIsKeyboardInput())
+            this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
+        else
+            this->keyboard.set_min_and_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
+
+        //DBG("Min note:" << this->keyboard.get_min());
+        //DBG("Max note:" << this->keyboard.get_max());
         keyboard.setIsDrawn(false);
         keyboard.repaint();
         toggleForPlaying();
@@ -590,6 +718,7 @@ bool MainComponent::openingDevicesForPlay()
         //here is the case where user selects keyboard from pc.
         this->MIDIDevice.set_minNote(keyListener.getStartNoteKeyboardInput());
         this->MIDIDevice.set_maxNote(keyListener.getFinishNoteKeyboardInput());
+        this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
         this->keyListener.setIsKeyboardInput(true);
         this->grabKeyboardFocus();
     }
@@ -610,6 +739,7 @@ bool MainComponent::openingDevicesForPlay()
         return false;
     }
     this->deviceOpenedOUT = this->MIDIDevice.getDeviceOUT();
+    this->midiHandler.setOutputRecorder(this->MIDIDevice.getDeviceOUT());
     return true;
 }
 
@@ -644,9 +774,9 @@ void MainComponent::showInstrumentSelector()
     if (treeView->getRootItem() != nullptr)
     {
         treeView->deleteRootItem();
-        DBG("deleting root from show");
+        //DBG("deleting root from show");
     }
-    else DBG("not deleting root from show");
+    //else DBG("not deleting root from show");
     buildTree();
     treeView->setColour(juce::TreeView::backgroundColourId, juce::Colours::white);
     auto area1 = juce::Rectangle<int>(0, 0, 500, 50);

@@ -94,7 +94,7 @@ void NoteLayer::noteOffReceived(int midiNote)
                 it->second.alpha = 1.0f;
                 it->second.initialHeight = it->second.height;
 
-                DBG("Initial height"<<it->second.initialHeight);
+                //DBG("Initial height"<<it->second.initialHeight);
                 fallingNotes.push_back(it->second);
                 activeNotes.erase(it);
             }
@@ -395,7 +395,7 @@ void NoteLayer::timerCallback()
         // Erase note if fully faded OR fully shrunk internally
         if (n.alpha <= 0.001f || n.height <= 0.01f)
         {
-            DBG("NOTE OFF");
+            //DBG("NOTE OFF");
             it = fallingNotes.erase(it);
         }
         else

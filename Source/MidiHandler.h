@@ -3,6 +3,7 @@
 #include <JuceHeader.h>
 #include "MidiDevicesDB.h"
 #include "InstrumentHandler.h"
+#include "MidiRecordPlayer.h"
 
 class MidiDevice {
 public:
@@ -90,6 +91,11 @@ public:
 	void noteOnKeyboard(int note, juce::uint8 velocity);
 	void noteOffKeyboard(int note, juce::uint8 velocity);
 	void setProgramNumber(int toSetNumber);
+	void setOutputRecorder(juce::MidiOutput* output);
+
+	void startRecord();
+	void stopRecord();
+	void startPlayback();
 
 private:
 	void setPlayableRange(int nrKeys);
@@ -98,6 +104,7 @@ private:
 	MidiDevice& midiDevice;
 	MidiDevicesDataBase dataBase;
 	InstrumentHandler instrumentHandler;
+	MidiRecordPlayer recordPlayer{midiDevice.getDeviceOUT()};
 
 	bool receivedValidNote = false;
 	juce::MidiBuffer incomingMidiMessages;

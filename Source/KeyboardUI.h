@@ -23,6 +23,8 @@ public:
 
     void paint(juce::Graphics& g) override;
     void set_min_and_max(const int min, const int max);
+    int get_min();
+    int get_max();
 
     void noteOnReceived(int midiNote) override;
     void noteOffReceived(int midiNote) override;

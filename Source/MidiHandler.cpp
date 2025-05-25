@@ -303,6 +303,7 @@ const juce::String& MidiDevice::get_identifier() const
 }
 
 MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device }, dataBase{} {
+	//addListener(recordPlayer);
 }
 
 MidiHandler::~MidiHandler()
@@ -385,6 +386,26 @@ void MidiHandler::setProgramNumber(int toSetNumber) {
 	auto midiOut = this->midiDevice.getDeviceOUT();
 	if (midiOut)
 		midiOut->sendMessageNow(juce::MidiMessage::programChange(1, toSetNumber));
+}
+
+void MidiHandler::setOutputRecorder(juce::MidiOutput* output)
+{
+	this->recordPlayer.setOutputDevice(output);
+}
+
+void MidiHandler::startRecord()
+{
+	this->recordPlayer.startRecording();
+}
+
+void MidiHandler::stopRecord()
+{
+	this->recordPlayer.stopRecording();
+}
+
+void MidiHandler::startPlayback()
+{
+	this->recordPlayer.startPlayBack();
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)

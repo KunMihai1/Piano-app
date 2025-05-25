@@ -8,6 +8,7 @@
 #include "NoteLayer.h"
 #include "audioProcessor.h"
 #include "keyListener.h"
+#include "temporaryNotificationUI.h"
 #include "InstrumentTreeItem.h"
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
@@ -71,6 +72,7 @@ private:
     void toggleForPlaying();
     void toggleColourSelectorButton();
     void toggleInstrumentSelectorButton();
+    void toggleRecordButtons();
 
     void settingsInit();
     void playButtonInit();
@@ -82,6 +84,7 @@ private:
     void homeButtonInit();
     void colourSelectorButtonInit();
     void instrumentSelectorButtonInit();
+    void recordButtonsInit();
     
     void settingsButtonOnClick();
     void midiButtonOnClick();
@@ -95,6 +98,8 @@ private:
    
     void showColourSelector();
     void showInstrumentSelector();
+
+    //void 
 
     //==============================================================================
     // Your private member variables go here...
@@ -128,6 +133,15 @@ private:
     juce::TextButton homeButton{ "Home" };
     juce::TextButton colourSelectorButton{ "Select colour" };
     juce::TextButton instrumentSelectorButton{ "Select instrument" };
+    juce::DrawableButton startRecording{"Record",juce::DrawableButton::ImageFitted};
+    juce::DrawableButton stopRecording{ "Stop", juce::DrawableButton::ImageFitted };
+    juce::DrawableButton startPlayback{ "Play", juce::DrawableButton::ImageFitted };
+    std::unique_ptr<juce::Drawable> recordDrawable, stopDrawable, playDrawable;
+
+    //juce::TextButton startRecording{"Record"};
+    //juce::TextButton stopRecording{ "Stop" };
+    //juce::TextButton startPlayback{ "Play" };
+
     juce::ColourSelector* colourSelector;
     std::unique_ptr<juce::TreeView> treeView=nullptr;
 
@@ -144,6 +158,8 @@ private:
     juce::AudioProcessorPlayer audioProcessorPlayer;
 
     bool usingKeyboardInput = false;
+
+    std::unique_ptr<TemporaryMessage> temporaryPopup;
 
 
 

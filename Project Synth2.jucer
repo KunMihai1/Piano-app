@@ -4,6 +4,10 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="vwDzJM" name="Project Synth2">
     <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
+      <FILE id="n7QYCK" name="playButton.svg" compile="0" resource="1" file="Photos/playButton.svg"/>
+      <FILE id="njeogV" name="recordPlayback.svg" compile="0" resource="1"
+            file="Photos/recordPlayback.svg"/>
+      <FILE id="fTC6Hv" name="stopButton.svg" compile="0" resource="1" file="Photos/stopButton.svg"/>
       <FILE id="Ybb4Zk" name="AcousticBass.png" compile="0" resource="1"
             file="Photos/AcousticBass.png"/>
       <FILE id="vxnMN3" name="AcousticGrandPiano.png" compile="0" resource="1"
@@ -28,6 +32,16 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="Sq9KQB" name="MidiHandlerListener.h" compile="0" resource="0"
+            file="Source/MidiHandlerListener.h"/>
+      <FILE id="dExTT9" name="temporaryNotificationUI.cpp" compile="1" resource="0"
+            file="Source/temporaryNotificationUI.cpp"/>
+      <FILE id="t6Fzqa" name="temporaryNotificationUI.h" compile="0" resource="0"
+            file="Source/temporaryNotificationUI.h"/>
+      <FILE id="YVVyRr" name="MidiRecordPlayer.cpp" compile="1" resource="0"
+            file="Source/MidiRecordPlayer.cpp"/>
+      <FILE id="b1cjyA" name="MidiRecordPlayer.h" compile="0" resource="0"
+            file="Source/MidiRecordPlayer.h"/>
       <FILE id="T77ubi" name="InstrumentTreeItem.cpp" compile="1" resource="0"
             file="Source/InstrumentTreeItem.cpp"/>
       <FILE id="YlXHVG" name="InstrumentTreeItem.h" compile="0" resource="0"
