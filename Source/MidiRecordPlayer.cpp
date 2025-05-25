@@ -28,14 +28,18 @@ void MidiRecordPlayer::stopRecording()
     isRecording = false;
 }
 
-void MidiRecordPlayer::startPlayBack()
+bool MidiRecordPlayer::startPlayBack()
 {
     if (allEventsPlayed.empty())
-        return;
+    {
+        notifyFunction();
+        return 0;
+    }
     playBackStartTime = juce::Time::getMillisecondCounterHiRes() * 0.001;
     isPlaying = true;
     nextEventIndex = 0;
     startTimer(1);
+    return 1;
 }
 
 void MidiRecordPlayer::stopPlayBack()
@@ -57,7 +61,9 @@ void MidiRecordPlayer::handleIncomingMessage(const juce::MidiMessage& message)
 void MidiRecordPlayer::timerCallback()
 {
     if (!isPlaying)
+    {
         return;
+    }
 
     double elapsedTime = juce::Time::getMillisecondCounterHiRes() * 0.001- playBackStartTime;
 

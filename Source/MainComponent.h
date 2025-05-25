@@ -140,10 +140,6 @@ private:
     juce::DrawableButton startPlayback{ "Play", juce::DrawableButton::ImageFitted };
     std::unique_ptr<juce::Drawable> recordDrawable, stopDrawable, playDrawable;
 
-    //juce::TextButton startRecording{"Record"};
-    //juce::TextButton stopRecording{ "Stop" };
-    //juce::TextButton startPlayback{ "Play" };
-
     juce::ColourSelector* colourSelector;
     std::unique_ptr<juce::TreeView> treeView=nullptr;
 
@@ -155,9 +151,6 @@ private:
     KeyboardUI keyboard{ midiHandler };
     std::unique_ptr<NoteLayer> noteLayer;
     bool keyboardInitialized = false;
-
-    juce::AudioDeviceManager audioDeviceManager;
-    juce::AudioProcessorPlayer audioProcessorPlayer;
 
     bool usingKeyboardInput = false;
 
