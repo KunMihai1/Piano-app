@@ -35,6 +35,17 @@ void KeyboardUI::set_min_and_max(const int min, const int max)
     this->max_draw = max;
 }
 
+int KeyboardUI::get_min()
+{
+    return this->min_draw;
+}
+
+int KeyboardUI::get_max()
+{
+    return this->max_draw;
+}
+
+
 void KeyboardUI::noteOnReceived(int midiNote)
 {
     juce::MessageManager::callAsync([this, midiNote]
