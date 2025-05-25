@@ -74,6 +74,7 @@ private:
     void toggleColourSelectorButton();
     void toggleInstrumentSelectorButton();
     void toggleRecordButtons();
+    void toggleSaveRecordingButton();
 
     void settingsInit();
     void playButtonInit();
@@ -86,6 +87,7 @@ private:
     void colourSelectorButtonInit();
     void instrumentSelectorButtonInit();
     void recordButtonsInit();
+    void saveRecordingButtonInit();
     
     void settingsButtonOnClick();
     void midiButtonOnClick();
@@ -99,6 +101,7 @@ private:
    
     void showColourSelector();
     void showInstrumentSelector();
+    void saveRecordingToFile(double tempo=120.0, const juce::String& fileName="");
 
     //void 
 
@@ -135,6 +138,8 @@ private:
     juce::TextButton homeButton{ "Home" };
     juce::TextButton colourSelectorButton{ "Select colour" };
     juce::TextButton instrumentSelectorButton{ "Select instrument" };
+    juce::TextButton saveRecording{ "Save recording" };
+
     juce::DrawableButton startRecording{"Record",juce::DrawableButton::ImageFitted};
     juce::DrawableButton stopRecording{ "Stop", juce::DrawableButton::ImageFitted };
     juce::DrawableButton startPlayback{ "Play", juce::DrawableButton::ImageFitted };

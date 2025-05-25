@@ -10,9 +10,16 @@
 
 #pragma once
 
+
+
 #include <JuceHeader.h>
 #include "MidiHandler.h"
 #include "MidiHandlerAbstractSubject.h"
+
+struct RecordedEvent {
+    juce::MidiMessage message;
+    double timeFromStart;
+};
 
 class MidiRecordPlayer : private juce::Timer, public MidiHandlerListener
 {
@@ -23,7 +30,7 @@ public:
 
     void startRecording();
 
-    void stopRecording();
+    bool stopRecording();
 
     bool startPlayBack();
 
@@ -37,12 +44,11 @@ public:
     
     void setProgarmNumber(int newProgram);
 
+    std::vector<RecordedEvent>& getAllRecordedEvents();
+
 private:
 
-    struct RecordedEvent {
-        juce::MidiMessage message;
-        double timeFromStart;
-    };
+    
 
     bool isRecording = false;
     bool isPlaying = false;
