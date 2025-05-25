@@ -44,12 +44,16 @@ public:
     
     void setProgarmNumber(int newProgram);
 
+    void setInitialProgram(int value);
+
+    bool getIsRecording();
+
     std::vector<RecordedEvent>& getAllRecordedEvents();
 
 private:
 
-    
-
+    int initialProgram = 0;
+    bool programChanged = false;
     bool isRecording = false;
     bool isPlaying = false;
     double recordStartTime=0;

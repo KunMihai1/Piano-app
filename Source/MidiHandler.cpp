@@ -393,7 +393,13 @@ void MidiHandler::setProgramNumber(int toSetNumber) {
 	if (midiOut)
 	{
 		midiOut->sendMessageNow(juce::MidiMessage::programChange(1, toSetNumber));
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::programChange(1, toSetNumber));
 	}
+}
+
+int MidiHandler::getProgramNumber()
+{
+	return programNumber;
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)

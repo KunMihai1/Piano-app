@@ -89,8 +89,17 @@ void MidiRecordPlayer::setOutputDevice(juce::MidiOutput* outputDev)
 void MidiRecordPlayer::setProgarmNumber(int newProgram)
 {
     program = newProgram;
-    if (midiOutputDevice)
-        midiOutputDevice->sendMessageNow(juce::MidiMessage::programChange(1, newProgram));
+    //auto programChangeMessage = juce::MidiMessage::programChange(1, newProgram);
+    //handleIncomingMessage(programChangeMessage);
+}
+
+void MidiRecordPlayer::setInitialProgram(int value)
+{
+}
+
+bool MidiRecordPlayer::getIsRecording()
+{
+    return isRecording == true;
 }
 
 std::vector<RecordedEvent>& MidiRecordPlayer::getAllRecordedEvents()

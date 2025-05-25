@@ -87,6 +87,7 @@ public:
 	void noteOnKeyboard(int note, juce::uint8 velocity);
 	void noteOffKeyboard(int note, juce::uint8 velocity);
 	void setProgramNumber(int toSetNumber);
+	int getProgramNumber();
 
 private:
 	void setPlayableRange(int nrKeys);
