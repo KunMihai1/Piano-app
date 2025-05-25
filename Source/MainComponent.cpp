@@ -856,7 +856,7 @@ void MainComponent::showInstrumentSelector()
     noteLayer->setVisible(false);
 }
 
-void MainComponent::saveRecordingToFile(double tempo, const juce::String& fileName = "")
+void MainComponent::saveRecordingToFile(double tempo)
 {
     std::vector<RecordedEvent> allRecorded = this->recordPlayer.getAllRecordedEvents();
     if (allRecorded.empty())
@@ -864,6 +864,20 @@ void MainComponent::saveRecordingToFile(double tempo, const juce::String& fileNa
         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,"Save Recording", "No recorded events to save.");
         return;
     }
+
+    auto settingsFolder = propertiesFile->getFile().getParentDirectory();
+    auto recordingsFolder = settingsFolder.getChildFile("Recordings");
+    if (!recordingsFolder.exists())
+        recordingsFolder.createDirectory();
+
+    //auto midiFilePath = recordingsFolder.getChildFile("recording.mid");
+    /*
+    if (midiFilePath.exists())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Save Recording", "A file with the same name already exists.");
+        return;
+    }
+    */
 
     juce::MidiFile midiFile;
     const int ticksPerQuarterNote = 960;
@@ -887,26 +901,36 @@ void MainComponent::saveRecordingToFile(double tempo, const juce::String& fileNa
 
     midiFile.addTrack(sequence);
 
-    auto settingsFolder = propertiesFile->getFile().getParentDirectory();
-    auto recordingsFolder = settingsFolder.getChildFile("Recordings");
-    if (!recordingsFolder.exists())
-        recordingsFolder.createDirectory();
 
-    auto midiFilePath = recordingsFolder.getChildFile("recording.mid");
 
-    juce::FileOutputStream outputStream(midiFilePath);
+    fileChooser = std::make_unique<juce::FileChooser>("Save file", juce::File::getCurrentWorkingDirectory(), "*.mid");
 
-    if (outputStream.openedOk())
-    {
-        midiFile.writeTo(outputStream);
-        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
-            "Save Recording", "Recording saved to:\n" + midiFilePath.getFullPathName());
+    fileChooser->launchAsync(juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles,
+        [this,midiFile](const juce::FileChooser& chooser)
+        {
+            auto chosenFile = chooser.getResult();
+            if (chosenFile != juce::File())
+            {
+                //DBG("User saved to: " << chosenFile.getFullPathName());
+                juce::FileOutputStream outputStream(chosenFile);
+                if (outputStream.openedOk())
+                {
+                    midiFile.writeTo(outputStream);
+                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
+                        "Save Recording", "Recording saved to:\n" + chosenFile.getFullPathName());
 
-        //saveButton->setVisible(false);
-    }
-    else
-    {
-        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
-            "Save Recording", "Failed to open file for saving.");
-    }
+                    //saveButton->setVisible(false);
+                }
+                else
+                {
+                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                        "Save Recording", "Failed to open file for saving.");
+                }
+            }
+            else
+            {
+                DBG("User cancelled the save dialog");
+            }
+            fileChooser.reset();
+        });
 }
