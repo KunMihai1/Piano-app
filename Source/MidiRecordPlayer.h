@@ -36,6 +36,10 @@ public:
 
     void stopPlayBack();
 
+    void startRecordingFilePlaying();
+
+    void stopRecordingFilePlaying();
+
     void handleIncomingMessage(const juce::MidiMessage& message) override;
 
     void timerCallback() override;
@@ -48,6 +52,8 @@ public:
 
     bool getIsRecording();
 
+    bool getIsPlaying();
+
     bool saveRecordingToFile(const juce::File& fileToSaveTo, juce::String& errorMsg, double tempo = 120.0);
 
     bool parseRecordingFromFile(const juce::File& fileToParse, juce::String& errorMsg);
@@ -56,17 +62,23 @@ public:
 
     std::vector<RecordedEvent>& getAllRecordedEvents();
 
+
+
 private:
 
     int initialProgram = 0;
     bool programChanged = false;
     bool isRecording = false;
     bool isPlaying = false;
+    bool isPlayingFile = false;
+
     double recordStartTime=0;
     double playBackStartTime = 0;
     int nextEventIndex = 0;
+    int nextEventFileIndex = 0;
 
     juce::MidiOutput* midiOutputDevice=nullptr;
     std::vector<RecordedEvent> allEventsPlayed;
+    std::vector<RecordedEvent> allEventsPlayedFile;
     int program;
 };

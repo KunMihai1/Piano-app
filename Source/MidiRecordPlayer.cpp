@@ -17,6 +17,7 @@ MidiRecordPlayer::MidiRecordPlayer(juce::MidiOutput* midiOut): midiOutputDevice{
 void MidiRecordPlayer::startRecording()
 {
     allEventsPlayed.clear();
+    allEventsPlayedFile.clear();
     recordStartTime = juce::Time::getMillisecondCounterHiRes() * 0.001;
     isRecording = true;
 }
@@ -37,6 +38,11 @@ bool MidiRecordPlayer::startPlayBack()
         notifyFunction();
         return 0;
     }
+    if (isPlaying)
+        stopPlayBack();
+    else if (isPlayingFile)
+        stopRecordingFilePlaying();
+
     playBackStartTime = juce::Time::getMillisecondCounterHiRes() * 0.001;
     isPlaying = true;
     nextEventIndex = 0;
@@ -48,6 +54,40 @@ void MidiRecordPlayer::stopPlayBack()
 {
     isPlaying = false;
     notifyFunction();
+    if (midiOutputDevice)
+    {
+        for (int channel = 1; channel <= 16; ++channel)
+            midiOutputDevice->sendMessageNow(juce::MidiMessage::allNotesOff(channel));
+    }
+
+    stopTimer();
+}
+
+void MidiRecordPlayer::startRecordingFilePlaying()
+{
+    if (isPlayingFile)
+    {
+        stopRecordingFilePlaying();
+    }
+    else if (isPlaying)
+        stopPlayBack();
+    isPlayingFile = true;
+    nextEventFileIndex = 0;
+    playBackStartTime = juce::Time::getMillisecondCounterHiRes() * 0.001;
+    startTimer(1);
+}
+
+void MidiRecordPlayer::stopRecordingFilePlaying()
+{
+    isPlayingFile = false;
+    if (midiOutputDevice)
+    {
+        for (int channel = 1; channel <= 16; ++channel)
+        {
+            midiOutputDevice->sendMessageNow(juce::MidiMessage::allNotesOff(channel));
+        }
+    }
+
     stopTimer();
 }
 
@@ -62,23 +102,43 @@ void MidiRecordPlayer::handleIncomingMessage(const juce::MidiMessage& message)
 
 void MidiRecordPlayer::timerCallback()
 {
-    if (!isPlaying)
+    if (!isPlaying && !isPlayingFile)
     {
         return;
     }
 
     double elapsedTime = juce::Time::getMillisecondCounterHiRes() * 0.001- playBackStartTime;
 
-    while (nextEventIndex < allEventsPlayed.size() && allEventsPlayed[nextEventIndex].timeFromStart <= elapsedTime)
+    if (isPlaying)
     {
-        if (midiOutputDevice)
+        while (nextEventIndex < allEventsPlayed.size() && allEventsPlayed[nextEventIndex].timeFromStart <= elapsedTime)
         {
-            midiOutputDevice->sendMessageNow(allEventsPlayed[nextEventIndex].message);
-            nextEventIndex++;
+            if (midiOutputDevice)
+            {
+                if (isPlaying)
+                    midiOutputDevice->sendMessageNow(allEventsPlayed[nextEventIndex].message);
+                nextEventIndex++;
+            }
         }
+        if (nextEventIndex >= allEventsPlayed.size())
+            stopPlayBack();
     }
-    if (nextEventIndex >= allEventsPlayed.size())
-        stopPlayBack();
+
+    else if (isPlayingFile)
+    {
+        while (nextEventFileIndex < allEventsPlayedFile.size() && allEventsPlayedFile[nextEventFileIndex].timeFromStart <= elapsedTime)
+        {
+            if (midiOutputDevice)
+            {
+                if (isPlayingFile)
+                    midiOutputDevice->sendMessageNow(allEventsPlayedFile[nextEventFileIndex].message);
+                nextEventFileIndex++;
+            }
+        }
+        if (nextEventFileIndex >= allEventsPlayedFile.size())
+            stopRecordingFilePlaying();
+    }
+
 }
 
 void MidiRecordPlayer::setOutputDevice(juce::MidiOutput* outputDev)
@@ -100,6 +160,11 @@ void MidiRecordPlayer::setInitialProgram(int value)
 bool MidiRecordPlayer::getIsRecording()
 {
     return isRecording == true;
+}
+
+bool MidiRecordPlayer::getIsPlaying()
+{
+    return isPlaying == true;
 }
 
 bool MidiRecordPlayer::saveRecordingToFile(const juce::File& fileToSaveTo, juce::String& errorMsg, double tempo)
@@ -168,7 +233,7 @@ bool MidiRecordPlayer::parseRecordingFromFile(const juce::File& fileToParse, juc
     }
 
     midiFile.convertTimestampTicksToSeconds();
-    allEventsPlayed.clear();
+    allEventsPlayedFile.clear();
     const int numTracks = midiFile.getNumTracks();
     for (int trackIndex = 0; trackIndex < numTracks; ++trackIndex)
     {
@@ -183,18 +248,17 @@ bool MidiRecordPlayer::parseRecordingFromFile(const juce::File& fileToParse, juc
             {
                 const auto& msg = eventHolder->message;
                 double timeFromStart = msg.getTimeStamp();
-                allEventsPlayed.push_back(RecordedEvent{ msg, timeFromStart });
+                allEventsPlayedFile.push_back(RecordedEvent{ msg, timeFromStart });
             }
         }
     }
-    std::sort(allEventsPlayed.begin(), allEventsPlayed.end(),
+    std::sort(allEventsPlayedFile.begin(), allEventsPlayedFile.end(),
         [](const RecordedEvent& a, const RecordedEvent& b)
         {
             return a.timeFromStart < b.timeFromStart;
         });
 
     return true;
-
 }
 
 int MidiRecordPlayer::getSizeRecorded()
