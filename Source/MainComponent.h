@@ -101,7 +101,7 @@ private:
    
     void showColourSelector();
     void showInstrumentSelector();
-    void saveRecordingToFile(double tempo=120.0, const juce::String& fileName="");
+    void saveRecordingToFile(double tempo=120.0);
 
     //void 
 
@@ -160,6 +160,7 @@ private:
     bool usingKeyboardInput = false;
 
     std::unique_ptr<TemporaryMessage> temporaryPopup;
+    std::unique_ptr<juce::FileChooser> fileChooser;
 
 
 
