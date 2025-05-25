@@ -97,7 +97,8 @@ void MainComponent::resized()
     startRecording.setBounds(1700, 10, 30, 30);
     stopRecording.setBounds(1760, 10, 30, 30);
     startPlayback.setBounds(1820, 10, 25, 30);
-    saveRecording.setBounds(1550, 10, 140, 30);
+    saveRecordingButton.setBounds(1550, 10, 140, 30);
+    playRecordingFileButton.setBounds(305, 10, 100, 30);
 
 
     if (noteLayer)
@@ -244,6 +245,7 @@ void MainComponent::toggleHPanel()
     toggleColourSelectorButton();
     toggleInstrumentSelectorButton();
     toggleRecordButtons();
+    togglePlayRecordingButton();
 }
 
 void MainComponent::toggleHomeButton()
@@ -284,9 +286,16 @@ void MainComponent::toggleRecordButtons()
 
 void MainComponent::toggleSaveRecordingButton()
 {
-    if (saveRecording.isVisible())
-        saveRecording.setVisible(false);
-    else saveRecording.setVisible(true);
+    if (saveRecordingButton.isVisible())
+        saveRecordingButton.setVisible(false);
+    else saveRecordingButton.setVisible(true);
+}
+
+void MainComponent::togglePlayRecordingButton()
+{
+    if (playRecordingFileButton.isVisible())
+        playRecordingFileButton.setVisible(false);
+    else playRecordingFileButton.setVisible(true);
 }
 
 void MainComponent::toggleForPlaying()
@@ -376,7 +385,7 @@ void MainComponent::recordButtonsInit()
         recordPlayer.startRecording();
         recordPlayer.handleIncomingMessage(juce::MidiMessage::programChange(1, midiHandler.getProgramNumber()));
 
-        saveRecording.setVisible(false);
+        saveRecordingButton.setVisible(false);
 
         if (temporaryPopup)
         {
@@ -399,7 +408,7 @@ void MainComponent::recordButtonsInit()
         int result=recordPlayer.stopRecording();
         
         if(result==1)
-            saveRecording.setVisible(true);
+            saveRecordingButton.setVisible(true);
 
         if (temporaryPopup)
         {
@@ -442,7 +451,7 @@ void MainComponent::recordButtonsInit()
             recordPlayer.stopRecording();
 
         int result=recordPlayer.startPlayBack();
-        saveRecording.setVisible(true);
+        saveRecordingButton.setVisible(true);
 
         if(result==0)
             juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Play recording", "No recorded events to play.");
@@ -479,15 +488,28 @@ void MainComponent::recordButtonsInit()
 
 void MainComponent::saveRecordingButtonInit()
 {
-    saveRecording.setButtonText("Save recording");
+    saveRecordingButton.setButtonText("Save recording");
 
-    saveRecording.onClick = [this]{
+    saveRecordingButton.onClick = [this]{
         saveRecordingToFile();
         };
 
-    saveRecording.setMouseCursor(juce::MouseCursor::PointingHandCursor);
-    headerPanel.addAndMakeVisible(saveRecording);
-    saveRecording.setVisible(false);
+    saveRecordingButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    headerPanel.addAndMakeVisible(saveRecordingButton);
+    saveRecordingButton.setVisible(false);
+}
+
+void MainComponent::playRecordingButtonInit()
+{
+    playRecordingFileButton.setButtonText("Play file recording");
+
+    playRecordingFileButton.onClick = [this] {
+        playRecordingFromFile();
+    };
+
+    playRecordingFileButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    headerPanel.addAndMakeVisible(playRecordingFileButton);
+    playRecordingFileButton.setVisible(false);
 }
 
 void MainComponent::keyBoardUIinit(int min, int max)
@@ -545,6 +567,7 @@ void MainComponent::headerPanelInit()
     instrumentSelectorButtonInit();
     recordButtonsInit();
     saveRecordingButtonInit();
+    playRecordingButtonInit();
 }
 
 void MainComponent::homeButtonInit()
@@ -864,70 +887,48 @@ void MainComponent::showInstrumentSelector()
 
 void MainComponent::saveRecordingToFile(double tempo)
 {
-    std::vector<RecordedEvent> allRecorded = this->recordPlayer.getAllRecordedEvents();
-    if (allRecorded.empty())
+    if (recordPlayer.getSizeRecorded() <= 1)
     {
-        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,"Save Recording", "No recorded events to save.");
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Save recording", "No recorded events to play.");
         return;
     }
-
-    auto settingsFolder = propertiesFile->getFile().getParentDirectory();
-    auto recordingsFolder = settingsFolder.getChildFile("Recordings");
-    if (!recordingsFolder.exists())
-        recordingsFolder.createDirectory();
-
-    juce::MidiFile midiFile;
-    const int ticksPerQuarterNote = 960;
-    midiFile.setTicksPerQuarterNote(ticksPerQuarterNote);
-
-    juce::MidiMessageSequence sequence;
-
-    const double secondsPerBeat = 60.0 /tempo;
-    const double ticksPerSecond = ticksPerQuarterNote / secondsPerBeat;
-    const int microsecondsPerQuarterNote = static_cast<int>(60000000 / tempo);
-
-    juce::MidiMessageSequence tempoSequence;
-    tempoSequence.addEvent(juce::MidiMessage::tempoMetaEvent(microsecondsPerQuarterNote), 0);
-    midiFile.addTrack(tempoSequence);
-
-    for (const auto& event : allRecorded)
-    {
-        int tickPosition = static_cast<int>(event.timeFromStart * ticksPerSecond);
-        sequence.addEvent(event.message, tickPosition);
-    }
-
-    midiFile.addTrack(sequence);
-
-
 
     fileChooser = std::make_unique<juce::FileChooser>("Save file", juce::File::getCurrentWorkingDirectory(), "*.mid");
 
     fileChooser->launchAsync(juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles,
-        [this,midiFile](const juce::FileChooser& chooser)
+        [this,tempo](const juce::FileChooser& fc)
         {
-            auto chosenFile = chooser.getResult();
-            if (chosenFile != juce::File())
+            auto file = fc.getResult();
+            if (file != juce::File())
             {
-                //DBG("User saved to: " << chosenFile.getFullPathName());
-                juce::FileOutputStream outputStream(chosenFile);
-                if (outputStream.openedOk())
+                juce::String errorMsg;
+                if (!recordPlayer.saveRecordingToFile(file, errorMsg,tempo))
                 {
-                    midiFile.writeTo(outputStream);
-                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon,
-                        "Save Recording", "Recording saved to:\n" + chosenFile.getFullPathName());
-
-                    //saveButton->setVisible(false);
+                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Save Failed", errorMsg);
                 }
                 else
                 {
-                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
-                        "Save Recording", "Failed to open file for saving.");
+                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "Saved", "Recording saved to:\n" + file.getFullPathName());
                 }
             }
-            else
+            fileChooser.reset();
+        });
+}
+
+void MainComponent::playRecordingFromFile(double tempo)
+{
+    fileChooser = std::make_unique<juce::FileChooser>("Play from file", juce::File::getCurrentWorkingDirectory(), "*.mid");
+    fileChooser->launchAsync(juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::canSelectFiles,
+        [this, tempo](const juce::FileChooser& fc)
+        {
+            auto file = fc.getResult();
+            if (file != juce::File())
             {
-                ;
-                //DBG("User cancelled the save dialog");
+                juce::String errorMsg;
+                if (!recordPlayer.parseRecordingFromFile(file, errorMsg))
+                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Play Failed", errorMsg);
+                else
+                    recordPlayer.startPlayBack();
             }
             fileChooser.reset();
         });

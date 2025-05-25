@@ -48,6 +48,12 @@ public:
 
     bool getIsRecording();
 
+    bool saveRecordingToFile(const juce::File& fileToSaveTo, juce::String& errorMsg, double tempo = 120.0);
+
+    bool parseRecordingFromFile(const juce::File& fileToParse, juce::String& errorMsg);
+
+    int getSizeRecorded();
+
     std::vector<RecordedEvent>& getAllRecordedEvents();
 
 private:
