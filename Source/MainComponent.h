@@ -10,6 +10,7 @@
 #include "keyListener.h"
 #include "temporaryNotificationUI.h"
 #include "InstrumentTreeItem.h"
+#include "MidiRecordPlayer.h"
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -119,6 +120,7 @@ private:
     MidiDevice MIDIDevice{};
     MidiHandler midiHandler{ MIDIDevice };
     KeyboardListener keyListener{ midiHandler };
+    MidiRecordPlayer recordPlayer{};
     //ReverbProcessor revProcessor{ midiHandler };
 
     std::vector<std::string> devicesIN;

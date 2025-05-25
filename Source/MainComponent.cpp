@@ -18,6 +18,8 @@ MainComponent::MainComponent()
     this->addKeyListener(&this->keyListener);
     addKeyListener(this);
 
+    midiHandler.addListener(&recordPlayer);
+
     MIDIDevice.getAvailableDevicesMidiIN(this->devicesIN);
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
     this->toFront(true);
@@ -38,6 +40,9 @@ MainComponent::~MainComponent()
     }
     else;
         //DBG("No root item to delete destructor main");
+    removeKeyListener(this);
+    removeKeyListener(&this->keyListener);
+    midiHandler.removeListener(&recordPlayer);
 }
 
 //==============================================================================
@@ -353,7 +358,7 @@ void MainComponent::recordButtonsInit()
 
 
     startRecording.onClick = [this] {
-        midiHandler.startRecord();
+        recordPlayer.startRecording();
 
         if (temporaryPopup)
         {
@@ -372,7 +377,7 @@ void MainComponent::recordButtonsInit()
     };
 
     stopRecording.onClick = [this] {
-        midiHandler.stopRecord();
+        recordPlayer.stopRecording();
 
         if (temporaryPopup)
         {
@@ -390,8 +395,27 @@ void MainComponent::recordButtonsInit()
         }
     };
 
+    recordPlayer.notifyFunction = [&]()
+    {
+        if (temporaryPopup)
+        {
+            temporaryPopup->updateText("Playback stopped!");
+            temporaryPopup->restartTimer();
+        }
+        else
+        {
+            temporaryPopup = std::make_unique<TemporaryMessage>("Playback Stopped!");
+            headerPanel.addChildComponent(temporaryPopup.get());
+            temporaryPopup->setBounds(getWidth() / 2 - 50, 10, 100, 30);
+            temporaryPopup->setFinishedCallBack([this] {
+                temporaryPopup.reset();
+                });
+            temporaryPopup->setVisible(true);
+        }
+    };
+
     startPlayback.onClick = [this] {
-        midiHandler.startPlayback();
+        recordPlayer.startPlayBack();
 
         if (temporaryPopup)
         {
@@ -529,12 +553,14 @@ void MainComponent::playButtonOnClick()
     MIDIDevice.getAvailableDevicesMidiOUT(devicesOUT);
     if (openingDevicesForPlay()) {
         midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
+        this->recordPlayer.setOutputDevice(MIDIDevice.getDeviceOUT());
         currentBackground = playBackground;
         repaint();
         toggleHPanel();
         MIDIDevice.changeVolumeInstrument();
         MIDIDevice.changeReverbInstrument();
-        midiHandler.setProgramNumber(37);
+        midiHandler.setProgramNumber(0);
+        recordPlayer.setProgarmNumber(0);
 
         if (!keyboardInitialized)
         {
@@ -686,6 +712,7 @@ InstrumentTreeItem* MainComponent::createInstrumentItem(const juce::Image& img, 
     item->onProgramSelected = [&](int programNumber)
     {
         midiHandler.setProgramNumber(programNumber);
+        recordPlayer.setProgarmNumber(programNumber);
     };
 
     return item.release();
@@ -739,7 +766,6 @@ bool MainComponent::openingDevicesForPlay()
         return false;
     }
     this->deviceOpenedOUT = this->MIDIDevice.getDeviceOUT();
-    this->midiHandler.setOutputRecorder(this->MIDIDevice.getDeviceOUT());
     return true;
 }
 

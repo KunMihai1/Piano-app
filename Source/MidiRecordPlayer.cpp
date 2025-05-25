@@ -10,7 +10,7 @@
 
 #include "MidiRecordPlayer.h"
 
-MidiRecordPlayer::MidiRecordPlayer(juce::MidiOutput* midiOut): midiOutputDevice{midiOut}
+MidiRecordPlayer::MidiRecordPlayer(juce::MidiOutput* midiOut): midiOutputDevice{midiOut}, program{0}
 {
 }
 
@@ -41,10 +41,11 @@ void MidiRecordPlayer::startPlayBack()
 void MidiRecordPlayer::stopPlayBack()
 {
     isPlaying = false;
+    notifyFunction();
     stopTimer();
 }
 
-void MidiRecordPlayer::processIncomingMessage(juce::MidiMessage& message)
+void MidiRecordPlayer::handleIncomingMessage(const juce::MidiMessage& message)
 {
     if (!isRecording)
         return;
@@ -75,4 +76,11 @@ void MidiRecordPlayer::timerCallback()
 void MidiRecordPlayer::setOutputDevice(juce::MidiOutput* outputDev)
 {
     midiOutputDevice = outputDev;
+}
+
+void MidiRecordPlayer::setProgarmNumber(int newProgram)
+{
+    program = newProgram;
+    if (midiOutputDevice)
+        midiOutputDevice->sendMessageNow(juce::MidiMessage::programChange(1, newProgram));
 }
