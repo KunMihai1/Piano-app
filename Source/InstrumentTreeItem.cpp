@@ -26,7 +26,7 @@ bool InstrumentTreeItem::mightContainSubItems()
 bool InstrumentTreeItem::isSelectable()
 {
     return instrumentName != "Instruments" && instrumentName != "Pianos" && instrumentName != "Basses" && instrumentName != "Guitars" && 
-        instrumentName != "WoodWinds" && instrumentName!="Brass" && instrumentName!="Strings";
+        instrumentName != "WoodWinds" && instrumentName!="Brass" && instrumentName!="Strings" && instrumentName!="Reeds" && instrumentName!="Organs";
 }
 
 void InstrumentTreeItem::paintItem(juce::Graphics& g, int width, int height)

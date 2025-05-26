@@ -634,13 +634,13 @@ void MainComponent::playButtonOnClick()
         toggleHPanel();
         MIDIDevice.changeVolumeInstrument();
         MIDIDevice.changeReverbInstrument();
-        midiHandler.setProgramNumber(0);
-        recordPlayer.setProgarmNumber(0);
         recordPlayer.setReverb(MIDIDevice.getReverb());
 
         if (!keyboardInitialized)
         {
             keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
+            midiHandler.setProgramNumber(0);
+            recordPlayer.setProgarmNumber(0);
         }
         else {
             keyboard.setVisible(true);
@@ -777,7 +777,7 @@ void MainComponent::buildTree()
     rootStrings->setOpen(false);
     dummyRoot->addSubItem(rootStrings.release());
 
-    auto rootReeds = std::make_unique<InstrumentTreeItem>("Reed Instruments");
+    auto rootReeds = std::make_unique<InstrumentTreeItem>("Reeds");
     rootReeds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Accordion", 21));   // GM program 21
     rootReeds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Harmonica", 22));   // GM program 22
     rootReeds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Bandoneon", 23));   // Custom / assign if needed
