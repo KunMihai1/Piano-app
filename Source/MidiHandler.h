@@ -86,10 +86,40 @@ public:
 
 	void noteOnKeyboard(int note, juce::uint8 velocity);
 	void noteOffKeyboard(int note, juce::uint8 velocity);
+	void allOffKeyboard();
 	void setProgramNumber(int toSetNumber);
 	int getProgramNumber();
 
 private:
+	//void sendCCifChanged(int ccNumber, int value, int& lastSentValue);
+	void setAcousticGrandPiano();
+	void setElectricPiano();
+	void setAcousticBass();
+	void setElectricBassFinger();
+	void setElectricBassPick();
+	void setFretlessBass();
+	void setSlapBass1();
+	void setSlapBass2();
+	void setSynthBass1();
+	void setSynthBass2();
+	void setNylonAcousticGuitar();
+	void setSteelAcousticGuitar();
+	void setJazzElectricGuitar();
+	void setCleanElectricGuitar();
+	void setFlute();
+	void setClarinet();
+	void setOboe();
+	void setBasson();
+	void setTrumpet();
+	void setTrombone();
+	void setFrenchHorn();
+	void setViolin();
+	void setViola();
+	void setCello();
+	void setContraBass();
+
+	void applyInstrumentPreset(int programNumber, std::vector<std::pair<int, int>> ccValues);
+
 	void setPlayableRange(int nrKeys);
 	juce::ListenerList<MidiHandlerListener> listeners;
 
@@ -101,5 +131,13 @@ private:
 	juce::MidiBuffer incomingMidiMessages;
 	juce::CriticalSection midiMutex;
 	int programNumber = 0;
+
+	int lastCC91=-1; //reverb
+	int lastCC74 = -1;  //brightness
+	int lastCC11 = -1; //expression
+	int lastCC93 = -1; //chours
+	int lastCC71 = -1; //resonance
+	int lastCC64 = -1; //sustain pedal;
+
 
 };

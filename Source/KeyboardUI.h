@@ -42,13 +42,6 @@ private:
         std::string type = "";
     };
 
-    struct AnimatedNote {
-        juce::Rectangle<int> bounds{ 0, 0, 0, 0 };
-        float alpha = 1.0f;
-        float velocityY = -50.0f;
-        bool isFalling = false;
-    };
-
     MidiHandler& midiHandler;
     std::unordered_map<int, note> keys;
 

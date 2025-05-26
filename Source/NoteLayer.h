@@ -31,6 +31,7 @@ public:
     void renderOpenGL() override;
     void openGLContextClosing() override;
     void resetState();
+    void resetStateActiveNotes();
     void setColourParticle(juce::Colour& colour);
 
 private:

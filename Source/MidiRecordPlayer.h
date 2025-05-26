@@ -50,6 +50,8 @@ public:
 
     void setInitialProgram(int value);
 
+    void setReverb(int value);
+
     bool getIsRecording();
 
     bool getIsPlaying();
@@ -67,6 +69,7 @@ public:
 private:
 
     int initialProgram = 0;
+    int reverb = 50;
     bool programChanged = false;
     bool isRecording = false;
     bool isPlaying = false;

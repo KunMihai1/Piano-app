@@ -24,7 +24,7 @@ void MidiRecordPlayer::startRecording()
 
 bool MidiRecordPlayer::stopRecording()
 {
-    if (isRecording == false)
+    if (isRecording == false) //looks unecessary but it's actually necessary
         return 0;
 
     isRecording = false;
@@ -149,12 +149,16 @@ void MidiRecordPlayer::setOutputDevice(juce::MidiOutput* outputDev)
 void MidiRecordPlayer::setProgarmNumber(int newProgram)
 {
     program = newProgram;
-    //auto programChangeMessage = juce::MidiMessage::programChange(1, newProgram);
-    //handleIncomingMessage(programChangeMessage);
 }
 
 void MidiRecordPlayer::setInitialProgram(int value)
 {
+    initialProgram = value;
+}
+
+void MidiRecordPlayer::setReverb(int value)
+{
+    reverb = value;
 }
 
 bool MidiRecordPlayer::getIsRecording()
@@ -191,6 +195,11 @@ bool MidiRecordPlayer::saveRecordingToFile(const juce::File& fileToSaveTo, juce:
 
     midiFile.addTrack(tempoSequence);
 
+    sequence.addEvent(juce::MidiMessage::programChange(1, program), 0);
+    sequence.addEvent(juce::MidiMessage::controllerEvent(1, 91, 80), 0);
+    sequence.addEvent(juce::MidiMessage::controllerEvent(1, 74, 100), 0);
+    sequence.addEvent(juce::MidiMessage::controllerEvent(1, 11, reverb), 0);
+    sequence.addEvent(juce::MidiMessage::controllerEvent(1, 93, 70), 0);
 
     for (const auto& event : allEventsPlayed)
     {

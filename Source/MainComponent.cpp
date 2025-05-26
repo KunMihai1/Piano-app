@@ -139,6 +139,9 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
             this->keyListener.setStartNoteKeyboardInput(startNote - 12);
             this->keyListener.setFinishNoteKeyboardInput(finishNote - 12);
             this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
+            
+            this->midiHandler.allOffKeyboard();
+            this->noteLayer->resetStateActiveNotes();
             this->keyListener.resetState();
             this->keyboard.setIsDrawn(false);
             this->keyboard.repaint();
@@ -152,6 +155,9 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
             this->keyListener.setStartNoteKeyboardInput(startNote + 12);
             this->keyListener.setFinishNoteKeyboardInput(finishNote + 12);
             this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
+
+            this->midiHandler.allOffKeyboard();
+            this->noteLayer->resetStateActiveNotes();
             this->keyListener.resetState();
             this->keyboard.setIsDrawn(false);
             this->keyboard.repaint();
@@ -630,6 +636,7 @@ void MainComponent::playButtonOnClick()
         MIDIDevice.changeReverbInstrument();
         midiHandler.setProgramNumber(0);
         recordPlayer.setProgarmNumber(0);
+        recordPlayer.setReverb(MIDIDevice.getReverb());
 
         if (!keyboardInitialized)
         {
@@ -780,8 +787,8 @@ InstrumentTreeItem* MainComponent::createInstrumentItem(const juce::Image& img, 
     auto item = std::make_unique<InstrumentTreeItem>(img,name,program);
     item->onProgramSelected = [&](int programNumber)
     {
-        midiHandler.setProgramNumber(programNumber);
-        recordPlayer.setProgarmNumber(programNumber);
+        midiHandler.setProgramNumber(programNumber); //setting the actual sound to the new program for both midiHandler and also the recordPlayer by listener
+        recordPlayer.setProgarmNumber(programNumber); //setting only the value
     };
 
     return item.release();
