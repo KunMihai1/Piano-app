@@ -27,7 +27,7 @@ private:
 class InstrumentTreeItem : public juce::TreeViewItem
 {
 public:
-    std::function<void(int)> onProgramSelected;
+    std::function<void(int, juce::String)> onProgramSelected;
 
     InstrumentTreeItem(const juce::Image& img, const juce::String& name="", int program = -1);
     InstrumentTreeItem(const juce::String& name = "", int program = -1);

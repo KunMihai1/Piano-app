@@ -79,7 +79,7 @@ void InstrumentTreeItem::itemClicked(const juce::MouseEvent& e)
             clickPos.getY() >= textBounds.getY() && clickPos.getY() <= textBounds.getY() + textBounds.getHeight() &&
             onProgramSelected)
         {
-            onProgramSelected(program);
+            onProgramSelected(program,instrumentName);
             shouldHiglight = true;
         }
         else shouldHiglight = false;

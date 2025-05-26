@@ -10,18 +10,18 @@
 
 #pragma once
 
-enum class InstrumentType { Piano, Bass, Guitar, Violin };
+#include <JuceHeader.h>
 
 class InstrumentHandler {
 public:
     InstrumentHandler();
     ~InstrumentHandler();
-
-    void setInstrument(InstrumentType newInstrument);
+    const std::unordered_map<int, std::vector<std::pair<int, int>>>& getInstrumentPresets();
+    const std::vector<std::pair<int, int>>& getPreset(int programNumber);
 
 private:
-    void loadInstrumentSettings();
+    void initializeMAP();
 
-    InstrumentType currentInstrument = InstrumentType::Piano;
+    std::unordered_map<int, std::vector<std::pair<int, int>>> instrumentPresetsMap;
 
 };
