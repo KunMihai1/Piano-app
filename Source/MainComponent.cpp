@@ -764,7 +764,7 @@ void MainComponent::buildTree()
     auto rootBrass = std::make_unique<InstrumentTreeItem>("Brass");
     rootBrass->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Trumpet", 56));
     rootBrass->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Trombone", 57));
-    rootBrass->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "French Horn", 60));
+    rootBrass->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "French Horn", 59));
     rootBrass->setOpen(false);
     dummyRoot->addSubItem(rootBrass.release());
 
@@ -777,6 +777,22 @@ void MainComponent::buildTree()
     rootStrings->setOpen(false);
     dummyRoot->addSubItem(rootStrings.release());
 
+    auto rootReeds = std::make_unique<InstrumentTreeItem>("Reed Instruments");
+    rootReeds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Accordion", 21));   // GM program 21
+    rootReeds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Harmonica", 22));   // GM program 22
+    rootReeds->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Bandoneon", 23));   // Custom / assign if needed
+    rootReeds->setOpen(false);
+    dummyRoot->addSubItem(rootReeds.release());
+
+    auto rootOrgans = std::make_unique<InstrumentTreeItem>("Organs");
+    rootOrgans->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Hammond Organ", 16));     // GM Program 17
+    rootOrgans->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Percussive Organ", 17)); // GM Program 18
+    rootOrgans->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Rock Organ", 18));       // GM Program 19
+    rootOrgans->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Church Organ", 19));     // GM Program 20
+    rootOrgans->addSubItem(createInstrumentItem(getImageForInstruments("ACB"), "Reed Organ", 20));       // GM Program 21
+    rootOrgans->setOpen(false);
+    dummyRoot->addSubItem(rootOrgans.release());
+
     dummyRoot->setOpen(true);
     treeView->setRootItem(dummyRoot.release());
     
@@ -785,9 +801,9 @@ void MainComponent::buildTree()
 InstrumentTreeItem* MainComponent::createInstrumentItem(const juce::Image& img, const juce::String& name, int program)
 {
     auto item = std::make_unique<InstrumentTreeItem>(img,name,program);
-    item->onProgramSelected = [&](int programNumber)
+    item->onProgramSelected = [&](int programNumber, juce::String name="")
     {
-        midiHandler.setProgramNumber(programNumber); //setting the actual sound to the new program for both midiHandler and also the recordPlayer by listener
+        midiHandler.setProgramNumber(programNumber,name); //setting the actual sound to the new program for both midiHandler and also the recordPlayer by listener
         recordPlayer.setProgarmNumber(programNumber); //setting only the value
     };
 
