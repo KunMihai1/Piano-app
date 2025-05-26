@@ -314,7 +314,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	const juce::ScopedLock lock(midiMutex);
 
 	juce::MidiMessage processedMessage = message;
-
+	DBG("Incoming MIDI: " + message.getDescription());
 	if (message.isNoteOn())
 	{
 		int note = message.getNoteNumber();
@@ -326,17 +326,21 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(scaledVelocity);
 
+		//sendCCifChanged(91, 80, lastCC91);
+		//sendCCifChanged(74, 100, lastCC74);
+;		//sendCCifChanged(11, midiDevice.getReverb(), lastCC11);
+		//sendCCifChanged(93, 70, lastCC93);
+		//sendCCifChanged(71, 30, lastCC71);
+
 		if (auto midiOut = midiDevice.getDeviceOUT())
 		{
-			auto ccMessage = juce::MidiMessage::controllerEvent(1, 91, 80);
-			midiOut->sendMessageNow(ccMessage);
-			midiOut->sendMessageNow(juce::MidiMessage::controllerEvent(1, 74, 100));
+			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
 			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
 		}
 
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
-		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
-		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
+		//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
+		//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocityByte));
 
 	}
@@ -381,19 +385,101 @@ void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
 	auto midiOut = midiDevice.getDeviceOUT();
 	if (midiOut)
 	{
-		midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note));
+		midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note,velocity));
+
 	}
 	listeners.call(&MidiHandlerListener::noteOffReceived,note);
 	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(1, note));
 }
 
+void MidiHandler::allOffKeyboard()
+{
+	for (int i = 0; i < 128; i++)
+		midiDevice.currentDeviceUSEDout->sendMessageNow(juce::MidiMessage::noteOff(1, i));
+}
+
 void MidiHandler::setProgramNumber(int toSetNumber) {
+	DBG("Sending program change: " + juce::String(toSetNumber));
 	this->programNumber = toSetNumber;
 	auto midiOut = this->midiDevice.getDeviceOUT();
 	if (midiOut)
 	{
-		midiOut->sendMessageNow(juce::MidiMessage::programChange(1, toSetNumber));
-		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::programChange(1, toSetNumber));
+		if (programNumber == 0)
+			setAcousticGrandPiano();
+
+		else if (programNumber == 4)
+			setElectricPiano();
+
+		else if (programNumber == 32)
+			setAcousticBass();
+
+		else if (programNumber == 33)
+			setElectricBassFinger();
+
+		else if (programNumber == 34)
+			setElectricBassPick();
+
+		else if (programNumber == 35)
+			setFretlessBass();
+
+		else if (programNumber == 36)
+			setSlapBass1();
+
+		else if (programNumber == 37)
+			setSlapBass2();
+
+		else if (programNumber == 38)
+			setSynthBass1();
+
+		else if (programNumber == 39)
+			setSynthBass2();
+
+		else if (programNumber == 24)
+			setNylonAcousticGuitar();
+
+		else if (programNumber == 25)
+			setSteelAcousticGuitar();
+
+		else if (programNumber == 26)
+			setJazzElectricGuitar();
+
+		else if (programNumber == 27)
+			setCleanElectricGuitar();
+
+		else if (programNumber == 40)
+			setViolin();
+
+		else if (programNumber == 41)
+			setViola();
+
+		else if (programNumber == 42)
+			setCello();
+
+		else if (programNumber == 43)
+			setContraBass();
+
+		else if (programNumber == 56)
+			setTrumpet();
+
+		else if (programNumber == 57)
+			setTrombone();
+
+		else if (programNumber == 60)
+			setFrenchHorn();
+
+		else if (programNumber == 68)
+			setOboe();
+
+		else if (programNumber == 70)
+			setBasson();
+
+		else if (programNumber == 71)
+			setClarinet();
+
+		else if (programNumber == 73)
+			setFlute();
+
+		juce::Thread::sleep(30);
 	}
 }
 
@@ -406,6 +492,208 @@ void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::Strin
 {
 	int nrKeys = dataBase.getNrKeysPidVid(vid, pid);
 	setPlayableRange(nrKeys);
+}
+
+void MidiHandler::setAcousticGrandPiano()
+{
+	applyInstrumentPreset(0, {
+		{91, -1}, {93, 10}, {74, 100}, {71, 40}, {11, 127}
+		});
+}
+
+void MidiHandler::setElectricPiano()
+{
+	applyInstrumentPreset(4, {
+		{91, -1}, {93, 70}, {74, 90}, {71, 30}, {11, 127}
+		});
+}
+
+void MidiHandler::setAcousticBass()
+{
+	applyInstrumentPreset(32, {
+		{91, -1}, {93, 0}, {74, 60}, {71, 20}, {11, 100}
+		});
+}
+
+void MidiHandler::setElectricBassFinger()
+{
+	applyInstrumentPreset(33, {
+		{91, -1}, {93, 10}, {74, 70}, {71, 35}, {11, 110}
+		});
+}
+
+void MidiHandler::setElectricBassPick()
+{
+	applyInstrumentPreset(34, {
+		{91, -1}, {93, 15}, {74, 80}, {71, 45}, {11, 115}
+		});
+}
+
+void MidiHandler::setFretlessBass()
+{
+	applyInstrumentPreset(35, {
+		{91, -1}, {93, 10}, {74, 75}, {71, 50}, {11, 100}
+		});
+}
+
+void MidiHandler::setSlapBass1()
+{
+	applyInstrumentPreset(36, {
+		{91, -1}, {93, 25}, {74, 95}, {71, 60}, {11, 127}
+		});
+}
+
+void MidiHandler::setSlapBass2()
+{
+	applyInstrumentPreset(37, {
+		{91, -1}, {93, 30}, {74, 100}, {71, 55}, {11, 127}
+		});
+}
+
+void MidiHandler::setSynthBass1()
+{
+	applyInstrumentPreset(38, {
+		{91, -1}, {93, 40}, {74, 127}, {71, 80}, {11, 127}
+		});
+}
+
+void MidiHandler::setSynthBass2()
+{
+	applyInstrumentPreset(39, {
+		{91, -1}, {93, 50}, {74, 127}, {71, 85}, {11, 127}
+		});
+}
+
+void MidiHandler::setNylonAcousticGuitar()
+{
+	applyInstrumentPreset(24, {
+		{91, -1}, {93, 10}, {74, 70}, {71, 40}, {11, 100}
+		});
+}
+
+void MidiHandler::setSteelAcousticGuitar()
+{
+	applyInstrumentPreset(25, {
+		{91, -1}, {93, 15}, {74, 80}, {71, 50}, {11, 110}
+		});
+}
+
+void MidiHandler::setJazzElectricGuitar()
+{
+	applyInstrumentPreset(26, {
+		{91, -1}, {93, 20}, {74, 90}, {71, 55}, {11, 110}
+		});
+}
+
+void MidiHandler::setCleanElectricGuitar()
+{
+	applyInstrumentPreset(27, {
+		{91, -1}, {93, 25}, {74, 100}, {71, 60}, {11, 115}
+		});
+}
+
+void MidiHandler::setFlute()
+{
+	applyInstrumentPreset(73, {
+		{91, -1}, {93, 20}, {74, 110}, {71, 45}, {11, 127}
+		});
+}
+
+void MidiHandler::setClarinet()
+{
+	applyInstrumentPreset(71, {
+		{91, -1}, {93, 15}, {74, 95}, {71, 40}, {11, 120}
+		});
+}
+
+void MidiHandler::setOboe()
+{
+	applyInstrumentPreset(68, {
+		{91, -1}, {93, 10}, {74, 85}, {71, 35}, {11, 115}
+		});
+}
+
+void MidiHandler::setBasson()
+{
+	applyInstrumentPreset(70, {
+		{91, -1}, {93, 5}, {74, 80}, {71, 30}, {11, 110}
+		});
+}
+
+void MidiHandler::setTrumpet()
+{
+	applyInstrumentPreset(56, {
+		{91, -1}, {93, 40}, {74, 100}, {71, 30}, {11, 127}
+		});
+}
+
+void MidiHandler::setTrombone()
+{
+	applyInstrumentPreset(57, {
+		{91, -1}, {93, 30}, {74, 95}, {71, 40}, {11, 120}
+		});
+}
+
+void MidiHandler::setFrenchHorn()
+{
+	applyInstrumentPreset(40, {
+		{91, -1}, {93, 20}, {74, 100}, {71, 60}, {11, 127}
+		});
+}
+
+void MidiHandler::setViolin()
+{
+	applyInstrumentPreset(41, {
+		{91, -1}, {93, 18}, {74, 95}, {71, 55}, {11, 122}
+		});
+}
+
+void MidiHandler::setViola()
+{
+	applyInstrumentPreset(41, {
+		{91, -1}, {93, 18}, {74, 95}, {71, 55}, {11, 122}
+		});
+}
+
+void MidiHandler::setCello()
+{
+	applyInstrumentPreset(42, {
+		{91, -1}, {93, 15}, {74, 85}, {71, 50}, {11, 120}
+		});
+}
+
+void MidiHandler::setContraBass()
+{
+	applyInstrumentPreset(43, {
+		{91, -1}, {93, 10}, {74, 80}, {71, 45}, {11, 115}
+		});
+}
+
+void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair<int, int>> ccValues)
+{
+	auto midiOut = midiDevice.getDeviceOUT();
+	if (midiOut)
+	{
+		for (int i = 0; i < 128; ++i)
+			midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, i));
+
+		midiOut->sendMessageNow(juce::MidiMessage::controllerEvent(1, 64, 0));
+
+		midiOut->sendMessageNow(juce::MidiMessage::programChange(1, programNumber));
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::programChange(1, programNumber));
+
+		for (auto& cc : ccValues)
+		{
+			int ccNumber = cc.first;
+			int ccValue = cc.second;
+			if (ccNumber == 91 && ccValue == -1)
+				ccValue = midiDevice.getReverb();
+
+			juce::MidiMessage msg = juce::MidiMessage::controllerEvent(1, ccNumber, ccValue);
+			midiOut->sendMessageNow(msg);
+			listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
+		}
+	}
 }
 
 void MidiHandler::setPlayableRange(int nrKeys)

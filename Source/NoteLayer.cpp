@@ -258,6 +258,16 @@ void NoteLayer::resetState()
     this->particles.clear();
 }
 
+void NoteLayer::resetStateActiveNotes()
+{
+    for (auto& v : activeNotes)
+    {
+        //auto midiOut=
+        int note = v.first;
+        noteOffReceived(note);
+    }
+}
+
 void NoteLayer::setColourParticle(juce::Colour& colour)
 {
     this->particleColourUser = colour;
