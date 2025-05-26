@@ -32,12 +32,8 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
-      <FILE id="cURYMU" name="MidiHandlerAbstractSubject.cpp" compile="1"
-            resource="0" file="Source/MidiHandlerAbstractSubject.cpp"/>
       <FILE id="z2Hsoc" name="MidiHandlerAbstractSubject.h" compile="0" resource="0"
             file="Source/MidiHandlerAbstractSubject.h"/>
-      <FILE id="Sq9KQB" name="MidiHandlerListener.h" compile="0" resource="0"
-            file="Source/MidiHandlerListener.h"/>
       <FILE id="dExTT9" name="temporaryNotificationUI.cpp" compile="1" resource="0"
             file="Source/temporaryNotificationUI.cpp"/>
       <FILE id="t6Fzqa" name="temporaryNotificationUI.h" compile="0" resource="0"
