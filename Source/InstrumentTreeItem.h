@@ -32,7 +32,6 @@ public:
     InstrumentTreeItem(const juce::Image& img, const juce::String& name="", int program = -1);
     InstrumentTreeItem(const juce::String& name = "", int program = -1);
 
-    //int InstrumentTreeItem::getPreferredWidth() const override;
     bool mightContainSubItems() override;
     void paintItem(juce::Graphics& g, int width, int height) override;
     int getItemWidth() const override;
