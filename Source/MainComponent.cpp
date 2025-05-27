@@ -629,6 +629,7 @@ void MainComponent::playButtonOnClick()
     if (openingDevicesForPlay()) {
         midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
         this->recordPlayer.setOutputDevice(MIDIDevice.getDeviceOUT());
+        this->midiWindow->setVisible(false);
         currentBackground = playBackground;
         repaint();
         toggleHPanel();
