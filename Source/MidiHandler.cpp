@@ -326,12 +326,6 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(scaledVelocity);
 
-		//sendCCifChanged(91, 80, lastCC91);
-		//sendCCifChanged(74, 100, lastCC74);
-;		//sendCCifChanged(11, midiDevice.getReverb(), lastCC11);
-		//sendCCifChanged(93, 70, lastCC93);
-		//sendCCifChanged(71, 30, lastCC71);
-
 		if (auto midiOut = midiDevice.getDeviceOUT())
 		{
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
@@ -375,6 +369,7 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	auto midiOut = midiDevice.getDeviceOUT();
 	if (midiOut)
 	{
+		midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
 		midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocity));
 	}
 	listeners.call(&MidiHandlerListener::noteOnReceived, note);
@@ -403,11 +398,11 @@ void MidiHandler::setProgramNumber(int toSetNumber, const juce::String& name) {
 	auto midiOut = this->midiDevice.getDeviceOUT();
 	if (midiOut)
 	{
-
+		DBG("SET TO" << toSetNumber);
 		const auto& preset = instrumentHandler.getPreset(programNumber);
 
 		applyInstrumentPreset(programNumber, preset);
-		juce::Thread::sleep(30);
+		juce::Thread::sleep(5);
 	}
 }
 
