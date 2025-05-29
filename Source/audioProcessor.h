@@ -14,11 +14,11 @@
 #include "MidiHandler.h"
 
 
-class ReverbProcessor : public juce::AudioProcessor
+class AudioProcessorMIDIhandler : public juce::AudioProcessor
 {
 public:
-    ReverbProcessor(MidiHandler& midiHandlerReference);
-    ~ReverbProcessor() override {}
+    AudioProcessorMIDIhandler(MidiHandler& midiHandlerReference);
+    ~AudioProcessorMIDIhandler() override {}
 
     void prepareToPlay(double sampleRate, int samplesPerBlock) override;
     void releaseResources() override;
@@ -34,7 +34,6 @@ public:
     void setStateInformation(const void* data, int sizeInBytes) override;
     juce::AudioProcessorEditor* createEditor() override;
     bool hasEditor() const override;
-    void setReverbAmmount(float ammount);
     int getNumPrograms() override;
     int getCurrentProgram() override;
     void setCurrentProgram(int index) override;

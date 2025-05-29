@@ -326,10 +326,13 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(scaledVelocity);
 
+
 		if (auto midiOut = midiDevice.getDeviceOUT())
 		{
+			//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+9, velocityByte));
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
 			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
+			midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+10, velocityByte));
 		}
 
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
@@ -338,8 +341,6 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocityByte));
 
 	}
-
-	incomingMidiMessages.addEvent(processedMessage, 0);
 
 	if (message.isNoteOff())
 	{
@@ -354,14 +355,16 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		listeners.call(&MidiHandlerListener::noteOffReceived, note);
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(1, note, velocityByte));
 	}
+
+	incomingMidiMessages.addEvent(processedMessage, 0);
 }
 
 void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample, int numSamples) {
-	DBG("getNextMidiBlock called");
+	//DBG("getNextMidiBlock called");
 	const juce::ScopedLock lock(midiMutex);
 	destBuffer.addEvents(incomingMidiMessages, startSample, numSamples, 0);
 	incomingMidiMessages.clear();
-	DBG("getNextMidiBlock: " << destBuffer.getNumEvents());
+	//DBG("getNextMidiBlock: " << destBuffer.getNumEvents());
 
 }
 
@@ -442,6 +445,35 @@ void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair
 			midiOut->sendMessageNow(msg);
 			listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
 		}
+	}
+
+	//applying some of these will see for keyboard gs synth so it actually improves something because these take effect
+	// Mod Wheel (CC 1) - moderate
+	//auto msg = juce::MidiMessage::controllerEvent(1, 1, 64);
+	//midiOut->sendMessageNow(msg);
+	//listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
+
+
+	// Pan (CC 10) - center pan
+	{
+		//auto msg = juce::MidiMessage::controllerEvent(1, 10, 64);
+		//midiOut->sendMessageNow(msg);
+		//listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
+	}
+
+
+	// Aftertouch (Channel Pressure) - moderate
+	{
+		//auto msg = juce::MidiMessage::channelPressureChange(1, 80);
+		//midiOut->sendMessageNow(msg);
+		//listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
+	}
+
+	// Pitch Bend - neutral (8192)
+	{
+		//auto msg = juce::MidiMessage::pitchWheel(1, 8192);
+		//midiOut->sendMessageNow(msg);
+		//listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
 	}
 }
 

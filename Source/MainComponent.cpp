@@ -401,7 +401,7 @@ void MainComponent::recordButtonsInit()
         else {
             temporaryPopup = std::make_unique<TemporaryMessage>("Recording started!");
             headerPanel.addChildComponent(temporaryPopup.get());
-            temporaryPopup->setBounds(getWidth() / 2-50, 10, 100, 30);
+            temporaryPopup->setBounds(getWidth() / 2 - 50, 10, 100, 30);
             temporaryPopup->setFinishedCallBack([this] {
                 //saveRecording.setVisible(true);
                 temporaryPopup.reset();
@@ -411,9 +411,9 @@ void MainComponent::recordButtonsInit()
     };
 
     stopRecording.onClick = [this] {
-        int result=recordPlayer.stopRecording();
-        
-        if(result==1)
+        int result = recordPlayer.stopRecording();
+
+        if (result == 1)
             saveRecordingButton.setVisible(true);
 
         if (temporaryPopup)
@@ -424,13 +424,18 @@ void MainComponent::recordButtonsInit()
         else {
             temporaryPopup = std::make_unique<TemporaryMessage>("Recording stopped!");
             headerPanel.addChildComponent(temporaryPopup.get());
-            temporaryPopup->setBounds(getWidth() / 2-50, 10, 100, 30);
+            temporaryPopup->setBounds(getWidth() / 2 - 50, 10, 100, 30);
             temporaryPopup->setFinishedCallBack([this] {
                 temporaryPopup.reset();
 
                 });
             temporaryPopup->setVisible(true);
         }
+    };
+
+    recordPlayer.applyPresetFunction= [&]()
+    {
+        midiHandler.setProgramNumber(recordPlayer.getProgram());
     };
 
     recordPlayer.notifyFunction = [&]()
@@ -629,7 +634,8 @@ void MainComponent::playButtonOnClick()
     if (openingDevicesForPlay()) {
         midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
         this->recordPlayer.setOutputDevice(MIDIDevice.getDeviceOUT());
-        this->midiWindow->setVisible(false);
+        if(midiWindow)
+            this->midiWindow->setVisible(false);
         currentBackground = playBackground;
         repaint();
         toggleHPanel();

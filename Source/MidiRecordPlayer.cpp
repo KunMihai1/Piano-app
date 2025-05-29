@@ -18,6 +18,7 @@ void MidiRecordPlayer::startRecording()
 {
     allEventsPlayed.clear();
     allEventsPlayedFile.clear();
+    applyPresetFunction();
     recordStartTime = juce::Time::getMillisecondCounterHiRes() * 0.001;
     isRecording = true;
 }
@@ -106,7 +107,6 @@ void MidiRecordPlayer::timerCallback()
     {
         return;
     }
-
     double elapsedTime = juce::Time::getMillisecondCounterHiRes() * 0.001- playBackStartTime;
 
     if (isPlaying)
@@ -178,7 +178,8 @@ bool MidiRecordPlayer::saveRecordingToFile(const juce::File& fileToSaveTo, juce:
         errorMsg = "No recorded events to save!";
         return false;
     }
-
+    //applyPresetFunction();
+    //maybe mutex unti
 
     juce::MidiFile midiFile;
     const int ticksPerQuarterNote = 960;
@@ -194,12 +195,14 @@ bool MidiRecordPlayer::saveRecordingToFile(const juce::File& fileToSaveTo, juce:
     tempoSequence.addEvent(juce::MidiMessage::tempoMetaEvent(microsecondsPerQuarterNote), 0);
 
     midiFile.addTrack(tempoSequence);
-
+    //TODO to fix recording with these hardcoded messages sent
+    /*
     sequence.addEvent(juce::MidiMessage::programChange(1, program), 0);
     sequence.addEvent(juce::MidiMessage::controllerEvent(1, 91, 80), 0);
     sequence.addEvent(juce::MidiMessage::controllerEvent(1, 74, 100), 0);
     sequence.addEvent(juce::MidiMessage::controllerEvent(1, 11, reverb), 0);
     sequence.addEvent(juce::MidiMessage::controllerEvent(1, 93, 70), 0);
+    */
 
     for (const auto& event : allEventsPlayed)
     {
@@ -273,6 +276,11 @@ bool MidiRecordPlayer::parseRecordingFromFile(const juce::File& fileToParse, juc
 int MidiRecordPlayer::getSizeRecorded()
 {
     return allEventsPlayed.size();
+}
+
+int MidiRecordPlayer::getProgram()
+{
+    return program;
 }
 
 std::vector<RecordedEvent>& MidiRecordPlayer::getAllRecordedEvents()
