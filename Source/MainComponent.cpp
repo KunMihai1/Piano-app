@@ -90,6 +90,7 @@ void MainComponent::resized()
     settingsPanel.setBounds(0, 70, 250, getHeight());
     midiButton.setBounds(0, 5, 200, 50);
     helpIcon.setBounds(210, 20, 100, 20);
+
     headerPanel.setBounds(0, 0, getWidth(), 50);
     homeButton.setBounds(10, 10, 75, 30);
     colourSelectorButton.setBounds(90, 10, 100, 30);
@@ -530,12 +531,16 @@ void MainComponent::keyBoardUIinit(int min, int max)
 {
     keyboardInitialized = true;
     addAndMakeVisible(keyboard);
-    keyboard.setBounds(0, getHeight() - 200, getWidth(), 200);
+    int keyboardHeight = (int)getHeight() * 0.2;
+
+    //keyboard.setBounds(0, getHeight() - 200, getWidth(), 200);
+    keyboard.setBounds(0, getHeight() - keyboardHeight, getWidth(), keyboardHeight);
 
     this->keyboard.set_min_and_max(min, max);
     noteLayer = std::make_unique<NoteLayer>(this->keyboard);
     midiHandler.addListener(noteLayer.get());
-    noteLayer->setBounds(0, 50, getWidth(), getHeight() - 200 - 50);
+    //noteLayer->setBounds(0, 50, getWidth(), getHeight() - 200 - 50);
+    noteLayer->setBounds(0, 50, getWidth(), getHeight() - keyboardHeight - 50);
     addAndMakeVisible(noteLayer.get());
 
     this->keyboard.repaint();
