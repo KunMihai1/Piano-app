@@ -94,10 +94,13 @@ void MainComponent::resized()
     homeButton.setBounds(10, 10, 75, 30);
     colourSelectorButton.setBounds(90, 10, 100, 30);
     instrumentSelectorButton.setBounds(195, 10, 100, 30);
-    startRecording.setBounds(1700, 10, 30, 30);
-    stopRecording.setBounds(1760, 10, 30, 30);
-    startPlayback.setBounds(1820, 10, 25, 30);
-    saveRecordingButton.setBounds(1550, 10, 140, 30);
+
+    startPlayback.setBounds(getWidth() - 30 - 35, 10, 30, 30);
+    stopRecording.setBounds(startPlayback.getX()-30-10, 10, 30, 30);
+    startRecording.setBounds(stopRecording.getX()-30-10, 10, 30, 30);
+
+    saveRecordingButton.setBounds(startRecording.getX()-140-10, 10, 140, 30);
+
     playRecordingFileButton.setBounds(305, 10, 100, 30);
 
 
