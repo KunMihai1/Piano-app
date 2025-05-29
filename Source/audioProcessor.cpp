@@ -10,7 +10,7 @@
 
 #include "audioProcessor.h"
 
-ReverbProcessor::ReverbProcessor(MidiHandler& midiHandlerReference) : reverbSynth{ "ok.wav" }, midiHandler{midiHandlerReference}
+AudioProcessorMIDIhandler::AudioProcessorMIDIhandler(MidiHandler& midiHandlerReference) : reverbSynth{ "ok.wav" }, midiHandler{midiHandlerReference}
 {
     juce::Reverb::Parameters reverbParams;
     reverbParams.roomSize = 0.5f;
@@ -21,17 +21,17 @@ ReverbProcessor::ReverbProcessor(MidiHandler& midiHandlerReference) : reverbSynt
     reverb.setParameters(reverbParams);
 }
 
-void ReverbProcessor::prepareToPlay(double sampleRate, int samplesPerBlock)
+void AudioProcessorMIDIhandler::prepareToPlay(double sampleRate, int samplesPerBlock)
 {
     reverbSynth.setCurrentPlaybackSampleRate(sampleRate);
     reverb.setSampleRate(sampleRate);
 }
 
-void ReverbProcessor::releaseResources()
+void AudioProcessorMIDIhandler::releaseResources()
 {
 }
 
-void ReverbProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
+void AudioProcessorMIDIhandler::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiBuffer& midiMessages)
 {
     DBG("PROCESS BLOCK RUNNING!\n");
     
@@ -47,32 +47,32 @@ void ReverbProcessor::processBlock(juce::AudioBuffer<float>& buffer, juce::MidiB
             DBG("PROCESSBLOCK GOT NOTE ON: " << metadata.getMessage().getNoteNumber());
     }
 
-    reverbSynth.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
+   // reverbSynth.renderNextBlock(buffer, midiMessages, 0, buffer.getNumSamples());
 
-    reverb.processStereo(buffer.getWritePointer(0), buffer.getWritePointer(1), buffer.getNumSamples());
+    //reverb.processStereo(buffer.getWritePointer(0), buffer.getWritePointer(1), buffer.getNumSamples());
 }
 
-const juce::String ReverbProcessor::getName() const
+const juce::String AudioProcessorMIDIhandler::getName() const
 {
     return juce::String();
 }
 
-bool ReverbProcessor::acceptsMidi() const
+bool AudioProcessorMIDIhandler::acceptsMidi() const
 {
     return true;
 }
 
-bool ReverbProcessor::producesMidi() const
+bool AudioProcessorMIDIhandler::producesMidi() const
 {
     return false;
 }
 
-double ReverbProcessor::getTailLengthSeconds() const
+double AudioProcessorMIDIhandler::getTailLengthSeconds() const
 {
     return 0.0;
 }
 
-bool ReverbProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
+bool AudioProcessorMIDIhandler::isBusesLayoutSupported(const BusesLayout& layouts) const
 {
     auto input = layouts.getMainInputChannelSet();
     auto output = layouts.getMainOutputChannelSet();
@@ -87,50 +87,43 @@ bool ReverbProcessor::isBusesLayoutSupported(const BusesLayout& layouts) const
     return inputOk && outputOk;
 }
 
-void ReverbProcessor::getStateInformation(juce::MemoryBlock& destData)
+void AudioProcessorMIDIhandler::getStateInformation(juce::MemoryBlock& destData)
 {
 }
 
-void ReverbProcessor::setStateInformation(const void* data, int sizeInBytes)
+void AudioProcessorMIDIhandler::setStateInformation(const void* data, int sizeInBytes)
 {
 }
 
-juce::AudioProcessorEditor* ReverbProcessor::createEditor()
+juce::AudioProcessorEditor* AudioProcessorMIDIhandler::createEditor()
 {
     return nullptr;
 }
 
-bool ReverbProcessor::hasEditor() const
+bool AudioProcessorMIDIhandler::hasEditor() const
 {
     return false;
 }
 
-void ReverbProcessor::setReverbAmmount(float ammount)
-{
-    juce::Reverb::Parameters paramReverb = reverb.getParameters();
-    paramReverb.wetLevel = juce::jlimit(0.0f, 1.0f, ammount);
-    reverb.setParameters(paramReverb);
-}
-
-int ReverbProcessor::getNumPrograms()
+int AudioProcessorMIDIhandler::getNumPrograms()
 {
     return 0;
 }
 
-int ReverbProcessor::getCurrentProgram()
+int AudioProcessorMIDIhandler::getCurrentProgram()
 {
     return 0;
 }
 
-void ReverbProcessor::setCurrentProgram(int index)
+void AudioProcessorMIDIhandler::setCurrentProgram(int index)
 {
 }
 
-const juce::String ReverbProcessor::getProgramName(int index)
+const juce::String AudioProcessorMIDIhandler::getProgramName(int index)
 {
     return juce::String();
 }
 
-void ReverbProcessor::changeProgramName(int index, const juce::String& newName)
+void AudioProcessorMIDIhandler::changeProgramName(int index, const juce::String& newName)
 {
 }

@@ -25,6 +25,7 @@ class MidiRecordPlayer : private juce::Timer, public MidiHandlerListener
 {
 public:
     std::function<void()> notifyFunction;
+    std::function<void()> applyPresetFunction;
 
     MidiRecordPlayer(juce::MidiOutput* midiOut=nullptr);
 
@@ -61,6 +62,8 @@ public:
     bool parseRecordingFromFile(const juce::File& fileToParse, juce::String& errorMsg);
 
     int getSizeRecorded();
+
+    int getProgram();
 
     std::vector<RecordedEvent>& getAllRecordedEvents();
 
