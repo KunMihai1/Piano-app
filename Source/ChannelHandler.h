@@ -9,3 +9,8 @@
 */
 
 #pragma once
+/*
+* TODO 
+* Handle channels output for different type of ''gamemodes''
+* local off with message change but if it's not supported, then for a full good experience, the user has to use local off from phyisical settings
+*/
