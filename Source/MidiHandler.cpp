@@ -332,7 +332,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 			//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+9, velocityByte));
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
 			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
-			midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+10, velocityByte));
+			//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+10, velocityByte));
 		}
 
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
@@ -430,6 +430,8 @@ void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair
 			midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, i));
 
 		midiOut->sendMessageNow(juce::MidiMessage::controllerEvent(1, 64, 0));
+		//juce::MidiMessage localOff = juce::MidiMessage::controllerEvent(1, 122, 0);
+		//midiOut->sendMessageNow(localOff);
 
 		midiOut->sendMessageNow(juce::MidiMessage::programChange(1, programNumber));
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::programChange(1, programNumber));

@@ -32,6 +32,10 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="fbt5jX" name="ChannelHandler.cpp" compile="1" resource="0"
+            file="Source/ChannelHandler.cpp"/>
+      <FILE id="BOzZtI" name="ChannelHandler.h" compile="0" resource="0"
+            file="Source/ChannelHandler.h"/>
       <FILE id="z2Hsoc" name="MidiHandlerAbstractSubject.h" compile="0" resource="0"
             file="Source/MidiHandlerAbstractSubject.h"/>
       <FILE id="dExTT9" name="temporaryNotificationUI.cpp" compile="1" resource="0"
