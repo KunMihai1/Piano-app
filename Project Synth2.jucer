@@ -4,6 +4,7 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="vwDzJM" name="Project Synth2">
     <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
+      <FILE id="Sji6TV" name="Knob.png" compile="0" resource="1" file="Photos/Knob.png"/>
       <FILE id="n7QYCK" name="playButton.svg" compile="0" resource="1" file="Photos/playButton.svg"/>
       <FILE id="njeogV" name="recordPlayback.svg" compile="0" resource="1"
             file="Photos/recordPlayback.svg"/>
@@ -32,6 +33,8 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="HiLb6c" name="displayGUI.cpp" compile="1" resource="0" file="Source/displayGUI.cpp"/>
+      <FILE id="ICOTvm" name="displayGUI.h" compile="0" resource="0" file="Source/displayGUI.h"/>
       <FILE id="fbt5jX" name="ChannelHandler.cpp" compile="1" resource="0"
             file="Source/ChannelHandler.cpp"/>
       <FILE id="BOzZtI" name="ChannelHandler.h" compile="0" resource="0"

@@ -13,6 +13,8 @@ MainComponent::MainComponent()
     playBackground = juce::ImageFileFormat::loadFrom(BinaryData::playingBackground_png, BinaryData::playingBackground_pngSize);
     currentBackground = cachedImageMainWindow;
 
+    displayInit();
+
     setBounds(0, 0, juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getWidth(),
         juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getHeight() - 40);
     this->addKeyListener(&this->keyListener);
@@ -50,6 +52,7 @@ MainComponent::~MainComponent()
         midiHandler.removeListener(noteLayer.get());
     if(&keyboard)
         midiHandler.removeListener(&keyboard);
+    volumeKnob.setLookAndFeel(nullptr);     
 }
 
 //==============================================================================
@@ -101,9 +104,11 @@ void MainComponent::resized()
     startRecording.setBounds(stopRecording.getX()-30-10, 10, 30, 30);
 
     saveRecordingButton.setBounds(startRecording.getX()-140-10, 10, 140, 30);
-
     playRecordingFileButton.setBounds(305, 10, 100, 30);
 
+    //volumeKnob.setBounds(getWidth() / 2, 0, 70, 50);
+
+    display->setBounds(getWidth() / 2, 0, 100, 50);
 
     if (noteLayer)
     {
@@ -256,6 +261,8 @@ void MainComponent::toggleHPanel()
     toggleInstrumentSelectorButton();
     toggleRecordButtons();
     togglePlayRecordingButton();
+    toggleKnobs();
+    toggleDisplay();
 }
 
 void MainComponent::toggleHomeButton()
@@ -306,6 +313,20 @@ void MainComponent::togglePlayRecordingButton()
     if (playRecordingFileButton.isVisible())
         playRecordingFileButton.setVisible(false);
     else playRecordingFileButton.setVisible(true);
+}
+
+void MainComponent::toggleKnobs()
+{
+    if (volumeKnob.isVisible())
+        volumeKnob.setVisible(false);
+    else volumeKnob.setVisible(true);
+}
+
+void MainComponent::toggleDisplay()
+{
+    if (display->isVisible())
+        display->setVisible(false);
+    display->setVisible(true);
 }
 
 void MainComponent::toggleForPlaying()
@@ -527,6 +548,23 @@ void MainComponent::playRecordingButtonInit()
     playRecordingFileButton.setVisible(false);
 }
 
+void MainComponent::knobsInit()
+{
+    volumeKnob.setSliderStyle(juce::Slider::Rotary);
+    volumeKnob.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+
+    volumeKnob.setLookAndFeel(&customKnobLookAndFeel);
+    headerPanel.addAndMakeVisible(volumeKnob);
+    volumeKnob.setVisible(false);
+}
+
+void MainComponent::displayInit()
+{
+    display = std::make_unique<Display>();
+    headerPanel.addAndMakeVisible(display.get());
+    display->setVisible(false);
+}
+
 void MainComponent::keyBoardUIinit(int min, int max)
 {
     keyboardInitialized = true;
@@ -587,6 +625,7 @@ void MainComponent::headerPanelInit()
     recordButtonsInit();
     saveRecordingButtonInit();
     playRecordingButtonInit();
+    knobsInit();
 }
 
 void MainComponent::homeButtonInit()
@@ -632,7 +671,8 @@ void MainComponent::homeButtonOnClick()
     keyboard.setVisible(false);
     this->noteLayer->setVisible(false);
     this->noteLayer->resetState();
-    this->recordPlayer.stopPlayBack();
+    if(this->recordPlayer.getIsPlaying())
+        this->recordPlayer.stopPlayBack();
 }
 
 void MainComponent::playButtonOnClick()
