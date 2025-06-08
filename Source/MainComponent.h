@@ -11,6 +11,109 @@
 #include "temporaryNotificationUI.h"
 #include "InstrumentTreeItem.h"
 #include "MidiRecordPlayer.h"
+#include "displayGUI.h"
+
+class SmoothRotarySlider : public juce::Slider
+{
+public:
+    SmoothRotarySlider()
+    {
+        setSliderStyle(juce::Slider::Rotary);
+    }
+
+    void mouseDown(const juce::MouseEvent& e) override
+    {
+        dragStartValue = getValue();
+        dragStartPos = e.position;
+        juce::Slider::mouseDown(e);
+    }
+
+    void mouseDrag(const juce::MouseEvent& e) override
+    {
+        float dx = e.position.x - dragStartPos.x;
+        float dy = dragStartPos.y - e.position.y; // inverted Y-axis
+
+        float sensitivity = 0.005f; // adjust as needed
+
+        float delta = dx + dy;
+
+        float newValue = dragStartValue + delta * sensitivity * (getMaximum() - getMinimum());
+
+        setValue(newValue, juce::dontSendNotification);
+    }
+
+private:
+    float dragStartValue = 0.0f;
+    juce::Point<float> dragStartPos;
+};
+
+class KnobLookAndFeel : public juce::LookAndFeel_V4
+{
+public:
+    KnobLookAndFeel()
+    {
+        // Load knob image once (make sure your BinaryData::Knob_png is tightly cropped!)
+        rawKnobImage = juce::ImageCache::getFromMemory(BinaryData::Knob_png, BinaryData::Knob_pngSize);
+
+        // Standard JUCE rotary angle range (approx 270 degrees sweep)
+        rotaryStartAngle = juce::MathConstants<float>::pi * 1.25f; // 225 degrees
+        rotaryEndAngle = juce::MathConstants<float>::pi * 2.75f;   // 495 degrees
+    }
+
+    void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
+        float sliderPosProportional, float rotaryStart, float rotaryEnd,
+        juce::Slider& slider) override
+    {
+        // Use consistent rotary range to avoid glitches
+        float startAngle = rotaryStartAngle;
+        float endAngle = rotaryEndAngle;
+
+        // Clamp sliderPosProportional just in case
+        sliderPosProportional = juce::jlimit(0.0f, 1.0f, sliderPosProportional);
+
+        float angle = startAngle + sliderPosProportional * (endAngle - startAngle);
+
+        const float cx = x + width * 0.5f;
+        const float cy = y + height * 0.5f;
+        const int knobSize = juce::jmin(width, height);
+
+        g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+
+        if (rawKnobImage.isValid())
+        {
+            // Rescale knob image to fit knobSize
+            juce::Image scaledKnob = rawKnobImage.rescaled(knobSize, knobSize);
+
+            // Transform: translate origin to center, rotate, translate back to center position
+            juce::AffineTransform transform =
+                juce::AffineTransform::translation(-scaledKnob.getWidth() * 0.5f, -scaledKnob.getHeight() * 0.5f)
+                .rotated(angle)
+                .translated(cx, cy);
+
+            g.drawImageTransformed(scaledKnob, transform);
+        }
+        else
+        {
+            // If image not available, draw a simple rotating line as fallback
+
+            float radius = knobSize * 0.5f - 4.0f;
+
+            // Draw base circle
+            g.setColour(juce::Colours::darkgrey);
+            g.fillEllipse(cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
+
+            // Draw rotating indicator line
+            g.setColour(juce::Colours::orange);
+            juce::Point<float> lineStart(cx, cy);
+            juce::Point<float> lineEnd(cx + radius * std::cos(angle), cy + radius * std::sin(angle));
+            g.drawLine(lineStart.x, lineStart.y, lineEnd.x, lineEnd.y, 3.0f);
+        }
+    }
+
+private:
+    juce::Image rawKnobImage;
+    float rotaryStartAngle, rotaryEndAngle;
+};
 
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
@@ -76,6 +179,8 @@ private:
     void toggleRecordButtons();
     void toggleSaveRecordingButton();
     void togglePlayRecordingButton();
+    void toggleKnobs();
+    void toggleDisplay();
 
     void settingsInit();
     void playButtonInit();
@@ -90,6 +195,8 @@ private:
     void recordButtonsInit();
     void saveRecordingButtonInit();
     void playRecordingButtonInit();
+    void knobsInit();
+    void displayInit();
     
     void settingsButtonOnClick();
     void midiButtonOnClick();
@@ -148,6 +255,8 @@ private:
     juce::DrawableButton stopRecording{ "Stop", juce::DrawableButton::ImageFitted };
     juce::DrawableButton startPlayback{ "Play", juce::DrawableButton::ImageFitted };
     std::unique_ptr<juce::Drawable> recordDrawable, stopDrawable, playDrawable;
+    juce::Slider volumeKnob, reverbKnob;
+    KnobLookAndFeel customKnobLookAndFeel;
 
     juce::ColourSelector* colourSelector;
     std::unique_ptr<juce::TreeView> treeView=nullptr;
@@ -166,7 +275,7 @@ private:
     std::unique_ptr<TemporaryMessage> temporaryPopup;
     std::unique_ptr<juce::FileChooser> fileChooser;
 
-
+    std::unique_ptr<Display> display=nullptr;
 
 private:
     struct Panel : public juce::Component
@@ -202,6 +311,7 @@ private:
     };
 
     headerPanel headerPanel;
+
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };
