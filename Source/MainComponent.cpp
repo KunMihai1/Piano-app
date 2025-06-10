@@ -94,7 +94,7 @@ void MainComponent::resized()
     midiButton.setBounds(0, 5, 200, 50);
     helpIcon.setBounds(210, 20, 100, 20);
 
-    headerPanel.setBounds(0, 0, getWidth(), 50);
+    headerPanel.setBounds(0, 0, getWidth(), 100);
     homeButton.setBounds(10, 10, 75, 30);
     colourSelectorButton.setBounds(90, 10, 100, 30);
     instrumentSelectorButton.setBounds(195, 10, 100, 30);
@@ -108,7 +108,7 @@ void MainComponent::resized()
 
     //volumeKnob.setBounds(getWidth() / 2, 0, 70, 50);
 
-    display->setBounds(getWidth() / 2, 0, 100, 50);
+    display->setBounds((headerPanel.getWidth()-300)/2, 0, 300, 100);
 
     if (noteLayer)
     {
@@ -562,6 +562,7 @@ void MainComponent::displayInit()
 {
     display = std::make_unique<Display>();
     headerPanel.addAndMakeVisible(display.get());
+    //addAndMakeVisible(display.get());
     display->setVisible(false);
 }
 
@@ -569,7 +570,7 @@ void MainComponent::keyBoardUIinit(int min, int max)
 {
     keyboardInitialized = true;
     addAndMakeVisible(keyboard);
-    int keyboardHeight = (int)getHeight() * 0.2;
+    int keyboardHeight = (int)getHeight() * 0.24;
 
     //keyboard.setBounds(0, getHeight() - 200, getWidth(), 200);
     keyboard.setBounds(0, getHeight() - keyboardHeight, getWidth(), keyboardHeight);
@@ -578,7 +579,7 @@ void MainComponent::keyBoardUIinit(int min, int max)
     noteLayer = std::make_unique<NoteLayer>(this->keyboard);
     midiHandler.addListener(noteLayer.get());
     //noteLayer->setBounds(0, 50, getWidth(), getHeight() - 200 - 50);
-    noteLayer->setBounds(0, 50, getWidth(), getHeight() - keyboardHeight - 50);
+    noteLayer->setBounds(0, headerPanel.getHeight(), getWidth(), getHeight() - keyboardHeight - 50);
     addAndMakeVisible(noteLayer.get());
 
     this->keyboard.repaint();
