@@ -17,7 +17,11 @@ public:
     ~MidiDevicesDataBase();
     void addDeviceJson(const juce::String& vid, const::juce::String& pid, const::juce::String& name, int numKeys);
     int getNrKeysPidVid(const juce::String& vid, const juce::String& pid);
+    juce::File getAppDataFolder();
+
 private:
+    void populateInitialDevices();
+
     void jsonEnsureExistance();
     void loadJsonFile();
     void saveJsonFile();

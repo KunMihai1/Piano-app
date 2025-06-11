@@ -178,9 +178,9 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
 void MainComponent::initalizeSaveFileForUser()
 {
     juce::PropertiesFile::Options options;
-    options.applicationName= "Synth Piano 2";
+    options.applicationName= "Piano Synth2";
     options.filenameSuffix = "settings";
-    options.folderName="Piano Enjoyers";
+    options.folderName="Piano Synth2";
     options.osxLibrarySubFolder = "Application Support";
     options.commonToAllUsers = false;
 
@@ -570,7 +570,7 @@ void MainComponent::keyBoardUIinit(int min, int max)
 {
     keyboardInitialized = true;
     addAndMakeVisible(keyboard);
-    int keyboardHeight = (int)getHeight() * 0.24;
+    int keyboardHeight = (int)getHeight() * 0.22;
 
     //keyboard.setBounds(0, getHeight() - 200, getWidth(), 200);
     keyboard.setBounds(0, getHeight() - keyboardHeight, getWidth(), keyboardHeight);
@@ -579,7 +579,7 @@ void MainComponent::keyBoardUIinit(int min, int max)
     noteLayer = std::make_unique<NoteLayer>(this->keyboard);
     midiHandler.addListener(noteLayer.get());
     //noteLayer->setBounds(0, 50, getWidth(), getHeight() - 200 - 50);
-    noteLayer->setBounds(0, headerPanel.getHeight(), getWidth(), getHeight() - keyboardHeight - 50);
+    noteLayer->setBounds(0, headerPanel.getHeight(), getWidth(), getHeight() - keyboardHeight - headerPanel.getHeight());
     addAndMakeVisible(noteLayer.get());
 
     this->keyboard.repaint();
@@ -928,8 +928,8 @@ void MainComponent::showColourSelector()
     colourSelector->setColour(juce::ColourSelector::backgroundColourId, juce::Colours::transparentBlack);
     colourSelector->addChangeListener(this);
     colourSelector->setSize(500, 300);
-    auto area1 = juce::Rectangle<int>(0, 0, 500, 50);
-    auto area = juce::Rectangle<int>(colourSelectorButton.getX() - 25, 0, 500, getHeight() - 50 - 200);
+    auto area1 = juce::Rectangle<int>(0, 0, 500, headerPanel.getHeight()+headerPanel.getY());
+
     this->keyboard.setIsDrawn(false);
     juce::CallOutBox::launchAsynchronously(std::unique_ptr<juce::ColourSelector>(colourSelector), area1, this);
     this->keyboard.repaint();
@@ -953,7 +953,7 @@ void MainComponent::showInstrumentSelector()
     //else DBG("not deleting root from show");
     buildTree();
     treeView->setColour(juce::TreeView::backgroundColourId, juce::Colours::white);
-    auto area1 = juce::Rectangle<int>(0, 0, 500, 50);
+    auto area1 = juce::Rectangle<int>(0, 0, 500, headerPanel.getHeight() + headerPanel.getY());
     
     auto holder = std::make_unique<TreeViewHolder>(treeView.get());
     holder->setOpaque(true);
