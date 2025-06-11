@@ -393,6 +393,12 @@ Track::Track()
     addAndMakeVisible(nameLabel);
 }
 
+Track::~Track()
+{
+    volumeSlider.onDragEnd = nullptr;
+    volumeSlider.onValueChange = nullptr; //in case of alt f4 it will crash otherwise since these listeners will propagate the onChange
+}
+
 void Track::resized()
 {
     auto heightOfSlider = getHeight() / 2 + 20;

@@ -17,6 +17,7 @@ public:
     std::function<void()> onChange;
 
     Track();
+    ~Track();
 
     void resized() override;
     
