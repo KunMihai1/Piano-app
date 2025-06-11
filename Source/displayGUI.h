@@ -14,25 +14,43 @@
 class Track : public juce::Component
 {
 public:
+    std::function<void()> onChange;
+
     Track();
 
     void resized() override;
     
+    void paint(juce::Graphics& g) override;
+
+    juce::DynamicObject* getJson() const;
+
+    juce::var loadJson(const juce::File& file);
+
+    void setVolumeSlider(double value);
+    void setVolumeLabel(const juce::String& value);
+    void setNameLabel(const juce::String& name);
+
 
 private:
     juce::Slider volumeSlider;
     juce::Label volumeLabel;
-    juce::Label instrumentLabel;
+    juce::Label nameLabel;
 };
 
 class CurrentStyleComponent : public juce::Component
 {
 public:
+    std::function<void()> anyTrackChanged;
+
     CurrentStyleComponent(const juce::String& name);
 
     void resized() override;
 
     void updateName(const juce::String& newName);
+
+    juce::DynamicObject* getJson() const;
+
+    void loadJson(const juce::var& styleVar);
 
     void initializeTracks();
 
@@ -56,7 +74,6 @@ public:
 
 private:
     juce::Label label;
-    juce::OwnedArray<juce::TextButton> trackButtons;
 };
 
 class StylesListComponent : public juce::Component
@@ -81,14 +98,20 @@ public:
     Display();
     ~Display() override;
 
-    void paint(juce::Graphics& g) override;
+    void initializeAllStyles();
+    void loadAllStyles();
+    void updateStyleInJson(const juce::String& name);
 
     void resized() override;
+    const juce::var& getJsonVar();
 
     void showCurrentStyleTab(const juce::String& name);
 
 private:
+    juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
     std::unique_ptr<juce::TabbedComponent> tabComp;
     std::unique_ptr<CurrentStyleComponent> currentStyleComponent;
     bool created = false;
+
+    juce::var allStylesJsonVar;
 };
