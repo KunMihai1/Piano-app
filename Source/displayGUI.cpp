@@ -181,6 +181,7 @@ const juce::var& Display::getJsonVar()
 
 StyleViewComponent::StyleViewComponent(const juce::String& styleName)
 {
+    label.setFont(juce::Font(18.0f, juce::Font::bold));
     label.setText(styleName, juce::dontSendNotification);
     label.setColour(juce::Label::textColourId, juce::Colours::cyan);
     label.setInterceptsMouseClicks(true, false);
@@ -194,8 +195,11 @@ StyleViewComponent::StyleViewComponent(const juce::String& styleName)
 
 void StyleViewComponent::resized()
 {
-    label.setBounds(10, 10, getWidth() - 30, 30);
+    auto font = label.getFont();
+    int textWidth = static_cast<int>(font.getStringWidth(label.getText()));
+    int textHeight = static_cast<int>(font.getHeight());
 
+    label.setBounds(10, 10, textWidth + 10, textHeight + 6);
 }
 
 void StyleViewComponent::mouseUp(const juce::MouseEvent& event)
@@ -255,7 +259,7 @@ void StylesListComponent::populate()
 
     // Very narrow width; Viewport will stretch it later
     const int totalHeight = nrOfStyles * (itemHeight + spacing) + spacing;
-    setSize(300, totalHeight/2);  // key fix: force vertical scrolling
+    setSize(400, totalHeight/2);  // key fix: force vertical scrolling
 
     DBG("Populated with " + juce::String(allStyles.size()) + " styles.");
 }

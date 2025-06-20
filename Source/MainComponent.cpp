@@ -108,7 +108,7 @@ void MainComponent::resized()
 
     //volumeKnob.setBounds(getWidth() / 2, 0, 70, 50);
 
-    display->setBounds((headerPanel.getWidth()-300)/2, 0, 300, 100);
+    display->setBounds((headerPanel.getWidth()-400)/2, 0, 400, 100);
 
     if (noteLayer)
     {
@@ -933,9 +933,10 @@ void MainComponent::showColourSelector()
     this->keyboard.setIsDrawn(false);
     juce::CallOutBox::launchAsynchronously(std::unique_ptr<juce::ColourSelector>(colourSelector), area1, this);
     this->keyboard.repaint();
-    noteLayer->resetState();
-    noteLayer->repaint();
+
     noteLayer->setVisible(false);
+    noteLayer->resetState();
+    //noteLayer->repaint();
 }
 
 void MainComponent::showInstrumentSelector()
@@ -960,9 +961,10 @@ void MainComponent::showInstrumentSelector()
     this->keyboard.setIsDrawn(false);
     juce::CallOutBox::launchAsynchronously(std::move(holder), area1, this);
     this->keyboard.repaint();
-    noteLayer->resetState();
-    noteLayer->repaint();
+
     noteLayer->setVisible(false);
+    noteLayer->resetState();
+    //noteLayer->repaint();
 }
 
 void MainComponent::saveRecordingToFile(double tempo)
