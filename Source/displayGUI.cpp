@@ -10,14 +10,14 @@
 
 #include "displayGUI.h"
 
-Display::Display()
+Display::Display(int widthForList)
 {
-    tabComp = std::make_unique<juce::TabbedComponent>(juce::TabbedButtonBar::TabsAtLeft);
+    createUserTracksFolder();
+    tabComp = std::make_unique<MyTabbedComponent>(juce::TabbedButtonBar::TabsAtLeft);
     addAndMakeVisible(tabComp.get());
-    //tabComp->addTab("Styles", juce::Colours::lightgrey);
 
     auto* list = new StylesListComponent{ 10, [this](const juce::String& name) {
-        showCurrentStyleTab(name); }
+        showCurrentStyleTab(name); },widthForList
     };
 
     auto* scrollableView = new juce::Viewport();
@@ -25,16 +25,52 @@ Display::Display()
     scrollableView->setViewedComponent(list, true);
     tabComp->addTab("Styles", juce::Colour::fromRGB(10, 15, 10), scrollableView, true);
 
-
     list->resized();
     scrollableView->getViewedComponent()->resized();
 
     loadAllStyles();
     initializeAllStyles();
+
+    tabComp->onTabChanged = [this](int newIndex, juce::String tabName)
+    {
+        if (createdTracksTab && tabName != "My tracks")
+        {
+            int myTracksIndex = tabComp->getNumTabs() - 1;
+            tabComp->removeTab(myTracksIndex);
+            createdTracksTab = false;
+        }
+    };
 }
 
 Display::~Display()
 {
+}
+
+void Display::changeListenerCallback(juce::ChangeBroadcaster* source)
+{
+    auto* tabbedCast = dynamic_cast<juce::TabbedComponent*>(source);
+    if (tabbedCast==tabComp.get())
+    {
+        int currentIndex = tabComp->getCurrentTabIndex();
+        int tracksTabIndex = getTabIndexByName("My tracks");
+
+        if (tracksTabIndex >= 0 && currentIndex != tracksTabIndex)
+        {
+            tabComp->removeTab(tracksTabIndex);
+        }
+    }
+}
+
+int Display::getTabIndexByName(const juce::String& name)
+{
+    auto& tabBar = tabComp->getTabbedButtonBar();
+
+    for (int i = 0; i < tabComp->getNumTabs(); ++i)
+    {
+        if (tabBar.getTabButton(i)->getName() == name)
+            return i;
+    }
+    return -1;
 }
 
 void Display::showCurrentStyleTab(const juce::String& name)
@@ -42,6 +78,10 @@ void Display::showCurrentStyleTab(const juce::String& name)
     if (!created)
     {
         currentStyleComponent = std::make_unique<CurrentStyleComponent>(name);
+        currentStyleComponent->onRequestTrackSelectionFromTrack = [this](std::function<void(const juce::String&)> trackChosenCallback)
+        {
+            showListOfTracksToSelectFrom(trackChosenCallback);
+        };
         tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), true);
         created = true;
     }
@@ -76,6 +116,62 @@ void Display::showCurrentStyleTab(const juce::String& name)
     }
 
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
+}
+
+void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&)> onTrackSelected)
+{
+    auto userTracksFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2")
+        .getChildFile("UserTracks");
+
+    availableTracksFromFolder = getAvailableTracksFromFolder(userTracksFolder);
+
+    trackListComp = std::make_unique<TrackListComponent>(availableTracksFromFolder,
+        [this, onTrackSelected](int index)
+        {
+            onTrackSelected(availableTracksFromFolder[index]);
+            int in = tabComp->getNumTabs() - 2;
+            if (in >= 0)
+            {
+                tabComp->setCurrentTabIndex(in);
+            }
+        });
+
+
+     tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.release(), true);
+     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
+
+     createdTracksTab = true;
+}
+
+void Display::createUserTracksFolder()
+{
+    auto userTracksFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2")
+        .getChildFile("UserTracks");
+
+    if (!userTracksFolder.exists())
+    {
+        userTracksFolder.createDirectory();
+    }
+}
+
+std::vector<juce::String> Display::getAvailableTracksFromFolder(const juce::File& folder)
+{
+    std::vector<juce::String> tracks;
+
+    if (!folder.exists() || !folder.isDirectory())
+        return tracks;
+
+    juce::DirectoryIterator iter(folder, false, "*.mid", juce::File::findFiles);
+
+    while (iter.next())
+    {
+        juce::File trackFile = iter.getFile();
+        tracks.push_back(trackFile.getFileName());
+    }
+
+    return tracks;
 }
 
 void Display::initializeAllStyles()
@@ -155,7 +251,7 @@ void Display::updateStyleInJson(const juce::String& name)
         {
             if (obj->getProperty("name").toString() == name)
             {
-                styleVar = currentStyleComponent->getJson();
+                styleVar = juce::var(currentStyleComponent->getJson());
                 break;
             }
         }
@@ -172,6 +268,7 @@ void Display::updateStyleInJson(const juce::String& name)
 void Display::resized()
 {
     tabComp->setBounds(getLocalBounds());
+    
 }
 
 const juce::var& Display::getJsonVar()
@@ -210,15 +307,16 @@ void StyleViewComponent::mouseUp(const juce::MouseEvent& event)
     }
 }
 
-StylesListComponent::StylesListComponent(int nrOfStyles, std::function<void(const juce::String&)> onStyleClicked): nrOfStyles{nrOfStyles}, onStyleClicked{onStyleClicked}
+StylesListComponent::StylesListComponent(int nrOfStyles, std::function<void(const juce::String&)> onStyleClicked, int widthSize): nrOfStyles{nrOfStyles}, onStyleClicked{onStyleClicked}
 {
+    this->widthSize = widthSize;
     populate();
 }
 
 void StylesListComponent::resized()
 {
-    //DBG("DADADADA" + juce::String(getWidth() / 2 - 10) +" " + juce::String(getHeight() / 2));
-    const int itemWidth = getWidth()/2-10;   // Half of 300 width - with spacing
+    this->widthSize = getWidth();
+    const int itemWidth = getWidth()/2-10;   // Half of parent initial parent width - with spacing
     const int itemHeight =50;
     const int spacing = 10;
     const int columns = 2;
@@ -244,6 +342,11 @@ void StylesListComponent::resized()
     }
 }
 
+void StylesListComponent::setWidthSize(const int newWidth)
+{
+    this->widthSize = newWidth;
+}
+
 void StylesListComponent::populate()
 {
     const int itemHeight = 50;
@@ -259,9 +362,7 @@ void StylesListComponent::populate()
 
     // Very narrow width; Viewport will stretch it later
     const int totalHeight = nrOfStyles * (itemHeight + spacing) + spacing;
-    setSize(400, totalHeight/2);  // key fix: force vertical scrolling
-
-    DBG("Populated with " + juce::String(allStyles.size()) + " styles.");
+    setSize(widthSize, totalHeight/2);  // key fix: force vertical scrolling
 }
 
 
@@ -279,6 +380,13 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name) : name{ n
             if (anyTrackChanged)
                 anyTrackChanged();
         };
+
+        newTrack->onRequestTrackSelection = [this](std::function<void(const juce::String&)> trackChosenCallback)
+        {
+            if (onRequestTrackSelectionFromTrack)
+                onRequestTrackSelectionFromTrack(trackChosenCallback);
+        };
+
         addAndMakeVisible(newTrack);
         allTracks.add(newTrack);
     }
@@ -319,7 +427,7 @@ juce::DynamicObject* CurrentStyleComponent::getJson() const
 
     for (auto* track : allTracks)
     {
-        tracksArray.add(track->getJson());
+        tracksArray.add(juce::var(track->getJson()));
     }
 
     styleObj->setProperty("tracks", tracksArray);
@@ -394,6 +502,10 @@ Track::Track()
 
     nameLabel.setText("None", juce::dontSendNotification);
     nameLabel.setColour(juce::Label::textColourId,juce::Colours::white);
+
+    nameLabel.setInterceptsMouseClicks(true, false);
+    nameLabel.addMouseListener(this, false);
+
     addAndMakeVisible(nameLabel);
 }
 
@@ -409,7 +521,7 @@ void Track::resized()
     auto startY = (getHeight() - heightOfSlider)/2;
     volumeSlider.setBounds(0, startY-10, 15, heightOfSlider);
     volumeLabel.setBounds(7, 0, 30, 40);
-    nameLabel.setBounds((getWidth() - 30) / 2, volumeLabel.getHeight()+volumeLabel.getY() + 20, getWidth(), 20);
+    nameLabel.setBounds((getWidth() - 40) / 2, volumeLabel.getHeight()+volumeLabel.getY() + 20, getWidth(), 20);
 }
 
 void Track::paint(juce::Graphics& g)
@@ -459,4 +571,58 @@ void Track::setVolumeLabel(const juce::String& value)
 void Track::setNameLabel(const juce::String& name)
 {
     nameLabel.setText(name, juce::dontSendNotification);
+}
+
+void Track::mouseDown(const juce::MouseEvent& event)
+{
+    if (event.eventComponent == &nameLabel)
+    {
+        if (onRequestTrackSelection)
+        {
+            onRequestTrackSelection([this](const juce::String& selectedTrack)
+                {
+                    setNameLabel(selectedTrack);
+                }
+            );
+        }
+    }
+}
+
+TrackListComponent::TrackListComponent(std::vector<juce::String>& tracks, std::function<void(int)> onTrackChosen): availableTracks{tracks}, trackChosenCallBack{onTrackChosen}
+{
+    addAndMakeVisible(listBox);
+    listBox.setModel(this);
+    listBox.updateContent();
+}
+
+void TrackListComponent::resized()
+{
+    listBox.setBounds(getLocalBounds());
+}
+
+int TrackListComponent::getNumRows()
+{
+    return (int)availableTracks.size();
+}
+
+void TrackListComponent::paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected)
+{
+    if (rowIsSelected)
+        g.fillAll(juce::Colours::lightblue);
+    else
+        g.fillAll(juce::Colours::white);
+    g.setColour(juce::Colours::black);
+    g.drawText(availableTracks[rowNumber], 5, 0, width - 10, height, juce::Justification::centredLeft);
+}
+
+void TrackListComponent::listBoxItemClicked(int row, const juce::MouseEvent& event)
+{
+    if (trackChosenCallBack)
+        trackChosenCallBack(row);
+}
+
+void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)
+{
+    if (onTabChanged)
+        onTabChanged(newCurrentTabIndex, newTabName);
 }
