@@ -108,6 +108,7 @@ void MainComponent::resized()
 
     //volumeKnob.setBounds(getWidth() / 2, 0, 70, 50);
 
+    DBG(juce::String(getWidth()) + "ASAA");
     display->setBounds((headerPanel.getWidth()-400)/2, 0, 400, 100);
 
     if (noteLayer)
@@ -560,9 +561,8 @@ void MainComponent::knobsInit()
 
 void MainComponent::displayInit()
 {
-    display = std::make_unique<Display>();
+    display = std::make_unique<Display>(400);
     headerPanel.addAndMakeVisible(display.get());
-    //addAndMakeVisible(display.get());
     display->setVisible(false);
 }
 
@@ -572,13 +572,11 @@ void MainComponent::keyBoardUIinit(int min, int max)
     addAndMakeVisible(keyboard);
     int keyboardHeight = (int)getHeight() * 0.22;
 
-    //keyboard.setBounds(0, getHeight() - 200, getWidth(), 200);
     keyboard.setBounds(0, getHeight() - keyboardHeight, getWidth(), keyboardHeight);
 
     this->keyboard.set_min_and_max(min, max);
     noteLayer = std::make_unique<NoteLayer>(this->keyboard);
     midiHandler.addListener(noteLayer.get());
-    //noteLayer->setBounds(0, 50, getWidth(), getHeight() - 200 - 50);
     noteLayer->setBounds(0, headerPanel.getHeight(), getWidth(), getHeight() - keyboardHeight - headerPanel.getHeight());
     addAndMakeVisible(noteLayer.get());
 
@@ -930,13 +928,19 @@ void MainComponent::showColourSelector()
     colourSelector->setSize(500, 300);
     auto area1 = juce::Rectangle<int>(0, 0, 500, headerPanel.getHeight()+headerPanel.getY());
 
-    this->keyboard.setIsDrawn(false);
-    juce::CallOutBox::launchAsynchronously(std::unique_ptr<juce::ColourSelector>(colourSelector), area1, this);
-    this->keyboard.repaint();
 
     noteLayer->setVisible(false);
     noteLayer->resetState();
-    //noteLayer->repaint();
+    noteLayer->repaint();
+    this->keyboard.setIsDrawn(false);
+    this->keyboard.repaint();
+
+    juce::Timer::callAfterDelay(5, [this,area1]()
+        {
+            juce::CallOutBox::launchAsynchronously(
+                std::unique_ptr<juce::ColourSelector>(colourSelector), area1, this
+            );
+        });
 }
 
 void MainComponent::showInstrumentSelector()
@@ -956,15 +960,21 @@ void MainComponent::showInstrumentSelector()
     treeView->setColour(juce::TreeView::backgroundColourId, juce::Colours::white);
     auto area1 = juce::Rectangle<int>(0, 0, 500, headerPanel.getHeight() + headerPanel.getY());
     
-    auto holder = std::make_unique<TreeViewHolder>(treeView.get());
-    holder->setOpaque(true);
-    this->keyboard.setIsDrawn(false);
-    juce::CallOutBox::launchAsynchronously(std::move(holder), area1, this);
-    this->keyboard.repaint();
-
     noteLayer->setVisible(false);
     noteLayer->resetState();
-    //noteLayer->repaint();
+    noteLayer->repaint();
+    this->keyboard.setIsDrawn(false);
+    this->keyboard.repaint();
+
+    juce::Timer::callAfterDelay(5, [this,area1, treeViewPtr=treeView.get()]() mutable
+        {
+            if (this)
+            {
+                auto holder = std::make_unique<TreeViewHolder>(treeViewPtr);
+                holder->setOpaque(true);
+                juce::CallOutBox::launchAsynchronously(std::move(holder), area1, this);
+            }
+        });
 }
 
 void MainComponent::saveRecordingToFile(double tempo)

@@ -11,10 +11,33 @@
 #pragma once
 #include <JuceHeader.h>
 
-class Track : public juce::Component
+
+class TrackListComponent : public juce::Component, private juce::ListBoxModel
+{
+public:
+    TrackListComponent(std::vector<juce::String>& tracks, std::function<void(int)> onTrackChosen);
+
+    void resized() override;
+
+    int getNumRows() override;
+
+    void paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected) override;
+
+    void listBoxItemClicked(int row, const juce::MouseEvent& event) override;
+
+
+private:
+    juce::ListBox listBox;
+    std::vector<juce::String>& availableTracks;
+    std::function<void(int)> trackChosenCallBack;
+
+};
+
+class Track : public juce::Component, private juce::MouseListener
 {
 public:
     std::function<void()> onChange;
+    std::function<void(std::function<void(const juce::String&)>)> onRequestTrackSelection;
 
     Track();
     ~Track();
@@ -25,6 +48,7 @@ public:
 
     juce::DynamicObject* getJson() const;
 
+
     juce::var loadJson(const juce::File& file);
 
     void setVolumeSlider(double value);
@@ -33,6 +57,8 @@ public:
 
 
 private:
+    void mouseDown(const juce::MouseEvent& event) override;
+
     juce::Slider volumeSlider;
     juce::Label volumeLabel;
     juce::Label nameLabel;
@@ -42,6 +68,7 @@ class CurrentStyleComponent : public juce::Component
 {
 public:
     std::function<void()> anyTrackChanged;
+    std::function<void(std::function<void(const juce::String&)>)> onRequestTrackSelectionFromTrack;
 
     CurrentStyleComponent(const juce::String& name);
 
@@ -80,9 +107,10 @@ private:
 class StylesListComponent : public juce::Component
 {
 public:
-    StylesListComponent(int nrOfStyles, std::function<void(const juce::String&)> onStyleClicked);
+    StylesListComponent(int nrOfStyles, std::function<void(const juce::String&)> onStyleClicked, int widthSize=0);
 
     void resized() override;
+    void setWidthSize(const int newWidth);
 
 private:
     void populate();
@@ -91,13 +119,29 @@ private:
     std::function<void(const juce::String&)> onStyleClicked;
 
     int nrOfStyles;
+    int widthSize;
 };
 
-class Display: public  juce::Component
+class MyTabbedComponent : public juce::TabbedComponent
 {
 public:
-    Display();
+    MyTabbedComponent(juce::TabbedButtonBar::Orientation orientation)
+        : juce::TabbedComponent(orientation) {}
+
+    void currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName) override;
+
+    std::function<void(int, juce::String)> onTabChanged;
+};
+
+class Display: public  juce::Component, public juce::ChangeListener
+{
+public:
+    Display(int widthForList=0);
     ~Display() override;
+
+    void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+
+    int getTabIndexByName(const juce::String& name);
 
     void initializeAllStyles();
     void loadAllStyles();
@@ -107,12 +151,19 @@ public:
     const juce::var& getJsonVar();
 
     void showCurrentStyleTab(const juce::String& name);
+    void showListOfTracksToSelectFrom(std::function<void(const juce::String&)> onTrackSelected);
+
+    void createUserTracksFolder();
+    std::vector<juce::String> getAvailableTracksFromFolder(const juce::File& folder);
 
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
-    std::unique_ptr<juce::TabbedComponent> tabComp;
+    std::unique_ptr<MyTabbedComponent> tabComp;
     std::unique_ptr<CurrentStyleComponent> currentStyleComponent;
     bool created = false;
+    bool createdTracksTab = false;
+    std::vector<juce::String> availableTracksFromFolder;
 
+    std::unique_ptr<TrackListComponent> trackListComp;
     juce::var allStylesJsonVar;
 };
