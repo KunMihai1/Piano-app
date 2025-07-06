@@ -760,6 +760,7 @@ void TrackListComponent::addToTrackList()
 
                 for (int i = 0; i < totalTracks; ++i)
                 {
+                    auto* newTrackSeq = midiFile.getTrack(i);
                     bool duplicate = false;
                     for (const auto& trackEntry : availableTracks)
                     {
@@ -847,6 +848,7 @@ void TrackListComponent::saveToFile(const juce::File& fileToSave)
             auto* trackObject = new juce::DynamicObject{};
             trackObject->setProperty("trackIndex", tr.trackIndex);
             trackObject->setProperty("displayName", tr.displayName);
+
             trackArray.add(juce::var(trackObject));
         }
         fileObj->setProperty("Tracks", trackArray);
@@ -946,6 +948,7 @@ juce::String TrackListComponent::extractDisplayNameFromTrack(const juce::MidiMes
 
     return "Unnamed Track";
 }
+
 
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)
 {
