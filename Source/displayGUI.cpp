@@ -40,6 +40,19 @@ Display::Display(int widthForList)
             createdTracksTab = false;
         }
     };
+
+    auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2");
+
+    auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+    if (!jsonFile.exists())
+    {
+        juce::var emptyArray = juce::Array<juce::var>{};
+        juce::String jsonString = juce::JSON::toString(emptyArray);
+
+        jsonFile.replaceWithText(jsonString);
+    }
+
 }
 
 Display::~Display()
@@ -126,8 +139,6 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
         .getChildFile("Piano Synth2")
         .getChildFile("UserTracks");
 
-    availableTracksFromFolder = getAvailableTracksFromFolder(userTracksFolder);
-
     trackListComp = std::make_unique<TrackListComponent>(availableTracksFromFolder,
         [this, onTrackSelected](int index)
         {
@@ -140,6 +151,11 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
             }
         });
 
+
+    auto jsonFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2")
+        .getChildFile("myTracks.json");
+    trackListComp->loadFromFile(jsonFile);
 
      tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.release(), true);
      tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
@@ -619,6 +635,11 @@ TrackListComponent::TrackListComponent(std::vector<TrackEntry>& tracks, std::fun
         removeFromTrackList();
     };
 
+    sortComboBox.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    addButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    removeButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
     listBox.setMultipleSelectionEnabled(true);
     sortComboBox.addItem("Sort by Name(ascending)", 1);
     sortComboBox.addItem("Sort by Last Modified (Newest)", 2);
@@ -629,14 +650,16 @@ TrackListComponent::TrackListComponent(std::vector<TrackEntry>& tracks, std::fun
 
 void TrackListComponent::resized()
 {
-    //listBox.setBounds(getLocalBounds());
     auto area = getLocalBounds();
 
     int controlBarHeight = 36;
     auto controlBarArea = area.removeFromTop(controlBarHeight);
     sortComboBox.setBounds(controlBarArea.removeFromLeft(150).reduced(5));
+
     addButton.setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+
     removeButton.setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+
     listBox.setBounds(area);
 }
 
@@ -719,6 +742,55 @@ void TrackListComponent::removeFromTrackList()
     listBox.deselectAllRows();
     listBox.updateContent();
     listBox.repaint();
+}
+
+void TrackListComponent::saveToFile(const juce::File& fileToSave)
+{
+    juce::Array<juce::var> jsonArray;
+    for (const auto& track : availableTracks)
+    {
+        auto obj = new juce::DynamicObject{};
+        obj->setProperty("File Path", track.file.getFullPathName());
+        jsonArray.add(juce::var(obj));
+    }
+
+    juce::var jsonVar(jsonArray);
+    juce::String jsonString = juce::JSON::toString(jsonVar, true);
+    fileToSave.replaceWithText(jsonString);
+}
+
+void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
+{
+    if (!fileToLoad.existsAsFile())
+        return;
+
+    juce::String jsonString = fileToLoad.loadFileAsString();
+
+    juce::var jsonVar = juce::JSON::parse(jsonString);
+
+    if (!jsonVar.isArray())
+        return;
+
+    juce::Array<juce::var>* jsonArray = jsonVar.getArray();
+    availableTracks.clear();
+
+    for (auto& item : *jsonArray)
+    {
+        auto* obj = item.getDynamicObject();
+        if (obj)
+        {
+            juce::String filePath = obj->getProperty("filePath").toString();
+            juce::File file(filePath);
+
+
+            if (file.existsAsFile())
+            {
+                TrackEntry tr;
+                tr.file = file;
+                availableTracks.push_back(tr);
+            }
+        }
+    }
 }
 
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)

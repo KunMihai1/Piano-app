@@ -41,6 +41,10 @@ public:
     
     void removeFromTrackList();
 
+    void saveToFile(const juce::File& fileToSave);
+
+    void loadFromFile(const juce::File& fileToLoad);
+
 
 private:
 
@@ -48,8 +52,8 @@ private:
     std::vector<TrackEntry>& availableTracks;
     std::function<void(int)> trackChosenCallBack;
 
-    juce::TextButton addButton{ "Add Track" };
-    juce::TextButton removeButton{ "Remove Track" };
+    juce::TextButton addButton{ "Add" };
+    juce::TextButton removeButton{ "Remove" };
     juce::ComboBox sortComboBox;
 
 };
