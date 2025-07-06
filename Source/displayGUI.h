@@ -14,10 +14,14 @@
 struct TrackEntry
 {
     juce::File file;
+    int trackIndex = 0;           
+    juce::String displayName;    
 
     juce::String getDisplayName() const
     {
-        return file.getFileNameWithoutExtension();
+        return displayName.isNotEmpty()
+            ? displayName
+            : file.getFileNameWithoutExtension();
     }
 };
 
@@ -45,6 +49,9 @@ public:
 
     void loadFromFile(const juce::File& fileToLoad);
 
+    std::vector<TrackEntry>& getAllAvailableTracks() const;
+
+    juce::String extractDisplayNameFromTrack(const juce::MidiMessageSequence& trackSeq);
 
 private:
 
