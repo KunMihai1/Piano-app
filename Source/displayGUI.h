@@ -53,6 +53,7 @@ public:
 
     juce::String extractDisplayNameFromTrack(const juce::MidiMessageSequence& trackSeq);
 
+
 private:
 
     juce::ListBox listBox;
