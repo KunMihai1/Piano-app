@@ -53,6 +53,11 @@ Display::Display(int widthForList)
         jsonFile.replaceWithText(jsonString);
     }
 
+    trackListComp = std::make_unique<TrackListComponent>(
+        availableTracksFromFolder,
+        [](int) {}
+    );
+    trackListComp->loadFromFile(jsonFile);
 }
 
 Display::~Display()
@@ -135,10 +140,6 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
 void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&)> onTrackSelected)
 {
-    auto userTracksFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2")
-        .getChildFile("UserTracks");
-
     trackListComp = std::make_unique<TrackListComponent>(availableTracksFromFolder,
         [this, onTrackSelected](int index)
         {
@@ -150,12 +151,6 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
                 tabComp->setCurrentTabIndex(in);
             }
         });
-
-
-    auto jsonFile = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2")
-        .getChildFile("myTracks.json");
-    trackListComp->loadFromFile(jsonFile);
 
      tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.release(), true);
      tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
@@ -728,6 +723,87 @@ void TrackListComponent::listBoxItemClicked(int row, const juce::MouseEvent& eve
 
 void TrackListComponent::addToTrackList()
 {
+    auto chooser = std::make_shared<juce::FileChooser>("Select a MIDI file to add", juce::File{}, "*.mid");
+
+    chooser->launchAsync(
+        juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+        [this, chooser](const juce::FileChooser& fc)
+        {
+            auto file = fc.getResult();
+            if (file.existsAsFile())
+            {
+                juce::FileInputStream inputStream(file);
+                if (!inputStream.openedOk())
+                {
+                    juce::AlertWindow::showMessageBoxAsync(
+                        juce::AlertWindow::WarningIcon,
+                        "Failed parsing",
+                        "Could not open the selected file");
+                    return;
+                }
+
+                juce::MidiFile midiFile;
+                if (!midiFile.readFrom(inputStream))
+                {
+                    juce::AlertWindow::showMessageBoxAsync(
+                        juce::AlertWindow::WarningIcon,
+                        "Failed parsing",
+                        "Could not read the selected file");
+                    return;
+                }
+
+                midiFile.convertTimestampTicksToSeconds();
+
+                int totalTracks = midiFile.getNumTracks();
+                int addedTracks = 0;
+                int duplicateTracks = 0;
+
+                for (int i = 0; i < totalTracks; ++i)
+                {
+                    bool duplicate = false;
+                    for (const auto& trackEntry : availableTracks)
+                    {
+                        if (trackEntry.file == file && trackEntry.trackIndex == i)
+                        {
+                            duplicate = true;
+                            break;
+                        }
+                    }
+                    if (duplicate)
+                    {
+                        ++duplicateTracks;
+                        continue;
+                    }
+
+                    auto* trackSequence = midiFile.getTrack(i);
+                    juce::String displayName = extractDisplayNameFromTrack(*trackSequence);
+
+                    TrackEntry newEntry;
+                    newEntry.file = file;
+                    newEntry.trackIndex = i;
+                    newEntry.displayName = displayName;
+
+                    availableTracks.push_back(newEntry);
+                    ++addedTracks;
+                }
+
+                listBox.updateContent();
+                listBox.repaint();
+                auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                    .getChildFile("Piano Synth2");
+                auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+                saveToFile(jsonFile);
+
+                juce::AlertWindow::showMessageBoxAsync(
+                    juce::AlertWindow::InfoIcon,
+                    "Add Tracks",
+                    "Selected MIDI file has " + juce::String(totalTracks) + " tracks.\n"
+                    + juce::String(addedTracks) + " tracks added.\n"
+                    + juce::String(duplicateTracks) + " tracks were already in the list."
+                );
+            }
+        }
+    );
 }
 
 void TrackListComponent::removeFromTrackList()
@@ -742,20 +818,44 @@ void TrackListComponent::removeFromTrackList()
     listBox.deselectAllRows();
     listBox.updateContent();
     listBox.repaint();
+    auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2");
+    auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+    saveToFile(jsonFile);
 }
 
 void TrackListComponent::saveToFile(const juce::File& fileToSave)
 {
-    juce::Array<juce::var> jsonArray;
-    for (const auto& track : availableTracks)
+    juce::Array<juce::var> filesArray;
+    std::map<juce::File, std::vector<TrackEntry>> grouped;
+
+
+    for (auto& track : availableTracks)
     {
-        auto obj = new juce::DynamicObject{};
-        obj->setProperty("File Path", track.file.getFullPathName());
-        jsonArray.add(juce::var(obj));
+        grouped[track.file].push_back(track);
     }
 
-    juce::var jsonVar(jsonArray);
-    juce::String jsonString = juce::JSON::toString(jsonVar, true);
+    for (auto& [file, tracks] : grouped)
+    {
+        auto* fileObj = new juce::DynamicObject{};
+        fileObj->setProperty("filePath", file.getFullPathName());
+
+        juce::Array<juce::var> trackArray;
+
+        for (auto& tr : tracks)
+        {
+            auto* trackObject = new juce::DynamicObject{};
+            trackObject->setProperty("trackIndex", tr.trackIndex);
+            trackObject->setProperty("displayName", tr.displayName);
+            trackArray.add(juce::var(trackObject));
+        }
+        fileObj->setProperty("Tracks", trackArray);
+        filesArray.add(juce::var(fileObj));
+
+    }
+
+    juce::var jsonVar(filesArray);
+    juce::String jsonString = juce::JSON::toString(jsonVar);
     fileToSave.replaceWithText(jsonString);
 }
 
@@ -776,21 +876,75 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
 
     for (auto& item : *jsonArray)
     {
-        auto* obj = item.getDynamicObject();
-        if (obj)
+        auto* fileObj = item.getDynamicObject();
+        if (fileObj == nullptr)
+            continue;
+
+        juce::String filePath = fileObj->getProperty("filePath").toString();
+        juce::File file{ filePath };
+
+        if (!file.existsAsFile())
+            continue;
+
+        juce::var tracksVar = fileObj->getProperty("Tracks");
+        if (!tracksVar.isArray())
+            continue;
+
+        juce::Array<juce::var>* trackArray = tracksVar.getArray();
+        
+        for (auto& trackItem : *trackArray)
         {
-            juce::String filePath = obj->getProperty("filePath").toString();
-            juce::File file(filePath);
+            auto* trackObj = trackItem.getDynamicObject();
+            if (trackObj == nullptr)
+                continue;
+            int trackIndex = (int)trackObj->getProperty("trackIndex");
+            juce::String displayName = trackObj->getProperty("displayName").toString();
 
 
-            if (file.existsAsFile())
-            {
-                TrackEntry tr;
-                tr.file = file;
-                availableTracks.push_back(tr);
-            }
+            TrackEntry tr;
+            tr.file = file;
+            tr.trackIndex = trackIndex;
+            tr.displayName = displayName;
+            availableTracks.push_back(tr);
         }
     }
+
+    listBox.updateContent();
+    listBox.repaint();
+}
+
+std::vector<TrackEntry>& TrackListComponent::getAllAvailableTracks() const
+{
+    return this->availableTracks;
+}
+
+juce::String TrackListComponent::extractDisplayNameFromTrack(const juce::MidiMessageSequence& trackSeq)
+{
+    juce::String trackName;
+    juce::String instrumentName;
+
+    for (int i = 0; i < trackSeq.getNumEvents(); i++)
+    {
+        const auto& event = trackSeq.getEventPointer(i)->message;
+
+        if (event.isTrackNameEvent())
+        {
+            trackName = event.getTextFromTextMetaEvent();
+        }
+        else if (event.isMetaEvent() && event.getMetaEventType() == 0x04)
+        {
+            instrumentName = event.getTextFromTextMetaEvent();
+        }
+    }
+
+    if (trackName.isNotEmpty() && instrumentName.isNotEmpty())
+        return trackName + " (" + instrumentName + ")";
+    else if (trackName.isNotEmpty())
+        return trackName;
+    else if (instrumentName.isNotEmpty())
+        return instrumentName;
+
+    return "Unnamed Track";
 }
 
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)
