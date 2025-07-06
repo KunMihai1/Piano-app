@@ -11,25 +11,46 @@
 #pragma once
 #include <JuceHeader.h>
 
+struct TrackEntry
+{
+    juce::File file;
 
-class TrackListComponent : public juce::Component, private juce::ListBoxModel
+    juce::String getDisplayName() const
+    {
+        return file.getFileNameWithoutExtension();
+    }
+};
+
+class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener
 {
 public:
-    TrackListComponent(std::vector<juce::String>& tracks, std::function<void(int)> onTrackChosen);
+
+    TrackListComponent(std::vector<TrackEntry>& tracks, std::function<void(int)> onTrackChosen);
 
     void resized() override;
 
     int getNumRows() override;
 
+    void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
+
     void paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected) override;
 
     void listBoxItemClicked(int row, const juce::MouseEvent& event) override;
 
+    void addToTrackList();
+    
+    void removeFromTrackList();
+
 
 private:
+
     juce::ListBox listBox;
-    std::vector<juce::String>& availableTracks;
+    std::vector<TrackEntry>& availableTracks;
     std::function<void(int)> trackChosenCallBack;
+
+    juce::TextButton addButton{ "Add Track" };
+    juce::TextButton removeButton{ "Remove Track" };
+    juce::ComboBox sortComboBox;
 
 };
 
@@ -75,6 +96,8 @@ public:
     void resized() override;
 
     void updateName(const juce::String& newName);
+
+    juce::String getName();
 
     juce::DynamicObject* getJson() const;
 
@@ -154,7 +177,7 @@ public:
     void showListOfTracksToSelectFrom(std::function<void(const juce::String&)> onTrackSelected);
 
     void createUserTracksFolder();
-    std::vector<juce::String> getAvailableTracksFromFolder(const juce::File& folder);
+    std::vector<TrackEntry> getAvailableTracksFromFolder(const juce::File& folder);
 
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
@@ -162,7 +185,7 @@ private:
     std::unique_ptr<CurrentStyleComponent> currentStyleComponent;
     bool created = false;
     bool createdTracksTab = false;
-    std::vector<juce::String> availableTracksFromFolder;
+    std::vector<TrackEntry> availableTracksFromFolder;
 
     std::unique_ptr<TrackListComponent> trackListComp;
     juce::var allStylesJsonVar;

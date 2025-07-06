@@ -82,7 +82,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
         {
             showListOfTracksToSelectFrom(trackChosenCallback);
         };
-        tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), true);
+        tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), true); //release, get potential issue
         created = true;
     }
     else
@@ -95,6 +95,8 @@ void Display::showCurrentStyleTab(const juce::String& name)
     {
         updateStyleInJson(name);
     };
+
+
         
     if (allStylesJsonVar.isObject())
     {
@@ -129,10 +131,11 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
     trackListComp = std::make_unique<TrackListComponent>(availableTracksFromFolder,
         [this, onTrackSelected](int index)
         {
-            onTrackSelected(availableTracksFromFolder[index]);
+            onTrackSelected(availableTracksFromFolder[index].getDisplayName());
             int in = tabComp->getNumTabs() - 2;
             if (in >= 0)
             {
+                updateStyleInJson(currentStyleComponent->getName());
                 tabComp->setCurrentTabIndex(in);
             }
         });
@@ -156,9 +159,9 @@ void Display::createUserTracksFolder()
     }
 }
 
-std::vector<juce::String> Display::getAvailableTracksFromFolder(const juce::File& folder)
+std::vector<TrackEntry> Display::getAvailableTracksFromFolder(const juce::File& folder)
 {
-    std::vector<juce::String> tracks;
+    std::vector<TrackEntry> tracks;
 
     if (!folder.exists() || !folder.isDirectory())
         return tracks;
@@ -168,7 +171,9 @@ std::vector<juce::String> Display::getAvailableTracksFromFolder(const juce::File
     while (iter.next())
     {
         juce::File trackFile = iter.getFile();
-        tracks.push_back(trackFile.getFileName());
+        TrackEntry tr;
+        tr.file = trackFile;
+        tracks.push_back(tr);
     }
 
     return tracks;
@@ -417,6 +422,11 @@ void CurrentStyleComponent::updateName(const juce::String& newName)
     nameOfStyle.setText(name, juce::dontSendNotification);
 }
 
+juce::String CurrentStyleComponent::getName()
+{
+    return name;
+}
+
 juce::DynamicObject* CurrentStyleComponent::getJson() const
 {
     auto* styleObj = new juce::DynamicObject{};
@@ -505,6 +515,7 @@ Track::Track()
 
     nameLabel.setInterceptsMouseClicks(true, false);
     nameLabel.addMouseListener(this, false);
+    nameLabel.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     addAndMakeVisible(nameLabel);
 }
@@ -588,21 +599,82 @@ void Track::mouseDown(const juce::MouseEvent& event)
     }
 }
 
-TrackListComponent::TrackListComponent(std::vector<juce::String>& tracks, std::function<void(int)> onTrackChosen): availableTracks{tracks}, trackChosenCallBack{onTrackChosen}
+TrackListComponent::TrackListComponent(std::vector<TrackEntry>& tracks, std::function<void(int)> onTrackChosen): availableTracks{tracks}, trackChosenCallBack{onTrackChosen}
 {
     addAndMakeVisible(listBox);
+    addAndMakeVisible(addButton);
+    addAndMakeVisible(removeButton);
+    addAndMakeVisible(sortComboBox);
     listBox.setModel(this);
     listBox.updateContent();
+    sortComboBox.addListener(this);
+
+    addButton.onClick = [this] {
+
+        addToTrackList();
+    };
+
+    removeButton.onClick = [this]
+    {
+        removeFromTrackList();
+    };
+
+    listBox.setMultipleSelectionEnabled(true);
+    sortComboBox.addItem("Sort by Name(ascending)", 1);
+    sortComboBox.addItem("Sort by Last Modified (Newest)", 2);
+    sortComboBox.addItem("Sort by Last Modified (Oldest)", 3);
+
+    sortComboBox.setSelectedId(1);
 }
 
 void TrackListComponent::resized()
 {
-    listBox.setBounds(getLocalBounds());
+    //listBox.setBounds(getLocalBounds());
+    auto area = getLocalBounds();
+
+    int controlBarHeight = 36;
+    auto controlBarArea = area.removeFromTop(controlBarHeight);
+    sortComboBox.setBounds(controlBarArea.removeFromLeft(150).reduced(5));
+    addButton.setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+    removeButton.setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+    listBox.setBounds(area);
 }
 
 int TrackListComponent::getNumRows()
 {
     return (int)availableTracks.size();
+}
+
+void TrackListComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
+{
+    if (comboBoxThatHasChanged == &sortComboBox)
+    {
+        int id = sortComboBox.getSelectedId();
+        if (id == 1)
+        {
+            std::sort(availableTracks.begin(), availableTracks.end(), [](const TrackEntry& first, const TrackEntry& second)
+                {
+                    return first.getDisplayName().toLowerCase() < second.getDisplayName().toLowerCase();
+                });
+        }
+        else if (id == 2)
+        {
+            std::sort(availableTracks.begin(), availableTracks.end(), [](const TrackEntry& first, const TrackEntry& second)
+                {
+                    return first.file.getLastModificationTime() > second.file.getLastModificationTime();
+                });
+        }
+        else if (id == 3)
+        {
+            std::sort(availableTracks.begin(), availableTracks.end(), [](const TrackEntry& first, const TrackEntry& second)
+                {
+                    return first.file.getLastModificationTime() < second.file.getLastModificationTime();
+                });
+        }
+
+        listBox.updateContent();
+        listBox.repaint();
+    }
 }
 
 void TrackListComponent::paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected)
@@ -612,13 +684,41 @@ void TrackListComponent::paintListBoxItem(int rowNumber, juce::Graphics& g, int 
     else
         g.fillAll(juce::Colours::white);
     g.setColour(juce::Colours::black);
-    g.drawText(availableTracks[rowNumber], 5, 0, width - 10, height, juce::Justification::centredLeft);
+    g.drawText(availableTracks[rowNumber].getDisplayName(), 5, 0, width - 10, height, juce::Justification::centredLeft);
+
+    g.setColour(juce::Colours::lightgrey);
+    g.drawRect(0, 0, width, height, 1);
 }
 
 void TrackListComponent::listBoxItemClicked(int row, const juce::MouseEvent& event)
 {
-    if (trackChosenCallBack)
-        trackChosenCallBack(row);
+    if (event.getNumberOfClicks() == 2)
+    {
+        if (trackChosenCallBack)
+            trackChosenCallBack(row);
+    }
+    else
+    {
+
+    }
+}
+
+void TrackListComponent::addToTrackList()
+{
+}
+
+void TrackListComponent::removeFromTrackList()
+{
+    juce::SparseSet<int> selectedRows = listBox.getSelectedRows();
+    for (int i = selectedRows.size()-1; i >= 0; i--)
+    {
+        int rowIndex = selectedRows[i];
+        availableTracks.erase(availableTracks.begin() + rowIndex);
+    }
+
+    listBox.deselectAllRows();
+    listBox.updateContent();
+    listBox.repaint();
 }
 
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)

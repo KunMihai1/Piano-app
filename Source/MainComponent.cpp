@@ -570,7 +570,7 @@ void MainComponent::keyBoardUIinit(int min, int max)
 {
     keyboardInitialized = true;
     addAndMakeVisible(keyboard);
-    int keyboardHeight = (int)getHeight() * 0.22;
+    int keyboardHeight = (int)getHeight() * 0.21;
 
     keyboard.setBounds(0, getHeight() - keyboardHeight, getWidth(), keyboardHeight);
 
