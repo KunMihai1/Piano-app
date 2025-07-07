@@ -10,20 +10,8 @@
 
 #pragma once
 #include <JuceHeader.h>
-
-struct TrackEntry
-{
-    juce::File file;
-    int trackIndex = 0;           
-    juce::String displayName;    
-
-    juce::String getDisplayName() const
-    {
-        return displayName.isNotEmpty()
-            ? displayName
-            : file.getFileNameWithoutExtension();
-    }
-};
+#include "TrackEntry.h"
+#include "TrackPlayer.h"
 
 class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener
 {
@@ -53,6 +41,9 @@ public:
 
     juce::String extractDisplayNameFromTrack(const juce::MidiMessageSequence& trackSeq);
 
+    std::unordered_map<juce::String, TrackEntry> buildTrackNameMap();
+
+    double getInitialTempoBPM(const juce::MidiFile& midiFile);
 
 private:
 
@@ -87,7 +78,7 @@ public:
     void setVolumeSlider(double value);
     void setVolumeLabel(const juce::String& value);
     void setNameLabel(const juce::String& name);
-
+    juce::String getName();
 
 private:
     void mouseDown(const juce::MouseEvent& event) override;
@@ -103,7 +94,7 @@ public:
     std::function<void()> anyTrackChanged;
     std::function<void(std::function<void(const juce::String&)>)> onRequestTrackSelectionFromTrack;
 
-    CurrentStyleComponent(const juce::String& name);
+    CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::String, TrackEntry>& map, juce::MidiOutput* outputDevice = nullptr);
 
     void resized() override;
 
@@ -115,13 +106,23 @@ public:
 
     void loadJson(const juce::var& styleVar);
 
-    void initializeTracks();
+    void startPlaying();
+
+    void stopPlaying();
+
 
 private:
     juce::String name;
     juce::Label nameOfStyle;
     juce::Label selectedTrackLabel, selectedTrackKey, selectedTrackChord;
     juce::OwnedArray<Track> allTracks;
+    juce::ComboBox playSettingsTracks;
+    juce::TextButton startPlayingTracks;
+    juce::TextButton stopPlayingTracks;
+
+    juce::MidiOutput* outputDevice = nullptr;
+    std::unique_ptr<MultipleTrackPlayer> trackPlayer=nullptr;
+    std::unordered_map<juce::String, TrackEntry>& mapNameToTrackEntry;
 };
 
 class StyleViewComponent : public juce::Component, public juce::MouseListener
@@ -171,7 +172,7 @@ public:
 class Display: public  juce::Component, public juce::ChangeListener
 {
 public:
-    Display(int widthForList=0);
+    Display(int widthForList=0, juce::MidiOutput* outputDev=nullptr);
     ~Display() override;
 
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
@@ -191,6 +192,8 @@ public:
     void createUserTracksFolder();
     std::vector<TrackEntry> getAvailableTracksFromFolder(const juce::File& folder);
 
+    void setDeviceOutput(juce::MidiOutput* devOutput = nullptr);
+
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
     std::unique_ptr<MyTabbedComponent> tabComp;
@@ -198,7 +201,10 @@ private:
     bool created = false;
     bool createdTracksTab = false;
     std::vector<TrackEntry> availableTracksFromFolder;
+    juce::MidiOutput* outputDevice = nullptr;
 
     std::unique_ptr<TrackListComponent> trackListComp;
     juce::var allStylesJsonVar;
+
+    std::unordered_map<juce::String, TrackEntry> mapNameToTrack;
 };

@@ -561,7 +561,7 @@ void MainComponent::knobsInit()
 
 void MainComponent::displayInit()
 {
-    display = std::make_unique<Display>(400);
+    display = std::make_unique<Display>(400,deviceOpenedOUT);
     headerPanel.addAndMakeVisible(display.get());
     display->setVisible(false);
 }
@@ -689,6 +689,7 @@ void MainComponent::playButtonOnClick()
         MIDIDevice.changeVolumeInstrument();
         MIDIDevice.changeReverbInstrument();
         recordPlayer.setReverb(MIDIDevice.getReverb());
+        display->setDeviceOutput(MIDIDevice.getDeviceOUT());
 
         if (!keyboardInitialized)
         {
@@ -931,16 +932,15 @@ void MainComponent::showColourSelector()
 
     noteLayer->setVisible(false);
     noteLayer->resetState();
-    noteLayer->repaint();
+    //noteLayer->repaint();
     this->keyboard.setIsDrawn(false);
-    this->keyboard.repaint();
+    //this->keyboard.repaint();
 
-    juce::Timer::callAfterDelay(5, [this,area1]()
-        {
-            juce::CallOutBox::launchAsynchronously(
-                std::unique_ptr<juce::ColourSelector>(colourSelector), area1, this
-            );
-        });
+
+    repaint();
+
+
+    juce::CallOutBox::launchAsynchronously(std::unique_ptr<juce::ColourSelector>(colourSelector),area1,this);
 }
 
 void MainComponent::showInstrumentSelector()
@@ -962,19 +962,16 @@ void MainComponent::showInstrumentSelector()
     
     noteLayer->setVisible(false);
     noteLayer->resetState();
-    noteLayer->repaint();
+    //noteLayer->repaint();
     this->keyboard.setIsDrawn(false);
-    this->keyboard.repaint();
+    //this->keyboard.repaint();
 
-    juce::Timer::callAfterDelay(5, [this,area1, treeViewPtr=treeView.get()]() mutable
-        {
-            if (this)
-            {
-                auto holder = std::make_unique<TreeViewHolder>(treeViewPtr);
-                holder->setOpaque(true);
-                juce::CallOutBox::launchAsynchronously(std::move(holder), area1, this);
-            }
-        });
+    repaint();
+
+    auto holder = std::make_unique<TreeViewHolder>(treeView.get());
+    holder->setOpaque(true);
+
+    juce::CallOutBox::launchAsynchronously(std::move(holder), area1, this);
 }
 
 void MainComponent::saveRecordingToFile(double tempo)

@@ -229,7 +229,7 @@ private:
 
 
     const juce::MidiInput* deviceOpenedIN = nullptr;
-    const juce::MidiOutput* deviceOpenedOUT = nullptr;
+    juce::MidiOutput* deviceOpenedOUT = nullptr;
     MidiDevice MIDIDevice{};
     MidiHandler midiHandler{ MIDIDevice };
     KeyboardListener keyListener{ midiHandler };
