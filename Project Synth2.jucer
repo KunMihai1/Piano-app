@@ -33,6 +33,9 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="k5GJ5O" name="TrackEntry.h" compile="0" resource="0" file="Source/TrackEntry.h"/>
+      <FILE id="dxeclC" name="TrackPlayer.cpp" compile="1" resource="0" file="Source/TrackPlayer.cpp"/>
+      <FILE id="PkpDN9" name="TrackPlayer.h" compile="0" resource="0" file="Source/TrackPlayer.h"/>
       <FILE id="HiLb6c" name="displayGUI.cpp" compile="1" resource="0" file="Source/displayGUI.cpp"/>
       <FILE id="ICOTvm" name="displayGUI.h" compile="0" resource="0" file="Source/displayGUI.h"/>
       <FILE id="fbt5jX" name="ChannelHandler.cpp" compile="1" resource="0"
