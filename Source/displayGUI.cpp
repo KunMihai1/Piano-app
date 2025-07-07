@@ -487,6 +487,7 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
 
         auto name = trackObj->getProperty("name").toString();
         double volume = static_cast<double>(trackObj->getProperty("volume"));
+        //int instrumentNumber = static_cast<int>(trackObj->getProperty("instrumentNumber")); //TO DO when choosing instruments
 
         allTracks[i]->setNameLabel(name);
         allTracks[i]->setVolumeSlider(volume);
@@ -559,6 +560,7 @@ juce::DynamicObject* Track::getJson() const
 
     obj->setProperty("name", nameLabel.getText());
     obj->setProperty("volume", volumeSlider.getValue());
+    //obj->setProperty("instrumentNumber")  //TO DO when instrument selecting is possible
 
     return obj;
 }
