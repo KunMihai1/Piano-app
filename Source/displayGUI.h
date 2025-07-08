@@ -96,6 +96,10 @@ public:
 
     CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::String, TrackEntry>& map, juce::MidiOutput* outputDevice = nullptr);
 
+    void stoppingPlayer();
+    
+    ~CurrentStyleComponent() override;
+
     void resized() override;
 
     void updateName(const juce::String& newName);
@@ -193,6 +197,8 @@ public:
     std::vector<TrackEntry> getAvailableTracksFromFolder(const juce::File& folder);
 
     void setDeviceOutput(juce::MidiOutput* devOutput = nullptr);
+
+    void stoppingPlayer();
 
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;

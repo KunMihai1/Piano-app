@@ -215,6 +215,7 @@ void MidiDevice::deviceCloseOUT()
 {
 	if (this->currentDeviceUSEDout != nullptr)
 	{
+
 		this->currentDeviceUSEDout = nullptr;
 		this->isdeviceOpenOUT = false;
 	}

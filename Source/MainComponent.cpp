@@ -34,7 +34,10 @@ MainComponent::~MainComponent()
     if (this->MIDIDevice.isOpenIN())
         this->MIDIDevice.deviceCloseIN();
     if (this->MIDIDevice.isOpenOUT())
+    {
+        this->display->stoppingPlayer();
         this->MIDIDevice.deviceCloseOUT();
+    }
     if (treeView != nullptr && treeView->getRootItem() != nullptr)
     {
         //DBG("Deleting root item dest main: " << treeView->getRootItem()->getUniqueName());
@@ -52,7 +55,7 @@ MainComponent::~MainComponent()
         midiHandler.removeListener(noteLayer.get());
     if(&keyboard)
         midiHandler.removeListener(&keyboard);
-    volumeKnob.setLookAndFeel(nullptr);     
+    volumeKnob.setLookAndFeel(nullptr);  
 }
 
 //==============================================================================

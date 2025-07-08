@@ -17,8 +17,8 @@ class MultipleTrackPlayer: private juce::HighResolutionTimer
 {
 public:
     struct TrackPlaybackData {
-        const juce::MidiMessageSequence* sequence=nullptr;
-        int nextEventIndex=0;
+        int filteredSequenceIndex = -1;
+        int nextEventIndex = 0;
     };
 
     MultipleTrackPlayer(juce::MidiOutput* out);
@@ -29,10 +29,13 @@ public:
 
     void start();
 
+    ~MultipleTrackPlayer();
+
     
 
 private:
     void hiResTimerCallback() override;
+    std::vector<juce::MidiMessageSequence> filteredSequences;
 
     juce::MidiOutput* outputDevice=nullptr;
     std::vector<TrackPlaybackData> tracks;
