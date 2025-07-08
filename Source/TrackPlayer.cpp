@@ -18,12 +18,40 @@ MultipleTrackPlayer::MultipleTrackPlayer(juce::MidiOutput* out): outputDevice{ou
 void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
 {
     tracks.clear();
-    DBG("YOU'RE WRONG" << juce::String(newTracks.size()));
+    filteredSequences.clear();  // Clear old sequences first
+
+    const double startupDelay = 0.05;  // 50 ms delay before starting playback
+
     for (auto& tr : newTracks)
     {
-        if (tr.sequence.getNumEvents() > 0)
-            tracks.push_back(TrackPlaybackData{ &tr.sequence,0 });
+        juce::MidiMessageSequence filteredSeq;
+        for (int i = 0; i < tr.sequence.getNumEvents(); ++i)
+        {
+            const auto& msg = tr.sequence.getEventPointer(i)->message;
+            if (msg.isNoteOn() || msg.isNoteOff())
+                filteredSeq.addEvent(msg);
+        }
+
+        if (filteredSeq.getNumEvents() > 0)
+        {
+            filteredSeq.updateMatchedPairs();
+
+            for (int e = 0; e < filteredSeq.getNumEvents(); ++e)
+            {
+                auto* event = filteredSeq.getEventPointer(e);
+                juce::MidiMessage shiftedMsg = event->message;
+                shiftedMsg.setTimeStamp(shiftedMsg.getTimeStamp() + startupDelay);
+                filteredSeq.getEventPointer(e)->message = shiftedMsg;
+            }
+
+            // Store the filtered sequence inside the class vector
+            filteredSequences.push_back(filteredSeq);
+            int newIndex = static_cast<int>(filteredSequences.size()) - 1;
+            tracks.push_back(TrackPlaybackData{ newIndex, 0 });
+        }
     }
+
+    DBG("Tracks loaded: " << tracks.size());
 }
 
 void MultipleTrackPlayer::stop()
@@ -48,6 +76,11 @@ void MultipleTrackPlayer::start()
     startTimer(10);
 }
 
+MultipleTrackPlayer::~MultipleTrackPlayer()
+{
+
+}
+
 void MultipleTrackPlayer::hiResTimerCallback()
 {
     DBG("hiResTimerCallback running");
@@ -63,11 +96,12 @@ void MultipleTrackPlayer::hiResTimerCallback()
 
     for (auto& track : tracks)
     {
-        while (track.nextEventIndex < track.sequence->getNumEvents())
+        auto& sequence = filteredSequences[track.filteredSequenceIndex];
+        while (track.nextEventIndex < sequence.getNumEvents())
         {
-            auto& midiEvent = track.sequence->getEventPointer(track.nextEventIndex)->message;
+            auto& midiEvent = sequence.getEventPointer(track.nextEventIndex)->message;
             double eventTime = midiEvent.getTimeStamp();
-            auto& nextMidiEvent = track.sequence->getEventPointer(track.nextEventIndex)->message;
+            auto& nextMidiEvent = sequence.getEventPointer(track.nextEventIndex)->message;
             DBG("Next event time: " << nextMidiEvent.getTimeStamp());
 
             if (eventTime <= elapsed)
@@ -90,8 +124,8 @@ void MultipleTrackPlayer::hiResTimerCallback()
     }
 
     bool allDone = std::all_of(tracks.begin(), tracks.end(),
-        [](const TrackPlaybackData& t) {
-            return t.nextEventIndex >= t.sequence->getNumEvents();
+        [this](const TrackPlaybackData& t) {
+            return t.nextEventIndex >= filteredSequences[t.filteredSequenceIndex].getNumEvents();
         });
 
     if (allDone)

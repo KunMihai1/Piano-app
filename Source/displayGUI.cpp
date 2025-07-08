@@ -16,7 +16,7 @@ void convertTicksToSeconds(juce::MidiFile& midiFile)
     if (tpqn <= 0)
         tpqn = 960;
 
-    const double defaultTempoBPM = 120.0;
+    const double defaultTempoBPM = 135.0; //k so elapsed time need to match this btw TODO
     const double secondsPerQuarterNote = 60.0 / defaultTempoBPM;
     const double secondsPerTick = secondsPerQuarterNote / double(tpqn);
 
@@ -88,6 +88,7 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev): outputDevice{ou
 
 Display::~Display()
 {
+
 }
 
 void Display::changeListenerCallback(juce::ChangeBroadcaster* source)
@@ -219,6 +220,11 @@ std::vector<TrackEntry> Display::getAvailableTracksFromFolder(const juce::File& 
 void Display::setDeviceOutput(juce::MidiOutput* devOutput)
 {
     this->outputDevice = devOutput;
+}
+
+void Display::stoppingPlayer()
+{
+    this->currentStyleComponent->stoppingPlayer();
 }
 
 void Display::initializeAllStyles()
@@ -539,9 +545,23 @@ void CurrentStyleComponent::updateName(const juce::String& newName)
     nameOfStyle.setText(name, juce::dontSendNotification);
 }
 
+CurrentStyleComponent::~CurrentStyleComponent()
+{
+
+}
+
 juce::String CurrentStyleComponent::getName()
 {
     return name;
+}
+
+void CurrentStyleComponent::stoppingPlayer()
+{
+    if (trackPlayer)
+    {
+        this->trackPlayer->stop();
+        trackPlayer.reset();
+    }
 }
 
 juce::DynamicObject* CurrentStyleComponent::getJson() const
