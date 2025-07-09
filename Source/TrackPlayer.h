@@ -21,6 +21,8 @@ public:
         int nextEventIndex = 0;
     };
 
+    std::function<void(double)> onElapsedUpdate;
+
     MultipleTrackPlayer(juce::MidiOutput* out);
     
     void setTracks(const std::vector<TrackEntry>& newTracks);

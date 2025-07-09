@@ -503,7 +503,15 @@ void CurrentStyleComponent::startPlaying()
                 selectedTracks.push_back(it->second);
         }
     }
-
+    else if (selectedID == 2)
+    {
+        if (lastSelectedTrack)
+        {
+            auto it = mapNameToTrackEntry.find(lastSelectedTrack->getUsedID());
+            if (it != mapNameToTrackEntry.end())
+                selectedTracks.push_back(it->second);
+        }
+    }
     if (selectedTracks.empty())
     {
         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Playing tracks", "There are no tracks to play");
@@ -515,7 +523,9 @@ void CurrentStyleComponent::startPlaying()
 
 CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unordered_map<juce::Uuid, TrackEntry>& map,juce::MidiOutput* outputDevice): name(name), mapNameToTrackEntry(map), outputDevice(outputDevice)
 {
+    addMouseListener(this, true);
     nameOfStyle.setText(name, juce::dontSendNotification);
+    nameOfStyle.setTooltip(name);
     addAndMakeVisible(nameOfStyle);
 
     playSettingsTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
@@ -526,8 +536,19 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
     addAndMakeVisible(playSettingsTracks);
     addAndMakeVisible(startPlayingTracks);
     addAndMakeVisible(stopPlayingTracks);
+    addAndMakeVisible(elapsedTimeLabel);
+    elapsedTimeLabel.setText("00:00", juce::dontSendNotification);
+
+    juce::Colour textColour = juce::Colour::fromRGB(0, 255, 0)
+        .withAlpha(0.8f);
+    elapsedTimeLabel.setColour(juce::Label::textColourId, textColour);
 
     trackPlayer = std::make_unique<MultipleTrackPlayer>(outputDevice);
+        
+    trackPlayer->onElapsedUpdate = [this](double ElapsedTime)
+    {
+        setElapsedTime(ElapsedTime);
+    };
 
     startPlayingTracks.onClick = [this]
     {
@@ -600,6 +621,33 @@ void CurrentStyleComponent::removingTrack(const juce::Uuid& uuid)
     }  
 }
 
+void CurrentStyleComponent::setElapsedTime(double newTimeToSet)
+{
+    int totalSeconds = static_cast<int>(newTimeToSet);
+
+    int minutes = totalSeconds / 60;
+    int seconds = totalSeconds % 60;
+    juce::String formattedTime = juce::String::formatted("%02d:%02d", minutes, seconds);
+
+    this->elapsedTimeLabel.setText(formattedTime, juce::dontSendNotification);
+}
+
+void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)
+{
+    auto* clickedComponent = ev.originalComponent;
+
+    while (clickedComponent != nullptr)
+    {
+        auto* clickedTrack = dynamic_cast<Track*>(clickedComponent);
+        if (allTracks.contains(clickedTrack))
+        {
+            lastSelectedTrack = clickedTrack;
+            return;
+        }
+        clickedComponent = clickedComponent->getParentComponent();
+    }
+}
+
 void CurrentStyleComponent::setTempo(double newTempo)
 {
     this->currentTempo = newTempo;
@@ -611,10 +659,9 @@ void CurrentStyleComponent::resized()
     int labelWidth = 50;
     int playSettingsWidth = getWidth()/6+30;
     int heightFirst = 20;
-    int startStopWidth = 50;
+    int startStopWidth = 35;
     playSettingsTracks.setBounds(getWidth() - playSettingsWidth,0,playSettingsWidth,heightFirst);
     playSettingsTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
-    //nameOfStyle.setBounds(playSettingsTracks.getX() - labelWidth - 5,0,labelWidth,heightFirst);
 
     nameOfStyle.setBounds((getWidth()-labelWidth) / 2-40, 0, getWidth() / 6, heightFirst);
     startPlayingTracks.setBounds(0, 0, startStopWidth, heightFirst);
@@ -624,9 +671,13 @@ void CurrentStyleComponent::resized()
     stopPlayingTracks.setBounds(startPlayingTracks.getWidth() + 5, 0, startStopWidth, heightFirst);
     stopPlayingTracks.setButtonText("Stop");
     stopPlayingTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    
+    elapsedTimeLabel.setBounds(stopPlayingTracks.getX() + stopPlayingTracks.getWidth(), 0, 50, heightFirst);
+
+    //nameOfStyle.setBounds(stopPlayingTracks.getX() + stopPlayingTracks.getWidth() + 5, 0, getWidth() / 6, heightFirst);
 
     int sliderWidth = playSettingsTracks.getX()- (nameOfStyle.getX() + nameOfStyle.getWidth())+10;
-    tempoSlider.setBounds(nameOfStyle.getX() + nameOfStyle.getWidth()-15, 0, sliderWidth, 20);
+    tempoSlider.setBounds(nameOfStyle.getX() + nameOfStyle.getWidth()-15, 0, sliderWidth, 18);
 
     float width = getWidth() / 8.0f, height = 80.0f;
     float initialX = 0, y = getHeight() - height;
@@ -755,7 +806,7 @@ Track::Track()
     addAndMakeVisible(volumeLabel);
 
     nameLabel.setText("None", juce::dontSendNotification);
-    nameLabel.setTooltip(nameLabel.getText());
+    //nameLabel.setTooltip(nameLabel.getText());
     nameLabel.setColour(juce::Label::textColourId,juce::Colours::white);
 
     nameLabel.setInterceptsMouseClicks(true, false);
@@ -801,6 +852,33 @@ void Track::paint(juce::Graphics& g)
 {
     g.setColour(juce::Colours::lightgrey);
     g.drawRect(getLocalBounds(), 1);
+}
+
+void Track::mouseEnter(const juce::MouseEvent& ev)
+{
+    if (ev.eventComponent == &nameLabel && toolTipWindow == nullptr)
+    {
+        toolTipWindow = std::make_unique<TrackNameToolTip>(nameLabel.getText());
+        toolTipWindow->setSize(150, 24);
+
+        auto labelBounds = nameLabel.getScreenBounds();
+        int x = labelBounds.getX() + 4;
+        int y = labelBounds.getBottom() + 4; 
+
+        toolTipWindow->setTopLeftPosition(x, y);
+        toolTipWindow->addToDesktop(0);
+        toolTipWindow->toFront(true);
+        toolTipWindow->setVisible(true);
+    }
+}
+
+void Track::mouseExit(const juce::MouseEvent& ev)
+{
+    if (toolTipWindow != nullptr)
+    {
+        toolTipWindow->setVisible(false);
+        toolTipWindow = nullptr;
+    }
 }
 
 juce::String Track::getName()
@@ -1010,7 +1088,7 @@ void Track::setVolumeLabel(const juce::String& value)
 void Track::setNameLabel(const juce::String& name)
 {
     nameLabel.setText(name, juce::dontSendNotification);
-    nameLabel.setTooltip(name);
+    //nameLabel.setTooltip(name);
 }
 
 void Track::mouseDown(const juce::MouseEvent& event)
@@ -1317,7 +1395,6 @@ void TrackListComponent::saveToFile(const juce::File& fileToSave)
             auto* trackObject = new juce::DynamicObject{};
             trackObject->setProperty("trackIndex", tr.trackIndex);
             trackObject->setProperty("displayName", tr.displayName);
-
             trackObject->setProperty("uuid", tr.uuid.toString());
 
             trackArray.add(juce::var(trackObject));
