@@ -22,14 +22,20 @@ void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
 
     const double startupDelay = 0.05;  // 50 ms delay before starting playback
 
+    int j = 0;
+
     for (auto& tr : newTracks)
     {
         juce::MidiMessageSequence filteredSeq;
+        int channel = j + 2;
+
         for (int i = 0; i < tr.sequence.getNumEvents(); ++i)
         {
             const auto& msg = tr.sequence.getEventPointer(i)->message;
             if (msg.isNoteOn() || msg.isNoteOff())
+            {
                 filteredSeq.addEvent(msg);
+            }
         }
 
         if (filteredSeq.getNumEvents() > 0)
@@ -44,11 +50,11 @@ void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
                 filteredSeq.getEventPointer(e)->message = shiftedMsg;
             }
 
-            // Store the filtered sequence inside the class vector
             filteredSequences.push_back(filteredSeq);
             int newIndex = static_cast<int>(filteredSequences.size()) - 1;
             tracks.push_back(TrackPlaybackData{ newIndex, 0 });
         }
+        j++;
     }
 
     DBG("Tracks loaded: " << tracks.size());
@@ -73,6 +79,12 @@ void MultipleTrackPlayer::start()
     startTime = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
     for (auto& track : tracks)
         track.nextEventIndex = 0;
+
+    for (int i = 0; i < tracks.size(); i++)
+    {
+
+    }
+
     startTimer(10);
 }
 

@@ -9,11 +9,12 @@
 
     -instrument diferit pentru fiecare track, posibilitate de a alege -wiring
     -posibilitate de a alege tempo-ul pe tot style-ul-wiring
-
-    -bara de sonor care creste si scade in functie de sunet
-
-
+   
     -modify the starting time for each track
+
+    -make it so that the the current style can be played by pressing a note(lowest) and end while highest note
+
+    -making the sets so that you can select what to play on left hand and on right hand
 
 
   ==============================================================================
