@@ -93,6 +93,14 @@ void MultipleTrackPlayer::hiResTimerCallback()
     double now = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
     double elapsed = now - startTime;
     DBG("Elapsed time: " << elapsed);
+    if (onElapsedUpdate)
+    {
+        auto lambda = [this, elapsed]()
+        {
+            onElapsedUpdate(elapsed);
+        };
+        juce::MessageManager::callAsync(lambda);
+    }
 
     for (auto& track : tracks)
     {

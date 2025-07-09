@@ -10,7 +10,7 @@
     -instrument diferit pentru fiecare track, posibilitate de a alege -wiring
     -posibilitate de a alege tempo-ul pe tot style-ul-wiring
 
-    - solo track
+    -bara de sonor care creste si scade in functie de sunet
 
 
     -modify the starting time for each track
@@ -23,6 +23,7 @@
 #include <JuceHeader.h>
 #include "TrackEntry.h"
 #include "TrackPlayer.h"
+#include "CustomToolTip.h"
 
 class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener
 {
@@ -81,6 +82,10 @@ public:
     
     void paint(juce::Graphics& g) override;
 
+    void mouseEnter(const juce::MouseEvent& ev) override;
+
+    void mouseExit(const juce::MouseEvent& ev) override;
+
     juce::DynamicObject* getJson() const;
 
 
@@ -107,9 +112,10 @@ private:
     juce::Label nameLabel;
     juce::TextButton instrumentChooserButton;
     juce::StringArray instrumentlist;
+    std::unique_ptr<TrackNameToolTip> toolTipWindow=nullptr;
 };
 
-class CurrentStyleComponent : public juce::Component
+class CurrentStyleComponent : public juce::Component, private juce::MouseListener
 {
 public:
     std::function<void()> anyTrackChanged;
@@ -142,11 +148,15 @@ public:
 
     void removingTrack(const juce::Uuid& uuid);
 
+    void setElapsedTime(double newElapsedTime);
 
 private:
+    void mouseDown(const juce::MouseEvent& ev) override;
+
     juce::String name;
     juce::Label nameOfStyle;
     juce::Label selectedTrackLabel, selectedTrackKey, selectedTrackChord;
+    juce::Label elapsedTimeLabel;
     juce::OwnedArray<Track> allTracks;
     juce::ComboBox playSettingsTracks;
     juce::TextButton startPlayingTracks;
@@ -155,6 +165,7 @@ private:
     juce::MidiOutput* outputDevice = nullptr;
     std::unique_ptr<MultipleTrackPlayer> trackPlayer=nullptr;
     std::unordered_map<juce::Uuid, TrackEntry>& mapNameToTrackEntry;
+    Track* lastSelectedTrack = nullptr;
 
     juce::Slider tempoSlider;
     double currentTempo = 120.0;
