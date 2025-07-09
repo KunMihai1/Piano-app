@@ -12,6 +12,7 @@
 
 struct TrackEntry
 {
+    juce::Uuid uuid;
     juce::File file;
     int trackIndex = 0;
     juce::String displayName;
@@ -23,4 +24,15 @@ struct TrackEntry
             ? displayName
             : file.getFileNameWithoutExtension();
     }
+
+    juce::String getUniqueID() const
+    {
+        return uuid.toString();
+    }
+
+    static juce::Uuid generateUUID()
+    {
+        return juce::Uuid();
+    }
+
 };
