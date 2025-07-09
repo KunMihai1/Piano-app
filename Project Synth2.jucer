@@ -33,6 +33,13 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="xDGyFE" name="CustomToolTip.cpp" compile="1" resource="0"
+            file="Source/CustomToolTip.cpp"/>
+      <FILE id="vCYJ2n" name="CustomToolTip.h" compile="0" resource="0" file="Source/CustomToolTip.h"/>
+      <FILE id="jDbj4E" name="InstrumentChooser.cpp" compile="1" resource="0"
+            file="Source/InstrumentChooser.cpp"/>
+      <FILE id="qNR2FG" name="InstrumentChooser.h" compile="0" resource="0"
+            file="Source/InstrumentChooser.h"/>
       <FILE id="k5GJ5O" name="TrackEntry.h" compile="0" resource="0" file="Source/TrackEntry.h"/>
       <FILE id="dxeclC" name="TrackPlayer.cpp" compile="1" resource="0" file="Source/TrackPlayer.cpp"/>
       <FILE id="PkpDN9" name="TrackPlayer.h" compile="0" resource="0" file="Source/TrackPlayer.h"/>

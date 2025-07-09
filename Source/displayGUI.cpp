@@ -9,14 +9,16 @@
 */
 
 #include "displayGUI.h"
+#include "InstrumentChooser.h"
 
-void convertTicksToSeconds(juce::MidiFile& midiFile)
+
+void convertTicksToSeconds(juce::MidiFile& midiFile, double bpm=120.0)
 {
     int tpqn = midiFile.getTimeFormat();
     if (tpqn <= 0)
         tpqn = 960;
 
-    const double defaultTempoBPM = 135.0; //k so elapsed time need to match this btw TODO
+    const double defaultTempoBPM = bpm; //k so elapsed time need to match this btw TODO
     const double secondsPerQuarterNote = 60.0 / defaultTempoBPM;
     const double secondsPerTick = secondsPerQuarterNote / double(tpqn);
 
@@ -123,7 +125,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
     if (!created)
     {
         currentStyleComponent = std::make_unique<CurrentStyleComponent>(name,mapNameToTrack,outputDevice);
-        currentStyleComponent->onRequestTrackSelectionFromTrack = [this](std::function<void(const juce::String&)> trackChosenCallback)
+        currentStyleComponent->onRequestTrackSelectionFromTrack = [this](std::function<void(const juce::String&, const juce::Uuid& uuid)> trackChosenCallback)
         {
             showListOfTracksToSelectFrom(trackChosenCallback);
         };
@@ -141,8 +143,6 @@ void Display::showCurrentStyleTab(const juce::String& name)
         updateStyleInJson(name);
     };
 
-
-        
     if (allStylesJsonVar.isObject())
     {
         auto stylesArray = allStylesJsonVar["styles"];
@@ -165,12 +165,12 @@ void Display::showCurrentStyleTab(const juce::String& name)
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 }
 
-void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&)> onTrackSelected)
+void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid)> onTrackSelected)
 {
     trackListComp = std::make_unique<TrackListComponent>(availableTracksFromFolder,
         [this, onTrackSelected](int index)
         {
-            onTrackSelected(availableTracksFromFolder[index].getDisplayName());
+            onTrackSelected(availableTracksFromFolder[index].getDisplayName(),availableTracksFromFolder[index].getUniqueID());
             int in = tabComp->getNumTabs() - 2;
             if (in >= 0)
             {
@@ -179,10 +179,14 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
             }
         });
 
-     tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.release(), true);
-     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
+    trackListComp->onRemoveTracks = [this](const juce::Uuid& uuid)
+    {
+        removeTrackFromAllStyles(uuid);
+    };
+    tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.release(), true);
+    tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 
-     createdTracksTab = true;
+    createdTracksTab = true;
 }
 
 void Display::createUserTracksFolder()
@@ -227,6 +231,61 @@ void Display::stoppingPlayer()
     this->currentStyleComponent->stoppingPlayer();
 }
 
+void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)
+{
+    if (!allStylesJsonVar.isObject())
+        return;
+
+    auto stylesArray = allStylesJsonVar["styles"];
+
+    if (!stylesArray.isArray())
+        return;
+
+    for (auto& styleVariable : *stylesArray.getArray())
+    {
+        auto* styleObj = styleVariable.getDynamicObject();
+
+        if (styleObj == nullptr)
+            continue;
+
+        juce::var trackVariable = styleObj->getProperty("tracks");
+
+        if (!trackVariable.isArray())
+            continue;
+
+        auto* trackArray = trackVariable.getArray();
+
+        for (auto& trackVar : *trackArray)
+        {
+            auto* trackObj = trackVar.getDynamicObject();
+
+            if (trackObj == nullptr)
+                continue;
+            
+            juce::String uuidString = trackObj->getProperty("uuid").toString();
+            if (uuidString == uuid.toString())
+            {
+                trackObj->setProperty("uuid", "noID");
+                trackObj->setProperty("name", "None");
+                trackObj->setProperty("instrumentNumber", -1);
+            }
+        }
+    }
+
+    if (currentStyleComponent)
+    {
+        currentStyleComponent->removingTrack(uuid);
+    }
+
+    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2");
+
+    juce::File jsonFile = appDataFolder.getChildFile("allStyles.json");
+
+    juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
+    jsonFile.replaceWithText(jsonString);
+}
+
 void Display::initializeAllStyles()
 {
     juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
@@ -254,6 +313,8 @@ void Display::initializeAllStyles()
             auto* trackObj = new juce::DynamicObject{};
             trackObj->setProperty("name", "None");
             trackObj->setProperty("volume", 0.0f);
+            trackObj->setProperty("instrumentNumber", -1);
+            trackObj->setProperty("uuid", "noID");
             tracksArray.add(trackObj);
         }
         styleObj->setProperty("tracks", tracksArray);
@@ -435,10 +496,9 @@ void CurrentStyleComponent::startPlaying()
 
     if (selectedID == 1)
     {
-        for (auto& tr : allTracks)
+        for (const auto& tr : allTracks)
         {
-            juce::String name = tr->getName();
-            auto it = mapNameToTrackEntry.find(name);
+            auto it = mapNameToTrackEntry.find(tr->getUsedID());
             if (it != mapNameToTrackEntry.end())
                 selectedTracks.push_back(it->second);
         }
@@ -453,8 +513,7 @@ void CurrentStyleComponent::startPlaying()
     trackPlayer->start();
 }
 
-CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::String, TrackEntry>& map, juce::MidiOutput* outputDevice) : name{ name }, mapNameToTrackEntry{map}, 
-outputDevice{outputDevice}
+CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unordered_map<juce::Uuid, TrackEntry>& map,juce::MidiOutput* outputDevice): name(name), mapNameToTrackEntry(map), outputDevice(outputDevice)
 {
     nameOfStyle.setText(name, juce::dontSendNotification);
     addAndMakeVisible(nameOfStyle);
@@ -489,7 +548,7 @@ outputDevice{outputDevice}
                 anyTrackChanged();
         };
 
-        newTrack->onRequestTrackSelection = [this](std::function<void(const juce::String&)> trackChosenCallback)
+        newTrack->onRequestTrackSelection = [this](std::function<void(const juce::String&, const juce::Uuid& uuid)> trackChosenCallback)
         {
             if (onRequestTrackSelectionFromTrack)
                 onRequestTrackSelectionFromTrack(trackChosenCallback);
@@ -498,6 +557,24 @@ outputDevice{outputDevice}
         addAndMakeVisible(newTrack);
         allTracks.add(newTrack);
     }
+
+    tempoSlider.setRange(60.0, 200.0, 1.0);
+    tempoSlider.setSkewFactorFromMidPoint(120.0);
+    tempoSlider.setValue(currentTempo);
+    tempoSlider.setSliderStyle(juce::Slider::LinearHorizontal);
+    tempoSlider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 50, 20);
+
+    tempoSlider.setColour(juce::Slider::trackColourId, juce::Colours::cornflowerblue);
+    tempoSlider.setColour(juce::Slider::backgroundColourId, juce::Colours::darkgrey);
+    tempoSlider.setMouseCursor(juce::MouseCursor::LeftRightResizeCursor);
+    tempoSlider.setColour(juce::Slider::thumbColourId, juce::Colours::orange);
+    tempoSlider.textFromValueFunction = [](double value)
+    {
+        return juce::String(static_cast<int>(value)) + " BPM";
+    };
+    tempoSlider.setValue(tempoSlider.getValue(), juce::sendNotificationSync);
+    tempoSlider.updateText();
+    addAndMakeVisible(tempoSlider);
 }
 
 void CurrentStyleComponent::stopPlaying()
@@ -506,17 +583,40 @@ void CurrentStyleComponent::stopPlaying()
         trackPlayer->stop();
 }
 
+double CurrentStyleComponent::getTempo()
+{
+    return currentTempo;
+}
+
+void CurrentStyleComponent::removingTrack(const juce::Uuid& uuid)
+{
+    for (auto& track : allTracks)
+    {
+        if (track->getUsedID() == uuid)
+        {
+            track->setNameLabel("None");
+            track->setUUID(juce::Uuid{ "noID" });
+        }
+    }  
+}
+
+void CurrentStyleComponent::setTempo(double newTempo)
+{
+    this->currentTempo = newTempo;
+}
+
+
 void CurrentStyleComponent::resized()
 {
     int labelWidth = 50;
     int playSettingsWidth = getWidth()/6+30;
     int heightFirst = 20;
-    int startStopWidth = 60;
+    int startStopWidth = 50;
     playSettingsTracks.setBounds(getWidth() - playSettingsWidth,0,playSettingsWidth,heightFirst);
     playSettingsTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     //nameOfStyle.setBounds(playSettingsTracks.getX() - labelWidth - 5,0,labelWidth,heightFirst);
 
-    nameOfStyle.setBounds((getWidth()-labelWidth) / 2, 0, getWidth() / 6, heightFirst);
+    nameOfStyle.setBounds((getWidth()-labelWidth) / 2-40, 0, getWidth() / 6, heightFirst);
     startPlayingTracks.setBounds(0, 0, startStopWidth, heightFirst);
     startPlayingTracks.setButtonText("Start");
     startPlayingTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
@@ -524,6 +624,9 @@ void CurrentStyleComponent::resized()
     stopPlayingTracks.setBounds(startPlayingTracks.getWidth() + 5, 0, startStopWidth, heightFirst);
     stopPlayingTracks.setButtonText("Stop");
     stopPlayingTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    int sliderWidth = playSettingsTracks.getX()- (nameOfStyle.getX() + nameOfStyle.getWidth())+10;
+    tempoSlider.setBounds(nameOfStyle.getX() + nameOfStyle.getWidth()-15, 0, sliderWidth, 20);
 
     float width = getWidth() / 8.0f, height = 80.0f;
     float initialX = 0, y = getHeight() - height;
@@ -613,11 +716,18 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
 
         auto name = trackObj->getProperty("name").toString();
         double volume = static_cast<double>(trackObj->getProperty("volume"));
-        //int instrumentNumber = static_cast<int>(trackObj->getProperty("instrumentNumber")); //TO DO when choosing instruments
+        int instrumentNumber = static_cast<int>(trackObj->getProperty("instrumentNumber")); 
+
+        auto uuidSTR = trackObj->getProperty("uuid");
+
+        juce::Uuid uuid{uuidSTR};
+
 
         allTracks[i]->setNameLabel(name);
         allTracks[i]->setVolumeSlider(volume);
         allTracks[i]->setVolumeLabel(juce::String(volume));
+        allTracks[i]->setInstrumentNumber(instrumentNumber);
+        allTracks[i]->setUUID(uuid);
     }
 }
 
@@ -645,6 +755,7 @@ Track::Track()
     addAndMakeVisible(volumeLabel);
 
     nameLabel.setText("None", juce::dontSendNotification);
+    nameLabel.setTooltip(nameLabel.getText());
     nameLabel.setColour(juce::Label::textColourId,juce::Colours::white);
 
     nameLabel.setInterceptsMouseClicks(true, false);
@@ -652,6 +763,16 @@ Track::Track()
     nameLabel.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     addAndMakeVisible(nameLabel);
+
+    instrumentChooserButton.setButtonText("Instrument");
+
+    instrumentChooserButton.onClick = [this] {
+        openInstrumentChooser();
+    };
+    instrumentChooserButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    addAndMakeVisible(instrumentChooserButton);
+
+    instrumentlist = instrumentListBuild();
 }
 
 Track::~Track()
@@ -667,6 +788,13 @@ void Track::resized()
     volumeSlider.setBounds(0, startY-10, 15, heightOfSlider);
     volumeLabel.setBounds(7, 0, 30, 40);
     nameLabel.setBounds((getWidth() - 40) / 2, volumeLabel.getHeight()+volumeLabel.getY() + 20, getWidth(), 20);
+
+
+    int x = volumeSlider.getX() + volumeSlider.getWidth() + 5;
+    int maxWidth = getWidth() - x - 5;
+    int desiredWidth = 40;
+    int actualWidth = juce::jmin(desiredWidth, maxWidth);
+    instrumentChooserButton.setBounds(x,nameLabel.getY()-25,maxWidth,20);
 }
 
 void Track::paint(juce::Graphics& g)
@@ -687,7 +815,8 @@ juce::DynamicObject* Track::getJson() const
 
     obj->setProperty("name", nameLabel.getText());
     obj->setProperty("volume", volumeSlider.getValue());
-    //obj->setProperty("instrumentNumber")  //TO DO when instrument selecting is possible
+    obj->setProperty("instrumentNumber", usedInstrumentNumber);
+    obj->setProperty("uuid", uniqueIdentifierTrack.toString());
 
     return obj;
 }
@@ -704,9 +833,168 @@ juce::var Track::loadJson(const juce::File& file)
         return juce::var{};
 
     return jsonVar;
+}
+
+void Track::openInstrumentChooser()
+{
+    std::unique_ptr<InstrumentChooserComponent> chooser=std::make_unique<InstrumentChooserComponent>( instrumentlist );
+    chooser->instrumentSelectedFunction = [this](int instrumentIndex, const juce::String& name)
+    {
+        usedInstrumentNumber = instrumentIndex;
+        nameLabel.setText(name,juce::dontSendNotification);
+        if(onChange)
+            onChange();
+
+    };
+
+    auto* display = findParentComponentOfClass<Display>();
+    auto bounds = display->getScreenBounds();
+
+    chooser->setSize(bounds.getWidth(), bounds.getHeight());
+
+    juce::CallOutBox::launchAsynchronously(std::move(chooser), bounds, nullptr);
 
 
+}
 
+juce::StringArray Track::instrumentListBuild()
+{
+    juce::StringArray instrumentListLocal = {
+    "Acoustic Grand Piano",
+    "Bright Acoustic Piano",
+    "Electric Grand Piano",
+    "Honky-tonk Piano",
+    "Electric Piano 1",
+    "Electric Piano 2",
+    "Harpsichord",
+    "Clavi",
+    "Celesta",
+    "Glockenspiel",
+    "Music Box",
+    "Vibraphone",
+    "Marimba",
+    "Xylophone",
+    "Tubular Bells",
+    "Dulcimer",
+    "Drawbar Organ",
+    "Percussive Organ",
+    "Rock Organ",
+    "Church Organ",
+    "Reed Organ",
+    "Accordion",
+    "Harmonica",
+    "Tango Accordion",
+    "Acoustic Guitar (nylon)",
+    "Acoustic Guitar (steel)",
+    "Electric Guitar (jazz)",
+    "Electric Guitar (clean)",
+    "Electric Guitar (muted)",
+    "Overdriven Guitar",
+    "Distortion Guitar",
+    "Guitar harmonics",
+    "Acoustic Bass",
+    "Electric Bass (finger)",
+    "Electric Bass (pick)",
+    "Fretless Bass",
+    "Slap Bass 1",
+    "Slap Bass 2",
+    "Synth Bass 1",
+    "Synth Bass 2",
+    "Violin",
+    "Viola",
+    "Cello",
+    "Contrabass",
+    "Tremolo Strings",
+    "Pizzicato Strings",
+    "Orchestral Harp",
+    "Timpani",
+    "String Ensemble 1",
+    "String Ensemble 2",
+    "SynthStrings 1",
+    "SynthStrings 2",
+    "Choir Aahs",
+    "Voice Oohs",
+    "Synth Voice",
+    "Orchestra Hit",
+    "Trumpet",
+    "Trombone",
+    "Tuba",
+    "Muted Trumpet",
+    "French Horn",
+    "Brass Section",
+    "Synth Brass 1",
+    "Synth Brass 2",
+    "Soprano Sax",
+    "Alto Sax",
+    "Tenor Sax",
+    "Baritone Sax",
+    "Oboe",
+    "English Horn",
+    "Bassoon",
+    "Clarinet",
+    "Piccolo",
+    "Flute",
+    "Recorder",
+    "Pan Flute",
+    "Blown Bottle",
+    "Shakuhachi",
+    "Whistle",
+    "Ocarina",
+    "Lead 1 (square)",
+    "Lead 2 (sawtooth)",
+    "Lead 3 (calliope)",
+    "Lead 4 (chiff)",
+    "Lead 5 (charang)",
+    "Lead 6 (voice)",
+    "Lead 7 (fifths)",
+    "Lead 8 (bass + lead)",
+    "Pad 1 (new age)",
+    "Pad 2 (warm)",
+    "Pad 3 (polysynth)",
+    "Pad 4 (choir)",
+    "Pad 5 (bowed)",
+    "Pad 6 (metallic)",
+    "Pad 7 (halo)",
+    "Pad 8 (sweep)",
+    "FX 1 (rain)",
+    "FX 2 (soundtrack)",
+    "FX 3 (crystal)",
+    "FX 4 (atmosphere)",
+    "FX 5 (brightness)",
+    "FX 6 (goblins)",
+    "FX 7 (echoes)",
+    "FX 8 (sci-fi)",
+    "Sitar",
+    "Banjo",
+    "Shamisen",
+    "Koto",
+    "Kalimba",
+    "Bag pipe",
+    "Fiddle",
+    "Shanai",
+    "Tinkle Bell",
+    "Agogo",
+    "Steel Drums",
+    "Woodblock",
+    "Taiko Drum",
+    "Melodic Tom",
+    "Synth Drum",
+    "Reverse Cymbal",
+    "Guitar Fret Noise",
+    "Breath Noise",
+    "Seashore",
+    "Bird Tweet",
+    "Telephone Ring",
+    "Helicopter",
+    "Applause",
+    "Gunshot"
+    };
+    return instrumentListLocal;
+}
+
+void Track::setInstrumentNumber(int newInstrumentNumber)
+{
+    this->usedInstrumentNumber = newInstrumentNumber;
 }
 
 void Track::setVolumeSlider(double value)
@@ -722,6 +1010,7 @@ void Track::setVolumeLabel(const juce::String& value)
 void Track::setNameLabel(const juce::String& name)
 {
     nameLabel.setText(name, juce::dontSendNotification);
+    nameLabel.setTooltip(name);
 }
 
 void Track::mouseDown(const juce::MouseEvent& event)
@@ -730,14 +1019,27 @@ void Track::mouseDown(const juce::MouseEvent& event)
     {
         if (onRequestTrackSelection)
         {
-            onRequestTrackSelection([this](const juce::String& selectedTrack)
+            onRequestTrackSelection([this](const juce::String& selectedTrack, const juce::Uuid& uuid)
                 {
                     setNameLabel(selectedTrack);
+                    setUUID(uuid);
                 }
             );
         }
     }
 }
+
+void Track::setUUID(const juce::Uuid& newUUID)
+{
+    this->uniqueIdentifierTrack = newUUID;
+}
+
+juce::Uuid Track::getUsedID()
+{
+    return uniqueIdentifierTrack;
+}
+
+
 
 TrackListComponent::TrackListComponent(std::vector<TrackEntry>& tracks, std::function<void(int)> onTrackChosen): availableTracks{tracks}, trackChosenCallBack{onTrackChosen}
 {
@@ -889,7 +1191,6 @@ void TrackListComponent::addToTrackList()
 
                 for (int i = 0; i < totalTracks; ++i)
                 {
-                    auto* newTrackSeq = midiFile.getTrack(i);
                     bool duplicate = false;
                     for (const auto& trackEntry : availableTracks)
                     {
@@ -913,6 +1214,7 @@ void TrackListComponent::addToTrackList()
                     newEntry.trackIndex = i;
                     newEntry.displayName = displayName;
                     newEntry.sequence = *trackSequence;
+                    newEntry.uuid = TrackEntry::generateUUID();
 
                     availableTracks.push_back(newEntry);
                     ++addedTracks;
@@ -924,6 +1226,9 @@ void TrackListComponent::addToTrackList()
                     .getChildFile("Piano Synth2");
                 auto jsonFile = appDataFolder.getChildFile("myTracks.json");
                 saveToFile(jsonFile);
+                int id = sortComboBox.getSelectedId();
+                sortComboBox.setSelectedId(id);
+                comboBoxChanged(&sortComboBox);
 
                 juce::AlertWindow::showMessageBoxAsync(
                     juce::AlertWindow::InfoIcon,
@@ -947,20 +1252,47 @@ void TrackListComponent::removeFromTrackList()
         return;
     }
 
-    for (int i = selectedRows.size()-1; i >= 0; i--)
-    {
-        int rowIndex = selectedRows[i];
-        availableTracks.erase(availableTracks.begin() + rowIndex);
-    }
+    
 
-    listBox.deselectAllRows();
-    listBox.updateContent();
-    listBox.repaint();
-    auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2");
-    auto jsonFile = appDataFolder.getChildFile("myTracks.json");
-    saveToFile(jsonFile);
+    juce::AlertWindow::showOkCancelBox(
+        juce::AlertWindow::WarningIcon,
+        "Confirm Remove",
+        "Are you sure you want to remove the selected track(s)?",
+        "Remove",
+        "Cancel",
+        this,
+        juce::ModalCallbackFunction::create(
+            [this, selectedRows](int result)
+            {
+                if (result == 0) // Cancel
+                    return;
+
+                DBG("AM TRECUT");
+
+                for (int i = selectedRows.size() - 1; i >= 0; --i)
+                {
+                    int rowIndex = selectedRows[i];
+                    auto& track = availableTracks[rowIndex];
+                    juce::Uuid uuid = track.getUniqueID();
+
+                    availableTracks.erase(availableTracks.begin() + rowIndex);
+
+                    if (onRemoveTracks) onRemoveTracks(uuid);
+                }
+
+                listBox.deselectAllRows();
+                listBox.updateContent();
+                listBox.repaint();
+
+                auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                    .getChildFile("Piano Synth2");
+                auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+                saveToFile(jsonFile);
+            }
+        )
+    );
 }
+
 
 void TrackListComponent::saveToFile(const juce::File& fileToSave)
 {
@@ -985,6 +1317,8 @@ void TrackListComponent::saveToFile(const juce::File& fileToSave)
             auto* trackObject = new juce::DynamicObject{};
             trackObject->setProperty("trackIndex", tr.trackIndex);
             trackObject->setProperty("displayName", tr.displayName);
+
+            trackObject->setProperty("uuid", tr.uuid.toString());
 
             trackArray.add(juce::var(trackObject));
         }
@@ -1057,11 +1391,17 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
             if (sequence == nullptr)
                 continue;
 
+            juce::String uuidString = trackObj->getProperty("uuid").toString();
+
             TrackEntry tr;
             tr.file = file;
             tr.trackIndex = trackIndex;
             tr.displayName = displayName;
             tr.sequence = *sequence;
+
+            if (uuidString.isNotEmpty())
+                tr.uuid = juce::Uuid(uuidString);
+            else tr.uuid = TrackEntry::generateUUID();
 
             availableTracks.push_back(tr);
         }
@@ -1105,46 +1445,16 @@ juce::String TrackListComponent::extractDisplayNameFromTrack(const juce::MidiMes
     return "Unnamed Track";
 }
 
-std::unordered_map<juce::String, TrackEntry> TrackListComponent::buildTrackNameMap()
+std::unordered_map<juce::Uuid, TrackEntry> TrackListComponent::buildTrackNameMap()
 {
-    std::unordered_map<juce::String, TrackEntry> map;
+    std::unordered_map<juce::Uuid, TrackEntry> map;
 
     for (auto& tr : availableTracks)
     {
-        map[tr.displayName] = tr;
+        map[tr.getUniqueID()] = tr;
     }
     return map;
 }
-
-double TrackListComponent::getInitialTempoBPM(const juce::MidiFile& midiFile)
-{
-    double tempoBPM = 120.0;
-
-    if (midiFile.getNumTracks() == 0)
-        return tempoBPM;
-
-    auto* tempoTrack = midiFile.getTrack(0);
-    if (tempoTrack == nullptr)
-        return tempoBPM;
-
-    for (int i = 0; i < tempoTrack->getNumEvents(); ++i)
-    {
-        const juce::MidiMessage& msg = tempoTrack->getEventPointer(i)->message;
-
-        if (msg.isTempoMetaEvent())
-        {
-            double spqn = msg.getTempoSecondsPerQuarterNote();
-            if (spqn > 0)
-            {
-                tempoBPM = 60.0 / spqn;
-                break; 
-            }
-        }
-    }
-
-    return tempoBPM;
-}
-
 
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)
 {

@@ -5,6 +5,17 @@
     Created: 8 Jun 2025 2:44:43am
     Author:  Kisuke
 
+    TODO
+
+    -instrument diferit pentru fiecare track, posibilitate de a alege -wiring
+    -posibilitate de a alege tempo-ul pe tot style-ul-wiring
+
+    - solo track
+
+
+    -modify the starting time for each track
+
+
   ==============================================================================
 */
 
@@ -16,6 +27,8 @@
 class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener
 {
 public:
+
+    std::function<void(const juce::Uuid& uuid)> onRemoveTracks;
 
     TrackListComponent(std::vector<TrackEntry>& tracks, std::function<void(int)> onTrackChosen);
 
@@ -41,9 +54,7 @@ public:
 
     juce::String extractDisplayNameFromTrack(const juce::MidiMessageSequence& trackSeq);
 
-    std::unordered_map<juce::String, TrackEntry> buildTrackNameMap();
-
-    double getInitialTempoBPM(const juce::MidiFile& midiFile);
+    std::unordered_map<juce::Uuid, TrackEntry> buildTrackNameMap();
 
 private:
 
@@ -61,7 +72,7 @@ class Track : public juce::Component, private juce::MouseListener
 {
 public:
     std::function<void()> onChange;
-    std::function<void(std::function<void(const juce::String&)>)> onRequestTrackSelection;
+    std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid)>)> onRequestTrackSelection;
 
     Track();
     ~Track();
@@ -79,22 +90,33 @@ public:
     void setVolumeLabel(const juce::String& value);
     void setNameLabel(const juce::String& name);
     juce::String getName();
+    void openInstrumentChooser();
+    juce::StringArray instrumentListBuild();
+    void setInstrumentNumber(int newInstrumentNumber);
+    void setUUID(const juce::Uuid& newUUID);
+    juce::Uuid getUsedID();
 
 private:
     void mouseDown(const juce::MouseEvent& event) override;
+    int usedInstrumentNumber=-1;
+    juce::Uuid uniqueIdentifierTrack;
+
 
     juce::Slider volumeSlider;
     juce::Label volumeLabel;
     juce::Label nameLabel;
+    juce::TextButton instrumentChooserButton;
+    juce::StringArray instrumentlist;
 };
 
 class CurrentStyleComponent : public juce::Component
 {
 public:
     std::function<void()> anyTrackChanged;
-    std::function<void(std::function<void(const juce::String&)>)> onRequestTrackSelectionFromTrack;
+    std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid)>)> onRequestTrackSelectionFromTrack;
 
-    CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::String, TrackEntry>& map, juce::MidiOutput* outputDevice = nullptr);
+
+    CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, juce::MidiOutput* outputDevice = nullptr);
 
     void stoppingPlayer();
     
@@ -114,6 +136,12 @@ public:
 
     void stopPlaying();
 
+    double getTempo();
+
+    void setTempo(double newTempo);
+
+    void removingTrack(const juce::Uuid& uuid);
+
 
 private:
     juce::String name;
@@ -126,7 +154,10 @@ private:
 
     juce::MidiOutput* outputDevice = nullptr;
     std::unique_ptr<MultipleTrackPlayer> trackPlayer=nullptr;
-    std::unordered_map<juce::String, TrackEntry>& mapNameToTrackEntry;
+    std::unordered_map<juce::Uuid, TrackEntry>& mapNameToTrackEntry;
+
+    juce::Slider tempoSlider;
+    double currentTempo = 120.0;
 };
 
 class StyleViewComponent : public juce::Component, public juce::MouseListener
@@ -191,14 +222,18 @@ public:
     const juce::var& getJsonVar();
 
     void showCurrentStyleTab(const juce::String& name);
-    void showListOfTracksToSelectFrom(std::function<void(const juce::String&)> onTrackSelected);
+    void showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid)> onTrackSelected);
 
     void createUserTracksFolder();
     std::vector<TrackEntry> getAvailableTracksFromFolder(const juce::File& folder);
 
     void setDeviceOutput(juce::MidiOutput* devOutput = nullptr);
 
+    void removeTrackFromAllStyles(const juce::Uuid& uuid);
+
     void stoppingPlayer();
+
+    void updateAllStylesInJson();
 
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
@@ -212,5 +247,5 @@ private:
     std::unique_ptr<TrackListComponent> trackListComp;
     juce::var allStylesJsonVar;
 
-    std::unordered_map<juce::String, TrackEntry> mapNameToTrack;
+    std::unordered_map<juce::Uuid, TrackEntry> mapNameToTrack;
 };
