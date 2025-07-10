@@ -125,7 +125,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
     if (!created)
     {
         currentStyleComponent = std::make_unique<CurrentStyleComponent>(name,mapNameToTrack,outputDevice);
-        currentStyleComponent->onRequestTrackSelectionFromTrack = [this](std::function<void(const juce::String&, const juce::Uuid& uuid)> trackChosenCallback)
+        currentStyleComponent->onRequestTrackSelectionFromTrack = [this](std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> trackChosenCallback)
         {
             showListOfTracksToSelectFrom(trackChosenCallback);
         };
@@ -168,12 +168,15 @@ void Display::showCurrentStyleTab(const juce::String& name)
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 }
 
-void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid)> onTrackSelected)
+void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> onTrackSelected)
 {
     trackListComp = std::make_unique<TrackListComponent>(availableTracksFromFolder,
         [this, onTrackSelected](int index)
         {
-            onTrackSelected(availableTracksFromFolder[index].getDisplayName(),availableTracksFromFolder[index].getUniqueID());
+            auto& track = availableTracksFromFolder[index];
+            juce::String typeString = TrackTypeConversion::toString(track.type);
+
+            onTrackSelected(track.getDisplayName(),track.getUniqueID(),typeString);
             int in = tabComp->getNumTabs() - 2;
             if (in >= 0)
             {
@@ -231,7 +234,8 @@ void Display::setDeviceOutput(juce::MidiOutput* devOutput)
 
 void Display::stoppingPlayer()
 {
-    this->currentStyleComponent->stoppingPlayer();
+    if(currentStyleComponent)
+        this->currentStyleComponent->stoppingPlayer();
 }
 
 void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)
@@ -315,7 +319,8 @@ void Display::initializeAllStyles()
         {
             auto* trackObj = new juce::DynamicObject{};
             trackObj->setProperty("name", "None");
-            trackObj->setProperty("volume", 0.0f);
+            trackObj->setProperty("type", "None");
+            trackObj->setProperty("volume", 50.0f);
             trackObj->setProperty("instrumentNumber", -1);
             trackObj->setProperty("uuid", "noID");
             tracksArray.add(trackObj);
@@ -572,7 +577,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
                 anyTrackChanged();
         };
 
-        newTrack->onRequestTrackSelection = [this](std::function<void(const juce::String&, const juce::Uuid& uuid)> trackChosenCallback)
+        newTrack->onRequestTrackSelection = [this](std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> trackChosenCallback)
         {
             if (onRequestTrackSelectionFromTrack)
                 onRequestTrackSelectionFromTrack(trackChosenCallback);
@@ -598,6 +603,12 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
     };
     tempoSlider.setValue(tempoSlider.getValue(), juce::sendNotificationSync);
     tempoSlider.updateText();
+
+    tempoSlider.onValueChange = [this]()
+    {
+        startTimer(200);
+    };
+
     addAndMakeVisible(tempoSlider);
 }
 
@@ -643,6 +654,13 @@ juce::OwnedArray<Track>& CurrentStyleComponent::getAllTracks()
 MultipleTrackPlayer* CurrentStyleComponent::getTrackPlayer()
 {
     return trackPlayer.get();
+}
+
+void CurrentStyleComponent::timerCallback()
+{
+    stopTimer();
+    currentTempo = tempoSlider.getValue();
+
 }
 
 void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)
@@ -771,6 +789,7 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
         return;
 
     auto* tracksArray = tracksVar.getArray();
+    int current = 2;
 
     for (int i = 0; i < allTracks.size() && i < tracksArray->size(); ++i)
     {
@@ -790,8 +809,18 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
 
         juce::Uuid uuid{uuidSTR};
         allTracks[i]->addListener(trackPlayer.get());
+        auto type = trackObj->getProperty("type");
+        allTracks[i]->setTypeOfTrack(type);
 
-        allTracks[i]->setChannel(i + 2);
+        if (type == "percussion")
+        {
+            allTracks[i]->setChannel(10);
+        }
+        else
+        {
+            allTracks[i]->setChannel(current);
+            current++;
+        }
         allTracks[i]->setNameLabel(name);
         allTracks[i]->setVolumeSlider(volume);
         allTracks[i]->setVolumeLabel(juce::String(volume));
@@ -838,7 +867,16 @@ Track::Track()
     instrumentChooserButton.setButtonText("Instrument");
 
     instrumentChooserButton.onClick = [this] {
-        openInstrumentChooser();
+        if (channel >= 2 && channel <= 16)
+        {
+            if (channel != 10)
+                openInstrumentChooser();
+            else
+            {
+                juce::String toShow = "Since this is a track for percussion, the instrument change won't take effect!\nIf you want to change anything, you must change the original notes!";
+                showInstantInfo(toShow);
+            }
+        }
     };
     instrumentChooserButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     addAndMakeVisible(instrumentChooserButton);
@@ -914,11 +952,29 @@ juce::DynamicObject* Track::getJson() const
     auto* obj = new juce::DynamicObject{};
 
     obj->setProperty("name", nameLabel.getText());
+    obj->setProperty("type", typeOfTrack);
     obj->setProperty("volume", volumeSlider.getValue());
     obj->setProperty("instrumentNumber", usedInstrumentNumber);
     obj->setProperty("uuid", uniqueIdentifierTrack.toString());
 
     return obj;
+}
+
+void Track::showInstantInfo(const juce::String& text)
+{
+    auto label = std::make_unique<juce::Label>();
+    label->setText(text, juce::dontSendNotification);
+    label->setJustificationType(juce::Justification::centred);
+    label->setColour(juce::Label::backgroundColourId, juce::Colours::lightyellow);
+    label->setColour(juce::Label::textColourId, juce::Colours::black);
+    label->setBorderSize(juce::BorderSize<int>(2));
+    label->setSize(300, 100);
+
+    auto* display = findParentComponentOfClass<Display>();
+    if (display != nullptr)
+    {
+        juce::CallOutBox::launchAsynchronously(std::move(label), display->getScreenBounds(), nullptr);
+    }
 }
 
 juce::var Track::loadJson(const juce::File& file)
@@ -1121,10 +1177,11 @@ void Track::mouseDown(const juce::MouseEvent& event)
     {
         if (onRequestTrackSelection)
         {
-            onRequestTrackSelection([this](const juce::String& selectedTrack, const juce::Uuid& uuid)
+            onRequestTrackSelection([this](const juce::String& selectedTrack, const juce::Uuid& uuid, const juce::String& type)
                 {
                     setNameLabel(selectedTrack);
                     setUUID(uuid);
+                    setTypeOfTrack(type);
                 }
             );
         }
@@ -1134,6 +1191,11 @@ void Track::mouseDown(const juce::MouseEvent& event)
 void Track::setUUID(const juce::Uuid& newUUID)
 {
     this->uniqueIdentifierTrack = newUUID;
+}
+
+void Track::setTypeOfTrack(const juce::String& newType)
+{
+    this->typeOfTrack = newType;
 }
 
 juce::Uuid Track::getUsedID()
@@ -1502,6 +1564,21 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
             tr.trackIndex = trackIndex;
             tr.displayName = displayName;
             tr.sequence = *sequence;
+
+            bool foundPercussion = false;
+            for (int i = 0; i < sequence->getNumEvents(); ++i)
+            {
+                auto msg = sequence->getEventPointer(i)->message;
+                if (msg.isNoteOnOrOff() && msg.getChannel() == 10)
+                {
+                    foundPercussion = true;
+                    break;
+                }
+            }
+
+            if (foundPercussion)
+                tr.type = TrackType::Percussion;
+            else tr.type = TrackType::Melodic;
 
             if (uuidString.isNotEmpty())
                 tr.uuid = juce::Uuid(uuidString);

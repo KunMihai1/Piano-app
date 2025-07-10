@@ -10,6 +10,8 @@
 
 #pragma once
 
+enum class TrackType {Melodic,Percussion};
+
 struct TrackEntry
 {
     juce::Uuid uuid;
@@ -17,6 +19,8 @@ struct TrackEntry
     int trackIndex = 0;
     juce::String displayName;
     juce::MidiMessageSequence sequence;
+    juce::MidiMessageSequence originalSequenceTicks;
+    TrackType type = TrackType::Melodic;
 
     juce::String getDisplayName() const
     {
@@ -36,3 +40,20 @@ struct TrackEntry
     }
 
 };
+
+namespace TrackTypeConversion
+{
+    inline juce::String toString(TrackType type)
+    {
+        if (type == TrackType::Melodic) return "melodic";
+        else if (type == TrackType::Percussion) return "percussion";
+        return "unknown";
+    }
+
+    inline TrackType fromString(const juce::String& str)
+    {
+        if (str.compareIgnoreCase("percussion") == 0)
+            return TrackType::Percussion;
+        else return TrackType::Melodic;
+    }
+}

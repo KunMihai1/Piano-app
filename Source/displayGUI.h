@@ -7,8 +7,6 @@
 
     TODO
 
-    -put the percussion on channel 10
-
     -posibilitate de a alege tempo-ul pe tot style-ul-wiring
    
     -modify the starting time for each track
@@ -71,13 +69,15 @@ private:
     juce::TextButton removeButton{ "Remove" };
     juce::ComboBox sortComboBox;
 
+
+    //JUCE_LEAK_DETECTOR(TrackListComponent)
 };
 
 class Track : public juce::Component, private juce::MouseListener, public Subject
 {
 public:
     std::function<void()> onChange;
-    std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid)>)> onRequestTrackSelection;
+    std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelection;
 
     Track();
     ~Track();
@@ -92,6 +92,7 @@ public:
 
     juce::DynamicObject* getJson() const;
 
+    void showInstantInfo(const juce::String& text);
 
     juce::var loadJson(const juce::File& file);
 
@@ -103,6 +104,7 @@ public:
     juce::StringArray instrumentListBuild();
     void setInstrumentNumber(int newInstrumentNumber);
     void setUUID(const juce::Uuid& newUUID);
+    void setTypeOfTrack(const juce::String& newType);
     juce::Uuid getUsedID();
     void setChannel(int newChannel);
 
@@ -111,6 +113,7 @@ private:
     void mouseDown(const juce::MouseEvent& event) override;
     int usedInstrumentNumber=-1;
     int channel;
+    juce::String typeOfTrack;
 
     juce::Uuid uniqueIdentifierTrack;
 
@@ -121,13 +124,15 @@ private:
     juce::TextButton instrumentChooserButton;
     juce::StringArray instrumentlist;
     std::unique_ptr<TrackNameToolTip> toolTipWindow=nullptr;
+
+    //JUCE_LEAK_DETECTOR(Track)
 };
 
-class CurrentStyleComponent : public juce::Component, private juce::MouseListener
+class CurrentStyleComponent : public juce::Component, private juce::MouseListener, private juce::Timer
 {
 public:
     std::function<void()> anyTrackChanged;
-    std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid)>)> onRequestTrackSelectionFromTrack;
+    std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelectionFromTrack;
 
 
     CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, juce::MidiOutput* outputDevice = nullptr);
@@ -166,6 +171,8 @@ public:
 private:
     void mouseDown(const juce::MouseEvent& ev) override;
 
+    void timerCallback() override;
+
     juce::String name;
     juce::Label nameOfStyle;
     juce::Label selectedTrackLabel, selectedTrackKey, selectedTrackChord;
@@ -182,6 +189,8 @@ private:
 
     juce::Slider tempoSlider;
     double currentTempo = 120.0;
+
+    //JUCE_LEAK_DETECTOR(CurrentStyleComponent)
 };
 
 class StyleViewComponent : public juce::Component, public juce::MouseListener
@@ -197,6 +206,8 @@ public:
 
 private:
     juce::Label label;
+
+    //JUCE_LEAK_DETECTOR(StyleViewComponent)
 };
 
 class StylesListComponent : public juce::Component
@@ -215,6 +226,8 @@ private:
 
     int nrOfStyles;
     int widthSize;
+
+    JUCE_LEAK_DETECTOR(StylesListComponent)
 };
 
 class MyTabbedComponent : public juce::TabbedComponent
@@ -226,6 +239,8 @@ public:
     void currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName) override;
 
     std::function<void(int, juce::String)> onTabChanged;
+
+    //JUCE_LEAK_DETECTOR(MyTabbedComponent)
 };
 
 class Display: public  juce::Component, public juce::ChangeListener
@@ -246,7 +261,7 @@ public:
     const juce::var& getJsonVar();
 
     void showCurrentStyleTab(const juce::String& name);
-    void showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid)> onTrackSelected);
+    void showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> onTrackSelected);
 
     void createUserTracksFolder();
     std::vector<TrackEntry> getAvailableTracksFromFolder(const juce::File& folder);
@@ -272,4 +287,6 @@ private:
     juce::var allStylesJsonVar;
 
     std::unordered_map<juce::Uuid, TrackEntry> mapNameToTrack;
+
+    //JUCE_LEAK_DETECTOR(Display)
 };
