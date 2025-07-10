@@ -7,7 +7,8 @@
 
     TODO
 
-    -instrument diferit pentru fiecare track, posibilitate de a alege -wiring
+    -put the percussion on channel 10
+
     -posibilitate de a alege tempo-ul pe tot style-ul-wiring
    
     -modify the starting time for each track
@@ -16,6 +17,7 @@
 
     -making the sets so that you can select what to play on left hand and on right hand
 
+    
 
   ==============================================================================
 */
@@ -25,6 +27,7 @@
 #include "TrackEntry.h"
 #include "TrackPlayer.h"
 #include "CustomToolTip.h"
+#include "SubjectInterface.h"
 
 class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener
 {
@@ -70,7 +73,7 @@ private:
 
 };
 
-class Track : public juce::Component, private juce::MouseListener
+class Track : public juce::Component, private juce::MouseListener, public Subject
 {
 public:
     std::function<void()> onChange;
@@ -101,10 +104,14 @@ public:
     void setInstrumentNumber(int newInstrumentNumber);
     void setUUID(const juce::Uuid& newUUID);
     juce::Uuid getUsedID();
+    void setChannel(int newChannel);
+
 
 private:
     void mouseDown(const juce::MouseEvent& event) override;
     int usedInstrumentNumber=-1;
+    int channel;
+
     juce::Uuid uniqueIdentifierTrack;
 
 
@@ -150,6 +157,11 @@ public:
     void removingTrack(const juce::Uuid& uuid);
 
     void setElapsedTime(double newElapsedTime);
+
+    juce::OwnedArray<Track>& getAllTracks();
+
+    MultipleTrackPlayer* getTrackPlayer();
+
 
 private:
     void mouseDown(const juce::MouseEvent& ev) override;
