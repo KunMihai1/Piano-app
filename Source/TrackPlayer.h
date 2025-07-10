@@ -12,8 +12,9 @@
 
 #include <JuceHeader.h>
 #include "TrackEntry.h"
+#include "TrackListener.h"
 
-class MultipleTrackPlayer: private juce::HighResolutionTimer
+class MultipleTrackPlayer: private juce::HighResolutionTimer, public TrackListener
 {
 public:
     struct TrackPlaybackData {
@@ -23,13 +24,18 @@ public:
 
     std::function<void(double)> onElapsedUpdate;
 
+
     MultipleTrackPlayer(juce::MidiOutput* out);
     
+    void changingMidPlaySettings(int volume, int instrument);
+
     void setTracks(const std::vector<TrackEntry>& newTracks);
 
     void stop();
 
     void start();
+
+    void updatePlaybackSettings(int channel, int newVolume=-1, int newInstrument=-1) override;
 
     ~MultipleTrackPlayer();
 
@@ -38,6 +44,7 @@ public:
 private:
     void hiResTimerCallback() override;
     std::vector<juce::MidiMessageSequence> filteredSequences;
+    int baseChannelTrack = 2;
 
     juce::MidiOutput* outputDevice=nullptr;
     std::vector<TrackPlaybackData> tracks;

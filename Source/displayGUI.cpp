@@ -134,6 +134,9 @@ void Display::showCurrentStyleTab(const juce::String& name)
     }
     else
     {
+        for (auto& track : currentStyleComponent->getAllTracks())
+            track->removeListener(currentStyleComponent->getTrackPlayer());
+
         int index = tabComp->getNumTabs() - 1;
         tabComp->getTabbedButtonBar().setTabName(index, name);
         currentStyleComponent->updateName(name);
@@ -632,6 +635,16 @@ void CurrentStyleComponent::setElapsedTime(double newTimeToSet)
     this->elapsedTimeLabel.setText(formattedTime, juce::dontSendNotification);
 }
 
+juce::OwnedArray<Track>& CurrentStyleComponent::getAllTracks()
+{
+    return allTracks;
+}
+
+MultipleTrackPlayer* CurrentStyleComponent::getTrackPlayer()
+{
+    return trackPlayer.get();
+}
+
 void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)
 {
     auto* clickedComponent = ev.originalComponent;
@@ -701,7 +714,11 @@ void CurrentStyleComponent::updateName(const juce::String& newName)
 
 CurrentStyleComponent::~CurrentStyleComponent()
 {
-
+    if (trackPlayer)
+    {
+        for (auto& track : allTracks)
+            track->removeListener(trackPlayer.get());
+    }
 }
 
 juce::String CurrentStyleComponent::getName()
@@ -772,8 +789,9 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
         auto uuidSTR = trackObj->getProperty("uuid");
 
         juce::Uuid uuid{uuidSTR};
+        allTracks[i]->addListener(trackPlayer.get());
 
-
+        allTracks[i]->setChannel(i + 2);
         allTracks[i]->setNameLabel(name);
         allTracks[i]->setVolumeSlider(volume);
         allTracks[i]->setVolumeLabel(juce::String(volume));
@@ -789,13 +807,15 @@ Track::Track()
     volumeSlider.onValueChange = [this]()
     {
         volumeLabel.setText(juce::String(volumeSlider.getValue()), juce::dontSendNotification);
-        
     };
 
     volumeSlider.onDragEnd = [this]()
     {
         if (onChange)
             onChange();
+
+        if(static_cast<int>(volumeSlider.getValue())!=-1)
+            notify(channel, static_cast<int>(volumeSlider.getValue()), -1);
     };
 
     addAndMakeVisible(volumeSlider);
@@ -824,6 +844,8 @@ Track::Track()
     addAndMakeVisible(instrumentChooserButton);
 
     instrumentlist = instrumentListBuild();
+
+    
 }
 
 Track::~Track()
@@ -837,15 +859,15 @@ void Track::resized()
     auto heightOfSlider = getHeight() / 2 + 20;
     auto startY = (getHeight() - heightOfSlider)/2;
     volumeSlider.setBounds(0, startY-10, 15, heightOfSlider);
-    volumeLabel.setBounds(7, 0, 30, 40);
+    volumeLabel.setBounds(20, 0, 30, 40);
     nameLabel.setBounds((getWidth() - 40) / 2, volumeLabel.getHeight()+volumeLabel.getY() + 20, getWidth(), 20);
 
 
-    int x = volumeSlider.getX() + volumeSlider.getWidth() + 5;
+    int x = volumeSlider.getX() + volumeSlider.getWidth() + 10;
     int maxWidth = getWidth() - x - 5;
     int desiredWidth = 40;
     int actualWidth = juce::jmin(desiredWidth, maxWidth);
-    instrumentChooserButton.setBounds(x,nameLabel.getY()-25,maxWidth,20);
+    instrumentChooserButton.setBounds(x,nameLabel.getY()-25,maxWidth-2,20);
 }
 
 void Track::paint(juce::Graphics& g)
@@ -918,7 +940,7 @@ void Track::openInstrumentChooser()
     std::unique_ptr<InstrumentChooserComponent> chooser=std::make_unique<InstrumentChooserComponent>( instrumentlist );
     chooser->instrumentSelectedFunction = [this](int instrumentIndex, const juce::String& name)
     {
-        usedInstrumentNumber = instrumentIndex;
+        setInstrumentNumber(instrumentIndex);
         nameLabel.setText(name,juce::dontSendNotification);
         if(onChange)
             onChange();
@@ -931,8 +953,6 @@ void Track::openInstrumentChooser()
     chooser->setSize(bounds.getWidth(), bounds.getHeight());
 
     juce::CallOutBox::launchAsynchronously(std::move(chooser), bounds, nullptr);
-
-
 }
 
 juce::StringArray Track::instrumentListBuild()
@@ -1073,6 +1093,8 @@ juce::StringArray Track::instrumentListBuild()
 void Track::setInstrumentNumber(int newInstrumentNumber)
 {
     this->usedInstrumentNumber = newInstrumentNumber;
+    if(usedInstrumentNumber!=-1)
+        notify(channel, -1, usedInstrumentNumber);
 }
 
 void Track::setVolumeSlider(double value)
@@ -1083,6 +1105,8 @@ void Track::setVolumeSlider(double value)
 void Track::setVolumeLabel(const juce::String& value)
 {
     volumeLabel.setText(value, juce::dontSendNotification);
+    if(value.getIntValue()!=-1)
+        notify(channel, value.getIntValue(), -1);
 }
 
 void Track::setNameLabel(const juce::String& name)
@@ -1117,7 +1141,10 @@ juce::Uuid Track::getUsedID()
     return uniqueIdentifierTrack;
 }
 
-
+void Track::setChannel(int newChannel)
+{
+    this->channel = newChannel;
+}
 
 TrackListComponent::TrackListComponent(std::vector<TrackEntry>& tracks, std::function<void(int)> onTrackChosen): availableTracks{tracks}, trackChosenCallBack{onTrackChosen}
 {

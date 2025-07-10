@@ -34,7 +34,9 @@ void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
             const auto& msg = tr.sequence.getEventPointer(i)->message;
             if (msg.isNoteOn() || msg.isNoteOff())
             {
-                filteredSeq.addEvent(msg);
+                auto modifiedMsg = msg;
+                modifiedMsg.setChannel(channel);
+                filteredSeq.addEvent(modifiedMsg);
             }
         }
 
@@ -80,12 +82,19 @@ void MultipleTrackPlayer::start()
     for (auto& track : tracks)
         track.nextEventIndex = 0;
 
-    for (int i = 0; i < tracks.size(); i++)
-    {
-
-    }
-
     startTimer(10);
+}
+
+void MultipleTrackPlayer::updatePlaybackSettings(int channel, int newVolume, int newInstrument)
+{
+    if (outputDevice)
+    {
+        if(newInstrument!=-1)
+            outputDevice->sendMessageNow(juce::MidiMessage::programChange(channel, newInstrument));
+
+        if (newVolume != -1)
+            outputDevice->sendMessageNow(juce::MidiMessage::controllerEvent(channel, 7, newVolume));
+    }
 }
 
 MultipleTrackPlayer::~MultipleTrackPlayer()
