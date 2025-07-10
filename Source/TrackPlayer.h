@@ -39,6 +39,8 @@ public:
 
     ~MultipleTrackPlayer();
 
+    void applyBPMchangeDuringPlayback(double newBPM, double currentElapsed);
+
     
 
 private:

@@ -27,7 +27,14 @@ void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
     for (auto& tr : newTracks)
     {
         juce::MidiMessageSequence filteredSeq;
-        int channel = j + 2;
+        int channel;
+        if (tr.type == TrackType::Percussion)
+            channel = 10;
+        else
+        {
+            channel = j + 2;
+            j++;
+        }
 
         for (int i = 0; i < tr.sequence.getNumEvents(); ++i)
         {
@@ -56,7 +63,6 @@ void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
             int newIndex = static_cast<int>(filteredSequences.size()) - 1;
             tracks.push_back(TrackPlaybackData{ newIndex, 0 });
         }
-        j++;
     }
 
     DBG("Tracks loaded: " << tracks.size());
@@ -89,7 +95,8 @@ void MultipleTrackPlayer::updatePlaybackSettings(int channel, int newVolume, int
 {
     if (outputDevice)
     {
-        if(newInstrument!=-1)
+        DBG("Channel:"+ juce::String(channel));
+        if(newInstrument!=-1 && channel!=10)
             outputDevice->sendMessageNow(juce::MidiMessage::programChange(channel, newInstrument));
 
         if (newVolume != -1)
@@ -100,6 +107,22 @@ void MultipleTrackPlayer::updatePlaybackSettings(int channel, int newVolume, int
 MultipleTrackPlayer::~MultipleTrackPlayer()
 {
 
+}
+
+void MultipleTrackPlayer::applyBPMchangeDuringPlayback(double newBPM, double elapsedTime)
+{
+    filteredSequences.clear();
+
+    double secondsPerQuarterNote = 60.0 / newBPM;
+    int tpqn = 960;
+    double secondsPerTick = secondsPerQuarterNote / tpqn;
+
+    int j = 0;
+    for (auto& track : tracks)
+
+    {
+
+    }
 }
 
 void MultipleTrackPlayer::hiResTimerCallback()
