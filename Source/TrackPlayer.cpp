@@ -86,16 +86,16 @@ void MultipleTrackPlayer::stop()
     }
 }
 
-    void MultipleTrackPlayer::start()
-    {
+void MultipleTrackPlayer::start()
+{
 
-        DBG("Ticks per second: " << juce::Time::getHighResolutionTicksPerSecond());
-        startTime = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
-        for (auto& track : tracks)
-            track.nextEventIndex = 0;
+    DBG("Ticks per second: " << juce::Time::getHighResolutionTicksPerSecond());
+    startTime = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
+    for (auto& track : tracks)
+        track.nextEventIndex = 0;
 
-        startTimer(10);
-    }
+    startTimer(10);
+}
 
 void MultipleTrackPlayer::updatePlaybackSettings(int channel, int newVolume, int newInstrument)
 {
@@ -219,6 +219,7 @@ void MultipleTrackPlayer::applyBPMchangeBeforePlayback(double baseBPM, double ne
 
         juce::MidiMessageSequence newSequence;
 
+
         for (int i = 0; i < tr.sequence.getNumEvents(); ++i)
         {
             const auto& event = tr.sequence.getEventPointer(i)->message;
@@ -230,6 +231,29 @@ void MultipleTrackPlayer::applyBPMchangeBeforePlayback(double baseBPM, double ne
             newMessage.setTimeStamp(scaledTime);
             newMessage.setChannel(channel);
             newSequence.addEvent(newMessage);
+        }
+
+        newSequence.sort();
+        double firstEventTime = 0.01;
+        for (int i = 0; i < newSequence.getNumEvents(); ++i)
+        {
+            const auto& msg = newSequence.getEventPointer(i)->message;
+            if (msg.isNoteOn())
+            {
+                firstEventTime = std::max(0.01, msg.getTimeStamp() - 0.005);
+                break;
+            }
+        }
+        if (tr.volumeAssociated != -1)
+        {
+            newSequence.addEvent(
+                juce::MidiMessage::controllerEvent(channel, 7, tr.volumeAssociated).withTimeStamp(firstEventTime - 0.004));
+        }
+
+        if (channel != 10 && tr.instrumentAssociated != -1)
+        {
+            newSequence.addEvent(
+                juce::MidiMessage::programChange(channel, tr.instrumentAssociated).withTimeStamp(firstEventTime - 0.002));
         }
 
         newSequence.updateMatchedPairs();
@@ -273,13 +297,15 @@ void MultipleTrackPlayer::hiResTimerCallback()
 
     double now = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
     double elapsed = now - startTime;
+    double beatsElapsed = elapsed * (currentBPM / 60.0);
+
     currentElapsedTime = elapsed;
     DBG("Elapsed time: " << elapsed);
     if (onElapsedUpdate)
     {
-        auto lambda = [this, elapsed]()
+        auto lambda = [this, beatsElapsed]()
         {
-            onElapsedUpdate(elapsed);
+            onElapsedUpdate(beatsElapsed);
         };
         juce::MessageManager::callAsync(lambda);
     }

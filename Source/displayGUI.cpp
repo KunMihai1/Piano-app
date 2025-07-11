@@ -531,7 +531,7 @@ void CurrentStyleComponent::startPlaying()
         return;
     }
     trackPlayer->setTracks(selectedTracks);
-    //trackPlayer->applyBPMchangeBeforePlayback(baseTempo, currentTempo);
+    trackPlayer->applyBPMchangeBeforePlayback(baseTempo, currentTempo);
 
     trackPlayer->syncPlaybackSettings();
     trackPlayer->start();
