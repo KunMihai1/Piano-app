@@ -20,6 +20,7 @@ struct TrackEntry
     juce::String displayName;
     int instrumentAssociated=-1;
     double volumeAssociated = 0.0f;
+    double originalBPM = 0.0f;
 
     juce::MidiMessageSequence sequence;
     juce::MidiMessageSequence originalSequenceTicks;

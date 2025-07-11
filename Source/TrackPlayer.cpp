@@ -65,8 +65,6 @@ void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
             tracks.push_back(TrackPlaybackData{ newIndex, 0 });
         }
     }
-
-    DBG("Tracks loaded: " << tracks.size());
 }
 
 void MultipleTrackPlayer::setCurrentBPM(int newBPM)
@@ -76,8 +74,15 @@ void MultipleTrackPlayer::setCurrentBPM(int newBPM)
 
 void MultipleTrackPlayer::stop()
 {
-    DBG("STOP CALLED!");
+
     stopTimer();
+    this->lastKnownSequenceTime = 0.0;
+    if (onElapsedUpdate)
+    {
+        juce::MessageManager::callAsync([this]() {
+            onElapsedUpdate(0.0);
+            });
+    }
 
     if (outputDevice)
     {
@@ -91,6 +96,9 @@ void MultipleTrackPlayer::start()
 
     DBG("Ticks per second: " << juce::Time::getHighResolutionTicksPerSecond());
     startTime = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
+    lastKnownSequenceTime = 0.0;
+    currentElapsedTime = 0.0;
+
     for (auto& track : tracks)
         track.nextEventIndex = 0;
 
@@ -288,26 +296,26 @@ void MultipleTrackPlayer::syncPlaybackSettings()
 
 void MultipleTrackPlayer::hiResTimerCallback()
 {
-    DBG("hiResTimerCallback running");
     if (!outputDevice)
-    {
-        DBG("output issue");
         return;
-    }
 
-    double now = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
-    double elapsed = now - startTime;
+    double now = juce::Time::getHighResolutionTicks() /
+        static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
+    double elapsed = now - startTime;  // seconds elapsed since start
+    currentElapsedTime = elapsed;
+
     double beatsElapsed = elapsed * (currentBPM / 60.0);
 
-    currentElapsedTime = elapsed;
-    DBG("Elapsed time: " << elapsed);
-    if (onElapsedUpdate)
+    static double lastUIUpdateTime = 0.0;
+    if (now - lastUIUpdateTime > 0.05)
     {
-        auto lambda = [this, beatsElapsed]()
+        lastUIUpdateTime = now;
+        if (onElapsedUpdate)
         {
-            onElapsedUpdate(beatsElapsed);
-        };
-        juce::MessageManager::callAsync(lambda);
+            juce::MessageManager::callAsync([this, beatsElapsed]() {
+                onElapsedUpdate(beatsElapsed);
+                });
+        }
     }
 
     for (auto& track : tracks)
@@ -315,27 +323,15 @@ void MultipleTrackPlayer::hiResTimerCallback()
         auto& sequence = filteredSequences[track.filteredSequenceIndex];
         while (track.nextEventIndex < sequence.getNumEvents())
         {
-            auto& midiEvent = sequence.getEventPointer(track.nextEventIndex)->message;
+            const auto& midiEvent = sequence.getEventPointer(track.nextEventIndex)->message;
             double eventTime = midiEvent.getTimeStamp();
-            auto& nextMidiEvent = sequence.getEventPointer(track.nextEventIndex)->message;
-            DBG("Next event time: " << nextMidiEvent.getTimeStamp());
 
             if (eventTime <= elapsed)
             {
-                if (midiEvent.isNoteOn() && midiEvent.getVelocity() > 0)
-                {
-                    DBG("Sending Note On: note " << midiEvent.getNoteNumber() << ", velocity " << (int)midiEvent.getVelocity() << ", time " << eventTime);
-                }
-                DBG("Sending MIDI event at time " << eventTime);
-                DBG("Sending MIDI event: " << midiEvent.getDescription());
-                if (outputDevice)
-                    outputDevice->sendMessageNow(midiEvent);
-
+                outputDevice->sendMessageNow(midiEvent);
                 track.nextEventIndex++;
             }
-            else {
-                break;
-            }
+            else break;
         }
     }
 
@@ -345,6 +341,9 @@ void MultipleTrackPlayer::hiResTimerCallback()
         });
 
     if (allDone)
+    {
         stop();
+        return;
+    }
 
 }

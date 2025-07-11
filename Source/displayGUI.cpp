@@ -1382,6 +1382,7 @@ void TrackListComponent::addToTrackList()
                     return;
                 }
 
+                double originalBpm = getOriginalBpmFromFile(midiFile);
 
                 int totalTracks = midiFile.getNumTracks();
                 int addedTracks = 0;
@@ -1414,7 +1415,7 @@ void TrackListComponent::addToTrackList()
                     newEntry.originalSequenceTicks = *trackSequence;
 
                     newEntry.sequence = *trackSequence;
-
+                    newEntry.originalBPM = originalBpm;
 
                     convertTicksToSeconds(midiFile);
 
@@ -1672,6 +1673,30 @@ std::unordered_map<juce::Uuid, TrackEntry> TrackListComponent::buildTrackNameMap
         map[tr.getUniqueID()] = tr;
     }
     return map;
+}
+
+double TrackListComponent::getOriginalBpmFromFile(const juce::MidiFile& midiFile)
+{
+    if (midiFile.getNumTracks() == 0)
+        return 120.0;
+
+    auto* firstTrack = midiFile.getTrack(0);
+    if (firstTrack == nullptr)
+        return 120.0;
+
+    for (int i = 0; i < firstTrack->getNumEvents(); ++i)
+    {
+        const auto& msg = firstTrack->getEventPointer(i)->message;
+        if (msg.isTempoMetaEvent())
+        {
+            double bpm;
+            if (msg.getTempoSecondsPerQuarterNote() > 0.0)
+                bpm = 60.0 / msg.getTempoSecondsPerQuarterNote();
+            else bpm = 120.0;
+            return bpm;
+        }
+    }
+    return 120.0;
 }
 
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)

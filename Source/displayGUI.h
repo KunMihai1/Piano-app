@@ -59,6 +59,8 @@ public:
 
     std::unordered_map<juce::Uuid, TrackEntry> buildTrackNameMap();
 
+    double getOriginalBpmFromFile(const juce::MidiFile& file);
+
 private:
 
     juce::ListBox listBox;
