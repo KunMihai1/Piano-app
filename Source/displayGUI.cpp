@@ -531,7 +531,7 @@ void CurrentStyleComponent::startPlaying()
         return;
     }
     trackPlayer->setTracks(selectedTracks);
-    trackPlayer->applyBPMchangeBeforePlayback(baseTempo, currentTempo);
+    trackPlayer->applyBPMchangeBeforePlayback(currentTempo);
 
     trackPlayer->syncPlaybackSettings();
     trackPlayer->start();
@@ -1417,7 +1417,7 @@ void TrackListComponent::addToTrackList()
                     newEntry.sequence = *trackSequence;
                     newEntry.originalBPM = originalBpm;
 
-                    convertTicksToSeconds(midiFile);
+                    convertTicksToSeconds(midiFile,originalBpm);
 
                     newEntry.uuid = TrackEntry::generateUUID();
 
@@ -1577,7 +1577,9 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
             continue;
 
         // Convert ticks to seconds for all tracks just once
-        convertTicksToSeconds(midiFile);
+        double originalBpm = getOriginalBpmFromFile(midiFile);
+
+        convertTicksToSeconds(midiFile,originalBpm);
 
         for (auto& trackItem : *trackArray)
         {
@@ -1602,6 +1604,7 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
             tr.trackIndex = trackIndex;
             tr.displayName = displayName;
             tr.sequence = *sequence;
+            tr.originalBPM = originalBpm;
 
             bool foundPercussion = false;
             for (int i = 0; i < sequence->getNumEvents(); ++i)

@@ -45,7 +45,7 @@ public:
 
     int findNextEventIndex(const juce::MidiMessageSequence& seq, double currentTime);
     
-    void applyBPMchangeBeforePlayback(double oldBPM, double newBPM);
+    void applyBPMchangeBeforePlayback(double userBPM);
 
     void syncPlaybackSettings();
 
@@ -60,7 +60,9 @@ private:
     std::vector<int> eventIndices;
     double startTime = 0.0;
     double currentElapsedTime;
-    double currentBPM=120.0;
+
+    double currentBPM = 120.0;
+
     double lastKnownSequenceTime = 0.0;
     
 };
