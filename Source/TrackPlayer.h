@@ -61,5 +61,6 @@ private:
     double startTime = 0.0;
     double currentElapsedTime;
     double currentBPM=120.0;
+    double lastKnownSequenceTime = 0.0;
     
 };
