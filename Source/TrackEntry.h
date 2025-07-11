@@ -18,6 +18,9 @@ struct TrackEntry
     juce::File file;
     int trackIndex = 0;
     juce::String displayName;
+    int instrumentAssociated=-1;
+    double volumeAssociated = 0.0f;
+
     juce::MidiMessageSequence sequence;
     juce::MidiMessageSequence originalSequenceTicks;
     TrackType type = TrackType::Melodic;
