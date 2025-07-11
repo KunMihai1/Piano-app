@@ -204,14 +204,14 @@ int MultipleTrackPlayer::findNextEventIndex(const juce::MidiMessageSequence& seq
     return result;
 }
 
-void MultipleTrackPlayer::applyBPMchangeBeforePlayback(double baseBPM, double newBPM)
+void MultipleTrackPlayer::applyBPMchangeBeforePlayback(double userBPM)
 {
-    if (baseBPM <= 0.0) baseBPM = 120.0; 
+    if (userBPM <= 0.0)
+        userBPM = 120.0;
 
-    currentBPM = newBPM;
+    currentBPM = userBPM;
+
     int j = 0;
-
-    double bpmRatio = newBPM / baseBPM;
 
     filteredSequences.clear();
 
@@ -220,20 +220,26 @@ void MultipleTrackPlayer::applyBPMchangeBeforePlayback(double baseBPM, double ne
         int channel;
         if (tr.type == TrackType::Percussion)
             channel = 10;
-        else {
+        else
+        {
             channel = j + 2;
             j += 1;
         }
 
         juce::MidiMessageSequence newSequence;
 
+        double trackOriginalBPM;
+
+        if (tr.originalBPM > 0)
+            trackOriginalBPM = tr.originalBPM;
+        else trackOriginalBPM = 120.0;
 
         for (int i = 0; i < tr.sequence.getNumEvents(); ++i)
         {
             const auto& event = tr.sequence.getEventPointer(i)->message;
 
-            // Scale relative to original time in seconds
-            double scaledTime = event.getTimeStamp() * (baseBPM / newBPM);
+            // Scale relative to original time in seconds using the track's original BPM
+            double scaledTime = event.getTimeStamp() * (trackOriginalBPM / userBPM);
 
             juce::MidiMessage newMessage = event;
             newMessage.setTimeStamp(scaledTime);
@@ -242,6 +248,7 @@ void MultipleTrackPlayer::applyBPMchangeBeforePlayback(double baseBPM, double ne
         }
 
         newSequence.sort();
+
         double firstEventTime = 0.01;
         for (int i = 0; i < newSequence.getNumEvents(); ++i)
         {
@@ -252,6 +259,7 @@ void MultipleTrackPlayer::applyBPMchangeBeforePlayback(double baseBPM, double ne
                 break;
             }
         }
+
         if (tr.volumeAssociated != -1)
         {
             newSequence.addEvent(

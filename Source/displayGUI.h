@@ -7,7 +7,6 @@
 
     TODO
 
-    -posibilitate de a alege tempo-ul pe tot style-ul-wiring
    
     -modify the starting time for each track
 
@@ -15,7 +14,7 @@
 
     -making the sets so that you can select what to play on left hand and on right hand
 
-    
+    -when changing volume of a percussion track, since all percussions are on the same channel, then you have to change the slider visually for all of percussions, when one is changing
 
   ==============================================================================
 */
