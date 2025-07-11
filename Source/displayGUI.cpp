@@ -54,8 +54,8 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev): outputDevice{ou
     list->resized();
     scrollableView->getViewedComponent()->resized();
 
-    loadAllStyles();
     initializeAllStyles();
+    loadAllStyles();
 
     tabComp->onTabChanged = [this](int newIndex, juce::String tabName)
     {
@@ -83,7 +83,7 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev): outputDevice{ou
         availableTracksFromFolder,
         [](int) {}
     );
-    trackListComp->loadFromFile(jsonFile);
+    trackListComp->loadFromFile(jsonFile); //design problem, i need to pass here basically when i load from the file, the current base tempo but since every style has his own tempo, then????
 
     mapNameToTrack = trackListComp->buildTrackNameMap();
 }
@@ -313,6 +313,7 @@ void Display::initializeAllStyles()
         auto* styleObj = new juce::DynamicObject{};
         juce::String styleName = "Style " + juce::String(i + 1);
         styleObj->setProperty("name", styleName);
+        styleObj->setProperty("BPM", 120.0f);
 
         juce::Array<juce::var> tracksArray;
         for (int t = 0; t < 8; ++t)
@@ -508,7 +509,11 @@ void CurrentStyleComponent::startPlaying()
         {
             auto it = mapNameToTrackEntry.find(tr->getUsedID());
             if (it != mapNameToTrackEntry.end())
+            {
+                it->second.instrumentAssociated = tr->getInstrumentNumber();
+                it->second.volumeAssociated = tr->getVolume();
                 selectedTracks.push_back(it->second);
+            }
         }
     }
     else if (selectedID == 2)
@@ -526,6 +531,9 @@ void CurrentStyleComponent::startPlaying()
         return;
     }
     trackPlayer->setTracks(selectedTracks);
+    //trackPlayer->applyBPMchangeBeforePlayback(baseTempo, currentTempo);
+
+    trackPlayer->syncPlaybackSettings();
     trackPlayer->start();
 }
 
@@ -560,6 +568,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
 
     startPlayingTracks.onClick = [this]
     {
+        isPlaying = true;
         startPlaying();
     };
 
@@ -581,6 +590,10 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
         {
             if (onRequestTrackSelectionFromTrack)
                 onRequestTrackSelectionFromTrack(trackChosenCallback);
+        };
+
+        newTrack->isPlaying = [this]() {
+            return isPlaying;
         };
 
         addAndMakeVisible(newTrack);
@@ -606,7 +619,14 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
 
     tempoSlider.onValueChange = [this]()
     {
-        startTimer(200);
+        oldTempo = currentTempo;
+        currentTempo = tempoSlider.getValue();
+    };
+
+    tempoSlider.onDragEnd = [this]()
+    {
+        if(anyTrackChanged)
+            anyTrackChanged();
     };
 
     addAndMakeVisible(tempoSlider);
@@ -621,6 +641,11 @@ void CurrentStyleComponent::stopPlaying()
 double CurrentStyleComponent::getTempo()
 {
     return currentTempo;
+}
+
+double CurrentStyleComponent::getBaseTempo()
+{
+    return baseTempo;
 }
 
 void CurrentStyleComponent::removingTrack(const juce::Uuid& uuid)
@@ -656,13 +681,6 @@ MultipleTrackPlayer* CurrentStyleComponent::getTrackPlayer()
     return trackPlayer.get();
 }
 
-void CurrentStyleComponent::timerCallback()
-{
-    stopTimer();
-    currentTempo = tempoSlider.getValue();
-
-}
-
 void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)
 {
     auto* clickedComponent = ev.originalComponent;
@@ -681,7 +699,9 @@ void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)
 
 void CurrentStyleComponent::setTempo(double newTempo)
 {
+    oldTempo = currentTempo;
     this->currentTempo = newTempo;
+    this->tempoSlider.setValue(newTempo);
 }
 
 
@@ -758,6 +778,7 @@ juce::DynamicObject* CurrentStyleComponent::getJson() const
     auto* styleObj = new juce::DynamicObject{};
 
     styleObj->setProperty("name", name);
+    styleObj->setProperty("BPM", currentTempo);
 
     juce::Array<juce::var> tracksArray;
 
@@ -782,6 +803,7 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
         return;
 
     updateName(obj->getProperty("name").toString());
+    setTempo(static_cast<double>(obj->getProperty("BPM")));
 
     auto tracksVar = obj->getProperty("tracks");
 
@@ -832,7 +854,7 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
 Track::Track()
 {
     volumeSlider.setSliderStyle(juce::Slider::LinearVertical);
-    volumeSlider.setRange(0, 100, 1);
+    volumeSlider.setRange(0, 127, 1); //changed from 100 to 127 recently
     volumeSlider.onValueChange = [this]()
     {
         volumeLabel.setText(juce::String(volumeSlider.getValue()), juce::dontSendNotification);
@@ -843,7 +865,7 @@ Track::Track()
         if (onChange)
             onChange();
 
-        if(static_cast<int>(volumeSlider.getValue())!=-1)
+        if(static_cast<int>(volumeSlider.getValue())!=-1 && isPlaying() )
             notify(channel, static_cast<int>(volumeSlider.getValue()), -1);
     };
 
@@ -996,7 +1018,7 @@ void Track::openInstrumentChooser()
     std::unique_ptr<InstrumentChooserComponent> chooser=std::make_unique<InstrumentChooserComponent>( instrumentlist );
     chooser->instrumentSelectedFunction = [this](int instrumentIndex, const juce::String& name)
     {
-        setInstrumentNumber(instrumentIndex);
+        setInstrumentNumber(instrumentIndex,true);
         nameLabel.setText(name,juce::dontSendNotification);
         if(onChange)
             onChange();
@@ -1146,11 +1168,16 @@ juce::StringArray Track::instrumentListBuild()
     return instrumentListLocal;
 }
 
-void Track::setInstrumentNumber(int newInstrumentNumber)
+void Track::setInstrumentNumber(int newInstrumentNumber, bool shouldNotify)
 {
     this->usedInstrumentNumber = newInstrumentNumber;
-    if(usedInstrumentNumber!=-1)
+    if(usedInstrumentNumber!=-1 && shouldNotify)
         notify(channel, -1, usedInstrumentNumber);
+}
+
+int Track::getInstrumentNumber()
+{
+    return usedInstrumentNumber;
 }
 
 void Track::setVolumeSlider(double value)
@@ -1158,10 +1185,10 @@ void Track::setVolumeSlider(double value)
     this->volumeSlider.setValue(value);
 }
 
-void Track::setVolumeLabel(const juce::String& value)
+void Track::setVolumeLabel(const juce::String& value, bool shouldNotify)
 {
     volumeLabel.setText(value, juce::dontSendNotification);
-    if(value.getIntValue()!=-1)
+    if(value.getIntValue()!=-1 && shouldNotify)
         notify(channel, value.getIntValue(), -1);
 }
 
@@ -1206,6 +1233,11 @@ juce::Uuid Track::getUsedID()
 void Track::setChannel(int newChannel)
 {
     this->channel = newChannel;
+}
+
+double Track::getVolume()
+{
+    return this->volumeSlider.getValue();
 }
 
 TrackListComponent::TrackListComponent(std::vector<TrackEntry>& tracks, std::function<void(int)> onTrackChosen): availableTracks{tracks}, trackChosenCallBack{onTrackChosen}
@@ -1350,7 +1382,6 @@ void TrackListComponent::addToTrackList()
                     return;
                 }
 
-                convertTicksToSeconds(midiFile);
 
                 int totalTracks = midiFile.getNumTracks();
                 int addedTracks = 0;
@@ -1380,7 +1411,13 @@ void TrackListComponent::addToTrackList()
                     newEntry.file = file;
                     newEntry.trackIndex = i;
                     newEntry.displayName = displayName;
+                    newEntry.originalSequenceTicks = *trackSequence;
+
                     newEntry.sequence = *trackSequence;
+
+
+                    convertTicksToSeconds(midiFile);
+
                     newEntry.uuid = TrackEntry::generateUUID();
 
                     availableTracks.push_back(newEntry);

@@ -78,6 +78,7 @@ class Track : public juce::Component, private juce::MouseListener, public Subjec
 public:
     std::function<void()> onChange;
     std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelection;
+    std::function<bool()> isPlaying;
 
     Track();
     ~Track();
@@ -97,16 +98,18 @@ public:
     juce::var loadJson(const juce::File& file);
 
     void setVolumeSlider(double value);
-    void setVolumeLabel(const juce::String& value);
+    void setVolumeLabel(const juce::String& value, bool shouldNotify=false);
     void setNameLabel(const juce::String& name);
     juce::String getName();
     void openInstrumentChooser();
     juce::StringArray instrumentListBuild();
-    void setInstrumentNumber(int newInstrumentNumber);
+    void setInstrumentNumber(int newInstrumentNumber, bool shouldNotify=false);
+    int getInstrumentNumber();
     void setUUID(const juce::Uuid& newUUID);
     void setTypeOfTrack(const juce::String& newType);
     juce::Uuid getUsedID();
     void setChannel(int newChannel);
+    double getVolume();
 
 
 private:
@@ -128,7 +131,7 @@ private:
     //JUCE_LEAK_DETECTOR(Track)
 };
 
-class CurrentStyleComponent : public juce::Component, private juce::MouseListener, private juce::Timer
+class CurrentStyleComponent : public juce::Component, private juce::MouseListener
 {
 public:
     std::function<void()> anyTrackChanged;
@@ -163,6 +166,8 @@ public:
 
     void setElapsedTime(double newElapsedTime);
 
+    double getBaseTempo();
+
     juce::OwnedArray<Track>& getAllTracks();
 
     MultipleTrackPlayer* getTrackPlayer();
@@ -170,8 +175,6 @@ public:
 
 private:
     void mouseDown(const juce::MouseEvent& ev) override;
-
-    void timerCallback() override;
 
     juce::String name;
     juce::Label nameOfStyle;
@@ -188,7 +191,10 @@ private:
     Track* lastSelectedTrack = nullptr;
 
     juce::Slider tempoSlider;
+    int oldTempo = 120.0;
     double currentTempo = 120.0;
+    double baseTempo = 120.0;
+    bool isPlaying = false;
 
     //JUCE_LEAK_DETECTOR(CurrentStyleComponent)
 };

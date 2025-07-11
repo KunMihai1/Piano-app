@@ -31,6 +31,8 @@ public:
 
     void setTracks(const std::vector<TrackEntry>& newTracks);
 
+    void setCurrentBPM(int newBPM);
+
     void stop();
 
     void start();
@@ -39,17 +41,25 @@ public:
 
     ~MultipleTrackPlayer();
 
-    void applyBPMchangeDuringPlayback(double newBPM, double currentElapsed);
+    void applyBPMchangeDuringPlayback(double newBPM);
 
+    int findNextEventIndex(const juce::MidiMessageSequence& seq, double currentTime);
     
+    void applyBPMchangeBeforePlayback(double oldBPM, double newBPM);
+
+    void syncPlaybackSettings();
 
 private:
     void hiResTimerCallback() override;
     std::vector<juce::MidiMessageSequence> filteredSequences;
     int baseChannelTrack = 2;
+    std::vector<TrackEntry> currentTracks;
 
     juce::MidiOutput* outputDevice=nullptr;
     std::vector<TrackPlaybackData> tracks;
     std::vector<int> eventIndices;
     double startTime = 0.0;
+    double currentElapsedTime;
+    double currentBPM=120.0;
+    
 };
