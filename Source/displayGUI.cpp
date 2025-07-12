@@ -12,7 +12,7 @@
 #include "InstrumentChooser.h"
 
 
-void convertTicksToSeconds(juce::MidiFile& midiFile, double bpm=120.0)
+void convertTicksToSeconds(juce::MidiFile& midiFile, double bpm = 120.0)
 {
     int tpqn = midiFile.getTimeFormat();
     if (tpqn <= 0)
@@ -36,10 +36,10 @@ void convertTicksToSeconds(juce::MidiFile& midiFile, double bpm=120.0)
     }
 }
 
-Display::Display(int widthForList, juce::MidiOutput* outputDev): outputDevice{outputDev}
+Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ outputDev }
 {
     availableTracksFromFolder = std::make_shared<std::vector<TrackEntry>>();
-    groupedTracks =std::make_shared<std::unordered_map<juce::String, std::vector<TrackEntry>>>();
+    groupedTracks = std::make_shared<std::unordered_map<juce::String, std::vector<TrackEntry>>>();
     groupedTrackKeys = std::make_shared<std::vector<juce::String>>();
 
     tabComp = std::make_unique<MyTabbedComponent>(juce::TabbedButtonBar::TabsAtLeft);
@@ -64,9 +64,17 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev): outputDevice{ou
     {
         if (createdTracksTab && tabName != "My tracks")
         {
+            if (trackListComp)
+            {
+                trackListComp->removeListener(this);
+            }
             int myTracksIndex = tabComp->getNumTabs() - 1;
             tabComp->removeTab(myTracksIndex);
+
+            //removeChildComponent(trackListComp.get());
+            trackListComp.reset();
             createdTracksTab = false;
+            
         }
     };
 
@@ -89,7 +97,7 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev): outputDevice{ou
         [](int) {}
     );
     trackListComp->loadFromFile(jsonFile);
-  
+
     mapNameToTrack = trackListComp->buildTrackNameMap();
 }
 
@@ -101,7 +109,7 @@ Display::~Display()
 void Display::changeListenerCallback(juce::ChangeBroadcaster* source)
 {
     auto* tabbedCast = dynamic_cast<juce::TabbedComponent*>(source);
-    if (tabbedCast==tabComp.get())
+    if (tabbedCast == tabComp.get())
     {
         int currentIndex = tabComp->getCurrentTabIndex();
         int tracksTabIndex = getTabIndexByName("My tracks");
@@ -129,7 +137,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
 {
     if (!created)
     {
-        currentStyleComponent = std::make_unique<CurrentStyleComponent>(name,mapNameToTrack,outputDevice);
+        currentStyleComponent = std::make_unique<CurrentStyleComponent>(name, mapNameToTrack, outputDevice);
         currentStyleComponent->onRequestTrackSelectionFromTrack = [this](std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> trackChosenCallback)
         {
             showListOfTracksToSelectFrom(trackChosenCallback);
@@ -146,7 +154,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
         tabComp->getTabbedButtonBar().setTabName(index, name);
         currentStyleComponent->updateName(name);
     }
-    currentStyleComponent->anyTrackChanged = [this,name]()
+    currentStyleComponent->anyTrackChanged = [this, name]()
     {
         updateStyleInJson(name);
     };
@@ -175,13 +183,19 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
 void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> onTrackSelected)
 {
-    trackListComp = std::make_unique<TrackListComponent>(availableTracksFromFolder,groupedTracks,groupedTrackKeys,
+    trackListComp = std::make_unique<TrackListComponent>(availableTracksFromFolder, groupedTracks, groupedTrackKeys,
         [this, onTrackSelected](int index)
         {
-            auto& track = (* availableTracksFromFolder)[index];
+            auto& track = (*availableTracksFromFolder)[index];
             juce::String typeString = TrackTypeConversion::toString(track.type);
 
-            onTrackSelected(track.getDisplayName(),track.getUniqueID(),typeString);
+            onTrackSelected(track.getDisplayName(), track.getUniqueID(), typeString);
+
+            if (mapNameToTrack.empty())
+                mapNameToTrack = trackListComp->buildTrackNameMap();
+
+            if (trackListComp)
+                trackListComp->removeListener(this);
             int in = tabComp->getNumTabs() - 2;
             if (in >= 0)
             {
@@ -189,12 +203,13 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
                 tabComp->setCurrentTabIndex(in);
             }
         });
+    trackListComp->addListener(this);
 
     trackListComp->onRemoveTracks = [this](const juce::Uuid& uuid)
     {
         removeTrackFromAllStyles(uuid);
     };
-    tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.release(), true);
+    tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.get(), false);
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 
     createdTracksTab = true;
@@ -239,8 +254,15 @@ void Display::setDeviceOutput(juce::MidiOutput* devOutput)
 
 void Display::stoppingPlayer()
 {
-    if(currentStyleComponent)
+    if (currentStyleComponent)
         this->currentStyleComponent->stoppingPlayer();
+}
+
+void Display::updateUIbeforeAnyLoadingCase()
+{
+    DBG("sUNT IN CAZUL ASTA");
+    //if (this->mapNameToTrack.empty())
+    //    mapNameToTrack = trackListComp->buildTrackNameMap();
 }
 
 void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)
@@ -273,7 +295,7 @@ void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)
 
             if (trackObj == nullptr)
                 continue;
-            
+
             juce::String uuidString = trackObj->getProperty("uuid").toString();
             if (uuidString == uuid.toString())
             {
@@ -340,7 +362,7 @@ void Display::initializeAllStyles()
 
     juce::var jsonVar(rootObj);  // var now owns rootObj pointer
 
-    juce::String jsonString = juce::JSON::toString(jsonVar); 
+    juce::String jsonString = juce::JSON::toString(jsonVar);
 
     file.replaceWithText(jsonString);
 }
@@ -396,7 +418,7 @@ void Display::updateStyleInJson(const juce::String& name)
 void Display::resized()
 {
     tabComp->setBounds(getLocalBounds());
-    
+
 }
 
 const juce::var& Display::getJsonVar()
@@ -435,7 +457,7 @@ void StyleViewComponent::mouseUp(const juce::MouseEvent& event)
     }
 }
 
-StylesListComponent::StylesListComponent(int nrOfStyles, std::function<void(const juce::String&)> onStyleClicked, int widthSize): nrOfStyles{nrOfStyles}, onStyleClicked{onStyleClicked}
+StylesListComponent::StylesListComponent(int nrOfStyles, std::function<void(const juce::String&)> onStyleClicked, int widthSize) : nrOfStyles{ nrOfStyles }, onStyleClicked{ onStyleClicked }
 {
     this->widthSize = widthSize;
     populate();
@@ -444,8 +466,8 @@ StylesListComponent::StylesListComponent(int nrOfStyles, std::function<void(cons
 void StylesListComponent::resized()
 {
     this->widthSize = getWidth();
-    const int itemWidth = getWidth()/2-10;   // Half of parent initial parent width - with spacing
-    const int itemHeight =50;
+    const int itemWidth = getWidth() / 2 - 10;   // Half of parent initial parent width - with spacing
+    const int itemHeight = 50;
     const int spacing = 10;
     const int columns = 2;
 
@@ -490,7 +512,7 @@ void StylesListComponent::populate()
 
     // Very narrow width; Viewport will stretch it later
     const int totalHeight = nrOfStyles * (itemHeight + spacing) + spacing;
-    setSize(widthSize, totalHeight/2);  // key fix: force vertical scrolling
+    setSize(widthSize, totalHeight / 2);  // key fix: force vertical scrolling
 }
 
 
@@ -515,6 +537,7 @@ void CurrentStyleComponent::startPlaying()
             auto it = mapNameToTrackEntry.find(tr->getUsedID());
             if (it != mapNameToTrackEntry.end())
             {
+                DBG("asta e bun ba");
                 it->second.instrumentAssociated = tr->getInstrumentNumber();
                 it->second.volumeAssociated = tr->getVolume();
                 selectedTracks.push_back(it->second);
@@ -542,7 +565,7 @@ void CurrentStyleComponent::startPlaying()
     trackPlayer->start();
 }
 
-CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unordered_map<juce::Uuid, TrackEntry>& map,juce::MidiOutput* outputDevice): name(name), mapNameToTrackEntry(map), outputDevice(outputDevice)
+CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, juce::MidiOutput* outputDevice) : name(name), mapNameToTrackEntry(map), outputDevice(outputDevice)
 {
     addMouseListener(this, true);
     nameOfStyle.setText(name, juce::dontSendNotification);
@@ -550,7 +573,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
     addAndMakeVisible(nameOfStyle);
 
     playSettingsTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
-    playSettingsTracks.addItem("All tracks",1);
+    playSettingsTracks.addItem("All tracks", 1);
     playSettingsTracks.addItem("Solo track(last selected)", 2);
     playSettingsTracks.setSelectedId(1);
 
@@ -565,7 +588,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
     elapsedTimeLabel.setColour(juce::Label::textColourId, textColour);
 
     trackPlayer = std::make_unique<MultipleTrackPlayer>(outputDevice);
-        
+
     trackPlayer->onElapsedUpdate = [this](double ElapsedTime)
     {
         setElapsedTime(ElapsedTime);
@@ -636,7 +659,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
 
     tempoSlider.onDragEnd = [this]()
     {
-        if(anyTrackChanged)
+        if (anyTrackChanged)
             anyTrackChanged();
     };
 
@@ -668,7 +691,7 @@ void CurrentStyleComponent::removingTrack(const juce::Uuid& uuid)
             track->setNameLabel("None");
             track->setUUID(juce::Uuid{ "noID" });
         }
-    }  
+    }
 }
 
 void CurrentStyleComponent::setElapsedTime(double newTimeToSet)
@@ -698,7 +721,7 @@ void CurrentStyleComponent::syncPercussionTracksVolumeChange(double newVolume)
     {
         if (track->getTypeOfTrack() == TrackTypeConversion::toString(TrackType::Percussion))
         {
-            if(track->getVolume()!=newVolume)
+            if (track->getVolume() != newVolume)
                 track->setVolumeSlider(newVolume);
         }
     }
@@ -731,13 +754,13 @@ void CurrentStyleComponent::setTempo(double newTempo)
 void CurrentStyleComponent::resized()
 {
     int labelWidth = 50;
-    int playSettingsWidth = getWidth()/6+30;
+    int playSettingsWidth = getWidth() / 6 + 30;
     int heightFirst = 20;
     int startStopWidth = 35;
-    playSettingsTracks.setBounds(getWidth() - playSettingsWidth,0,playSettingsWidth,heightFirst);
+    playSettingsTracks.setBounds(getWidth() - playSettingsWidth, 0, playSettingsWidth, heightFirst);
     playSettingsTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
-    nameOfStyle.setBounds((getWidth()-labelWidth) / 2-40, 0, getWidth() / 6, heightFirst);
+    nameOfStyle.setBounds((getWidth() - labelWidth) / 2 - 40, 0, getWidth() / 6, heightFirst);
     startPlayingTracks.setBounds(0, 0, startStopWidth, heightFirst);
     startPlayingTracks.setButtonText("Start");
     startPlayingTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
@@ -745,13 +768,13 @@ void CurrentStyleComponent::resized()
     stopPlayingTracks.setBounds(startPlayingTracks.getWidth() + 5, 0, startStopWidth, heightFirst);
     stopPlayingTracks.setButtonText("Stop");
     stopPlayingTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
-    
+
     elapsedTimeLabel.setBounds(stopPlayingTracks.getX() + stopPlayingTracks.getWidth(), 0, 50, heightFirst);
 
     //nameOfStyle.setBounds(stopPlayingTracks.getX() + stopPlayingTracks.getWidth() + 5, 0, getWidth() / 6, heightFirst);
 
-    int sliderWidth = playSettingsTracks.getX()- (nameOfStyle.getX() + nameOfStyle.getWidth())+10;
-    tempoSlider.setBounds(nameOfStyle.getX() + nameOfStyle.getWidth()-15, 0, sliderWidth, 18);
+    int sliderWidth = playSettingsTracks.getX() - (nameOfStyle.getX() + nameOfStyle.getWidth()) + 10;
+    tempoSlider.setBounds(nameOfStyle.getX() + nameOfStyle.getWidth() - 15, 0, sliderWidth, 18);
 
     float width = getWidth() / 8.0f, height = 80.0f;
     float initialX = 0, y = getHeight() - height;
@@ -848,11 +871,11 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
 
         auto name = trackObj->getProperty("name").toString();
         double volume = static_cast<double>(trackObj->getProperty("volume"));
-        int instrumentNumber = static_cast<int>(trackObj->getProperty("instrumentNumber")); 
+        int instrumentNumber = static_cast<int>(trackObj->getProperty("instrumentNumber"));
 
         auto uuidSTR = trackObj->getProperty("uuid");
 
-        juce::Uuid uuid{uuidSTR};
+        juce::Uuid uuid{ uuidSTR };
         allTracks[i]->addListener(trackPlayer.get());
         auto type = trackObj->getProperty("type");
         allTracks[i]->setTypeOfTrack(type);
@@ -885,13 +908,13 @@ Track::Track()
 
     volumeSlider.onDragEnd = [this]()
     {
-        if (getTypeOfTrack()==TrackTypeConversion::toString(TrackType::Percussion) && syncVolumePercussionTracks)
+        if (getTypeOfTrack() == TrackTypeConversion::toString(TrackType::Percussion) && syncVolumePercussionTracks)
             syncVolumePercussionTracks(volumeSlider.getValue());
 
         if (onChange)
             onChange();
 
-        if(static_cast<int>(volumeSlider.getValue())!=-1 && isPlaying() )
+        if (static_cast<int>(volumeSlider.getValue()) != -1 && isPlaying())
             notify(channel, static_cast<int>(volumeSlider.getValue()), -1);
     };
 
@@ -899,12 +922,12 @@ Track::Track()
 
 
     volumeLabel.setText(juce::String(volumeSlider.getValue()), juce::dontSendNotification);
-    volumeLabel.setColour(juce::Label::textColourId,juce::Colours::crimson);
+    volumeLabel.setColour(juce::Label::textColourId, juce::Colours::crimson);
     addAndMakeVisible(volumeLabel);
 
     nameLabel.setText("None", juce::dontSendNotification);
     //nameLabel.setTooltip(nameLabel.getText());
-    nameLabel.setColour(juce::Label::textColourId,juce::Colours::white);
+    nameLabel.setColour(juce::Label::textColourId, juce::Colours::white);
 
     nameLabel.setInterceptsMouseClicks(true, false);
     nameLabel.addMouseListener(this, false);
@@ -931,7 +954,7 @@ Track::Track()
 
     instrumentlist = instrumentListBuild();
 
-    
+
 }
 
 Track::~Track()
@@ -943,17 +966,17 @@ Track::~Track()
 void Track::resized()
 {
     auto heightOfSlider = getHeight() / 2 + 20;
-    auto startY = (getHeight() - heightOfSlider)/2;
-    volumeSlider.setBounds(0, startY-10, 15, heightOfSlider);
+    auto startY = (getHeight() - heightOfSlider) / 2;
+    volumeSlider.setBounds(0, startY - 10, 15, heightOfSlider);
     volumeLabel.setBounds(20, 0, 30, 40);
-    nameLabel.setBounds((getWidth() - 40) / 2, volumeLabel.getHeight()+volumeLabel.getY() + 20, getWidth(), 20);
+    nameLabel.setBounds((getWidth() - 40) / 2, volumeLabel.getHeight() + volumeLabel.getY() + 20, getWidth(), 20);
 
 
     int x = volumeSlider.getX() + volumeSlider.getWidth() + 10;
     int maxWidth = getWidth() - x - 5;
     int desiredWidth = 40;
     int actualWidth = juce::jmin(desiredWidth, maxWidth);
-    instrumentChooserButton.setBounds(x,nameLabel.getY()-25,maxWidth-2,20);
+    instrumentChooserButton.setBounds(x, nameLabel.getY() - 25, maxWidth - 2, 20);
 }
 
 void Track::paint(juce::Graphics& g)
@@ -971,7 +994,7 @@ void Track::mouseEnter(const juce::MouseEvent& ev)
 
         auto labelBounds = nameLabel.getScreenBounds();
         int x = labelBounds.getX() + 4;
-        int y = labelBounds.getBottom() + 4; 
+        int y = labelBounds.getBottom() + 4;
 
         toolTipWindow->setTopLeftPosition(x, y);
         toolTipWindow->addToDesktop(0);
@@ -1041,12 +1064,12 @@ juce::var Track::loadJson(const juce::File& file)
 
 void Track::openInstrumentChooser()
 {
-    std::unique_ptr<InstrumentChooserComponent> chooser=std::make_unique<InstrumentChooserComponent>( instrumentlist );
+    std::unique_ptr<InstrumentChooserComponent> chooser = std::make_unique<InstrumentChooserComponent>(instrumentlist);
     chooser->instrumentSelectedFunction = [this](int instrumentIndex, const juce::String& name)
     {
-        setInstrumentNumber(instrumentIndex,true);
-        nameLabel.setText(name,juce::dontSendNotification);
-        if(onChange)
+        setInstrumentNumber(instrumentIndex, true);
+        nameLabel.setText(name, juce::dontSendNotification);
+        if (onChange)
             onChange();
 
     };
@@ -1197,7 +1220,7 @@ juce::StringArray Track::instrumentListBuild()
 void Track::setInstrumentNumber(int newInstrumentNumber, bool shouldNotify)
 {
     this->usedInstrumentNumber = newInstrumentNumber;
-    if(usedInstrumentNumber!=-1 && shouldNotify)
+    if (usedInstrumentNumber != -1 && shouldNotify)
         notify(channel, -1, usedInstrumentNumber);
 }
 
@@ -1214,7 +1237,7 @@ void Track::setVolumeSlider(double value)
 void Track::setVolumeLabel(const juce::String& value, bool shouldNotify)
 {
     volumeLabel.setText(value, juce::dontSendNotification);
-    if(value.getIntValue()!=-1 && shouldNotify)
+    if (value.getIntValue() != -1 && shouldNotify)
         notify(channel, value.getIntValue(), -1);
 }
 
@@ -1274,12 +1297,12 @@ double Track::getVolume()
 TrackListComponent::TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> tracks,
     std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracksMap,
     std::shared_ptr<std::vector<juce::String>> groupedKeys,
-    std::function<void(int)> onTrackChosen): availableTracks{tracks}, 
-    groupedTracks{groupedTracksMap},
-    groupedTrackKeys{groupedKeys},
-    trackChosenCallBack{onTrackChosen}
+    std::function<void(int)> onTrackChosen) : availableTracks{ tracks },
+    groupedTracks{ groupedTracksMap },
+    groupedTrackKeys{ groupedKeys },
+    trackChosenCallBack{ onTrackChosen }
 {
-    
+
     addAndMakeVisible(listBox);
     listBox.setMultipleSelectionEnabled(true);
     listBox.setModel(this);
@@ -1311,25 +1334,25 @@ void TrackListComponent::resized()
     const int comboWidth = 150;
     const int spacing = 5;
 
-    if(addButtonFolder.isVisible())
+    if (addButtonFolder.isVisible())
         addButtonFolder.setBounds(controlBarArea.removeFromLeft(smallButtonWidth).reduced(spacing));
 
-    if(removeButtonFolder.isVisible())
+    if (removeButtonFolder.isVisible())
         removeButtonFolder.setBounds(controlBarArea.removeFromLeft(smallButtonWidth).reduced(spacing));
 
     if (backButton)
         backButton->setBounds(controlBarArea.removeFromLeft(80).reduced(5));
 
-    if(sortComboBox)
+    if (sortComboBox)
         sortComboBox->setBounds(controlBarArea.removeFromLeft(120).reduced(5));
 
-    if(addButton)
+    if (addButton)
         addButton->setBounds(controlBarArea.removeFromLeft(80).reduced(5));
 
-    if(removeButton)
+    if (removeButton)
         removeButton->setBounds(controlBarArea.removeFromLeft(80).reduced(5));
 
-     listBox.setBounds(area);
+    listBox.setBounds(area);
 }
 
 int TrackListComponent::getNumRows()
@@ -1386,12 +1409,12 @@ void TrackListComponent::paintListBoxItem(int rowNumber, juce::Graphics& g, int 
     if (viewMode == ViewMode::TrackView)
     {
         if (juce::isPositiveAndBelow(rowNumber, availableTracks->size()))
-            label = (* availableTracks)[rowNumber].getDisplayName();
+            label = (*availableTracks)[rowNumber].getDisplayName();
     }
     else if (viewMode == ViewMode::FolderView)
     {
         if (juce::isPositiveAndBelow(rowNumber, groupedTrackKeys->size()))
-            label = (* groupedTrackKeys)[rowNumber];
+            label = (*groupedTrackKeys)[rowNumber];
     }
 
     g.drawText(label, 5, 0, width - 10, height, juce::Justification::centredLeft);
@@ -1413,14 +1436,14 @@ void TrackListComponent::listBoxItemClicked(int row, const juce::MouseEvent& eve
         {
             if (juce::isPositiveAndBelow(row, groupedTrackKeys->size()))
             {
-                juce::String folderKey = ( * groupedTrackKeys)[row];
+                juce::String folderKey = (*groupedTrackKeys)[row];
                 currentFolderName = folderKey;
-                if (groupedTracks->find(folderKey)!=groupedTracks->end())
+                if (groupedTracks->find(folderKey) != groupedTracks->end())
                 {
-                    *availableTracks = (* groupedTracks)[folderKey];
+                    *availableTracks = (*groupedTracks)[folderKey];
                     initializeTracksFromList();
                     resized();
-                    
+
 
                     listBox.updateContent();
                     listBox.repaint();
@@ -1466,6 +1489,7 @@ void TrackListComponent::addToTrackList()
                 }
 
                 double originalBpm = getOriginalBpmFromFile(midiFile);
+                convertTicksToSeconds(midiFile, originalBpm);
 
                 int totalTracks = midiFile.getNumTracks();
                 int addedTracks = 0;
@@ -1503,7 +1527,9 @@ void TrackListComponent::addToTrackList()
                     newEntry.folderName = currentFolderName;
                     DBG("Folder name is:" + newEntry.folderName);
 
-                    convertTicksToSeconds(midiFile,originalBpm);
+                    if (foundPercussion(trackSequence))
+                        newEntry.type = TrackType::Percussion;
+                    else newEntry.type = TrackType::Melodic;
 
                     newEntry.uuid = TrackEntry::generateUUID();
 
@@ -1524,6 +1550,8 @@ void TrackListComponent::addToTrackList()
                 sortComboBox->setSelectedId(id);
                 comboBoxChanged(sortComboBox.get());
 
+                notifyAddingToTrackList();
+
                 juce::AlertWindow::showMessageBoxAsync(
                     juce::AlertWindow::InfoIcon,
                     "Add Tracks",
@@ -1534,6 +1562,7 @@ void TrackListComponent::addToTrackList()
             }
         }
     );
+
 }
 
 void TrackListComponent::removeFromTrackList()
@@ -1546,7 +1575,7 @@ void TrackListComponent::removeFromTrackList()
         return;
     }
 
-    
+
 
     juce::AlertWindow::showOkCancelBox(
         juce::AlertWindow::WarningIcon,
@@ -1565,9 +1594,16 @@ void TrackListComponent::removeFromTrackList()
                 for (int i = selectedRows.size() - 1; i >= 0; --i)
                 {
                     int rowIndex = selectedRows[i];
-                    auto& track = (* availableTracks)[rowIndex];
+                    auto& track = (*availableTracks)[rowIndex];
                     juce::Uuid uuid = track.getUniqueID();
+                    juce::String folderName = track.folderName;
 
+                    auto& folderVector = (*groupedTracks)[folderName];
+                    folderVector.erase(std::remove_if(folderVector.begin(), folderVector.end(), [uuid](const TrackEntry& tr)
+                        {
+                            return uuid == tr.getUniqueID();
+
+                        }));
                     availableTracks->erase(availableTracks->begin() + rowIndex);
 
                     if (onRemoveTracks) onRemoveTracks(uuid);
@@ -1621,7 +1657,7 @@ void TrackListComponent::addToFolderList()
             }
 
             groupedTrackKeys->push_back(folderName);
-            (* groupedTracks)[folderName] = {};
+            (*groupedTracks)[folderName] = {};
             currentFolderName = folderName;
 
             viewMode = ViewMode::FolderView;
@@ -1691,7 +1727,7 @@ void TrackListComponent::saveToFile(const juce::File& fileToSave)
 
 //the flat list availableTracks doesn't need to be built rn, because we have grouped tracks and that's structured, but for future if
 //i wanna change anything, like to have idk, something with all the tracks, i won't need to iterate again through every structured folder name to get all the available tracks
-void TrackListComponent::loadFromFile(const juce::File& fileToLoad) 
+void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
 
 {
     if (!fileToLoad.existsAsFile())
@@ -1733,7 +1769,7 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
             continue;
 
         groupedTrackKeys->push_back(folderName);
-        (* groupedTracks)[folderName] = {};
+        (*groupedTracks)[folderName] = {};
 
         juce::var tracksVar = folderObj->getProperty("Tracks");
 
@@ -1753,7 +1789,7 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
 
         double originalBpm = getOriginalBpmFromFile(midiFile);
 
-        convertTicksToSeconds(midiFile,originalBpm);
+        convertTicksToSeconds(midiFile, originalBpm);
 
         for (auto& trackItem : *trackArray)
         {
@@ -1781,18 +1817,7 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
             tr.originalBPM = originalBpm;
             tr.folderName = folderName;
 
-            bool foundPercussion = false;
-            for (int i = 0; i < sequence->getNumEvents(); ++i)
-            {
-                auto msg = sequence->getEventPointer(i)->message;
-                if (msg.isNoteOnOrOff() && msg.getChannel() == 10)
-                {
-                    foundPercussion = true;
-                    break;
-                }
-            }
-
-            if (foundPercussion)
+            if (foundPercussion(sequence))
                 tr.type = TrackType::Percussion;
             else tr.type = TrackType::Melodic;
 
@@ -1850,6 +1875,7 @@ std::unordered_map<juce::Uuid, TrackEntry> TrackListComponent::buildTrackNameMap
 
     for (const auto& [folderName, tracks] : *groupedTracks)
     {
+        DBG("yuppiii");
         for (const auto& tr : tracks)
         {
             map[tr.getUniqueID()] = tr;
@@ -1899,7 +1925,7 @@ void TrackListComponent::initializeTracksFromList()
     backButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
     addButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
     removeButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
-    
+
 
     backButton->onClick = [this]() {
         backToFolderView();
@@ -1931,6 +1957,21 @@ void TrackListComponent::deallocateTracksFromList()
     addButton = nullptr;
     removeButton = nullptr;
     sortComboBox = nullptr;
+}
+
+bool TrackListComponent::foundPercussion(const juce::MidiMessageSequence* sequence)
+{
+    bool perc = false;
+    for (int i = 0; i < sequence->getNumEvents(); ++i)
+    {
+        auto msg = sequence->getEventPointer(i)->message;
+        if (msg.isNoteOnOrOff() && msg.getChannel() == 10)
+        {
+            perc = true;
+            break;
+        }
+    }
+    return perc;
 }
 
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)

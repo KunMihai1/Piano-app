@@ -10,15 +10,37 @@
 #pragma once
 #include <JuceHeader.h>
 #include "TrackListener.h"
+#include "trackListComponentListener.h"
 
+template <typename ListenerType>
 class Subject
 {
 public:
-    void addListener(TrackListener* listener);
-    void removeListener(TrackListener* listener);
-    void notify(int channel, int newVolume=-1, int newInstrument=-1);
+    void addListener(ListenerType* listener)
+    {
+        listeners.add(listener);
+    }
+    void removeListener(ListenerType* listener)
+    {
+        listeners.remove(listener);
+    }
+    void notify(int channel, int newVolume, int newInstrument)
+    {
+        listeners.call([=](ListenerType& listener)
+            {
+                listener.updatePlaybackSettings(channel, newVolume, newInstrument);
+            });
+    }
+
+    void notifyAddingToTrackList()
+    {
+        listeners.call([=](ListenerType& listener)
+            {
+                listener.updateUIbeforeAnyLoadingCase();
+            });
+    }
 
 private:
-    juce::ListenerList<TrackListener> listeners;
+    juce::ListenerList<ListenerType> listeners;
 
 };
