@@ -55,6 +55,12 @@ public:
     
     void removeFromTrackList();
 
+    void addToFolderList();
+
+    void removeFromFolderList();
+
+    void backToFolderView();
+
     void saveToFile(const juce::File& fileToSave);
 
     void loadFromFile(const juce::File& fileToLoad);
@@ -67,20 +73,39 @@ public:
 
     double getOriginalBpmFromFile(const juce::MidiFile& file);
 
+    void initializeTracksFromList();
+
+    void deallocateTracksFromList();
+
+
+
 private:
 
-    juce::ListBox listBox;
+    enum class ViewMode
+    {
+        FolderView,
+        TrackView
+    };
+
+    ViewMode viewMode = ViewMode::FolderView;
+
     std::vector<TrackEntry>& availableTracks;
     std::function<void(int)> trackChosenCallBack;
 
-    juce::TextButton* addButton=nullptr;
-    juce::TextButton* removeButton=nullptr;
+    juce::ListBox listBox;
+
+    std::vector<juce::String> groupedTrackKeys;
+    std::unordered_map<juce::String, std::vector<TrackEntry>> groupedTracks;
+
+    std::unique_ptr<juce::TextButton> addButton = nullptr;
+    std::unique_ptr<juce::TextButton> removeButton = nullptr;
+    std::unique_ptr<juce::TextButton> backButton = nullptr;
 
     juce::TextButton addButtonFolder{ "Add folder" };
     juce::TextButton removeButtonFolder{ "Remove folder" };
 
-    juce::ComboBox* sortComboBox=nullptr;
-
+    std::unique_ptr<juce::ComboBox> sortComboBox = nullptr;
+    juce::String currentFolderName;
 
     //JUCE_LEAK_DETECTOR(TrackListComponent)
 };

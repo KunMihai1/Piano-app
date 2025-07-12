@@ -83,7 +83,7 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev): outputDevice{ou
         availableTracksFromFolder,
         [](int) {}
     );
-    trackListComp->loadFromFile(jsonFile); //design problem, i need to pass here basically when i load from the file, the current base tempo but since every style has his own tempo, then????
+    trackListComp->loadFromFile(jsonFile);
 
     mapNameToTrack = trackListComp->buildTrackNameMap();
 }
@@ -1268,35 +1268,47 @@ double Track::getVolume()
 
 TrackListComponent::TrackListComponent(std::vector<TrackEntry>& tracks, std::function<void(int)> onTrackChosen): availableTracks{tracks}, trackChosenCallBack{onTrackChosen}
 {
+    
     addAndMakeVisible(listBox);
+    listBox.setMultipleSelectionEnabled(true);
+    listBox.setModel(this);
+    listBox.updateContent();
+    addAndMakeVisible(addButtonFolder);
+    addAndMakeVisible(removeButtonFolder);
+
+    addButtonFolder.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    removeButtonFolder.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    addButtonFolder.onClick = [this] {
+        addToFolderList();
+    };
+
+    removeButtonFolder.onClick = [this] {
+        removeFromFolderList();
+    };
+
+
+    /*
     addAndMakeVisible(addButton);
     addAndMakeVisible(removeButton);
     addAndMakeVisible(sortComboBox);
-    listBox.setModel(this);
-    listBox.updateContent();
-    sortComboBox.addListener(this);
+    sortComboBox->addListener(this);
 
-    addButton.onClick = [this] {
+    addButton->onClick = [this] {
 
         addToTrackList();
     };
 
-    removeButton.onClick = [this]
+    removeButton->onClick = [this]
     {
         removeFromTrackList();
     };
 
-    sortComboBox.setMouseCursor(juce::MouseCursor::PointingHandCursor);
-    addButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    sortComboBox->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    addButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
-    removeButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
-
-    listBox.setMultipleSelectionEnabled(true);
-    sortComboBox.addItem("Sort by Name(ascending)", 1);
-    sortComboBox.addItem("Sort by Last Modified (Newest)", 2);
-    sortComboBox.addItem("Sort by Last Modified (Oldest)", 3);
-
-    sortComboBox.setSelectedId(1);
+    removeButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    */
 }
 
 void TrackListComponent::resized()
@@ -1305,25 +1317,45 @@ void TrackListComponent::resized()
 
     int controlBarHeight = 36;
     auto controlBarArea = area.removeFromTop(controlBarHeight);
-    sortComboBox.setBounds(controlBarArea.removeFromLeft(150).reduced(5));
 
-    addButton.setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+    const int backWidth = 100;
+    const int smallButtonWidth = 100;
+    const int comboWidth = 150;
+    const int spacing = 5;
 
-    removeButton.setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+    if(addButtonFolder.isVisible())
+        addButtonFolder.setBounds(controlBarArea.removeFromLeft(smallButtonWidth).reduced(spacing));
 
-    listBox.setBounds(area);
+    if(removeButtonFolder.isVisible())
+        removeButtonFolder.setBounds(controlBarArea.removeFromLeft(smallButtonWidth).reduced(spacing));
+
+    if (backButton)
+        backButton->setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+
+    if(sortComboBox)
+        sortComboBox->setBounds(controlBarArea.removeFromLeft(120).reduced(5));
+
+    if(addButton)
+        addButton->setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+
+    if(removeButton)
+        removeButton->setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+
+     listBox.setBounds(area);
 }
 
 int TrackListComponent::getNumRows()
 {
-    return (int)availableTracks.size();
+    if (viewMode == ViewMode::TrackView)
+        return (int)availableTracks.size();
+    else return (int)groupedTrackKeys.size();
 }
 
 void TrackListComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 {
-    if (comboBoxThatHasChanged == &sortComboBox)
+    if (comboBoxThatHasChanged == sortComboBox.get())
     {
-        int id = sortComboBox.getSelectedId();
+        int id = sortComboBox->getSelectedId();
         if (id == 1)
         {
             std::sort(availableTracks.begin(), availableTracks.end(), [](const TrackEntry& first, const TrackEntry& second)
@@ -1357,8 +1389,23 @@ void TrackListComponent::paintListBoxItem(int rowNumber, juce::Graphics& g, int 
         g.fillAll(juce::Colours::lightblue);
     else
         g.fillAll(juce::Colours::white);
+
     g.setColour(juce::Colours::black);
-    g.drawText(availableTracks[rowNumber].getDisplayName(), 5, 0, width - 10, height, juce::Justification::centredLeft);
+
+    juce::String label;
+
+    if (viewMode == ViewMode::TrackView)
+    {
+        if (juce::isPositiveAndBelow(rowNumber, availableTracks.size()))
+            label = availableTracks[rowNumber].getDisplayName();
+    }
+    else if (viewMode == ViewMode::FolderView)
+    {
+        if (juce::isPositiveAndBelow(rowNumber, groupedTrackKeys.size()))
+            label = groupedTrackKeys[rowNumber];
+    }
+
+    g.drawText(label, 5, 0, width - 10, height, juce::Justification::centredLeft);
 
     g.setColour(juce::Colours::lightgrey);
     g.drawRect(0, 0, width, height, 1);
@@ -1368,8 +1415,29 @@ void TrackListComponent::listBoxItemClicked(int row, const juce::MouseEvent& eve
 {
     if (event.getNumberOfClicks() == 2)
     {
-        if (trackChosenCallBack)
-            trackChosenCallBack(row);
+        if (viewMode == ViewMode::TrackView && juce::isPositiveAndBelow(row, availableTracks.size()))
+        {
+            if (trackChosenCallBack)
+                trackChosenCallBack(row);
+        }
+        else if (viewMode == ViewMode::FolderView)
+        {
+            if (juce::isPositiveAndBelow(row, groupedTrackKeys.size()))
+            {
+                juce::String folderKey = groupedTrackKeys[row];
+
+                if (groupedTracks.find(folderKey)!=groupedTracks.end())
+                {
+                    availableTracks = groupedTracks[folderKey];
+                    initializeTracksFromList();
+                    resized();
+                    
+
+                    listBox.updateContent();
+                    listBox.repaint();
+                }
+            }
+        }
     }
     else
     {
@@ -1443,6 +1511,8 @@ void TrackListComponent::addToTrackList()
                     newEntry.sequence = *trackSequence;
                     newEntry.originalBPM = originalBpm;
 
+                    newEntry.folderName = currentFolderName;
+
                     convertTicksToSeconds(midiFile,originalBpm);
 
                     newEntry.uuid = TrackEntry::generateUUID();
@@ -1456,10 +1526,12 @@ void TrackListComponent::addToTrackList()
                 auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                     .getChildFile("Piano Synth2");
                 auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+
                 saveToFile(jsonFile);
-                int id = sortComboBox.getSelectedId();
-                sortComboBox.setSelectedId(id);
-                comboBoxChanged(&sortComboBox);
+
+                int id = sortComboBox->getSelectedId();
+                sortComboBox->setSelectedId(id);
+                comboBoxChanged(sortComboBox.get());
 
                 juce::AlertWindow::showMessageBoxAsync(
                     juce::AlertWindow::InfoIcon,
@@ -1524,23 +1596,85 @@ void TrackListComponent::removeFromTrackList()
 }
 
 
+void TrackListComponent::addToFolderList()
+{
+    auto* window = new juce::AlertWindow("Create Folder",
+        "Enter a name for the new folder:",
+        juce::AlertWindow::NoIcon);
+
+    window->addTextEditor("folderName", "");
+    window->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+    window->enterModalState(true, juce::ModalCallbackFunction::create([this, window](int result)
+        {
+            std::unique_ptr<juce::AlertWindow> cleanup(window);
+            if (result != 1)
+                return;
+
+            juce::String folderName = window->getTextEditor("folderName")->getText().trim();
+            if (folderName.isEmpty())
+            {
+                juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                    "Invalid Name",
+                    "Folder name cannot be empty.");
+                return;
+            }
+
+            if (groupedTracks.count(folderName) > 0)
+            {
+                juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                    "Duplicate Name",
+                    "A folder with this name already exists.");
+                return;
+            }
+
+            groupedTrackKeys.push_back(folderName);
+            groupedTracks[folderName] = {};
+            currentFolderName = folderName;
+
+            viewMode = ViewMode::FolderView;
+            listBox.updateContent();
+            listBox.repaint();
+
+            auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                .getChildFile("Piano Synth2");
+            auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+            saveToFile(jsonFile);
+
+        }));
+}
+
+void TrackListComponent::removeFromFolderList()
+{
+
+}
+
+void TrackListComponent::backToFolderView()
+{
+    viewMode = ViewMode::FolderView;
+    deallocateTracksFromList();
+    addButtonFolder.setVisible(true);
+    removeButtonFolder.setVisible(true);
+    listBox.updateContent();
+    listBox.repaint();
+}
+
 void TrackListComponent::saveToFile(const juce::File& fileToSave)
 {
-    std::map<juce::File, std::vector<TrackEntry>> grouped;
-
-
-    for (auto& track : availableTracks)
-    {
-        grouped[track.file].push_back(track);
-    }
+    const auto& grouped = groupedTracks;
 
     juce::Array<juce::var> foldersArray;
 
-    for (auto& [file, tracks] : grouped)
+    for (auto& [folderName, tracks] : grouped)
     {
         auto* folderObj = new juce::DynamicObject{};
-        folderObj->setProperty("folderName", fileToSave.getFileNameWithoutExtension());
-        folderObj->setProperty("filePath", file.getFullPathName());
+        folderObj->setProperty("folderName", folderName);
+
+        if (!tracks.empty())
+            folderObj->setProperty("filePath", tracks[0].file.getFullPathName());
+        else
+            folderObj->setProperty("filePath", juce::String());
 
         juce::Array<juce::var> trackArray;
 
@@ -1576,9 +1710,11 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
         return;
 
 
+    availableTracks.clear();
+    groupedTrackKeys.clear();
+    groupedTracks.clear();
 
     juce::Array<juce::var>* foldersArray = jsonVar.getArray();
-    availableTracks.clear();
 
     for (auto& item : *foldersArray)
     {
@@ -1587,10 +1723,23 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
             continue;
 
         juce::String filePath = folderObj->getProperty("filePath").toString();
+        juce::String folderName = folderObj->getProperty("folderName").toString();
+
+        if (filePath.isEmpty())
+        {
+            // Empty folder, add folder name and an empty vector of tracks
+            groupedTrackKeys.push_back(folderName);
+            groupedTracks[folderName] = {};
+            continue; // move on to next folder
+        }
+
         juce::File file{ filePath };
 
         if (!file.existsAsFile())
             continue;
+
+        groupedTrackKeys.push_back(folderName);
+        groupedTracks[folderName] = {};
 
         juce::var tracksVar = folderObj->getProperty("Tracks");
 
@@ -1636,6 +1785,7 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
             tr.displayName = displayName;
             tr.sequence = *sequence;
             tr.originalBPM = originalBpm;
+            tr.folderName = folderName;
 
             bool foundPercussion = false;
             for (int i = 0; i < sequence->getNumEvents(); ++i)
@@ -1657,9 +1807,11 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
             else tr.uuid = TrackEntry::generateUUID();
 
             availableTracks.push_back(tr);
+
+            groupedTracks[folderName].push_back(tr);
         }
     }
-
+    viewMode = ViewMode::FolderView;
     listBox.updateContent();
     listBox.repaint();
 }
@@ -1731,6 +1883,53 @@ double TrackListComponent::getOriginalBpmFromFile(const juce::MidiFile& midiFile
         }
     }
     return 120.0;
+}
+
+void TrackListComponent::initializeTracksFromList()
+{
+    viewMode = ViewMode::TrackView;
+    addButtonFolder.setVisible(false);
+    removeButtonFolder.setVisible(false);
+
+    backButton = std::make_unique<juce::TextButton>("Back");
+    addButton = std::make_unique<juce::TextButton>("Add");
+    removeButton = std::make_unique<juce::TextButton>("Remove");
+    sortComboBox = std::make_unique<juce::ComboBox>();
+
+    backButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    addButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    removeButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    backButton->onClick = [this]() {
+        backToFolderView();
+    };
+
+    addButton->onClick = [this]() {
+        addToTrackList();
+    };
+
+    removeButton->onClick = [this]() {
+        removeFromTrackList();
+    };
+
+    addAndMakeVisible(backButton.get());
+    addAndMakeVisible(addButton.get());
+    addAndMakeVisible(removeButton.get());
+    addAndMakeVisible(sortComboBox.get());
+
+    sortComboBox->addItem("Sort by Name(ascending)", 1);
+    sortComboBox->addItem("Sort by Last Modified (Newest)", 2);
+    sortComboBox->addItem("Sort by Last Modified (Oldest)", 3);
+
+    sortComboBox->setSelectedId(1);
+}
+
+void TrackListComponent::deallocateTracksFromList()
+{
+    backButton = nullptr;
+    addButton = nullptr;
+    removeButton = nullptr;
+    sortComboBox = nullptr;
 }
 
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)
