@@ -885,7 +885,7 @@ Track::Track()
 
     volumeSlider.onDragEnd = [this]()
     {
-        if (syncVolumePercussionTracks)
+        if (getTypeOfTrack()==TrackTypeConversion::toString(TrackType::Percussion) && syncVolumePercussionTracks)
             syncVolumePercussionTracks(volumeSlider.getValue());
 
         if (onChange)
@@ -1689,7 +1689,10 @@ void TrackListComponent::saveToFile(const juce::File& fileToSave)
     fileToSave.replaceWithText(jsonString);
 }
 
-void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
+//the flat list availableTracks doesn't need to be built rn, because we have grouped tracks and that's structured, but for future if
+//i wanna change anything, like to have idk, something with all the tracks, i won't need to iterate again through every structured folder name to get all the available tracks
+void TrackListComponent::loadFromFile(const juce::File& fileToLoad) 
+
 {
     if (!fileToLoad.existsAsFile())
         return;
@@ -1797,7 +1800,7 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
                 tr.uuid = juce::Uuid(uuidString);
             else tr.uuid = TrackEntry::generateUUID();
 
-            availableTracks->push_back(tr);
+            //availableTracks->push_back(tr);
 
             (*groupedTracks)[folderName].push_back(tr);
         }
@@ -1845,10 +1848,14 @@ std::unordered_map<juce::Uuid, TrackEntry> TrackListComponent::buildTrackNameMap
 {
     std::unordered_map<juce::Uuid, TrackEntry> map;
 
-    for (auto& tr : *availableTracks)
+    for (const auto& [folderName, tracks] : *groupedTracks)
     {
-        map[tr.getUniqueID()] = tr;
+        for (const auto& tr : tracks)
+        {
+            map[tr.getUniqueID()] = tr;
+        }
     }
+
     return map;
 }
 

@@ -6,8 +6,10 @@
     Author:  Kisuke
 
     TODO
+    
+    -first run of the app, the instrument selector is available for percussion tracks (glitch)
 
-    -make folder like structure for the track list with all the tracks
+    -make the remove from track list (from inside a folder basically, available) and also the remove from folder
 
     -remove from a track the current related file to it(making it none, not removing the actual file from the system) 
 
