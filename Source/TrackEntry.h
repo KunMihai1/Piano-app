@@ -14,6 +14,7 @@ enum class TrackType {Melodic,Percussion};
 
 struct TrackEntry
 {
+    juce::String folderName;
     juce::Uuid uuid;
     juce::File file;
     int trackIndex = 0;
