@@ -39,7 +39,10 @@ public:
 
     std::function<void(const juce::Uuid& uuid)> onRemoveTracks;
 
-    TrackListComponent(std::vector<TrackEntry>& tracks, std::function<void(int)> onTrackChosen);
+    TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> tracks,
+        std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracksMap,
+        std::shared_ptr<std::vector<juce::String>> groupedKeys,
+        std::function<void(int)> onTrackChosen);
 
     void resized() override;
 
@@ -89,13 +92,14 @@ private:
 
     ViewMode viewMode = ViewMode::FolderView;
 
-    std::vector<TrackEntry>& availableTracks;
+    std::shared_ptr<std::vector<TrackEntry>> availableTracks;
+    std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracks;
+    std::shared_ptr<std::vector<juce::String>> groupedTrackKeys;
+
     std::function<void(int)> trackChosenCallBack;
 
     juce::ListBox listBox;
 
-    std::vector<juce::String> groupedTrackKeys;
-    std::unordered_map<juce::String, std::vector<TrackEntry>> groupedTracks;
 
     std::unique_ptr<juce::TextButton> addButton = nullptr;
     std::unique_ptr<juce::TextButton> removeButton = nullptr;
@@ -326,7 +330,11 @@ private:
     std::unique_ptr<CurrentStyleComponent> currentStyleComponent;
     bool created = false;
     bool createdTracksTab = false;
-    std::vector<TrackEntry> availableTracksFromFolder;
+
+    std::shared_ptr<std::vector<TrackEntry>> availableTracksFromFolder;
+    std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracks;
+    std::shared_ptr<std::vector<juce::String>> groupedTrackKeys;
+
     juce::MidiOutput* outputDevice = nullptr;
 
     std::unique_ptr<TrackListComponent> trackListComp;
