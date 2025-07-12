@@ -33,8 +33,8 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
-      <FILE id="iRffzs" name="SubjectInterface.cpp" compile="1" resource="0"
-            file="Source/SubjectInterface.cpp"/>
+      <FILE id="hH5yKh" name="trackListComponentListener.h" compile="0" resource="0"
+            file="Source/trackListComponentListener.h"/>
       <FILE id="rm0gSJ" name="SubjectInterface.h" compile="0" resource="0"
             file="Source/SubjectInterface.h"/>
       <FILE id="zfMrzS" name="TrackListener.h" compile="0" resource="0" file="Source/TrackListener.h"/>

@@ -6,12 +6,14 @@
     Author:  Kisuke
 
     TODO
-    
-    -first run of the app, the instrument selector is available for percussion tracks (glitch)
 
     -make the remove from track list (from inside a folder basically, available) and also the remove from folder
 
-    -remove from a track the current related file to it(making it none, not removing the actual file from the system) 
+    -remove from a track the current related file to it(making it none, not removing the actual file from the system)
+
+    -make update names available (for track, folder, style)
+
+    -make the timer to be instead show beat bar
 
     -modify the starting time for each track
 
@@ -34,8 +36,10 @@
 #include "TrackPlayer.h"
 #include "CustomToolTip.h"
 #include "SubjectInterface.h"
+#include "trackListComponentListener.h"
+#include "InstrumentChooser.h"
 
-class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener
+class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener, public Subject<TrackListListener>
 {
 public:
 
@@ -82,6 +86,7 @@ public:
 
     void deallocateTracksFromList();
 
+    bool foundPercussion(const juce::MidiMessageSequence* sequence);
 
 
 private:
@@ -116,7 +121,7 @@ private:
     //JUCE_LEAK_DETECTOR(TrackListComponent)
 };
 
-class Track : public juce::Component, private juce::MouseListener, public Subject
+class Track : public juce::Component, private juce::MouseListener, public Subject<TrackListener>
 {
 public:
     std::function<void()> onChange;
@@ -181,7 +186,6 @@ class CurrentStyleComponent : public juce::Component, private juce::MouseListene
 public:
     std::function<void()> anyTrackChanged;
     std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelectionFromTrack;
-
 
     CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, juce::MidiOutput* outputDevice = nullptr);
 
@@ -295,7 +299,7 @@ public:
     //JUCE_LEAK_DETECTOR(MyTabbedComponent)
 };
 
-class Display: public  juce::Component, public juce::ChangeListener
+class Display: public  juce::Component, public juce::ChangeListener, public TrackListListener
 {
 public:
     Display(int widthForList=0, juce::MidiOutput* outputDev=nullptr);
@@ -325,6 +329,8 @@ public:
     void stoppingPlayer();
 
     void updateAllStylesInJson();
+
+    void updateUIbeforeAnyLoadingCase() override;
 
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
