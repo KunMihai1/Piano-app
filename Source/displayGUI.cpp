@@ -584,6 +584,12 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name,std::unord
         {
             if (anyTrackChanged)
                 anyTrackChanged();
+
+            //here i do the logic to change all the other sliders too
+        };
+
+        newTrack->syncVolumePercussionTracks = [this](double newVolume) {
+            syncPercussionTracksVolumeChange(newVolume);
         };
 
         newTrack->onRequestTrackSelection = [this](std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> trackChosenCallback)
@@ -679,6 +685,18 @@ juce::OwnedArray<Track>& CurrentStyleComponent::getAllTracks()
 MultipleTrackPlayer* CurrentStyleComponent::getTrackPlayer()
 {
     return trackPlayer.get();
+}
+
+void CurrentStyleComponent::syncPercussionTracksVolumeChange(double newVolume)
+{
+    for (auto& track : allTracks)
+    {
+        if (track->getTypeOfTrack() == TrackTypeConversion::toString(TrackType::Percussion))
+        {
+            if(track->getVolume()!=newVolume)
+                track->setVolumeSlider(newVolume);
+        }
+    }
 }
 
 void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)
@@ -862,6 +880,9 @@ Track::Track()
 
     volumeSlider.onDragEnd = [this]()
     {
+        if (syncVolumePercussionTracks)
+            syncVolumePercussionTracks(volumeSlider.getValue());
+
         if (onChange)
             onChange();
 
@@ -1225,6 +1246,11 @@ void Track::setTypeOfTrack(const juce::String& newType)
     this->typeOfTrack = newType;
 }
 
+juce::String Track::getTypeOfTrack()
+{
+    return this->typeOfTrack;
+}
+
 juce::Uuid Track::getUsedID()
 {
     return uniqueIdentifierTrack;
@@ -1472,7 +1498,6 @@ void TrackListComponent::removeFromTrackList()
                 if (result == 0) // Cancel
                     return;
 
-                DBG("AM TRECUT");
 
                 for (int i = selectedRows.size() - 1; i >= 0; --i)
                 {
@@ -1501,7 +1526,6 @@ void TrackListComponent::removeFromTrackList()
 
 void TrackListComponent::saveToFile(const juce::File& fileToSave)
 {
-    juce::Array<juce::var> filesArray;
     std::map<juce::File, std::vector<TrackEntry>> grouped;
 
 
@@ -1510,28 +1534,32 @@ void TrackListComponent::saveToFile(const juce::File& fileToSave)
         grouped[track.file].push_back(track);
     }
 
+    juce::Array<juce::var> foldersArray;
+
     for (auto& [file, tracks] : grouped)
     {
-        auto* fileObj = new juce::DynamicObject{};
-        fileObj->setProperty("filePath", file.getFullPathName());
+        auto* folderObj = new juce::DynamicObject{};
+        folderObj->setProperty("folderName", fileToSave.getFileNameWithoutExtension());
+        folderObj->setProperty("filePath", file.getFullPathName());
 
         juce::Array<juce::var> trackArray;
 
         for (auto& tr : tracks)
         {
             auto* trackObject = new juce::DynamicObject{};
+
             trackObject->setProperty("trackIndex", tr.trackIndex);
             trackObject->setProperty("displayName", tr.displayName);
             trackObject->setProperty("uuid", tr.uuid.toString());
 
             trackArray.add(juce::var(trackObject));
         }
-        fileObj->setProperty("Tracks", trackArray);
-        filesArray.add(juce::var(fileObj));
+        folderObj->setProperty("Tracks", trackArray);
+        foldersArray.add(juce::var(folderObj));
 
     }
 
-    juce::var jsonVar(filesArray);
+    juce::var jsonVar(foldersArray);
     juce::String jsonString = juce::JSON::toString(jsonVar);
     fileToSave.replaceWithText(jsonString);
 }
@@ -1547,22 +1575,25 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
     if (!jsonVar.isArray())
         return;
 
-    juce::Array<juce::var>* jsonArray = jsonVar.getArray();
+
+
+    juce::Array<juce::var>* foldersArray = jsonVar.getArray();
     availableTracks.clear();
 
-    for (auto& item : *jsonArray)
+    for (auto& item : *foldersArray)
     {
-        auto* fileObj = item.getDynamicObject();
-        if (fileObj == nullptr)
+        auto* folderObj = item.getDynamicObject();
+        if (folderObj == nullptr)
             continue;
 
-        juce::String filePath = fileObj->getProperty("filePath").toString();
+        juce::String filePath = folderObj->getProperty("filePath").toString();
         juce::File file{ filePath };
 
         if (!file.existsAsFile())
             continue;
 
-        juce::var tracksVar = fileObj->getProperty("Tracks");
+        juce::var tracksVar = folderObj->getProperty("Tracks");
+
         if (!tracksVar.isArray())
             continue;
 
@@ -1576,7 +1607,7 @@ void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
         if (!midiFile.readFrom(inputStream))
             continue;
 
-        // Convert ticks to seconds for all tracks just once
+
         double originalBpm = getOriginalBpmFromFile(midiFile);
 
         convertTicksToSeconds(midiFile,originalBpm);

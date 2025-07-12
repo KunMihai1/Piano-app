@@ -7,14 +7,21 @@
 
     TODO
 
-   
+    -make folder like structure for the track list with all the tracks
+
+    -remove from a track the current related file to it(making it none, not removing the actual file from the system) 
+
     -modify the starting time for each track
+
+    -normalize the measure
+
+    -normalize the tpqn
+
+    -make bpm change mid play(not only before pressing play)
 
     -make it so that the the current style can be played by pressing a note(lowest) and end while highest note
 
     -making the sets so that you can select what to play on left hand and on right hand
-
-    -when changing volume of a percussion track, since all percussions are on the same channel, then you have to change the slider visually for all of percussions, when one is changing
 
   ==============================================================================
 */
@@ -66,9 +73,13 @@ private:
     std::vector<TrackEntry>& availableTracks;
     std::function<void(int)> trackChosenCallBack;
 
-    juce::TextButton addButton{ "Add" };
-    juce::TextButton removeButton{ "Remove" };
-    juce::ComboBox sortComboBox;
+    juce::TextButton* addButton=nullptr;
+    juce::TextButton* removeButton=nullptr;
+
+    juce::TextButton addButtonFolder{ "Add folder" };
+    juce::TextButton removeButtonFolder{ "Remove folder" };
+
+    juce::ComboBox* sortComboBox=nullptr;
 
 
     //JUCE_LEAK_DETECTOR(TrackListComponent)
@@ -80,6 +91,7 @@ public:
     std::function<void()> onChange;
     std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelection;
     std::function<bool()> isPlaying;
+    std::function<void(double newVolume)> syncVolumePercussionTracks;
 
     Track();
     ~Track();
@@ -108,6 +120,7 @@ public:
     int getInstrumentNumber();
     void setUUID(const juce::Uuid& newUUID);
     void setTypeOfTrack(const juce::String& newType);
+    juce::String getTypeOfTrack();
     juce::Uuid getUsedID();
     void setChannel(int newChannel);
     double getVolume();
@@ -173,6 +186,7 @@ public:
 
     MultipleTrackPlayer* getTrackPlayer();
 
+    void syncPercussionTracksVolumeChange(double newVolume);
 
 private:
     void mouseDown(const juce::MouseEvent& ev) override;
