@@ -129,6 +129,8 @@ public:
     std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelection;
     std::function<bool()> isPlaying;
     std::function<void(double newVolume)> syncVolumePercussionTracks;
+    std::function<void(Track* copiedTrack)> onCopy;
+    std::function<void(Track* toPaste)> onPaste;
 
     Track();
     ~Track();
@@ -150,17 +152,24 @@ public:
     void setVolumeSlider(double value);
     void setVolumeLabel(const juce::String& value, bool shouldNotify=false);
     void setNameLabel(const juce::String& name);
-    juce::String getName();
+    juce::String getName() const;
     void openInstrumentChooser();
     juce::StringArray instrumentListBuild();
     void setInstrumentNumber(int newInstrumentNumber, bool shouldNotify=false);
-    int getInstrumentNumber();
+    int getInstrumentNumber() const;
     void setUUID(const juce::Uuid& newUUID);
     void setTypeOfTrack(const juce::String& newType);
-    juce::String getTypeOfTrack();
-    juce::Uuid getUsedID();
+    juce::String getTypeOfTrack() const;
+    juce::Uuid getUsedID() const;
+
     void setChannel(int newChannel);
-    double getVolume();
+    int getChannel() const;
+
+    double getVolume() const;
+
+    void copyFrom(const Track& other);
+    
+    void pasteFrom(const Track& source);
 
     void renameOneTrack();
 
@@ -256,6 +265,8 @@ private:
     double currentTempo = 120.0;
     double baseTempo = 120.0;
     bool isPlaying = false;
+
+    std::unique_ptr<Track> copiedTrack=nullptr;
 
     //JUCE_LEAK_DETECTOR(CurrentStyleComponent)
 };
