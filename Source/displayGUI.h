@@ -7,9 +7,7 @@
 
     TODO
 
-    -remove from a track the current related file to it(making it none, not removing the actual file from the system)
-
-    -make update names available (for track, folder, style)
+    -make update names available (folder, style)
 
     -make the timer to be instead show beat bar
 
@@ -274,11 +272,17 @@ private:
 class StyleViewComponent : public juce::Component, public juce::MouseListener
 {
 public:
+    std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRenamed;
+
     StyleViewComponent(const juce::String& styleName);
 
     void resized() override;
 
     void mouseUp(const juce::MouseEvent& event) override;
+
+    void setNameLabel(const juce::String& name);
+
+    void changeNameLabel();
 
     std::function<void(const juce::String&)> onStyleClicked;
 
@@ -291,7 +295,7 @@ private:
 class StylesListComponent : public juce::Component
 {
 public:
-    StylesListComponent(int nrOfStyles, std::function<void(const juce::String&)> onStyleClicked, int widthSize=0);
+    StylesListComponent(std::vector<juce::String>& stylesNames, std::function<void(const juce::String&)> onStyleClicked, int widthSize=0);
 
     void resized() override;
     void setWidthSize(const int newWidth);
@@ -301,6 +305,7 @@ private:
 
     juce::OwnedArray<StyleViewComponent> allStyles;
     std::function<void(const juce::String&)> onStyleClicked;
+    std::vector<juce::String> stylesNames;
 
     int nrOfStyles;
     int widthSize;
@@ -332,6 +337,7 @@ public:
     int getTabIndexByName(const juce::String& name);
 
     void initializeAllStyles();
+    std::vector<juce::String> getAllStylesFromJson();
     void loadAllStyles();
     void updateStyleInJson(const juce::String& name);
 
@@ -351,8 +357,6 @@ public:
     void removeTracksFromAllStyles(const std::vector<juce::Uuid>& uuids);
 
     void stoppingPlayer();
-
-    void updateAllStylesInJson();
 
     void updateUIbeforeAnyLoadingCase() override;
 
