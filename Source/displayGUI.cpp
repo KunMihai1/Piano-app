@@ -45,7 +45,12 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ 
     tabComp = std::make_unique<MyTabbedComponent>(juce::TabbedButtonBar::TabsAtLeft);
     addAndMakeVisible(tabComp.get());
 
-    auto* list = new StylesListComponent{ 10, [this](const juce::String& name) {
+    initializeAllStyles();
+    loadAllStyles();
+
+    std::vector<juce::String> stylesNames = getAllStylesFromJson();
+
+    auto* list = new StylesListComponent{ stylesNames, [this](const juce::String& name) {
         showCurrentStyleTab(name); },widthForList
     };
 
@@ -56,9 +61,6 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ 
 
     list->resized();
     scrollableView->getViewedComponent()->resized();
-
-    initializeAllStyles();
-    loadAllStyles();
 
     tabComp->onTabChanged = [this](int newIndex, juce::String tabName)
     {
@@ -427,6 +429,31 @@ void Display::initializeAllStyles()
     file.replaceWithText(jsonString);
 }
 
+std::vector<juce::String> Display::getAllStylesFromJson()
+{
+    std::vector<juce::String> allStylesNames;
+
+    if (!allStylesJsonVar.isObject())
+        return allStylesNames;
+
+    auto stylesArray = allStylesJsonVar["styles"];
+    if (!stylesArray.isArray())
+        return allStylesNames;
+
+    for (auto& styleVar : *stylesArray.getArray())
+    {
+        auto* obj = styleVar.getDynamicObject();
+        if (obj == nullptr)
+            continue;
+
+        juce::String name = obj->getProperty("name").toString();
+        if (name.isNotEmpty())
+            allStylesNames.push_back(name);
+    }
+
+    return allStylesNames;
+}
+
 void Display::loadAllStyles()
 {
     juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
@@ -513,12 +540,66 @@ void StyleViewComponent::mouseUp(const juce::MouseEvent& event)
 {
     if (event.eventComponent == &label && onStyleClicked)
     {
-        onStyleClicked(label.getText());
+        if (event.mods.isLeftButtonDown())
+        {
+            if(onStyleClicked)
+                onStyleClicked(label.getText());
+        }
+        else if (event.mods.isRightButtonDown())
+        {
+            juce::PopupMenu menu;
+            menu.addItem("Rename", [this]() {
+                changeNameLabel();
+                });
+
+            menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this));
+        }
     }
 }
 
-StylesListComponent::StylesListComponent(int nrOfStyles, std::function<void(const juce::String&)> onStyleClicked, int widthSize) : nrOfStyles{ nrOfStyles }, onStyleClicked{ onStyleClicked }
+void StyleViewComponent::setNameLabel(const juce::String& name)
 {
+    label.setText(name, juce::dontSendNotification);
+}
+
+void StyleViewComponent::changeNameLabel()
+{
+    auto window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon };
+
+    window->addTextEditor("nameEditor", label.getText(), "Style Name:");
+    window->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+    window->enterModalState(true, juce::ModalCallbackFunction::create([this, window](int result)
+        {
+            std::unique_ptr<juce::AlertWindow> cleanup{ window };
+            if (result != 1)
+                return;
+
+            juce::String oldName = label.getText();
+            juce::String theNewName = window->getTextEditor("nameEditor")->getText().trim();
+
+            if (theNewName.isEmpty())
+            {
+                juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "Rename style", "You can't put an empty name!");
+                return;
+            }
+
+            setNameLabel(theNewName);
+
+            if (onStyleRenamed)
+                onStyleRenamed(oldName, theNewName);
+
+            
+        }
+    ));
+}
+
+StylesListComponent::StylesListComponent(std::vector<juce::String>& stylesNames, std::function<void(const juce::String&)> onStyleClicked, int widthSize) : stylesNames{stylesNames}, onStyleClicked{onStyleClicked}
+{
+    if (stylesNames.empty())
+        nrOfStyles = 10;
+    else nrOfStyles = stylesNames.size();
     this->widthSize = widthSize;
     populate();
 }
@@ -564,7 +645,11 @@ void StylesListComponent::populate()
 
     for (int i = 0; i < nrOfStyles; i++)
     {
-        auto* newStyle = new StyleViewComponent{ "Style " + juce::String(i + 1) };
+        juce::String name;
+        if (i < stylesNames.size())
+            name = stylesNames[i];
+        else name = "Style "+juce::String(i);
+        auto* newStyle = new StyleViewComponent{name};
         newStyle->onStyleClicked = this->onStyleClicked;
         allStyles.add(newStyle);
         addAndMakeVisible(newStyle);
