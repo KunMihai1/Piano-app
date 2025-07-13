@@ -43,7 +43,8 @@ class TrackListComponent : public juce::Component, private juce::ListBoxModel, p
 {
 public:
 
-    std::function<void(const juce::Uuid& uuid)> onRemoveTracks;
+    std::function<void(const juce::Uuid& uuid)> onRemoveTrack;
+    std::function<void(const std::vector<juce::Uuid>& uuids)> onRemoveMultipleTracks;
 
     TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> tracks,
         std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracksMap,
@@ -213,6 +214,8 @@ public:
 
     void removingTrack(const juce::Uuid& uuid);
 
+    void removingTracks(const std::vector<juce::Uuid>& uuids);
+
     void setElapsedTime(double newElapsedTime);
 
     double getBaseTempo();
@@ -325,6 +328,8 @@ public:
     void setDeviceOutput(juce::MidiOutput* devOutput = nullptr);
 
     void removeTrackFromAllStyles(const juce::Uuid& uuid);
+
+    void removeTracksFromAllStyles(const std::vector<juce::Uuid>& uuids);
 
     void stoppingPlayer();
 

@@ -205,9 +205,14 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
         });
     trackListComp->addListener(this);
 
-    trackListComp->onRemoveTracks = [this](const juce::Uuid& uuid)
+    trackListComp->onRemoveTrack = [this](const juce::Uuid& uuid)
     {
         removeTrackFromAllStyles(uuid);
+    };
+
+    trackListComp->onRemoveMultipleTracks = [this](const std::vector<juce::Uuid>& uuids)
+    {
+        removeTracksFromAllStyles(uuids);
     };
     tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.get(), false);
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
@@ -309,6 +314,61 @@ void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)
     if (currentStyleComponent)
     {
         currentStyleComponent->removingTrack(uuid);
+    }
+
+    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2");
+
+    juce::File jsonFile = appDataFolder.getChildFile("allStyles.json");
+
+    juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
+    jsonFile.replaceWithText(jsonString);
+}
+
+void Display::removeTracksFromAllStyles(const std::vector<juce::Uuid>& uuids)
+{
+    if (!allStylesJsonVar.isObject())
+        return;
+
+    auto stylesArray = allStylesJsonVar["styles"];
+
+    if (!stylesArray.isArray())
+        return;
+
+    std::unordered_set<juce::String> uuidSet;
+    for (const auto& uuid : uuids)
+        uuidSet.insert(uuid.toString());
+
+    for (auto& styleVariable : *stylesArray.getArray())
+    {
+        auto styleObj = styleVariable.getDynamicObject();
+        if (styleObj == nullptr)
+            continue;
+
+        juce::var trackVariable = styleObj->getProperty("tracks");
+
+        if (!trackVariable.isArray())
+            continue;
+
+        for (auto& trackVar : *trackVariable.getArray())
+        {
+            auto trackObj = trackVar.getDynamicObject();
+            if (trackObj == nullptr)
+                continue;
+
+            juce::String uuidString = trackObj->getProperty("uuid").toString();
+            if (uuidSet.count(uuidString))
+            {
+                trackObj->setProperty("uuid", "noID");
+                trackObj->setProperty("name", "None");
+                trackObj->setProperty("instrumentNumber", -1);
+            }
+        }
+    }
+
+    if (currentStyleComponent)
+    {
+        currentStyleComponent->removingTracks(uuids);
     }
 
     juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
@@ -690,6 +750,23 @@ void CurrentStyleComponent::removingTrack(const juce::Uuid& uuid)
         {
             track->setNameLabel("None");
             track->setUUID(juce::Uuid{ "noID" });
+        }
+    }
+}
+
+void CurrentStyleComponent::removingTracks(const std::vector<juce::Uuid>& uuids)
+{
+    for (auto& track : allTracks)
+    {
+        auto trackUUID = track->getUsedID();
+        for (auto& uuid : uuids)
+        {
+            if (trackUUID == uuid)
+            {
+                track->setNameLabel("None");
+                track->setUUID(juce::Uuid{ "noID" });
+                break;
+            }
         }
     }
 }
@@ -1571,7 +1648,7 @@ void TrackListComponent::removeFromTrackList()
 
     if (selectedRows.isEmpty())
     {
-        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Remove Tracks", "Please select at least one track to remove");
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Remove Track(s)", "Please select at least one track to remove");
         return;
     }
 
@@ -1606,7 +1683,7 @@ void TrackListComponent::removeFromTrackList()
                         }));
                     availableTracks->erase(availableTracks->begin() + rowIndex);
 
-                    if (onRemoveTracks) onRemoveTracks(uuid);
+                    if (onRemoveTrack) onRemoveTrack(uuid);
                 }
 
                 listBox.deselectAllRows();
@@ -1674,7 +1751,58 @@ void TrackListComponent::addToFolderList()
 
 void TrackListComponent::removeFromFolderList()
 {
+    juce::SparseSet<int> selectedRows = listBox.getSelectedRows();
 
+    if (selectedRows.isEmpty())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Remove Folder(s)", "Please select at least one folder to remove");
+        return;
+    }
+
+    juce::AlertWindow::showOkCancelBox(
+        juce::AlertWindow::WarningIcon,
+        "Confirm Remove",
+        "Are you sure you want to remove the selected folder(s)?",
+        "Remove",
+        "Cancel",
+        this,
+        juce::ModalCallbackFunction::create(
+            [this, selectedRows](int result)
+            {
+                for (int i = selectedRows.size() - 1; i >= 0; i--)
+                {
+                    int rowIndex = selectedRows[i];
+                    juce::String folderName = (*groupedTrackKeys)[rowIndex];
+
+                    auto& tracks = (*groupedTracks)[folderName];
+                    std::vector<juce::Uuid> uuidsToRemove;
+
+                    for (auto& track : tracks)
+                        uuidsToRemove.push_back(track.getUniqueID());
+
+                    if (onRemoveMultipleTracks)
+                        onRemoveMultipleTracks(uuidsToRemove);
+
+                    tracks.clear();
+
+                    groupedTracks->erase(folderName);
+
+                    auto it = std::find(groupedTrackKeys->begin(), groupedTrackKeys->end(), folderName);
+                    if (it != groupedTrackKeys->end())
+                        groupedTrackKeys->erase(it);
+
+                    listBox.deselectAllRows();
+                    listBox.updateContent();
+                    listBox.repaint();
+
+                    auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                        .getChildFile("Piano Synth2");
+                    auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+                    saveToFile(jsonFile);
+                }
+            }
+        )
+    );
 }
 
 void TrackListComponent::backToFolderView()
