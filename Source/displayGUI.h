@@ -7,7 +7,9 @@
 
     TODO
 
-    -make update names available (folder, style)
+    -add a style, remove a style
+
+    -make update names available (folder)
 
     -make the timer to be instead show beat bar
 
@@ -273,6 +275,7 @@ class StyleViewComponent : public juce::Component, public juce::MouseListener
 {
 public:
     std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRenamed;
+    std::function<bool(const juce::String& name)> isInListNames;
 
     StyleViewComponent(const juce::String& styleName);
 
@@ -297,6 +300,8 @@ class StylesListComponent : public juce::Component
 public:
     StylesListComponent(std::vector<juce::String>& stylesNames, std::function<void(const juce::String&)> onStyleClicked, int widthSize=0);
 
+    std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRename;
+
     void resized() override;
     void setWidthSize(const int newWidth);
 
@@ -309,6 +314,9 @@ private:
 
     int nrOfStyles;
     int widthSize;
+
+    juce::TextButton addButton{ "Add" };
+    juce::TextButton removeButton{ "Remove" };
 
     JUCE_LEAK_DETECTOR(StylesListComponent)
 };
@@ -340,6 +348,7 @@ public:
     std::vector<juce::String> getAllStylesFromJson();
     void loadAllStyles();
     void updateStyleInJson(const juce::String& name);
+    void updateStyleNameInJson(const juce::String& oldName, const juce::String& newName);
 
     void resized() override;
     const juce::var& getJsonVar();

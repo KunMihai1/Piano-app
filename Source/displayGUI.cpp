@@ -54,6 +54,11 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ 
         showCurrentStyleTab(name); },widthForList
     };
 
+    list->onStyleRename = [this](const juce::String& oldName, const juce::String& newName)
+    {
+        updateStyleNameInJson(oldName, newName);
+    };
+
     auto* scrollableView = new juce::Viewport();
     scrollableView->setScrollBarsShown(true, false); // only vertical
     scrollableView->setViewedComponent(list, true);
@@ -502,6 +507,38 @@ void Display::updateStyleInJson(const juce::String& name)
     file.replaceWithText(jsonString);
 }
 
+void Display::updateStyleNameInJson(const juce::String& oldName, const juce::String& newName)
+{
+    if (!allStylesJsonVar.isObject())
+        return;
+
+    auto stylesArray = allStylesJsonVar["styles"];
+
+    if (!stylesArray.isArray())
+        return;
+
+    for (int i = 0; i < stylesArray.getArray()->size(); i++)
+    {
+        auto& styleVar = stylesArray.getArray()->getReference(i);
+        auto* obj = styleVar.getDynamicObject();
+        if (obj == nullptr)
+            continue;
+
+        if (obj->getProperty("name").toString() == oldName)
+        {
+            obj->setProperty("name", newName);
+            break;
+        }
+    }
+
+    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2");
+    juce::File jsonFile = appDataFolder.getChildFile("allStyles.json");
+
+    juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
+    jsonFile.replaceWithText(jsonString);
+}
+
 void Display::resized()
 {
     tabComp->setBounds(getLocalBounds());
@@ -585,6 +622,15 @@ void StyleViewComponent::changeNameLabel()
                 return;
             }
 
+            if (isInListNames)
+            {
+                if (isInListNames(theNewName))
+                {
+                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "Rename style", "The name already exists!");
+                    return;
+                }
+            }
+
             setNameLabel(theNewName);
 
             if (onStyleRenamed)
@@ -597,6 +643,22 @@ void StyleViewComponent::changeNameLabel()
 
 StylesListComponent::StylesListComponent(std::vector<juce::String>& stylesNames, std::function<void(const juce::String&)> onStyleClicked, int widthSize) : stylesNames{stylesNames}, onStyleClicked{onStyleClicked}
 {
+    addAndMakeVisible(addButton);
+    addAndMakeVisible(removeButton);
+
+    addButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    removeButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    addButton.onClick = [this]()
+    {
+
+    };
+
+    removeButton.onClick = [this]()
+    {
+
+    };  
+
     if (stylesNames.empty())
         nrOfStyles = 10;
     else nrOfStyles = stylesNames.size();
@@ -606,11 +668,14 @@ StylesListComponent::StylesListComponent(std::vector<juce::String>& stylesNames,
 
 void StylesListComponent::resized()
 {
+
     this->widthSize = getWidth();
+
+
     const int itemWidth = getWidth() / 2 - 10;   // Half of parent initial parent width - with spacing
     const int itemHeight = 50;
-    const int spacing = 10;
     const int columns = 2;
+    const int spacing = 10;
 
     int x = spacing;
     int y = spacing;
@@ -651,6 +716,27 @@ void StylesListComponent::populate()
         else name = "Style "+juce::String(i);
         auto* newStyle = new StyleViewComponent{name};
         newStyle->onStyleClicked = this->onStyleClicked;
+        newStyle->onStyleRenamed = [this](const juce::String& oldName, const juce::String& newName)
+        {
+            onStyleRename(oldName, newName);
+        };
+
+        juce::String currentName = name;
+        newStyle->isInListNames = [this,currentName](const juce::String& newName)
+        {
+            bool isIn=false;
+            for (auto& nameInList : stylesNames)
+            {
+                if (nameInList == newName && newName!=currentName)
+                {
+                    isIn = true;
+                    break;
+                }
+            }
+                    
+
+            return isIn;
+        };
         allStyles.add(newStyle);
         addAndMakeVisible(newStyle);
     }
