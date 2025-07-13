@@ -1328,15 +1328,36 @@ void Track::mouseDown(const juce::MouseEvent& event)
 {
     if (event.eventComponent == &nameLabel)
     {
-        if (onRequestTrackSelection)
+        if (event.mods.isLeftButtonDown())
         {
-            onRequestTrackSelection([this](const juce::String& selectedTrack, const juce::Uuid& uuid, const juce::String& type)
-                {
-                    setNameLabel(selectedTrack);
-                    setUUID(uuid);
-                    setTypeOfTrack(type);
-                }
-            );
+            if (onRequestTrackSelection)
+            {
+                onRequestTrackSelection([this](const juce::String& selectedTrack, const juce::Uuid& uuid, const juce::String& type)
+                    {
+                        setNameLabel(selectedTrack);
+                        setUUID(uuid);
+                        setTypeOfTrack(type);
+                    }
+                );
+            }
+        }
+        else if(event.mods.isRightButtonDown()){
+            juce::PopupMenu menu;
+            menu.addItem("Rename", [this]() {
+                renameOneTrack();
+                });
+            menu.addItem("Delete", [this]() { 
+                deleteOneTrack();
+                });
+            menu.addItem("Copy", [this]() { 
+                copyOneTrack();
+                });
+
+            menu.addItem("Paste", [this]() {
+                pasteOneTrack();
+                });
+
+            menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&nameLabel));
         }
     }
 }
@@ -1369,6 +1390,48 @@ void Track::setChannel(int newChannel)
 double Track::getVolume()
 {
     return this->volumeSlider.getValue();
+}
+
+void Track::renameOneTrack()
+{
+    auto window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon};
+
+    window->addTextEditor("nameEditor", nameLabel.getText(), "Track Name:");
+    window->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+    window->enterModalState(true, juce::ModalCallbackFunction::create([this, window](int result)
+        {
+            std::unique_ptr<juce::AlertWindow> cleanup{ window };
+            if (result != 1)
+                return;
+
+            juce::String newNameToPut=window->getTextEditor("nameEditor")->getText().trim();
+            setNameLabel(newNameToPut);
+            if (onChange)
+                onChange();
+        }
+    ));
+}
+
+void Track::deleteOneTrack()
+{
+
+
+    if (onChange)
+        onChange();
+}
+
+void Track::copyOneTrack()
+{
+}
+
+void Track::pasteOneTrack()
+{
+
+
+    if (onChange)
+        onChange();
 }
 
 TrackListComponent::TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> tracks,

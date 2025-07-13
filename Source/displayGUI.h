@@ -7,13 +7,13 @@
 
     TODO
 
-    -make the remove from track list (from inside a folder basically, available) and also the remove from folder
-
     -remove from a track the current related file to it(making it none, not removing the actual file from the system)
 
     -make update names available (for track, folder, style)
 
     -make the timer to be instead show beat bar
+
+    -when selecting a track from the list of 8, you can see all the notes listed from that uploaded track, aka the midi message sequence, and if possible, to put also the time stamps? in seconds
 
     -modify the starting time for each track
 
@@ -161,6 +161,14 @@ public:
     juce::Uuid getUsedID();
     void setChannel(int newChannel);
     double getVolume();
+
+    void renameOneTrack();
+
+    void deleteOneTrack();
+
+    void copyOneTrack();
+
+    void pasteOneTrack();
 
 
 private:
