@@ -7,7 +7,7 @@
 
     TODO
 
-    -add a style, remove a style
+    -remove a style
 
     -make update names available (folder)
 
@@ -21,11 +21,14 @@
 
     -normalize the tpqn
 
+    -optimize with a variable juce var in memory for tracks.json
+
     -make bpm change mid play(not only before pressing play)
 
     -make it so that the the current style can be played by pressing a note(lowest) and end while highest note
 
     -making the sets so that you can select what to play on left hand and on right hand
+
 
   ==============================================================================
 */
@@ -276,6 +279,7 @@ class StyleViewComponent : public juce::Component, public juce::MouseListener
 public:
     std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRenamed;
     std::function<bool(const juce::String& name)> isInListNames;
+    std::function<void(const juce::String& name)> onStyleRemove;
 
     StyleViewComponent(const juce::String& styleName);
 
@@ -286,6 +290,8 @@ public:
     void setNameLabel(const juce::String& name);
 
     void changeNameLabel();
+
+    void removeStyle();
 
     std::function<void(const juce::String&)> onStyleClicked;
 
@@ -301,9 +307,14 @@ public:
     StylesListComponent(std::vector<juce::String>& stylesNames, std::function<void(const juce::String&)> onStyleClicked, int widthSize=0);
 
     std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRename;
+    std::function<void(const juce::String& newName)> onStyleAdd;
 
     void resized() override;
     void setWidthSize(const int newWidth);
+
+    void layoutStyles();
+
+    void addNewStyle();
 
 private:
     void populate();
@@ -316,7 +327,9 @@ private:
     int widthSize;
 
     juce::TextButton addButton{ "Add" };
-    juce::TextButton removeButton{ "Remove" };
+
+    std::unique_ptr<juce::Component> styleItemsContainer=nullptr;
+    juce::Viewport viewport;
 
     JUCE_LEAK_DETECTOR(StylesListComponent)
 };
@@ -349,6 +362,7 @@ public:
     void loadAllStyles();
     void updateStyleInJson(const juce::String& name);
     void updateStyleNameInJson(const juce::String& oldName, const juce::String& newName);
+    void appendNewStyleInJson(const juce::String& newName);
 
     void resized() override;
     const juce::var& getJsonVar();
@@ -371,6 +385,7 @@ public:
 
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
+    std::unique_ptr<StylesListComponent> stylesListComponent;
     std::unique_ptr<MyTabbedComponent> tabComp;
     std::unique_ptr<CurrentStyleComponent> currentStyleComponent;
     bool created = false;
