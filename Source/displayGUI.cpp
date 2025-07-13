@@ -673,7 +673,24 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
             if (anyTrackChanged)
                 anyTrackChanged();
 
-            //here i do the logic to change all the other sliders too
+        };
+
+        newTrack->onCopy = [this](Track* copied)
+        {
+            copiedTrack = std::make_unique<Track>();
+            copiedTrack->copyFrom(*copied);
+        };
+
+        newTrack->onPaste = [this](Track* toPaste)
+        {
+            if (copiedTrack == nullptr)
+            {
+                juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "Pasting a track", "First you have to copy!");
+                return;
+            }
+
+            toPaste->pasteFrom(*copiedTrack.get());
+            
         };
 
         newTrack->syncVolumePercussionTracks = [this](double newVolume) {
@@ -1089,7 +1106,7 @@ void Track::mouseExit(const juce::MouseEvent& ev)
     }
 }
 
-juce::String Track::getName()
+juce::String Track::getName() const
 {
     return this->nameLabel.getText();
 }
@@ -1301,7 +1318,7 @@ void Track::setInstrumentNumber(int newInstrumentNumber, bool shouldNotify)
         notify(channel, -1, usedInstrumentNumber);
 }
 
-int Track::getInstrumentNumber()
+int Track::getInstrumentNumber() const
 {
     return usedInstrumentNumber;
 }
@@ -1372,12 +1389,12 @@ void Track::setTypeOfTrack(const juce::String& newType)
     this->typeOfTrack = newType;
 }
 
-juce::String Track::getTypeOfTrack()
+juce::String Track::getTypeOfTrack() const
 {
     return this->typeOfTrack;
 }
 
-juce::Uuid Track::getUsedID()
+juce::Uuid Track::getUsedID() const
 {
     return uniqueIdentifierTrack;
 }
@@ -1387,9 +1404,29 @@ void Track::setChannel(int newChannel)
     this->channel = newChannel;
 }
 
-double Track::getVolume()
+int Track::getChannel() const
+{
+    return this->channel;
+}
+
+double Track::getVolume() const
 {
     return this->volumeSlider.getValue();
+}
+
+void Track::copyFrom(const Track& other)
+{
+    setNameLabel(other.getName());
+    setInstrumentNumber(other.getInstrumentNumber());
+    setTypeOfTrack(other.getTypeOfTrack());
+    setVolumeSlider(other.getVolume());
+    setVolumeLabel(juce::String(other.getVolume()));
+    setUUID(other.getUsedID());
+}
+
+void Track::pasteFrom(const Track& source)
+{
+    copyFrom(source);
 }
 
 void Track::renameOneTrack()
@@ -1416,19 +1453,42 @@ void Track::renameOneTrack()
 
 void Track::deleteOneTrack()
 {
+    juce::AlertWindow::showOkCancelBox(
+        juce::AlertWindow::WarningIcon,
+        "Confirm Remove",
+        "Are you sure you want to remove the selected track?",
+        "Remove",
+        "Cancel",
+        this,
+        juce::ModalCallbackFunction::create(
+            [this](int result)
+            {
+                if (result == 0)
+                    return;
 
+                setNameLabel("None");
+                setTypeOfTrack("None");
+                setInstrumentNumber(-1);
+                setUUID(juce::Uuid{ "noID" });
 
-    if (onChange)
-        onChange();
+                if (onChange)
+                    onChange();
+            }
+            ));
 }
 
 void Track::copyOneTrack()
 {
+    if (onCopy)
+        onCopy(this);
+
+    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "Track info", "The track has been succesfully copied!");
 }
 
 void Track::pasteOneTrack()
 {
-
+    if (onPaste)
+        onPaste(this);
 
     if (onChange)
         onChange();
@@ -1832,6 +1892,9 @@ void TrackListComponent::removeFromFolderList()
         juce::ModalCallbackFunction::create(
             [this, selectedRows](int result)
             {
+                if (result == 0) // Cancel
+                    return;
+
                 for (int i = selectedRows.size() - 1; i >= 0; i--)
                 {
                     int rowIndex = selectedRows[i];
