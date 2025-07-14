@@ -49,6 +49,7 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ 
     loadAllStyles();
 
     std::vector<juce::String> stylesNames = getAllStylesFromJson();
+    DBG("Size of names is:" + juce::String(stylesNames.size()));
 
     auto list = std::make_unique<StylesListComponent>(stylesNames,
         [this](const juce::String& name) {
@@ -65,6 +66,11 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ 
     list->onStyleAdd = [this](const juce::String& newName)
     {
         appendNewStyleInJson(newName);
+    };
+
+    list->onStyleRemove = [this](const juce::String& name)
+    {
+        removeStyleInJson(name);
     };
 
     //auto* scrollableView = new juce::Viewport();
@@ -596,6 +602,44 @@ void Display::appendNewStyleInJson(const juce::String& newName)
     jsonFile.replaceWithText(jsonString);
 }
 
+void Display::removeStyleInJson(const juce::String& name)
+{
+    if (!allStylesJsonVar.isObject())
+        return;
+
+    auto* obj = allStylesJsonVar.getDynamicObject();
+    if (obj == nullptr)
+        return;
+
+    juce::var styles = obj->getProperty("styles");
+    if (!styles.isArray())
+        return;
+
+    auto* stylesArray = styles.getArray();
+
+    for (int i = 0; i < stylesArray->size(); i++)
+    {
+        auto& style = stylesArray->getReference(i);
+        auto* styleObj = style.getDynamicObject();
+        if (styleObj == nullptr)
+            continue;
+
+        juce::String styleName = styleObj->getProperty("name").toString();
+        if (styleName == name)
+        {
+            stylesArray->remove(i);
+            break;
+        }
+    }
+
+    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2");
+    juce::File jsonFile = appDataFolder.getChildFile("allStyles.json");
+
+    juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
+    jsonFile.replaceWithText(jsonString);
+}
+
 void Display::resized()
 {
     tabComp->setBounds(getLocalBounds());
@@ -660,6 +704,11 @@ void StyleViewComponent::setNameLabel(const juce::String& name)
     label.setText(name, juce::dontSendNotification);
 }
 
+juce::String StyleViewComponent::getNameLabel() const
+{
+    return label.getText();
+}
+
 void StyleViewComponent::changeNameLabel()
 {
     auto window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon };
@@ -717,14 +766,17 @@ void StyleViewComponent::removeStyle()
                 if (result == 0) // Cancel
                     return;
 
-                if (onStyleRemove)
-                    onStyleRemove(label.getText());
+                if (onStyleRemoveComponent)
+                    onStyleRemoveComponent(label.getText());
+
+                juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "Remove style", "Style removed succesfully!");
+
             }
         )
     );
 }
 
-StylesListComponent::StylesListComponent(std::vector<juce::String>& stylesNames, std::function<void(const juce::String&)> onStyleClicked, int widthSize) : stylesNames{stylesNames}, onStyleClicked{onStyleClicked}
+StylesListComponent::StylesListComponent(std::vector<juce::String> stylesNamesOut, std::function<void(const juce::String&)> onStyleClicked, int widthSize) : stylesNames{stylesNamesOut}, onStyleClicked{onStyleClicked}
 {
     addAndMakeVisible(addButton);
 
@@ -735,10 +787,6 @@ StylesListComponent::StylesListComponent(std::vector<juce::String>& stylesNames,
         addNewStyle();
     };
 
-
-    if (stylesNames.empty())
-        nrOfStyles = 10;
-    else nrOfStyles = stylesNames.size();
     this->widthSize = widthSize;
 
     styleItemsContainer = std::make_unique<juce::Component>();
@@ -805,6 +853,16 @@ void StylesListComponent::layoutStyles()
     styleItemsContainer->setSize(getWidth(), totalHeight);
 }
 
+void StylesListComponent::repopulate()
+{
+    stylesNames.clear();
+    for (auto* sv : allStyles)
+        stylesNames.push_back(sv->getNameLabel());
+
+    populate();
+    resized();
+}
+
 void StylesListComponent::addNewStyle()
 {
     auto window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon };
@@ -837,7 +895,6 @@ void StylesListComponent::addNewStyle()
                 }
 
                 auto* newStyle = new StyleViewComponent{ newName };
-                nrOfStyles += 1;
 
                 newStyle->onStyleClicked = this->onStyleClicked;
 
@@ -865,9 +922,12 @@ void StylesListComponent::addNewStyle()
                 if (onStyleAdd)
                     onStyleAdd(newName);
 
+                stylesNames.push_back(newName);
                 styleItemsContainer->addAndMakeVisible(newStyle);
                 allStyles.add(newStyle);
-                resized();
+
+                repopulate();
+
 
                 juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "Add style", "The style '" + newName + "' has been added!");
             }
@@ -875,11 +935,60 @@ void StylesListComponent::addNewStyle()
     );
 }
 
+void StylesListComponent::removeStyleLocally(const juce::String& name)
+{
+    for (int i = 0; i < allStyles.size(); ++i)
+    {
+        if (allStyles[i]->getNameLabel() == name)
+        {
+            auto* comp = allStyles[i];
+            styleItemsContainer->removeChildComponent(comp);
+            allStyles.remove(i); 
+            break;
+        }
+    }
+
+    stylesNames.clear();
+    for (auto* sv : allStyles)
+        stylesNames.push_back(sv->getNameLabel());
+
+    if (onStyleRemove) 
+        onStyleRemove(name);
+
+    styleItemsContainer->removeAllChildren();
+    allStyles.clear();
+    populate();
+    resized();
+}
+
+void StylesListComponent::addStyleLocally(const juce::String& newName)
+{
+    stylesNames.push_back(newName);
+
+    styleItemsContainer->removeAllChildren();
+    allStyles.clear();
+    populate();
+    resized();
+}
+
+void StylesListComponent::rebuildStyleNames()
+{
+    DBG("rebuildStyleNames called, stylesNames size before clear: " + juce::String(stylesNames.size()));
+    stylesNames.clear();
+    for (auto& style : allStyles)
+    {
+        juce::String name = style->getNameLabel();
+        stylesNames.push_back(name);
+    }
+    DBG("rebuildStyleNames done, stylesNames size after rebuild: " + juce::String(stylesNames.size()));
+}
+
+
 void StylesListComponent::populate()
 {
     styleItemsContainer->removeAllChildren();
     allStyles.clear();
-    for (int i = 0; i < nrOfStyles; i++)
+    for (int i = 0; i < stylesNames.size(); i++)
     {
         juce::String name;
         if (i < stylesNames.size())
@@ -890,6 +999,11 @@ void StylesListComponent::populate()
         newStyle->onStyleRenamed = [this](const juce::String& oldName, const juce::String& newName)
         {
             onStyleRename(oldName, newName);
+        };
+
+        newStyle->onStyleRemoveComponent = [this](const juce::String& name)
+        {
+            removeStyleLocally(name);
         };
 
         juce::String currentName = name;
