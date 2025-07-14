@@ -279,7 +279,7 @@ class StyleViewComponent : public juce::Component, public juce::MouseListener
 public:
     std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRenamed;
     std::function<bool(const juce::String& name)> isInListNames;
-    std::function<void(const juce::String& name)> onStyleRemove;
+    std::function<void(const juce::String& name)> onStyleRemoveComponent;
 
     StyleViewComponent(const juce::String& styleName);
 
@@ -288,6 +288,8 @@ public:
     void mouseUp(const juce::MouseEvent& event) override;
 
     void setNameLabel(const juce::String& name);
+
+    juce::String getNameLabel() const;
 
     void changeNameLabel();
 
@@ -304,17 +306,26 @@ private:
 class StylesListComponent : public juce::Component
 {
 public:
-    StylesListComponent(std::vector<juce::String>& stylesNames, std::function<void(const juce::String&)> onStyleClicked, int widthSize=0);
+    StylesListComponent(std::vector<juce::String> stylesNames, std::function<void(const juce::String&)> onStyleClicked, int widthSize=0);
 
     std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRename;
     std::function<void(const juce::String& newName)> onStyleAdd;
+    std::function<void(const juce::String& name)> onStyleRemove;
 
     void resized() override;
     void setWidthSize(const int newWidth);
 
     void layoutStyles();
 
+    void repopulate();
+
     void addNewStyle();
+
+    void removeStyleLocally(const juce::String& name);
+
+    void addStyleLocally(const juce::String& newName);
+
+    void rebuildStyleNames();
 
 private:
     void populate();
@@ -322,8 +333,6 @@ private:
     juce::OwnedArray<StyleViewComponent> allStyles;
     std::function<void(const juce::String&)> onStyleClicked;
     std::vector<juce::String> stylesNames;
-
-    int nrOfStyles;
     int widthSize;
 
     juce::TextButton addButton{ "Add" };
@@ -363,6 +372,7 @@ public:
     void updateStyleInJson(const juce::String& name);
     void updateStyleNameInJson(const juce::String& oldName, const juce::String& newName);
     void appendNewStyleInJson(const juce::String& newName);
+    void removeStyleInJson(const juce::String& name);
 
     void resized() override;
     const juce::var& getJsonVar();
