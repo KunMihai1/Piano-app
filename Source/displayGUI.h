@@ -7,10 +7,6 @@
 
     TODO
 
-    -make the add and remove possibly without populate
-
-    -make update names available (folder)
-
     -make the timer to be instead show beat bar
 
     -when selecting a track from the list of 8, you can see all the notes listed from that uploaded track, aka the midi message sequence, and if possible, to put also the time stamps? in seconds
@@ -322,6 +318,8 @@ public:
     std::function<void(const juce::String& name)> onStyleRemove;
 
     void resized() override;
+    void paint(juce::Graphics& g) override;
+
     void setWidthSize(const int newWidth);
 
     void layoutStyles();

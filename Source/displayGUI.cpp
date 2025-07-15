@@ -70,6 +70,20 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ 
 
     list->onStyleRemove = [this](const juce::String& name)
     {
+        if (tabComp)
+        {
+            int currentTabIndex = tabComp->getCurrentTabIndex();
+            if (currentTabIndex + 1 <= tabComp->getNumTabs())
+            {
+                juce::String tabName = tabComp->getTabNames()[currentTabIndex + 1];
+                if (tabName == name)
+                {
+                    tabComp->removeTab(currentTabIndex + 1);
+                    currentStyleComponent.reset();
+                    created = false;
+                }
+            }
+        }
         removeStyleInJson(name);
     };
 
@@ -93,7 +107,6 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ 
             int myTracksIndex = tabComp->getNumTabs() - 1;
             tabComp->removeTab(myTracksIndex);
 
-            //removeChildComponent(trackListComp.get());
             trackListComp.reset();
             createdTracksTab = false;
             
@@ -164,7 +177,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
         {
             showListOfTracksToSelectFrom(trackChosenCallback);
         };
-        tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), true); //release, get potential issue
+        tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), false); //release, get potential issue
         created = true;
     }
     else
@@ -866,13 +879,32 @@ void StylesListComponent::resized()
 
     const int controlBarHeight = 24;
     const int buttonWidth = 80;
-    const int buttonHeight = 30;
+    const int buttonHeight = 20;
     const int spacing = 10;
 
-    addButton.setBounds(spacing, (controlBarHeight - buttonHeight) / 2, buttonWidth, buttonHeight);
+    addButton.setBounds(spacing/2, (controlBarHeight - buttonHeight) / 2, buttonWidth, buttonHeight);
     viewport.setBounds(0, controlBarHeight, getWidth(), getHeight() - controlBarHeight);
 
     layoutStyles();
+}
+
+void StylesListComponent::paint(juce::Graphics& g)
+{
+    g.fillAll(juce::Colours::black);
+
+
+    const int controlBarHeight = 24;
+
+    auto lightColor = juce::Colour::fromRGB(80, 80, 80);
+    auto darkColor = juce::Colour::fromRGB(40, 40, 40);
+
+    juce::ColourGradient gradient(lightColor, 0, 0, darkColor, 0, (float)controlBarHeight, false);
+    g.setGradientFill(gradient);
+    g.fillRect(0, 0, getWidth(), controlBarHeight);
+
+    auto borderColor = juce::Colours::darkgrey.withAlpha(0.3f);
+    g.setColour(borderColor);
+    g.drawLine(0.0f, (float)(controlBarHeight - 1), (float)getWidth(), (float)(controlBarHeight - 1), 1.0f);
 }
 
 void StylesListComponent::setWidthSize(const int newWidth)
