@@ -262,7 +262,6 @@ void NoteLayer::resetStateActiveNotes()
 {
     for (auto& v : activeNotes)
     {
-        //auto midiOut=
         int note = v.first;
         noteOffReceived(note);
     }

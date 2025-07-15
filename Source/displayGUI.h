@@ -7,8 +7,6 @@
 
     TODO
 
-    -make the timer to be instead show beat bar
-
     -when selecting a track from the list of 8, you can see all the notes listed from that uploaded track, aka the midi message sequence, and if possible, to put also the time stamps? in seconds
 
     -modify the starting time for each track
@@ -25,7 +23,6 @@
 
     -making the sets so that you can select what to play on left hand and on right hand
 
-
   ==============================================================================
 */
 
@@ -37,6 +34,7 @@
 #include "SubjectInterface.h"
 #include "trackListComponentListener.h"
 #include "InstrumentChooser.h"
+#include "CustomBeatBar.h"
 
 class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener, public Subject<TrackListListener>
 {
@@ -211,7 +209,7 @@ public:
     std::function<void()> anyTrackChanged;
     std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelectionFromTrack;
 
-    CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, juce::MidiOutput* outputDevice = nullptr);
+    CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, std::weak_ptr<juce::MidiOutput> outputDevice);
 
     void stoppingPlayer();
     
@@ -241,9 +239,9 @@ public:
 
     void renamingTrack(const juce::Uuid& uuid, const juce::String& newName);
 
-    void setElapsedTime(double newElapsedTime);
-
     double getBaseTempo();
+
+    void setDeviceOutputCurrentStyle(std::weak_ptr<juce::MidiOutput> newOutput);
 
     juce::OwnedArray<Track>& getAllTracks();
 
@@ -257,13 +255,12 @@ private:
     juce::String name;
     juce::Label nameOfStyle;
     juce::Label selectedTrackLabel, selectedTrackKey, selectedTrackChord;
-    juce::Label elapsedTimeLabel;
     juce::OwnedArray<Track> allTracks;
     juce::ComboBox playSettingsTracks;
     juce::TextButton startPlayingTracks;
     juce::TextButton stopPlayingTracks;
 
-    juce::MidiOutput* outputDevice = nullptr;
+    std::weak_ptr<juce::MidiOutput> outputDevice;
     std::unique_ptr<MultipleTrackPlayer> trackPlayer=nullptr;
     std::unordered_map<juce::Uuid, TrackEntry>& mapNameToTrackEntry;
     Track* lastSelectedTrack = nullptr;
@@ -275,6 +272,7 @@ private:
     bool isPlaying = false;
 
     std::unique_ptr<Track> copiedTrack=nullptr;
+    BeatBar customBeatBar;
 
     //JUCE_LEAK_DETECTOR(CurrentStyleComponent)
 };
@@ -368,7 +366,7 @@ public:
 class Display: public  juce::Component, public juce::ChangeListener, public TrackListListener
 {
 public:
-    Display(int widthForList=0, juce::MidiOutput* outputDev=nullptr);
+    Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList=0);
     ~Display() override;
 
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
@@ -392,7 +390,7 @@ public:
     void createUserTracksFolder();
     std::vector<TrackEntry> getAvailableTracksFromFolder(const juce::File& folder);
 
-    void setDeviceOutput(juce::MidiOutput* devOutput = nullptr);
+    void setDeviceOutput(std::weak_ptr<juce::MidiOutput> devOutput);
 
     void removeTrackFromAllStyles(const juce::Uuid& uuid);
 
@@ -416,7 +414,7 @@ private:
     std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracks;
     std::shared_ptr<std::vector<juce::String>> groupedTrackKeys;
 
-    juce::MidiOutput* outputDevice = nullptr;
+    std::weak_ptr<juce::MidiOutput> outputDevice;
 
     std::unique_ptr<TrackListComponent> trackListComp;
     juce::var allStylesJsonVar; // this has a root object, acts like a map

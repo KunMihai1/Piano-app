@@ -27,6 +27,8 @@ MainComponent::MainComponent()
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
     this->toFront(true);
 
+    startTimer(1000);
+
 }
 
 MainComponent::~MainComponent()
@@ -177,6 +179,38 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
         }
     }
     return false;
+}
+
+void MainComponent::timerCallback()
+{
+    if(this->keyListener.getIsKeyboardInput()==false)
+        checkMidiInputDeviceValid();
+}
+
+void MainComponent::checkMidiInputDeviceValid()
+{
+    auto devices = juce::MidiInput::getAvailableDevices();
+    bool deviceStillPresent = false;
+    for (auto& device : devices)
+    {
+        if (device.identifier == MIDIDevice.get_identifier())
+        {
+            deviceStillPresent = true;
+            break;
+        }
+    }
+
+    if (!deviceStillPresent)
+    {
+        if (noteLayer)
+            noteLayer->resetStateActiveNotes();
+
+        keyboard.resetStateActiveNotes();
+            
+
+        this->MIDIDevice.deviceCloseIN();
+        this->MIDIDevice.deviceCloseOUT();
+    }
 }
 
 void MainComponent::initalizeSaveFileForUser()
@@ -564,7 +598,7 @@ void MainComponent::knobsInit()
 
 void MainComponent::displayInit()
 {
-    display = std::make_unique<Display>(400,deviceOpenedOUT);
+    display = std::make_unique<Display>(deviceOpenedOUT,400);
     headerPanel.addAndMakeVisible(display.get());
     display->setVisible(false);
 }
@@ -710,8 +744,7 @@ void MainComponent::playButtonOnClick()
         else
             this->keyboard.set_min_and_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
 
-        //DBG("Min note:" << this->keyboard.get_min());
-        //DBG("Max note:" << this->keyboard.get_max());
+
         keyboard.setIsDrawn(false);
         keyboard.repaint();
         toggleForPlaying();
@@ -907,7 +940,7 @@ bool MainComponent::openingDevicesForPlay()
             juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open input device.", "OK");
             return false;
         }
-        this->deviceOpenedIN = &this->MIDIDevice.getDeviceIN();
+        this->deviceOpenedIN = this->MIDIDevice.getDeviceIN();
     }
     result = this->MIDIDevice.deviceOpenOUT(indexOUT);
     if (!result)

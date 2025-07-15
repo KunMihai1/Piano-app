@@ -26,6 +26,8 @@ public:
     int get_min();
     int get_max();
 
+    void resetStateActiveNotes();
+
     void noteOnReceived(int midiNote) override;
     void noteOffReceived(int midiNote) override;
     void setIsDrawn(bool state);

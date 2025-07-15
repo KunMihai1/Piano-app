@@ -26,8 +26,8 @@ public:
 	int getDeviceIndexOUT() const;
 	void setDeviceOUT(const int index);
 
-	const juce::MidiInput& getDeviceIN() const;
-	juce::MidiOutput* getDeviceOUT();
+	std::weak_ptr<juce::MidiInput> getDeviceIN() const;
+	std::weak_ptr<juce::MidiOutput> getDeviceOUT() const; 
 
 
 	void setVolume(const float vValue);
@@ -58,8 +58,11 @@ private:
 
 	int currentDeviceIDin;
 	int currentDeviceIDout;
-	std::unique_ptr<juce::MidiInput> currentDeviceUSEDin = nullptr;
-	std::unique_ptr<juce::MidiOutput> currentDeviceUSEDout = nullptr;
+
+
+	std::shared_ptr<juce::MidiInput> currentDeviceUSEDin = nullptr;
+
+	std::shared_ptr<juce::MidiOutput> currentDeviceUSEDout=nullptr;
 
 	bool devicesChange = false;
 	bool isdeviceOpenIN = false;

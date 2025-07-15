@@ -140,7 +140,7 @@ public:
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
-class MainComponent : public juce::Component, public juce::ChangeListener, public juce::KeyListener
+class MainComponent : public juce::Component, public juce::ChangeListener, public juce::KeyListener, public juce::Timer
 {
 public:
     //==============================================================================
@@ -153,6 +153,8 @@ public:
     bool isMouseDownInsideLabel = false;
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
     bool keyPressed(const juce::KeyPress& key, juce::Component*) override;
+    void timerCallback() override;
+    void checkMidiInputDeviceValid();
 
 private:
     int initialWidth = 0;
@@ -228,8 +230,9 @@ private:
     juce::TooltipWindow tooltipWindow{ this, 200 };
 
 
-    const juce::MidiInput* deviceOpenedIN = nullptr;
-    juce::MidiOutput* deviceOpenedOUT = nullptr;
+    std::weak_ptr<juce::MidiInput> deviceOpenedIN;
+    std::weak_ptr<juce::MidiOutput> deviceOpenedOUT;
+
     MidiDevice MIDIDevice{};
     MidiHandler midiHandler{ MIDIDevice };
     KeyboardListener keyListener{ midiHandler };

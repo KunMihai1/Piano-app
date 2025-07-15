@@ -36,7 +36,7 @@ void convertTicksToSeconds(juce::MidiFile& midiFile, double bpm = 120.0)
     }
 }
 
-Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ outputDev }
+Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : outputDevice{ outputDev }
 {
     availableTracksFromFolder = std::make_shared<std::vector<TrackEntry>>();
     groupedTracks = std::make_shared<std::unordered_map<juce::String, std::vector<TrackEntry>>>();
@@ -60,6 +60,14 @@ Display::Display(int widthForList, juce::MidiOutput* outputDev) : outputDevice{ 
 
     list->onStyleRename = [this](const juce::String& oldName, const juce::String& newName)
     {
+        int index = tabComp->getCurrentTabIndex();
+        if (index>=0 && index + 1 < tabComp->getNumTabs())
+        {
+            tabComp->setTabName(index + 1, newName);
+
+            currentStyleComponent->updateName(newName);
+        }
+
         updateStyleNameInJson(oldName, newName);
     };
 
@@ -293,9 +301,11 @@ std::vector<TrackEntry> Display::getAvailableTracksFromFolder(const juce::File& 
     return tracks;
 }
 
-void Display::setDeviceOutput(juce::MidiOutput* devOutput)
+void Display::setDeviceOutput(std::weak_ptr<juce::MidiOutput> devOutput)
 {
     this->outputDevice = devOutput;
+    if (currentStyleComponent)
+        currentStyleComponent->setDeviceOutputCurrentStyle(devOutput);
 }
 
 void Display::stoppingPlayer()
@@ -1123,49 +1133,50 @@ void CurrentStyleComponent::startPlaying()
 
     std::vector<TrackEntry> selectedTracks;
 
-    if (outputDevice == nullptr)
+    if (auto midiOut=outputDevice.lock())
     {
+        if (selectedID == 1)
+        {
+            for (const auto& tr : allTracks)
+            {
+                auto it = mapNameToTrackEntry.find(tr->getUsedID());
+                if (it != mapNameToTrackEntry.end())
+                {
+                    DBG("asta e bun ba");
+                    it->second.instrumentAssociated = tr->getInstrumentNumber();
+                    it->second.volumeAssociated = tr->getVolume();
+                    selectedTracks.push_back(it->second);
+                }
+            }
+        }
+        else if (selectedID == 2)
+        {
+            if (lastSelectedTrack)
+            {
+                auto it = mapNameToTrackEntry.find(lastSelectedTrack->getUsedID());
+                if (it != mapNameToTrackEntry.end())
+                    selectedTracks.push_back(it->second);
+            }
+        }
+        if (selectedTracks.empty())
+        {
+            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Playing tracks", "There are no tracks to play");
+            return;
+        }
+        trackPlayer->setTracks(selectedTracks);
+        trackPlayer->applyBPMchangeBeforePlayback(currentTempo);
+
+        trackPlayer->syncPlaybackSettings();
+        trackPlayer->start();
+    }
+    else {
         DBG("Output is null!");
         return;
     }
 
-
-    if (selectedID == 1)
-    {
-        for (const auto& tr : allTracks)
-        {
-            auto it = mapNameToTrackEntry.find(tr->getUsedID());
-            if (it != mapNameToTrackEntry.end())
-            {
-                DBG("asta e bun ba");
-                it->second.instrumentAssociated = tr->getInstrumentNumber();
-                it->second.volumeAssociated = tr->getVolume();
-                selectedTracks.push_back(it->second);
-            }
-        }
-    }
-    else if (selectedID == 2)
-    {
-        if (lastSelectedTrack)
-        {
-            auto it = mapNameToTrackEntry.find(lastSelectedTrack->getUsedID());
-            if (it != mapNameToTrackEntry.end())
-                selectedTracks.push_back(it->second);
-        }
-    }
-    if (selectedTracks.empty())
-    {
-        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Playing tracks", "There are no tracks to play");
-        return;
-    }
-    trackPlayer->setTracks(selectedTracks);
-    trackPlayer->applyBPMchangeBeforePlayback(currentTempo);
-
-    trackPlayer->syncPlaybackSettings();
-    trackPlayer->start();
 }
 
-CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, juce::MidiOutput* outputDevice) : name(name), mapNameToTrackEntry(map), outputDevice(outputDevice)
+CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, std::weak_ptr<juce::MidiOutput> outputDevice) : name(name), mapNameToTrackEntry(map), outputDevice(outputDevice)
 {
     addMouseListener(this, true);
     nameOfStyle.setText(name, juce::dontSendNotification);
@@ -1173,6 +1184,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     addAndMakeVisible(nameOfStyle);
 
     playSettingsTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
     playSettingsTracks.addItem("All tracks", 1);
     playSettingsTracks.addItem("Solo track(last selected)", 2);
     playSettingsTracks.setSelectedId(1);
@@ -1180,18 +1192,14 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     addAndMakeVisible(playSettingsTracks);
     addAndMakeVisible(startPlayingTracks);
     addAndMakeVisible(stopPlayingTracks);
-    addAndMakeVisible(elapsedTimeLabel);
-    elapsedTimeLabel.setText("00:00", juce::dontSendNotification);
+    addAndMakeVisible(customBeatBar);
 
-    juce::Colour textColour = juce::Colour::fromRGB(0, 255, 0)
-        .withAlpha(0.8f);
-    elapsedTimeLabel.setColour(juce::Label::textColourId, textColour);
 
     trackPlayer = std::make_unique<MultipleTrackPlayer>(outputDevice);
 
-    trackPlayer->onElapsedUpdate = [this](double ElapsedTime)
+    trackPlayer->onElapsedUpdate = [this](double ElapsedBeats)
     {
-        setElapsedTime(ElapsedTime);
+        customBeatBar.setCurrentBeatsElapsed(ElapsedBeats);
     };
 
     startPlayingTracks.onClick = [this]
@@ -1299,6 +1307,13 @@ double CurrentStyleComponent::getBaseTempo()
     return baseTempo;
 }
 
+void CurrentStyleComponent::setDeviceOutputCurrentStyle(std::weak_ptr<juce::MidiOutput> newOutput)
+{
+    this->outputDevice = newOutput;
+    if (trackPlayer)
+        trackPlayer->setDeviceOutputTrackPlayer(newOutput);
+}
+
 void CurrentStyleComponent::removingTrack(const juce::Uuid& uuid)
 {
     for (auto& track : allTracks)
@@ -1335,17 +1350,6 @@ void CurrentStyleComponent::renamingTrack(const juce::Uuid& uuid, const juce::St
         if (track->getUsedID() == uuid)
             track->setNameLabel(newName);
     }
-}
-
-void CurrentStyleComponent::setElapsedTime(double newTimeToSet)
-{
-    int totalSeconds = static_cast<int>(newTimeToSet);
-
-    int minutes = totalSeconds / 60;
-    int seconds = totalSeconds % 60;
-    juce::String formattedTime = juce::String::formatted("%02d:%02d", minutes, seconds);
-
-    this->elapsedTimeLabel.setText(formattedTime, juce::dontSendNotification);
 }
 
 juce::OwnedArray<Track>& CurrentStyleComponent::getAllTracks()
@@ -1396,47 +1400,63 @@ void CurrentStyleComponent::setTempo(double newTempo)
 
 void CurrentStyleComponent::resized()
 {
+    float width = getWidth() / 8.0f;
+    float height = 80.0f;
+    float initialX = 0;
+    float y = getHeight() - height;
+    int yInt = static_cast<int>(y);
+
     int labelWidth = 50;
-    int playSettingsWidth = getWidth() / 6 + 30;
+    int playSettingsWidth = 40;
     int heightFirst = 20;
     int startStopWidth = 35;
-    playSettingsTracks.setBounds(getWidth() - playSettingsWidth, 0, playSettingsWidth, heightFirst);
+    int padding = 2;
+
+    // Clamp heights so they never go below or above the track start y
+    int playSettingsHeight = juce::jmin(heightFirst, yInt)-padding;
+    int nameOfStyleHeight = juce::jmin(heightFirst, yInt)-padding;
+    int startStopHeight = juce::jmin(heightFirst - padding * 2, yInt)-padding;
+    int beatBarHeight = juce::jmin(heightFirst - padding * 2, yInt)-padding;
+    int tempoSliderHeight = juce::jmin(heightFirst, yInt)-padding;
+
+    playSettingsTracks.setBounds(getWidth() - playSettingsWidth, 0, playSettingsWidth, playSettingsHeight);
     playSettingsTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
-    nameOfStyle.setBounds((getWidth() - labelWidth) / 2 - 40, 0, getWidth() / 6, heightFirst);
-    startPlayingTracks.setBounds(0, 0, startStopWidth, heightFirst);
+    nameOfStyle.setBounds((getWidth() - labelWidth) / 2, 0, getWidth() / 6 - 15, nameOfStyleHeight);
+
+    startPlayingTracks.setBounds(0, padding, startStopWidth - 2, startStopHeight);
     startPlayingTracks.setButtonText("Start");
     startPlayingTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
-    stopPlayingTracks.setBounds(startPlayingTracks.getWidth() + 5, 0, startStopWidth, heightFirst);
+    stopPlayingTracks.setBounds(startPlayingTracks.getWidth() + 5, padding, startStopWidth, startStopHeight);
     stopPlayingTracks.setButtonText("Stop");
     stopPlayingTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
-    elapsedTimeLabel.setBounds(stopPlayingTracks.getX() + stopPlayingTracks.getWidth(), 0, 50, heightFirst);
+    int xStarting = stopPlayingTracks.getX() + stopPlayingTracks.getWidth() + 5;
+    customBeatBar.setBounds(xStarting, padding, nameOfStyle.getX() - xStarting, beatBarHeight);
 
-    //nameOfStyle.setBounds(stopPlayingTracks.getX() + stopPlayingTracks.getWidth() + 5, 0, getWidth() / 6, heightFirst);
-
-    int sliderWidth = playSettingsTracks.getX() - (nameOfStyle.getX() + nameOfStyle.getWidth()) + 10;
-    tempoSlider.setBounds(nameOfStyle.getX() + nameOfStyle.getWidth() - 15, 0, sliderWidth, 18);
-
-    float width = getWidth() / 8.0f, height = 80.0f;
-    float initialX = 0, y = getHeight() - height;
+    int paddingBetween = 5; 
+    int sliderX = nameOfStyle.getX() + nameOfStyle.getWidth() + paddingBetween;
+    int sliderWidth = playSettingsTracks.getX() - sliderX - paddingBetween;
+    tempoSlider.setBounds(sliderX, 0, sliderWidth, tempoSliderHeight);
 
     for (int i = 0; i < allTracks.size(); i++)
     {
         allTracks[i]->setBounds(juce::Rectangle<int>(
             static_cast<int>(i * width),
-            static_cast<int>(y),
+            yInt,
             static_cast<int>(width),
             static_cast<int>(height)
             ));
     }
 }
 
+
 void CurrentStyleComponent::updateName(const juce::String& newName)
 {
     name = newName;
     nameOfStyle.setText(name, juce::dontSendNotification);
+    nameOfStyle.setTooltip(name);
 }
 
 CurrentStyleComponent::~CurrentStyleComponent()

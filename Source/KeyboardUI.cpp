@@ -46,6 +46,16 @@ int KeyboardUI::get_max()
 }
 
 
+void KeyboardUI::resetStateActiveNotes()
+{
+    for (auto& keyPair : keys)
+    {
+        keyPair.second.isActive = false;
+    }
+
+    repaint();
+}
+
 void KeyboardUI::noteOnReceived(int midiNote)
 {
     juce::MessageManager::callAsync([this, midiNote]
