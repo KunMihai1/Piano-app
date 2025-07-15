@@ -27,7 +27,9 @@ public:
     std::function<void()> notifyFunction;
     std::function<void()> applyPresetFunction;
 
-    MidiRecordPlayer(juce::MidiOutput* midiOut=nullptr);
+    MidiRecordPlayer();
+
+    MidiRecordPlayer(std::weak_ptr<juce::MidiOutput> out);
 
     void startRecording();
 
@@ -45,7 +47,7 @@ public:
 
     void timerCallback() override;
 
-    void setOutputDevice(juce::MidiOutput* outputDev);
+    void setOutputDevice(std::weak_ptr<juce::MidiOutput> outputDev);
     
     void setProgarmNumber(int newProgram);
 
@@ -83,7 +85,7 @@ private:
     int nextEventIndex = 0;
     int nextEventFileIndex = 0;
 
-    juce::MidiOutput* midiOutputDevice=nullptr;
+    std::weak_ptr<juce::MidiOutput> midiOutputDevice;
     std::vector<RecordedEvent> allEventsPlayed;
     std::vector<RecordedEvent> allEventsPlayedFile;
     int program;

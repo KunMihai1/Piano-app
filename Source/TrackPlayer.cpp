@@ -10,7 +10,7 @@
 
 #include "TrackPlayer.h"
 
-MultipleTrackPlayer::MultipleTrackPlayer(juce::MidiOutput* out): outputDevice{out}, currentElapsedTime{0.0}
+MultipleTrackPlayer::MultipleTrackPlayer(std::weak_ptr<juce::MidiOutput> out): outputDevice{out}, currentElapsedTime{0.0}
 {
 
 }
@@ -84,10 +84,10 @@ void MultipleTrackPlayer::stop()
             });
     }
 
-    if (outputDevice)
+    if (auto sharedPtrDev=outputDevice.lock())
     {
         for (int channel = 1; channel <= 16; ++channel)
-            outputDevice->sendMessageNow(juce::MidiMessage::allNotesOff(channel));
+            sharedPtrDev->sendMessageNow(juce::MidiMessage::allNotesOff(channel));
     }
 }
 
@@ -107,14 +107,14 @@ void MultipleTrackPlayer::start()
 
 void MultipleTrackPlayer::updatePlaybackSettings(int channel, int newVolume, int newInstrument)
 {
-    if (outputDevice)
+    if (auto sharedPtrDev=outputDevice.lock())
     {
         DBG("Volume for channel " << channel << " is " << newVolume);
         if(newInstrument!=-1 && channel!=10)
-            outputDevice->sendMessageNow(juce::MidiMessage::programChange(channel, newInstrument));
+            sharedPtrDev->sendMessageNow(juce::MidiMessage::programChange(channel, newInstrument));
 
         if (newVolume != -1)
-            outputDevice->sendMessageNow(juce::MidiMessage::controllerEvent(channel, 7, newVolume));
+            sharedPtrDev->sendMessageNow(juce::MidiMessage::controllerEvent(channel, 7, newVolume));
     }
 }
 
@@ -302,56 +302,73 @@ void MultipleTrackPlayer::syncPlaybackSettings()
     }
 }
 
+void MultipleTrackPlayer::setDeviceOutputTrackPlayer(std::weak_ptr<juce::MidiOutput> newOutput)
+{
+    this->outputDevice = newOutput;
+}
+
+void MultipleTrackPlayer::setTimeSignatureDenominator(int newDenominator)
+{
+    this->timeSignatureDenominator = newDenominator;
+}
+
+void MultipleTrackPlayer::setTimeSignatureNumerator(int newNumerator)
+{
+    this->timeSignatureNumerator = newNumerator;
+}
+
 void MultipleTrackPlayer::hiResTimerCallback()
 {
-    if (!outputDevice)
-        return;
-
-    double now = juce::Time::getHighResolutionTicks() /
-        static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
-    double elapsed = now - startTime;  // seconds elapsed since start
-    currentElapsedTime = elapsed;
-
-    double beatsElapsed = elapsed * (currentBPM / 60.0);
-
-    static double lastUIUpdateTime = 0.0;
-    if (now - lastUIUpdateTime > 0.05)
+    if (auto midiOut = outputDevice.lock())
     {
-        lastUIUpdateTime = now;
-        if (onElapsedUpdate)
-        {
-            juce::MessageManager::callAsync([this, beatsElapsed]() {
-                onElapsedUpdate(beatsElapsed);
-                });
-        }
-    }
+        double now = juce::Time::getHighResolutionTicks() /
+            static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
+        double elapsed = now - startTime;  // seconds elapsed since start
+        currentElapsedTime = elapsed;
 
-    for (auto& track : tracks)
-    {
-        auto& sequence = filteredSequences[track.filteredSequenceIndex];
-        while (track.nextEventIndex < sequence.getNumEvents())
-        {
-            const auto& midiEvent = sequence.getEventPointer(track.nextEventIndex)->message;
-            double eventTime = midiEvent.getTimeStamp();
+        double rawBeatsElapsed = elapsed * (currentBPM / 60.0);
 
-            if (eventTime <= elapsed)
+
+        double noteLengthRatio = 4.0 / timeSignatureDenominator;
+
+        double adjustedBeatsElapsed = rawBeatsElapsed * noteLengthRatio;
+
+        juce::MessageManager::callAsync([this, adjustedBeatsElapsed]
             {
-                outputDevice->sendMessageNow(midiEvent);
-                track.nextEventIndex++;
+                onElapsedUpdate(adjustedBeatsElapsed);
+            });
+
+        for (auto& track : tracks)
+        {
+            auto& sequence = filteredSequences[track.filteredSequenceIndex];
+            while (track.nextEventIndex < sequence.getNumEvents())
+            {
+                const auto& midiEvent = sequence.getEventPointer(track.nextEventIndex)->message;
+                double eventTime = midiEvent.getTimeStamp();
+
+                if (eventTime <= elapsed)
+                {
+                    midiOut->sendMessageNow(midiEvent);  // Use locked shared_ptr here
+                    track.nextEventIndex++;
+                }
+                else break;
             }
-            else break;
+        }
+
+        bool allDone = std::all_of(tracks.begin(), tracks.end(),
+            [this](const TrackPlaybackData& t) {
+                return t.nextEventIndex >= filteredSequences[t.filteredSequenceIndex].getNumEvents();
+            });
+
+        if (allDone)
+        {
+            stop();
+            return;
         }
     }
-
-    bool allDone = std::all_of(tracks.begin(), tracks.end(),
-        [this](const TrackPlaybackData& t) {
-            return t.nextEventIndex >= filteredSequences[t.filteredSequenceIndex].getNumEvents();
-        });
-
-    if (allDone)
+    else
     {
         stop();
         return;
     }
-
 }

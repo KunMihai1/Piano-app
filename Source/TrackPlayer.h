@@ -25,7 +25,7 @@ public:
     std::function<void(double)> onElapsedUpdate;
 
 
-    MultipleTrackPlayer(juce::MidiOutput* out);
+    MultipleTrackPlayer(std::weak_ptr<juce::MidiOutput> out);
     
     void changingMidPlaySettings(int volume, int instrument);
 
@@ -49,13 +49,19 @@ public:
 
     void syncPlaybackSettings();
 
+    void setDeviceOutputTrackPlayer(std::weak_ptr<juce::MidiOutput> newOutput);
+
+    void setTimeSignatureDenominator(int newDenominator);
+
+    void setTimeSignatureNumerator(int newNumerator);
+
 private:
     void hiResTimerCallback() override;
     std::vector<juce::MidiMessageSequence> filteredSequences;
     int baseChannelTrack = 2;
     std::vector<TrackEntry> currentTracks;
 
-    juce::MidiOutput* outputDevice=nullptr;
+    std::weak_ptr<juce::MidiOutput> outputDevice;
     std::vector<TrackPlaybackData> tracks;
     std::vector<int> eventIndices;
     double startTime = 0.0;
@@ -64,5 +70,8 @@ private:
     double currentBPM = 120.0;
 
     double lastKnownSequenceTime = 0.0;
+
+    int timeSignatureDenominator = 4;
+    int timeSignatureNumerator = 4;
     
 };

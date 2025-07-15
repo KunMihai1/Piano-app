@@ -33,6 +33,9 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="Fob7bQ" name="CustomBeatBar.cpp" compile="1" resource="0"
+            file="Source/CustomBeatBar.cpp"/>
+      <FILE id="HsJERr" name="CustomBeatBar.h" compile="0" resource="0" file="Source/CustomBeatBar.h"/>
       <FILE id="hH5yKh" name="trackListComponentListener.h" compile="0" resource="0"
             file="Source/trackListComponentListener.h"/>
       <FILE id="rm0gSJ" name="SubjectInterface.h" compile="0" resource="0"

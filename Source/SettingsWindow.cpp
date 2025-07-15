@@ -177,7 +177,7 @@ void MIDIWindow::panelInit()
 
 void MIDIWindow::slidersInit()
 {
-    reverbSlider.setRange(0.0, 100.0, 1.0);
+    reverbSlider.setRange(0.0, 127.0, 1.0);
     reverbSlider.setValue(50.0);
     reverbSlider.setTextValueSuffix(" %");
     settingsPanel.addAndMakeVisible(reverbSlider);
@@ -188,7 +188,7 @@ void MIDIWindow::slidersInit()
     reverbLabel.setVisible(false);
 
 
-    volumeSlider.setRange(0.0, 100.0, 1.0);
+    volumeSlider.setRange(0.0, 127.0, 1.0);
     volumeSlider.setValue(50.0);
     volumeSlider.setTextValueSuffix(" %");
 

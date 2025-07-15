@@ -161,7 +161,8 @@ bool MidiDevice::deviceOpenIN(int DeviceIndex, juce::MidiInputCallback* CallBack
 		return false;
 	}
 	juce::String identifierReceived = getDeviceIdentifierBasedOnIndex(DeviceIndex);
-	this->currentDeviceUSEDin = juce::MidiInput::openDevice(identifierReceived, CallBack);
+	auto uniqueIn = juce::MidiInput::openDevice(identifierReceived, CallBack);
+	currentDeviceUSEDin = std::shared_ptr<juce::MidiInput>(std::move(uniqueIn));
 	
 	if (currentDeviceUSEDin != nullptr)
 	{
@@ -181,7 +182,8 @@ bool MidiDevice::deviceOpenOUT(int DeviceIndex) {
 		return false;
 	}
 	juce::String identifierReceived = getDeviceIdentifierBasedOnIndex(DeviceIndex, 1);
-	this->currentDeviceUSEDout = juce::MidiOutput::openDevice(identifierReceived);
+	auto uniqueOut = juce::MidiOutput::openDevice(identifierReceived);
+	currentDeviceUSEDout = std::shared_ptr<juce::MidiOutput>(std::move(uniqueOut));
 	if (currentDeviceUSEDout != nullptr)
 	{
 		this->isdeviceOpenOUT = true;
@@ -238,14 +240,14 @@ void MidiDevice::setDeviceOUT(const int index) {
 	this->currentDeviceIDout = index;
 }
 
-const juce::MidiInput& MidiDevice::getDeviceIN() const
+std::weak_ptr<juce::MidiInput> MidiDevice::getDeviceIN() const
 {
-	return *this->currentDeviceUSEDin;
+	return this->currentDeviceUSEDin;
 }
 
-juce::MidiOutput* MidiDevice::getDeviceOUT()
+std::weak_ptr<juce::MidiOutput> MidiDevice::getDeviceOUT() const
 {
-	return currentDeviceUSEDout.get();
+	return this->currentDeviceUSEDout;
 }
 
 void MidiDevice::setVolume(const float vValue) 
@@ -328,7 +330,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(scaledVelocity);
 
 
-		if (auto midiOut = midiDevice.getDeviceOUT())
+		if (auto midiOut = midiDevice.getDeviceOUT().lock())
 		{
 			//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+9, velocityByte));
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
@@ -348,7 +350,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		int note = message.getNoteNumber();
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(message.getFloatVelocity());
 
-		if (auto midiOut = midiDevice.getDeviceOUT())
+		if (auto midiOut = midiDevice.getDeviceOUT().lock())
 		{
 			midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note, velocityByte));
 		}
@@ -370,8 +372,7 @@ void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample
 }
 
 void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
-	auto midiOut = midiDevice.getDeviceOUT();
-	if (midiOut)
+	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
 		midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocity));
@@ -381,8 +382,7 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 }
 
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
-	auto midiOut = midiDevice.getDeviceOUT();
-	if (midiOut)
+	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note,velocity));
 
@@ -399,8 +399,7 @@ void MidiHandler::allOffKeyboard()
 
 void MidiHandler::setProgramNumber(int toSetNumber, const juce::String& name) {
 	this->programNumber = toSetNumber;
-	auto midiOut = this->midiDevice.getDeviceOUT();
-	if (midiOut)
+	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		DBG("SET TO" << toSetNumber);
 		const auto& preset = instrumentHandler.getPreset(programNumber);
@@ -424,8 +423,7 @@ void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::Strin
 
 void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair<int, int>> ccValues)
 {
-	auto midiOut = midiDevice.getDeviceOUT();
-	if (midiOut)
+	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		for (int i = 0; i < 128; ++i)
 			midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, i));
