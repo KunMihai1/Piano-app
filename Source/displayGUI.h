@@ -135,6 +135,7 @@ public:
     std::function<void(double newVolume)> syncVolumePercussionTracks;
     std::function<void(Track* copiedTrack)> onCopy;
     std::function<void(Track* toPaste)> onPaste;
+    std::function<void(const juce::Uuid& uuid, int channel)> onShowInformation;
 
     Track();
     ~Track();
@@ -183,6 +184,7 @@ public:
 
     void pasteOneTrack();
 
+    void showNotesInformation();
 
 private:
     void mouseDown(const juce::MouseEvent& event) override;
@@ -238,6 +240,8 @@ public:
     void removingTracks(const std::vector<juce::Uuid>& uuids);
 
     void renamingTrack(const juce::Uuid& uuid, const juce::String& newName);
+
+    void showingTheInformationNotesFromTrack(const juce::Uuid& uuid, int channel);
 
     double getBaseTempo();
 

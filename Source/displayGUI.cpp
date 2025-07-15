@@ -10,6 +10,7 @@
 
 #include "displayGUI.h"
 #include "InstrumentChooser.h"
+#include "CustomTableContainer.h"
 
 
 void convertTicksToSeconds(juce::MidiFile& midiFile, double bpm = 120.0)
@@ -1241,6 +1242,11 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
             
         };
 
+        newTrack->onShowInformation= [this](const juce::Uuid& uuid, int channel)
+        {
+            showingTheInformationNotesFromTrack(uuid, channel);
+        };
+
         newTrack->syncVolumePercussionTracks = [this](double newVolume) {
             syncPercussionTracksVolumeChange(newVolume);
         };
@@ -1350,6 +1356,22 @@ void CurrentStyleComponent::renamingTrack(const juce::Uuid& uuid, const juce::St
         if (track->getUsedID() == uuid)
             track->setNameLabel(newName);
     }
+}
+
+void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid& uuid, int channel)
+{
+    auto& track = mapNameToTrackEntry[uuid];
+    auto& sequence = track.sequence;
+
+    auto container = std::make_unique<TableContainer>(sequence, track.displayName, channel);
+    container->setSize(350, 340);
+
+    juce::CallOutBox::launchAsynchronously(
+        std::move(container),
+        getScreenBounds(),  
+        nullptr             
+    );
+
 }
 
 juce::OwnedArray<Track>& CurrentStyleComponent::getAllTracks()
@@ -1928,18 +1950,27 @@ void Track::mouseDown(const juce::MouseEvent& event)
         }
         else if(event.mods.isRightButtonDown()){
             juce::PopupMenu menu;
-            menu.addItem("Rename", [this]() {
-                renameOneTrack();
+            menu.addItem("Rename", [this]() 
+                {
+                    renameOneTrack();
                 });
-            menu.addItem("Delete", [this]() { 
-                deleteOneTrack();
+            menu.addItem("Delete", [this]() 
+                { 
+                    deleteOneTrack();
                 });
-            menu.addItem("Copy", [this]() { 
-                copyOneTrack();
+            menu.addItem("Copy", [this]() 
+                { 
+                    copyOneTrack();
                 });
 
-            menu.addItem("Paste", [this]() {
-                pasteOneTrack();
+            menu.addItem("Paste", [this]() 
+                {
+                    pasteOneTrack();
+                });
+
+            menu.addItem("Notes information", [this]()
+                {
+                   showNotesInformation();
                 });
 
             menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&nameLabel));
@@ -2069,6 +2100,12 @@ void Track::pasteOneTrack()
 
     if (onChange)
         onChange();
+}
+
+void Track::showNotesInformation()
+{
+    if (onShowInformation)
+        onShowInformation(uniqueIdentifierTrack, channel);
 }
 
 TrackListComponent::TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> tracks,

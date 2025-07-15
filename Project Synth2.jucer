@@ -33,6 +33,12 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="NpdkDy" name="CustomTableContainer.h" compile="0" resource="0"
+            file="Source/CustomTableContainer.h"/>
+      <FILE id="hpLtHh" name="MidiNotesTableModel.cpp" compile="1" resource="0"
+            file="Source/MidiNotesTableModel.cpp"/>
+      <FILE id="sxVQU6" name="MidiNotesTableModel.h" compile="0" resource="0"
+            file="Source/MidiNotesTableModel.h"/>
       <FILE id="Fob7bQ" name="CustomBeatBar.cpp" compile="1" resource="0"
             file="Source/CustomBeatBar.cpp"/>
       <FILE id="HsJERr" name="CustomBeatBar.h" compile="0" resource="0" file="Source/CustomBeatBar.h"/>
