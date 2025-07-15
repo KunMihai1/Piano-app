@@ -7,7 +7,7 @@
 
     TODO
 
-    -remove a style
+    -make the add and remove possibly without populate
 
     -make update names available (folder)
 
@@ -48,6 +48,7 @@ public:
 
     std::function<void(const juce::Uuid& uuid)> onRemoveTrack;
     std::function<void(const std::vector<juce::Uuid>& uuids)> onRemoveMultipleTracks;
+    std::function<void(const juce::Uuid& uuid, const juce::String& newName)> onRenameTrackFromList;
 
     TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> tracks,
         std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracksMap,
@@ -68,9 +69,13 @@ public:
     
     void removeFromTrackList();
 
+    void renameFromTrackList();
+
     void addToFolderList();
 
     void removeFromFolderList();
+
+    void renameFromFolderList();
 
     void backToFolderView();
 
@@ -115,9 +120,11 @@ private:
     std::unique_ptr<juce::TextButton> addButton = nullptr;
     std::unique_ptr<juce::TextButton> removeButton = nullptr;
     std::unique_ptr<juce::TextButton> backButton = nullptr;
+    std::unique_ptr<juce::TextButton> renameButton = nullptr;
 
     juce::TextButton addButtonFolder{ "Add folder" };
     juce::TextButton removeButtonFolder{ "Remove folder" };
+    juce::TextButton renameButtonFolder{ "Rename folder" };
 
     std::unique_ptr<juce::ComboBox> sortComboBox = nullptr;
     juce::String currentFolderName;
@@ -236,6 +243,8 @@ public:
 
     void removingTracks(const std::vector<juce::Uuid>& uuids);
 
+    void renamingTrack(const juce::Uuid& uuid, const juce::String& newName);
+
     void setElapsedTime(double newElapsedTime);
 
     double getBaseTempo();
@@ -321,6 +330,8 @@ public:
 
     void addNewStyle();
 
+    void allCallBacks(StyleViewComponent* newStyle, const juce::String& currentName);
+
     void removeStyleLocally(const juce::String& name);
 
     void addStyleLocally(const juce::String& newName);
@@ -389,6 +400,8 @@ public:
 
     void removeTracksFromAllStyles(const std::vector<juce::Uuid>& uuids);
 
+    void updateTrackNameFromAllStyles(const juce::Uuid& uuid, const juce::String& newName);
+
     void stoppingPlayer();
 
     void updateUIbeforeAnyLoadingCase() override;
@@ -408,7 +421,7 @@ private:
     juce::MidiOutput* outputDevice = nullptr;
 
     std::unique_ptr<TrackListComponent> trackListComp;
-    juce::var allStylesJsonVar;
+    juce::var allStylesJsonVar; // this has a root object, acts like a map
 
     std::unordered_map<juce::Uuid, TrackEntry> mapNameToTrack;
 
