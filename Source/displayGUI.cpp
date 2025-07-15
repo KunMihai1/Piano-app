@@ -236,6 +236,12 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
     {
         removeTracksFromAllStyles(uuids);
     };
+    
+    trackListComp->onRenameTrackFromList = [this](const juce::Uuid& uuid, const juce::String& newName)
+    {
+        updateTrackNameFromAllStyles(uuid, newName);
+    };
+
     tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.get(), false);
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 
@@ -363,7 +369,7 @@ void Display::removeTracksFromAllStyles(const std::vector<juce::Uuid>& uuids)
 
     for (auto& styleVariable : *stylesArray.getArray())
     {
-        auto styleObj = styleVariable.getDynamicObject();
+        auto* styleObj = styleVariable.getDynamicObject();
         if (styleObj == nullptr)
             continue;
 
@@ -374,7 +380,7 @@ void Display::removeTracksFromAllStyles(const std::vector<juce::Uuid>& uuids)
 
         for (auto& trackVar : *trackVariable.getArray())
         {
-            auto trackObj = trackVar.getDynamicObject();
+            auto* trackObj = trackVar.getDynamicObject();
             if (trackObj == nullptr)
                 continue;
 
@@ -391,6 +397,56 @@ void Display::removeTracksFromAllStyles(const std::vector<juce::Uuid>& uuids)
     if (currentStyleComponent)
     {
         currentStyleComponent->removingTracks(uuids);
+    }
+
+    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2");
+
+    juce::File jsonFile = appDataFolder.getChildFile("allStyles.json");
+
+    juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
+    jsonFile.replaceWithText(jsonString);
+}
+
+void Display::updateTrackNameFromAllStyles(const juce::Uuid& uuid, const juce::String& newName)
+{
+    if (!allStylesJsonVar.isObject())
+        return;
+
+    auto stylesArray = allStylesJsonVar["styles"];
+
+    if (!stylesArray.isArray())
+        return;
+
+    for (auto& styleVar : *stylesArray.getArray())
+    {
+        auto* styleObj = styleVar.getDynamicObject();
+
+        if (styleObj == nullptr)
+            continue;
+
+        juce::var trackVariable = styleObj->getProperty("tracks");
+
+        if (!trackVariable.isArray())
+            continue;
+
+        for (auto& trackVar : *trackVariable.getArray())
+        {
+            auto* trackObj = trackVar.getDynamicObject();
+            if (trackObj == nullptr)
+                continue;
+
+            juce::String uuidString = trackObj->getProperty("uuid").toString();
+            if (uuidString == uuid.toString())
+            {
+                trackObj->setProperty("name", newName);
+            }
+        }
+    }
+
+    if (currentStyleComponent)
+    {
+        currentStyleComponent->renamingTrack(uuid, newName);
     }
 
     juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
@@ -711,9 +767,10 @@ juce::String StyleViewComponent::getNameLabel() const
 
 void StyleViewComponent::changeNameLabel()
 {
-    auto window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon };
+    auto* window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon };
 
     window->addTextEditor("nameEditor", label.getText(), "Style Name:");
+
     window->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
     window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
 
@@ -749,6 +806,12 @@ void StyleViewComponent::changeNameLabel()
             
         }
     ));
+
+    juce::MessageManager::callAsync([window]()
+        {
+            if (auto* editor = window->getTextEditor("nameEditor"))
+                editor->grabKeyboardFocus();
+        });
 }
 
 void StyleViewComponent::removeStyle()
@@ -865,9 +928,10 @@ void StylesListComponent::repopulate()
 
 void StylesListComponent::addNewStyle()
 {
-    auto window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon };
+    auto* window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon };
 
-    window->addTextEditor("nameEditor", "", "Style Name:");
+    window->addTextEditor("nameEditor", "", "Style Name:");;
+
     window->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
     window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
 
@@ -896,28 +960,9 @@ void StylesListComponent::addNewStyle()
 
                 auto* newStyle = new StyleViewComponent{ newName };
 
-                newStyle->onStyleClicked = this->onStyleClicked;
-
-                newStyle->onStyleRenamed = [this](const juce::String& oldName, const juce::String& newName)
-                {
-                    onStyleRename(oldName, newName);
-                };
-
                 juce::String currentName = newName;
-
-                newStyle->isInListNames = [this, currentName](const juce::String& newName)
-                {
-                    bool isIn = false;
-                    for (auto& nameInList : stylesNames)
-                    {
-                        if (nameInList == newName && newName != currentName)
-                        {
-                            isIn = true;
-                            break;
-                        }
-                    }
-                    return isIn;
-                };
+                
+                allCallBacks(newStyle,currentName);
 
                 if (onStyleAdd)
                     onStyleAdd(newName);
@@ -925,14 +970,47 @@ void StylesListComponent::addNewStyle()
                 stylesNames.push_back(newName);
                 styleItemsContainer->addAndMakeVisible(newStyle);
                 allStyles.add(newStyle);
-
-                repopulate();
-
+                resized(); // instead of repopulating, we just layout the styles again ( repopulating would mean creating all the lambdas again and so on )
 
                 juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "Add style", "The style '" + newName + "' has been added!");
             }
         )
     );
+
+    juce::MessageManager::callAsync([window]()
+        {
+            if (auto* editor = window->getTextEditor("nameEditor"))
+                editor->grabKeyboardFocus();
+        });
+}
+
+void StylesListComponent::allCallBacks(StyleViewComponent* newStyle, const juce::String& currentName)
+{
+    newStyle->onStyleClicked = this->onStyleClicked;
+
+    newStyle->onStyleRenamed = [this](const juce::String& oldName, const juce::String& newName)
+    {
+        onStyleRename(oldName, newName);
+    };
+
+    newStyle->onStyleRemoveComponent = [this](const juce::String& name)
+    {
+        removeStyleLocally(name);
+    };
+
+    newStyle->isInListNames = [this, currentName](const juce::String& newName)
+    {
+        bool isIn = false;
+        for (auto& nameInList : stylesNames)
+        {
+            if (nameInList == newName && newName != currentName)
+            {
+                isIn = true;
+                break;
+            }
+        }
+        return isIn;
+    };
 }
 
 void StylesListComponent::removeStyleLocally(const juce::String& name)
@@ -995,33 +1073,11 @@ void StylesListComponent::populate()
             name = stylesNames[i];
         else name = "Style " + juce::String(i);
         auto* newStyle = new StyleViewComponent{ name };
-        newStyle->onStyleClicked = this->onStyleClicked;
-        newStyle->onStyleRenamed = [this](const juce::String& oldName, const juce::String& newName)
-        {
-            onStyleRename(oldName, newName);
-        };
-
-        newStyle->onStyleRemoveComponent = [this](const juce::String& name)
-        {
-            removeStyleLocally(name);
-        };
 
         juce::String currentName = name;
-        newStyle->isInListNames = [this, currentName](const juce::String& newName)
-        {
-            bool isIn = false;
-            for (auto& nameInList : stylesNames)
-            {
-                if (nameInList == newName && newName != currentName)
-                {
-                    isIn = true;
-                    break;
-                }
-            }
+         
+        allCallBacks(newStyle, currentName);
 
-
-            return isIn;
-        };
         styleItemsContainer->addAndMakeVisible(newStyle);
         allStyles.add(newStyle);
     }
@@ -1237,6 +1293,15 @@ void CurrentStyleComponent::removingTracks(const std::vector<juce::Uuid>& uuids)
                 break;
             }
         }
+    }
+}
+
+void CurrentStyleComponent::renamingTrack(const juce::Uuid& uuid, const juce::String& newName)
+{
+    for (auto& track:allTracks)
+    {
+        if (track->getUsedID() == uuid)
+            track->setNameLabel(newName);
     }
 }
 
@@ -1790,7 +1855,6 @@ void Track::setVolumeLabel(const juce::String& value, bool shouldNotify)
 void Track::setNameLabel(const juce::String& name)
 {
     nameLabel.setText(name, juce::dontSendNotification);
-    //nameLabel.setTooltip(name);
 }
 
 void Track::mouseDown(const juce::MouseEvent& event)
@@ -1883,9 +1947,10 @@ void Track::pasteFrom(const Track& source)
 
 void Track::renameOneTrack()
 {
-    auto window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon};
+    auto* window = new juce::AlertWindow{ "Rename track","Enter a name for your track",juce::AlertWindow::NoIcon};
 
     window->addTextEditor("nameEditor", nameLabel.getText(), "Track Name:");
+
     window->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
     window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
 
@@ -1895,12 +1960,20 @@ void Track::renameOneTrack()
             if (result != 1)
                 return;
 
+
+
             juce::String newNameToPut=window->getTextEditor("nameEditor")->getText().trim();
             setNameLabel(newNameToPut);
             if (onChange)
                 onChange();
         }
     ));
+
+    juce::MessageManager::callAsync([window]()
+        {
+            if (auto* editor = window->getTextEditor("nameEditor"))
+                editor->grabKeyboardFocus();
+        });
 }
 
 void Track::deleteOneTrack()
@@ -1961,9 +2034,11 @@ TrackListComponent::TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> 
     listBox.updateContent();
     addAndMakeVisible(addButtonFolder);
     addAndMakeVisible(removeButtonFolder);
+    addAndMakeVisible(renameButtonFolder);
 
     addButtonFolder.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     removeButtonFolder.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    renameButtonFolder.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     addButtonFolder.onClick = [this] {
         addToFolderList();
@@ -1971,6 +2046,10 @@ TrackListComponent::TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> 
 
     removeButtonFolder.onClick = [this] {
         removeFromFolderList();
+    };
+
+    renameButtonFolder.onClick = [this] {
+        renameFromFolderList();
     };
 }
 
@@ -1992,17 +2071,23 @@ void TrackListComponent::resized()
     if (removeButtonFolder.isVisible())
         removeButtonFolder.setBounds(controlBarArea.removeFromLeft(smallButtonWidth).reduced(spacing));
 
+    if (renameButtonFolder.isVisible())
+        renameButtonFolder.setBounds(controlBarArea.removeFromLeft(smallButtonWidth).reduced(spacing));
+
     if (backButton)
-        backButton->setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+        backButton->setBounds(controlBarArea.removeFromLeft(60).reduced(spacing));
 
     if (sortComboBox)
-        sortComboBox->setBounds(controlBarArea.removeFromLeft(120).reduced(5));
+        sortComboBox->setBounds(controlBarArea.removeFromLeft(120).reduced(spacing));
 
     if (addButton)
-        addButton->setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+        addButton->setBounds(controlBarArea.removeFromLeft(80).reduced(spacing));
 
     if (removeButton)
-        removeButton->setBounds(controlBarArea.removeFromLeft(80).reduced(5));
+        removeButton->setBounds(controlBarArea.removeFromLeft(80).reduced(spacing));
+
+    if (renameButton)
+        renameButton->setBounds(controlBarArea.removeFromLeft(80).reduced(spacing));
 
     listBox.setBounds(area);
 }
@@ -2016,7 +2101,6 @@ int TrackListComponent::getNumRows()
 
 void TrackListComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 {
-    DBG("Size 15" + juce::String(availableTracks->size()));
     if (comboBoxThatHasChanged == sortComboBox.get())
     {
         int id = sortComboBox->getSelectedId();
@@ -2274,6 +2358,102 @@ void TrackListComponent::removeFromTrackList()
     );
 }
 
+void TrackListComponent::renameFromTrackList()
+{
+    juce::SparseSet<int> selectedRows = listBox.getSelectedRows();
+
+    if (selectedRows.isEmpty())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Rename Track", "Please select one track to rename");
+        return;
+    }
+
+    if (selectedRows.size() > 1)
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Rename track", "Please select only one track to rename");
+        return;
+    }
+
+    auto* window = new juce::AlertWindow("Rename track",
+        "Enter a new name for the track:",
+        juce::AlertWindow::NoIcon);
+
+    const int selectedIndex = selectedRows[0];
+
+    auto& track = (*availableTracks)[selectedIndex];
+    juce::String oldName = track.displayName;
+    juce::Uuid trackUuid = track.uuid;
+
+    window->addTextEditor("trackName", oldName);
+    window->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+    window->enterModalState(true, juce::ModalCallbackFunction::create([this, oldName, window, trackUuid](int result)
+        {
+            std::unique_ptr<juce::AlertWindow> cleanup(window);
+            if (result != 1)
+                return;
+
+
+            juce::String newName = window->getTextEditor("trackName")->getText().trim();
+
+            if (oldName == newName)
+                return;
+
+            TrackEntry* track=nullptr;
+            for (auto& tr : *availableTracks)
+            {
+                if (tr.displayName == newName)  // no need for tr.displayName!=oldName cause of the previous check with return
+                {
+                    juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                        "Rename track", "A track with this name already exists.");
+                    return;
+                }
+                else if (tr.displayName == oldName)
+                    track = &tr;
+            }
+
+            if(track!=nullptr)
+                track->displayName = newName;
+
+            auto& tracks = (*groupedTracks)[currentFolderName];
+
+            for (auto& tr : tracks)
+            {
+                if (tr.displayName == oldName)
+                {
+                    tr.displayName = newName;
+                    break;
+                }
+            }
+
+            
+            comboBoxChanged(sortComboBox.get());
+
+
+            listBox.deselectAllRows();
+            listBox.updateContent();
+            listBox.repaint();
+
+            auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                .getChildFile("Piano Synth2");
+            auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+            saveToFile(jsonFile);
+
+            if (onRenameTrackFromList)
+                onRenameTrackFromList(trackUuid, newName);
+
+        }
+    ));
+
+    juce::MessageManager::callAsync([window]()
+        {
+            if (auto* editor = window->getTextEditor("folderName"))
+                editor->grabKeyboardFocus();
+        });
+
+}
+
 
 void TrackListComponent::addToFolderList()
 {
@@ -2322,6 +2502,12 @@ void TrackListComponent::addToFolderList()
             saveToFile(jsonFile);
 
         }));
+
+    juce::MessageManager::callAsync([window]()
+        {
+            if (auto* editor = window->getTextEditor("folderName"))
+                editor->grabKeyboardFocus();
+        });
 }
 
 void TrackListComponent::removeFromFolderList()
@@ -2383,12 +2569,96 @@ void TrackListComponent::removeFromFolderList()
     );
 }
 
+void TrackListComponent::renameFromFolderList()
+{
+    juce::SparseSet<int> selectedRows = listBox.getSelectedRows();
+
+    if (selectedRows.isEmpty())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Rename Folder", "Please select one folder to rename");
+        return;
+    }
+
+    if (selectedRows.size() > 1)
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Rename folder", "Please select only one folder to rename");
+        return;
+    }
+
+    auto* window = new juce::AlertWindow("Rename Folder",
+        "Enter a name for the folder:",
+        juce::AlertWindow::NoIcon);
+
+    const int selectedIndex = selectedRows[0];
+
+    juce::String oldName = (* groupedTrackKeys)[selectedIndex];
+
+    window->addTextEditor("folderName", oldName);
+    window->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+
+    window->enterModalState(true, juce::ModalCallbackFunction::create([this, oldName, window](int result)
+        {
+            std::unique_ptr<juce::AlertWindow> cleanup(window);
+            if (result != 1)
+                return;
+
+
+            juce::String newName = window->getTextEditor("folderName")->getText().trim();
+
+            if (oldName == newName)
+                return;
+
+            if (groupedTracks->find(newName) != groupedTracks->end())
+            {
+                juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+                    "Rename folder", "A folder with this name already exists.");
+                return;
+            }
+
+            for (auto& folder : *groupedTrackKeys)
+            {
+                if (folder == oldName)
+                {
+                    folder = newName;
+                    break;
+                }
+            }
+
+            auto it = groupedTracks->find(oldName);
+            if (it != groupedTracks->end())
+            {
+                auto entries = std::move(it->second);
+                groupedTracks->erase(it);
+                (*groupedTracks)[newName] = std::move(entries);
+            }
+
+            listBox.deselectAllRows();
+            listBox.updateContent();
+            listBox.repaint();
+
+            auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                .getChildFile("Piano Synth2");
+            auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+            saveToFile(jsonFile);
+            
+        }
+    ));
+
+    juce::MessageManager::callAsync([window]()
+        {
+            if (auto* editor = window->getTextEditor("folderName"))
+                editor->grabKeyboardFocus();
+        });
+}
+
 void TrackListComponent::backToFolderView()
 {
     viewMode = ViewMode::FolderView;
     deallocateTracksFromList();
     addButtonFolder.setVisible(true);
     removeButtonFolder.setVisible(true);
+    renameButtonFolder.setVisible(true);
     listBox.updateContent();
     listBox.repaint();
 }
@@ -2620,17 +2890,20 @@ void TrackListComponent::initializeTracksFromList()
     viewMode = ViewMode::TrackView;
     addButtonFolder.setVisible(false);
     removeButtonFolder.setVisible(false);
+    renameButtonFolder.setVisible(false);
 
     backButton = std::make_unique<juce::TextButton>("Back");
     addButton = std::make_unique<juce::TextButton>("Add");
     removeButton = std::make_unique<juce::TextButton>("Remove");
     sortComboBox = std::make_unique<juce::ComboBox>();
+    renameButton = std::make_unique<juce::TextButton>("Rename");
 
     sortComboBox->addListener(this);
 
     backButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
     addButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
     removeButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    renameButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
 
     backButton->onClick = [this]() {
@@ -2645,10 +2918,16 @@ void TrackListComponent::initializeTracksFromList()
         removeFromTrackList();
     };
 
+    renameButton->onClick = [this]()
+    {
+        renameFromTrackList();
+    };
+
     addAndMakeVisible(backButton.get());
     addAndMakeVisible(addButton.get());
     addAndMakeVisible(removeButton.get());
     addAndMakeVisible(sortComboBox.get());
+    addAndMakeVisible(renameButton.get());
 
     sortComboBox->addItem("Sort by Name(ascending)", 1);
     sortComboBox->addItem("Sort by Last Modified (Newest)", 2);
