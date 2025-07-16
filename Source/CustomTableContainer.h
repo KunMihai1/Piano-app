@@ -22,7 +22,15 @@ public:
         model = std::make_unique<MidiNotesTableModel>(seq, channel);
         table = std::make_unique<juce::TableListBox>(displayN, nullptr);
 
+        model->onUpdate = [this](int rowNumber)
+        {
+            table->repaintRow(rowNumber);
+        };
+
         table->setModel(model.get());
+
+        table->setMultipleSelectionEnabled(false);
+
         table->getHeader().addColumn("Note", 1, 100);
         table->getHeader().addColumn("Time", 2, 120);
         table->getHeader().addColumn("Velocity", 3, 100);
