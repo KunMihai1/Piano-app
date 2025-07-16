@@ -34,30 +34,167 @@ void MidiNotesTableModel::paintRowBackground(juce::Graphics& g, int rowNumber, i
 
 void MidiNotesTableModel::paintCell(juce::Graphics& g, int rowNumber, int columnId, int width, int height, bool isSelected)
 {
-    if (rowNumber<0  || rowNumber>=noteOnEvents.size()) return;
-    auto* event = noteOnEvents[rowNumber];
-
-    if (event==nullptr) 
-        return;
-
-    const auto& msg = event->message;
-    juce::String text;
-
-    if (msg.isNoteOn())
+    if (columnId == 4)
     {
-        switch (columnId)
+        if (rowNumber < 0 || rowNumber >= noteOnEvents.size()) return;
+        auto* event = noteOnEvents[rowNumber];
+
+        if (event == nullptr)
+            return;
+
+        const auto& msg = event->message;
+        juce::String text;
+
+        if (msg.isNoteOn())
         {
-        case 1: text = juce::MidiMessage::getMidiNoteName(msg.getNoteNumber(), true, true, 3); break;
-        case 2: text = juce::String(msg.getTimeStamp(), 6); break;
-        case 3: text = juce::String(msg.getVelocity()); break;
-        case 4: text = juce::String(channel); break;
-        default: break;
+            switch (columnId)
+            {
+            case 1: text = juce::MidiMessage::getMidiNoteName(msg.getNoteNumber(), true, true, 4); break;
+            case 2: text = juce::String(msg.getTimeStamp(), 6); break;
+            case 3: text = juce::String(msg.getVelocity()); break;
+            case 4: text = juce::String(channel); break;
+            default: break;
+            }
         }
+
+        g.setColour(juce::Colours::black);
+        g.setFont(14.0f);
+        g.drawText(text, 2, 0, width - 4, height, juce::Justification::centredLeft);
+        g.setColour(juce::Colours::lightgrey);
+        g.drawRect(0, 0, width, height);
+    }
+}
+
+/*
+juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int columnId, bool isRowSelected, juce::Component* existingComponentToUpdate)
+{
+    if (columnId == 4)
+        return nullptr;
+
+    if (rowNumber < 0 || rowNumber >= noteOnEvents.size())
+        return nullptr;
+
+    const auto* event = noteOnEvents[rowNumber];
+    if (event == nullptr)
+        return nullptr;
+
+    auto* label = dynamic_cast<juce::Label*> (existingComponentToUpdate);
+    if (label == nullptr)
+    {
+        label = new juce::Label();
+        label->setWantsKeyboardFocus(true);
+        label->setEditable(true, true, false);
+        label->onEditorHide = [this, rowNumber, columnId, label]()
+        {
+            auto* e = noteOnEvents[rowNumber];
+            if (e == nullptr)
+                return;
+
+            auto oldMsg = e->message;
+            juce::MidiMessage newMsg;
+
+            if (columnId == 1)
+            {
+                int newNoteNumber = getMidiNoteNumberFromName(label->getText());
+                if (newNoteNumber == -1)
+                {
+                    //label->setText(juce::MidiMessage::getMidiNoteName(oldMsg.getNoteNumber(), true, true, 4), juce::dontSendNotification);
+                    return;
+                }
+                newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), newNoteNumber, (juce::uint8)oldMsg.getVelocity());
+                newMsg.setTimeStamp(oldMsg.getTimeStamp());
+            }
+            else if (columnId == 2)
+            {
+                double newTime = label->getText().getDoubleValue();
+                if (newTime < 0)
+                {
+                    //label->setText(juce::String(oldMsg.getTimeStamp(), 6), juce::dontSendNotification);
+                    return;
+                }
+                newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), oldMsg.getNoteNumber(), oldMsg.getVelocity());
+                newMsg.setTimeStamp(newTime);
+            }
+            else if (columnId == 3)
+            {
+                int newVelocity = label->getText().getIntValue();
+                if (newVelocity < 0 || newVelocity>127)
+                {
+                    //label->setText(juce::String(oldMsg.getVelocity()), juce::dontSendNotification);
+                    return;
+                }
+                newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), oldMsg.getNoteNumber(), (juce::uint8)newVelocity);
+                
+                newMsg.setTimeStamp(oldMsg.getTimeStamp());
+            }
+
+            const_cast<juce::MidiMessageSequence::MidiEventHolder*>(e)->message = newMsg;
+            if (onUpdate)
+                onUpdate(rowNumber);
+        };
     }
 
-    g.setColour(juce::Colours::black);
-    g.setFont(14.0f);
-    g.drawText(text, 2, 0, width - 4, height, juce::Justification::centredLeft);
-    g.setColour(juce::Colours::lightgrey);
-    g.drawRect(0, 0, width, height);
+    const auto& message = event->message;
+    if (message.isNoteOn())
+    {
+        if (columnId == 1)
+        {
+            auto noteName = juce::MidiMessage::getMidiNoteName(message.getNoteNumber(), true, true, 4);
+            label->setText(noteName, juce::dontSendNotification);
+        }
+        else if (columnId == 2)
+        {
+            auto noteTime = juce::String(message.getTimeStamp());
+            label->setText(noteTime, juce::dontSendNotification);
+        }
+        else if (columnId == 3)
+        {
+            auto noteVelocity = juce::String(message.getVelocity());
+            label->setText(noteVelocity, juce::dontSendNotification);
+        }
+    }
+    return label;
+}
+*/
+
+int MidiNotesTableModel::getMidiNoteNumberFromName(const juce::String& noteName, int octaveNoteMiddleC)
+{
+    static const juce::StringArray noteNames{
+        "C", "C#", "D", "D#", "E", "F",
+        "F#", "G", "G#", "A", "A#", "B"
+    };
+
+    juce::String name = noteName.trim().toUpperCase();
+    if (name.length() < 2 || name.length() > 3)
+        return -1;
+
+    int digit = findFirstDigitName(noteName);
+    if (digit == -1)
+        return -1;
+
+    juce::String notePart = name.substring(0, digit);
+    juce::String octavePart = name.substring(digit);
+
+    int noteIndex = noteNames.indexOf(notePart);
+    int octave = octavePart.getIntValue();
+
+    if (noteIndex == -1)
+        return -1;
+
+    int midiNumber = (octave - octaveNoteMiddleC + 5) * 12 + noteIndex;
+
+    if (midiNumber < 0 || midiNumber>127)
+        return -1;
+
+    return midiNumber;
+}
+
+int MidiNotesTableModel::findFirstDigitName(const juce::String& name)
+{
+    for (int i = 0; i < name.length(); i++)
+    {
+        if (juce::CharacterFunctions::isDigit(name[i]))
+            return i;
+    }
+    return -1;
 }
