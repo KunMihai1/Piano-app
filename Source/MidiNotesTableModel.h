@@ -35,9 +35,15 @@ public:
 
     void handleMapExistingCase(juce::MidiMessage& newMessage, MidiChangeInfo& str);
 
+    bool areMidiMessagesEqual(const juce::MidiMessage& a, const juce::MidiMessage& b);
+
 private:
-    std::vector<const juce::MidiMessageSequence::MidiEventHolder*> noteOnEvents;
+    struct EventWithIndex {
+        const juce::MidiMessageSequence::MidiEventHolder* event;
+        int originalIndex;
+    };
+
+    std::vector<EventWithIndex> noteOnEvents;
     int channel;
     std::unordered_map<int, MidiChangeInfo>* changesMap=nullptr;
-    int offset = 0;
 };

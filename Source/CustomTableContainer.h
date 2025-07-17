@@ -16,6 +16,8 @@
 class TableContainer: public juce::Component
 {
 public:
+    std::function<void()> updateToFile;
+
     TableContainer(const juce::MidiMessageSequence& seq, const juce::String& displayName, int channel, std::unordered_map<int,MidiChangeInfo>& map)
     {
         juce::String displayN = "Notes - " + displayName;
@@ -25,6 +27,8 @@ public:
         model->onUpdate = [this](int rowNumber)
         {
             table->repaintRow(rowNumber);
+            if (updateToFile)
+                updateToFile();
         };
 
         table->setModel(model.get());

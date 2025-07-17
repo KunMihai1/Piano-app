@@ -12,31 +12,6 @@
 #include "InstrumentChooser.h"
 #include "CustomTableContainer.h"
 
-
-void convertTicksToSeconds(juce::MidiFile& midiFile, double bpm = 120.0)
-{
-    int tpqn = midiFile.getTimeFormat();
-    if (tpqn <= 0)
-        tpqn = 960;
-
-    const double defaultTempoBPM = bpm; //k so elapsed time need to match this btw TODO
-    const double secondsPerQuarterNote = 60.0 / defaultTempoBPM;
-    const double secondsPerTick = secondsPerQuarterNote / double(tpqn);
-
-    for (int t = 0; t < midiFile.getNumTracks(); ++t)
-    {
-        if (auto* seq = midiFile.getTrack(t))
-        {
-            for (int e = 0; e < seq->getNumEvents(); ++e)
-            {
-                auto& msg = seq->getEventPointer(e)->message;
-                double ticks = msg.getTimeStamp();
-                msg.setTimeStamp(ticks * secondsPerTick);
-            }
-        }
-    }
-}
-
 Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : outputDevice{ outputDev }
 {
     availableTracksFromFolder = std::make_shared<std::vector<TrackEntry>>();
@@ -48,6 +23,22 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
 
     initializeAllStyles();
     loadAllStyles();
+
+    auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile("Piano Synth2");
+
+    auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+    if (!jsonFile.exists())
+    {
+        juce::var emptyArray = juce::Array<juce::var>{};
+        juce::String jsonString = juce::JSON::toString(emptyArray);
+
+        jsonFile.replaceWithText(jsonString);
+    }
+
+    TrackIOHelper::loadFromFile(jsonFile, *groupedTracks, *groupedTrackKeys);
+
+    mapNameToTrack = buildTrackNameMap();
 
     std::vector<juce::String> stylesNames = getAllStylesFromJson();
     DBG("Size of names is:" + juce::String(stylesNames.size()));
@@ -121,28 +112,6 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
             
         }
     };
-
-    auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2");
-
-    auto jsonFile = appDataFolder.getChildFile("myTracks.json");
-    if (!jsonFile.exists())
-    {
-        juce::var emptyArray = juce::Array<juce::var>{};
-        juce::String jsonString = juce::JSON::toString(emptyArray);
-
-        jsonFile.replaceWithText(jsonString);
-    }
-
-    trackListComp = std::make_unique<TrackListComponent>(
-        availableTracksFromFolder,
-        groupedTracks,
-        groupedTrackKeys,
-        [](int) {}
-    );
-    trackListComp->loadFromFile(jsonFile);
-
-    mapNameToTrack = trackListComp->buildTrackNameMap();
 }
 
 Display::~Display()
@@ -186,6 +155,16 @@ void Display::showCurrentStyleTab(const juce::String& name)
         {
             showListOfTracksToSelectFrom(trackChosenCallback);
         };
+        
+        currentStyleComponent->updateTrackFile = [this]()
+        {
+            auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+                .getChildFile("Piano Synth2");
+
+            auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+            TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
+        };
+
         tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), false); //release, get potential issue
         created = true;
     }
@@ -236,7 +215,7 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
             onTrackSelected(track.getDisplayName(), track.getUniqueID(), typeString);
 
             if (mapNameToTrack.empty())
-                mapNameToTrack = trackListComp->buildTrackNameMap();
+                mapNameToTrack = buildTrackNameMap();
 
             if (trackListComp)
                 trackListComp->removeListener(this);
@@ -720,6 +699,22 @@ void Display::removeStyleInJson(const juce::String& name)
     jsonFile.replaceWithText(jsonString);
 }
 
+std::unordered_map<juce::Uuid, TrackEntry*> Display::buildTrackNameMap()
+{
+    std::unordered_map<juce::Uuid, TrackEntry*> map;
+
+    for (auto& [folderName, tracks] : *groupedTracks)
+    {
+        DBG("yuppiii");
+        for (auto& tr : tracks)
+        {
+            map[tr.getUniqueID()] = &tr;
+        }
+    }
+
+    return map;
+}
+
 void Display::resized()
 {
     tabComp->setBounds(getLocalBounds());
@@ -1143,9 +1138,9 @@ void CurrentStyleComponent::startPlaying()
                 auto it = mapNameToTrackEntry.find(tr->getUsedID());
                 if (it != mapNameToTrackEntry.end())
                 {
-                    it->second.instrumentAssociated = tr->getInstrumentNumber();
-                    it->second.volumeAssociated = tr->getVolume();
-                    selectedTracks.push_back(it->second);
+                    it->second->instrumentAssociated = tr->getInstrumentNumber();
+                    it->second->volumeAssociated = tr->getVolume();
+                    selectedTracks.push_back(*it->second);
                 }
             }
         }
@@ -1155,7 +1150,7 @@ void CurrentStyleComponent::startPlaying()
             {
                 auto it = mapNameToTrackEntry.find(lastSelectedTrack->getUsedID());
                 if (it != mapNameToTrackEntry.end())
-                    selectedTracks.push_back(it->second);
+                    selectedTracks.push_back(*it->second);
             }
         }
         if (selectedTracks.empty())
@@ -1176,7 +1171,7 @@ void CurrentStyleComponent::startPlaying()
 
 }
 
-CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, std::weak_ptr<juce::MidiOutput> outputDevice) : name(name), mapNameToTrackEntry(map), outputDevice(outputDevice)
+CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice) : name(name), mapNameToTrackEntry(map), outputDevice(outputDevice)
 {
     addMouseListener(this, true);
     nameOfStyle.setText(name, juce::dontSendNotification);
@@ -1360,11 +1355,17 @@ void CurrentStyleComponent::renamingTrack(const juce::Uuid& uuid, const juce::St
 void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid& uuid, int channel)
 {
     auto& track = mapNameToTrackEntry[uuid];
-    auto& sequence = track.sequence;
-    auto& map = track.changesMap;
+    auto& sequence = track->sequence;
+    auto& map = track->changesMap;
 
-    auto container = std::make_unique<TableContainer>(sequence, track.displayName, channel, map);
+    auto container = std::make_unique<TableContainer>(sequence, track->displayName, channel, map);
     container->setSize(350, 340);
+
+    container->updateToFile = [this]()
+    {
+        if (updateTrackFile)
+            updateTrackFile();
+    };
 
     juce::CallOutBox::launchAsynchronously(
         std::move(container),
@@ -2313,8 +2314,8 @@ void TrackListComponent::addToTrackList()
                     return;
                 }
 
-                double originalBpm = getOriginalBpmFromFile(midiFile);
-                convertTicksToSeconds(midiFile, originalBpm);
+                double originalBpm = TrackIOHelper::getOriginalBpmFromFile(midiFile);
+                TrackIOHelper::convertTicksToSeconds(midiFile, originalBpm);
 
                 int totalTracks = midiFile.getNumTracks();
                 int addedTracks = 0;
@@ -2352,7 +2353,7 @@ void TrackListComponent::addToTrackList()
                     newEntry.folderName = currentFolderName;
                     DBG("Folder name is:" + newEntry.folderName);
 
-                    if (foundPercussion(trackSequence))
+                    if (TrackIOHelper::foundPercussion(trackSequence))
                         newEntry.type = TrackType::Percussion;
                     else newEntry.type = TrackType::Melodic;
 
@@ -2369,7 +2370,7 @@ void TrackListComponent::addToTrackList()
                     .getChildFile("Piano Synth2");
                 auto jsonFile = appDataFolder.getChildFile("myTracks.json");
 
-                saveToFile(jsonFile);
+                TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
 
                 int id = sortComboBox->getSelectedId();
                 sortComboBox->setSelectedId(id);
@@ -2441,7 +2442,7 @@ void TrackListComponent::removeFromTrackList()
                 auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                     .getChildFile("Piano Synth2");
                 auto jsonFile = appDataFolder.getChildFile("myTracks.json");
-                saveToFile(jsonFile);
+                TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
             }
         )
     );
@@ -2527,7 +2528,7 @@ void TrackListComponent::renameFromTrackList()
             auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                 .getChildFile("Piano Synth2");
             auto jsonFile = appDataFolder.getChildFile("myTracks.json");
-            saveToFile(jsonFile);
+            TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
 
             if (onRenameTrackFromList)
                 onRenameTrackFromList(trackUuid, newName);
@@ -2588,7 +2589,7 @@ void TrackListComponent::addToFolderList()
             auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                 .getChildFile("Piano Synth2");
             auto jsonFile = appDataFolder.getChildFile("myTracks.json");
-            saveToFile(jsonFile);
+            TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
 
         }));
 
@@ -2651,7 +2652,7 @@ void TrackListComponent::removeFromFolderList()
                     auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                         .getChildFile("Piano Synth2");
                     auto jsonFile = appDataFolder.getChildFile("myTracks.json");
-                    saveToFile(jsonFile);
+                    TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
                 }
             }
         )
@@ -2729,7 +2730,7 @@ void TrackListComponent::renameFromFolderList()
             auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                 .getChildFile("Piano Synth2");
             auto jsonFile = appDataFolder.getChildFile("myTracks.json");
-            saveToFile(jsonFile);
+            TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
             
         }
     ));
@@ -2752,153 +2753,8 @@ void TrackListComponent::backToFolderView()
     listBox.repaint();
 }
 
-void TrackListComponent::saveToFile(const juce::File& fileToSave)
-{
-    const auto& grouped = groupedTracks;
-
-    juce::Array<juce::var> foldersArray;
-
-    for (auto& [folderName, tracks] : *grouped)
-    {
-        auto* folderObj = new juce::DynamicObject{};
-        folderObj->setProperty("folderName", folderName);
-
-        if (!tracks.empty())
-            folderObj->setProperty("filePath", tracks[0].file.getFullPathName());
-        else
-            folderObj->setProperty("filePath", juce::String());
-
-        juce::Array<juce::var> trackArray;
-
-        for (auto& tr : tracks)
-        {
-            auto* trackObject = new juce::DynamicObject{};
-
-            trackObject->setProperty("trackIndex", tr.trackIndex);
-            trackObject->setProperty("displayName", tr.displayName);
-            trackObject->setProperty("uuid", tr.uuid.toString());
-
-            trackArray.add(juce::var(trackObject));
-        }
-        folderObj->setProperty("Tracks", trackArray);
-        foldersArray.add(juce::var(folderObj));
-
-    }
-
-    juce::var jsonVar(foldersArray);
-    juce::String jsonString = juce::JSON::toString(jsonVar);
-    fileToSave.replaceWithText(jsonString);
-}
-
 //the flat list availableTracks doesn't need to be built rn, because we have grouped tracks and that's structured, but for future if
 //i wanna change anything, like to have idk, something with all the tracks, i won't need to iterate again through every structured folder name to get all the available tracks
-void TrackListComponent::loadFromFile(const juce::File& fileToLoad)
-
-{
-    if (!fileToLoad.existsAsFile())
-        return;
-
-    juce::String jsonString = fileToLoad.loadFileAsString();
-    juce::var jsonVar = juce::JSON::parse(jsonString);
-
-    if (!jsonVar.isArray())
-        return;
-
-
-    availableTracks->clear();
-    groupedTrackKeys->clear();
-    groupedTracks->clear();
-
-    juce::Array<juce::var>* foldersArray = jsonVar.getArray();
-
-    for (auto& item : *foldersArray)
-    {
-        auto* folderObj = item.getDynamicObject();
-        if (folderObj == nullptr)
-            continue;
-
-        juce::String filePath = folderObj->getProperty("filePath").toString();
-        juce::String folderName = folderObj->getProperty("folderName").toString();
-
-        if (filePath.isEmpty())
-        {
-            // Empty folder, add folder name and an empty vector of tracks
-            groupedTrackKeys->push_back(folderName);
-            (*groupedTracks)[folderName] = {};
-            continue; // move on to next folder
-        }
-
-        juce::File file{ filePath };
-
-        if (!file.existsAsFile())
-            continue;
-
-        groupedTrackKeys->push_back(folderName);
-        (*groupedTracks)[folderName] = {};
-
-        juce::var tracksVar = folderObj->getProperty("Tracks");
-
-        if (!tracksVar.isArray())
-            continue;
-
-        juce::Array<juce::var>* trackArray = tracksVar.getArray();
-
-        juce::FileInputStream inputStream(file);
-        if (!inputStream.openedOk())
-            continue;
-
-        juce::MidiFile midiFile;
-        if (!midiFile.readFrom(inputStream))
-            continue;
-
-
-        double originalBpm = getOriginalBpmFromFile(midiFile);
-
-        convertTicksToSeconds(midiFile, originalBpm);
-
-        for (auto& trackItem : *trackArray)
-        {
-            auto* trackObj = trackItem.getDynamicObject();
-            if (trackObj == nullptr)
-                continue;
-
-            int trackIndex = (int)trackObj->getProperty("trackIndex");
-            juce::String displayName = trackObj->getProperty("displayName").toString();
-
-            if (trackIndex >= midiFile.getNumTracks())
-                continue;
-
-            auto* sequence = midiFile.getTrack(trackIndex);
-            if (sequence == nullptr)
-                continue;
-
-            juce::String uuidString = trackObj->getProperty("uuid").toString();
-
-            TrackEntry tr;
-            tr.file = file;
-            tr.trackIndex = trackIndex;
-            tr.displayName = displayName;
-            tr.sequence = *sequence;
-            tr.originalBPM = originalBpm;
-            tr.folderName = folderName;
-
-            if (foundPercussion(sequence))
-                tr.type = TrackType::Percussion;
-            else tr.type = TrackType::Melodic;
-
-            if (uuidString.isNotEmpty())
-                tr.uuid = juce::Uuid(uuidString);
-            else tr.uuid = TrackEntry::generateUUID();
-
-            //availableTracks->push_back(tr);
-
-            (*groupedTracks)[folderName].push_back(tr);
-        }
-    }
-    viewMode = ViewMode::FolderView;
-    listBox.updateContent();
-    listBox.repaint();
-}
 
 std::vector<TrackEntry>& TrackListComponent::getAllAvailableTracks() const
 {
@@ -2932,46 +2788,6 @@ juce::String TrackListComponent::extractDisplayNameFromTrack(const juce::MidiMes
         return instrumentName;
 
     return "Unnamed Track";
-}
-
-std::unordered_map<juce::Uuid, TrackEntry> TrackListComponent::buildTrackNameMap()
-{
-    std::unordered_map<juce::Uuid, TrackEntry> map;
-
-    for (const auto& [folderName, tracks] : *groupedTracks)
-    {
-        DBG("yuppiii");
-        for (const auto& tr : tracks)
-        {
-            map[tr.getUniqueID()] = tr;
-        }
-    }
-
-    return map;
-}
-
-double TrackListComponent::getOriginalBpmFromFile(const juce::MidiFile& midiFile)
-{
-    if (midiFile.getNumTracks() == 0)
-        return 120.0;
-
-    auto* firstTrack = midiFile.getTrack(0);
-    if (firstTrack == nullptr)
-        return 120.0;
-
-    for (int i = 0; i < firstTrack->getNumEvents(); ++i)
-    {
-        const auto& msg = firstTrack->getEventPointer(i)->message;
-        if (msg.isTempoMetaEvent())
-        {
-            double bpm;
-            if (msg.getTempoSecondsPerQuarterNote() > 0.0)
-                bpm = 60.0 / msg.getTempoSecondsPerQuarterNote();
-            else bpm = 120.0;
-            return bpm;
-        }
-    }
-    return 120.0;
 }
 
 void TrackListComponent::initializeTracksFromList()
@@ -3031,21 +2847,6 @@ void TrackListComponent::deallocateTracksFromList()
     addButton = nullptr;
     removeButton = nullptr;
     sortComboBox = nullptr;
-}
-
-bool TrackListComponent::foundPercussion(const juce::MidiMessageSequence* sequence)
-{
-    bool perc = false;
-    for (int i = 0; i < sequence->getNumEvents(); ++i)
-    {
-        auto msg = sequence->getEventPointer(i)->message;
-        if (msg.isNoteOnOrOff() && msg.getChannel() == 10)
-        {
-            perc = true;
-            break;
-        }
-    }
-    return perc;
 }
 
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)
