@@ -37,6 +37,8 @@ public:
 
     bool areMidiMessagesEqual(const juce::MidiMessage& a, const juce::MidiMessage& b);
 
+    void refreshVectorFromSequence(const juce::MidiMessageSequence& seq);
+
 private:
     struct EventWithIndex {
         const juce::MidiMessageSequence::MidiEventHolder* event;

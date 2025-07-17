@@ -247,3 +247,14 @@ bool MidiNotesTableModel::areMidiMessagesEqual(const juce::MidiMessage& a, const
 
     return std::memcmp(a.getRawData(), b.getRawData(), a.getRawDataSize()) == 0; // comparing bytes
 }
+
+void MidiNotesTableModel::refreshVectorFromSequence(const juce::MidiMessageSequence& seq)
+{
+    noteOnEvents.clear();
+    for (int i = 0; i < seq.getNumEvents(); i++)
+    {
+        const auto* event = seq.getEventPointer(i);
+        if (event != nullptr && event->message.isNoteOn())
+            noteOnEvents.push_back({ event, i });
+    }
+}
