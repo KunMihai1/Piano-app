@@ -24,10 +24,11 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
     initializeAllStyles();
     loadAllStyles();
 
-    auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2");
+    auto appDataFolder = IOHelper::getFolder("Piano Synth2");
 
-    auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+    auto jsonFile = IOHelper::getFile("myTracks.json");
+
+
     if (!jsonFile.exists())
     {
         juce::var emptyArray = juce::Array<juce::var>{};
@@ -158,10 +159,9 @@ void Display::showCurrentStyleTab(const juce::String& name)
         
         currentStyleComponent->updateTrackFile = [this]()
         {
-            auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                .getChildFile("Piano Synth2");
+            auto appDataFolder = IOHelper::getFolder("Piano Synth2");
 
-            auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+            auto jsonFile = IOHelper::getFile("myTracks.json");
             TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
         };
 
@@ -247,18 +247,6 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 
     createdTracksTab = true;
-}
-
-void Display::createUserTracksFolder()
-{
-    auto userTracksFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2")
-        .getChildFile("UserTracks");
-
-    if (!userTracksFolder.exists())
-    {
-        userTracksFolder.createDirectory();
-    }
 }
 
 std::vector<TrackEntry> Display::getAvailableTracksFromFolder(const juce::File& folder)
@@ -347,10 +335,9 @@ void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)
         currentStyleComponent->removingTrack(uuid);
     }
 
-    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2");
+    auto appDataFolder = IOHelper::getFolder("Piano Synth2");
 
-    juce::File jsonFile = appDataFolder.getChildFile("allStyles.json");
+    auto jsonFile = IOHelper::getFile("allStyles.json");
 
     juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
     jsonFile.replaceWithText(jsonString);
@@ -535,10 +522,9 @@ std::vector<juce::String> Display::getAllStylesFromJson()
 
 void Display::loadAllStyles()
 {
-    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2");
+    auto appDataFolder = IOHelper::getFolder("Piano Synth2");
 
-    auto file = appDataFolder.getChildFile("allStyles.json");
+    auto file= IOHelper::getFile("allStyles.json");
 
     if (!file.exists())
     {
@@ -573,9 +559,9 @@ void Display::updateStyleInJson(const juce::String& name)
         }
     }
 
-    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2");
-    auto file = appDataFolder.getChildFile("allStyles.json");
+    auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+    auto file = IOHelper::getFile("allStyles.json");
 
     juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
     file.replaceWithText(jsonString);
@@ -605,9 +591,9 @@ void Display::updateStyleNameInJson(const juce::String& oldName, const juce::Str
         }
     }
 
-    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2");
-    juce::File jsonFile = appDataFolder.getChildFile("allStyles.json");
+    auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+    auto jsonFile = IOHelper::getFile("allStyles.json");
 
     juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
     jsonFile.replaceWithText(jsonString);
@@ -653,9 +639,9 @@ void Display::appendNewStyleInJson(const juce::String& newName)
     newStyle->setProperty("tracks", tracksArray);
     stylesArray->add(newStyle);
 
-    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2");
-    juce::File jsonFile = appDataFolder.getChildFile("allStyles.json");
+    auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+    auto jsonFile = IOHelper::getFile("allStyles.json");
 
     juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
     jsonFile.replaceWithText(jsonString);
@@ -691,9 +677,9 @@ void Display::removeStyleInJson(const juce::String& name)
         }
     }
 
-    juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-        .getChildFile("Piano Synth2");
-    juce::File jsonFile = appDataFolder.getChildFile("allStyles.json");
+    auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+    auto jsonFile = IOHelper::getFile("allStyles.json");
 
     juce::String jsonString = juce::JSON::toString(allStylesJsonVar);
     jsonFile.replaceWithText(jsonString);
@@ -2366,9 +2352,9 @@ void TrackListComponent::addToTrackList()
 
                 listBox.updateContent();
                 listBox.repaint();
-                auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                    .getChildFile("Piano Synth2");
-                auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+                auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+                auto jsonFile = IOHelper::getFile("myTracks.json");
 
                 TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
 
@@ -2439,9 +2425,9 @@ void TrackListComponent::removeFromTrackList()
                 listBox.updateContent();
                 listBox.repaint();
 
-                auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                    .getChildFile("Piano Synth2");
-                auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+                auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+                auto jsonFile = IOHelper::getFile("myTracks.json");
                 TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
             }
         )
@@ -2525,9 +2511,9 @@ void TrackListComponent::renameFromTrackList()
             listBox.updateContent();
             listBox.repaint();
 
-            auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                .getChildFile("Piano Synth2");
-            auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+            auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+            auto jsonFile = IOHelper::getFile("myTracks.json");
             TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
 
             if (onRenameTrackFromList)
@@ -2586,9 +2572,9 @@ void TrackListComponent::addToFolderList()
             listBox.updateContent();
             listBox.repaint();
 
-            auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                .getChildFile("Piano Synth2");
-            auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+            auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+            auto jsonFile = IOHelper::getFile("myTracks.json");
             TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
 
         }));
@@ -2649,9 +2635,9 @@ void TrackListComponent::removeFromFolderList()
                     listBox.updateContent();
                     listBox.repaint();
 
-                    auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                        .getChildFile("Piano Synth2");
-                    auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+                    auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+                    auto jsonFile = IOHelper::getFile("myTracks.json");
                     TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
                 }
             }
@@ -2727,9 +2713,9 @@ void TrackListComponent::renameFromFolderList()
             listBox.updateContent();
             listBox.repaint();
 
-            auto appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
-                .getChildFile("Piano Synth2");
-            auto jsonFile = appDataFolder.getChildFile("myTracks.json");
+            auto appDataFolder = IOHelper::getFolder("Piano Synth2");
+
+            auto jsonFile = IOHelper::getFile("myTracks.json");
             TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
             
         }

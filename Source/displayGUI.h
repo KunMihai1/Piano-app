@@ -39,7 +39,7 @@
 #include "trackListComponentListener.h"
 #include "InstrumentChooser.h"
 #include "CustomBeatBar.h"
-#include "TrackIOHelper.h"
+#include "IOHelper.h"
 
 class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener, public Subject<TrackListListener>
 {
@@ -389,7 +389,6 @@ public:
     void showCurrentStyleTab(const juce::String& name);
     void showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> onTrackSelected);
 
-    void createUserTracksFolder();
     std::vector<TrackEntry> getAvailableTracksFromFolder(const juce::File& folder);
 
     void setDeviceOutput(std::weak_ptr<juce::MidiOutput> devOutput);

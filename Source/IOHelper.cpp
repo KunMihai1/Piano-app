@@ -8,7 +8,21 @@
   ==============================================================================
 */
 
-#include "TrackIOHelper.h"
+#include "IOHelper.h"
+
+juce::File IOHelper::getFolder(const juce::String& name)
+{
+    return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
+        .getChildFile(name);
+
+}
+
+juce::File IOHelper::getFile(const juce::String& name)
+{
+    auto appDataFolder = getFolder("Piano Synth2");
+
+     return appDataFolder.getChildFile(name);
+}
 
 void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::vector<TrackEntry>>& groupedTracks)
 {
