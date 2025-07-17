@@ -1143,7 +1143,6 @@ void CurrentStyleComponent::startPlaying()
                 auto it = mapNameToTrackEntry.find(tr->getUsedID());
                 if (it != mapNameToTrackEntry.end())
                 {
-                    DBG("asta e bun ba");
                     it->second.instrumentAssociated = tr->getInstrumentNumber();
                     it->second.volumeAssociated = tr->getVolume();
                     selectedTracks.push_back(it->second);
@@ -1362,8 +1361,9 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
 {
     auto& track = mapNameToTrackEntry[uuid];
     auto& sequence = track.sequence;
+    auto& map = track.changesMap;
 
-    auto container = std::make_unique<TableContainer>(sequence, track.displayName, channel);
+    auto container = std::make_unique<TableContainer>(sequence, track.displayName, channel, map);
     container->setSize(350, 340);
 
     juce::CallOutBox::launchAsynchronously(

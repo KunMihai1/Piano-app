@@ -10,7 +10,7 @@
 
 #include "MidiNotesTableModel.h"
 
-MidiNotesTableModel::MidiNotesTableModel(const juce::MidiMessageSequence& seq, int ch): channel{ch}
+MidiNotesTableModel::MidiNotesTableModel(const juce::MidiMessageSequence& seq, int ch, std::unordered_map<int, MidiChangeInfo>& map): channel{ch}, changesMap{&map}
 {
     for (int i = 0; i < seq.getNumEvents(); ++i)
     {
@@ -18,6 +18,8 @@ MidiNotesTableModel::MidiNotesTableModel(const juce::MidiMessageSequence& seq, i
         if (event != nullptr && event->message.isNoteOn())
             noteOnEvents.push_back(event);
     }
+
+    offset = seq.getNumEvents() - static_cast<int>(noteOnEvents.size());
 }
 
 int MidiNotesTableModel::getNumRows()
@@ -65,7 +67,7 @@ void MidiNotesTableModel::paintCell(juce::Graphics& g, int rowNumber, int column
     }
 }
 
-/*
+
 juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int columnId, bool isRowSelected, juce::Component* existingComponentToUpdate)
 {
     if (columnId == 4)
@@ -98,34 +100,64 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
                 int newNoteNumber = getMidiNoteNumberFromName(label->getText());
                 if (newNoteNumber == -1)
                 {
-                    //label->setText(juce::MidiMessage::getMidiNoteName(oldMsg.getNoteNumber(), true, true, 4), juce::dontSendNotification);
+                    label->setText(juce::MidiMessage::getMidiNoteName(oldMsg.getNoteNumber(), true, true, 4), juce::dontSendNotification);
                     return;
                 }
                 newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), newNoteNumber, (juce::uint8)oldMsg.getVelocity());
                 newMsg.setTimeStamp(oldMsg.getTimeStamp());
+                if (changesMap->find(rowNumber + offset)!=changesMap->end())
+                {
+                    auto& current = (* changesMap)[rowNumber + offset];
+                    handleMapExistingCase(newMsg, current);
+                }
+                else {
+                    MidiChangeInfo current;
+                    handleMapNonExistingCase(oldMsg, newMsg, current);
+                    (* changesMap)[rowNumber + offset] = current;
+                }
             }
             else if (columnId == 2)
             {
                 double newTime = label->getText().getDoubleValue();
                 if (newTime < 0)
                 {
-                    //label->setText(juce::String(oldMsg.getTimeStamp(), 6), juce::dontSendNotification);
+                    label->setText(juce::String(oldMsg.getTimeStamp(), 6), juce::dontSendNotification);
                     return;
                 }
                 newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), oldMsg.getNoteNumber(), oldMsg.getVelocity());
                 newMsg.setTimeStamp(newTime);
+                if (changesMap->find(rowNumber + offset) != changesMap->end())
+                {
+                    auto& current = (*changesMap)[rowNumber + offset];
+                    handleMapExistingCase(newMsg, current);
+                }
+                else {
+                    MidiChangeInfo current;
+                    handleMapNonExistingCase(oldMsg, newMsg, current);
+                    (*changesMap)[rowNumber + offset] = current;
+                }
             }
             else if (columnId == 3)
             {
                 int newVelocity = label->getText().getIntValue();
                 if (newVelocity < 0 || newVelocity>127)
                 {
-                    //label->setText(juce::String(oldMsg.getVelocity()), juce::dontSendNotification);
+                    label->setText(juce::String(oldMsg.getVelocity()), juce::dontSendNotification);
                     return;
                 }
                 newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), oldMsg.getNoteNumber(), (juce::uint8)newVelocity);
                 
                 newMsg.setTimeStamp(oldMsg.getTimeStamp());
+                if (changesMap->find(rowNumber + offset) != changesMap->end())
+                {
+                    auto& current = (*changesMap)[rowNumber + offset];
+                    handleMapExistingCase(newMsg, current);
+                }
+                else {
+                    MidiChangeInfo current;
+                    handleMapNonExistingCase(oldMsg, newMsg, current);
+                    (*changesMap)[rowNumber + offset] = current;
+                }
             }
 
             const_cast<juce::MidiMessageSequence::MidiEventHolder*>(e)->message = newMsg;
@@ -155,7 +187,7 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
     }
     return label;
 }
-*/
+
 
 int MidiNotesTableModel::getMidiNoteNumberFromName(const juce::String& noteName, int octaveNoteMiddleC)
 {
@@ -165,7 +197,7 @@ int MidiNotesTableModel::getMidiNoteNumberFromName(const juce::String& noteName,
     };
 
     juce::String name = noteName.trim().toUpperCase();
-    if (name.length() < 2 || name.length() > 3)
+    if (name.length() < 2)
         return -1;
 
     int digit = findFirstDigitName(noteName);
@@ -175,8 +207,12 @@ int MidiNotesTableModel::getMidiNoteNumberFromName(const juce::String& noteName,
     juce::String notePart = name.substring(0, digit);
     juce::String octavePart = name.substring(digit);
 
+    if (!octavePart.containsOnly("0123456789-"))
+        return -1;
+
     int noteIndex = noteNames.indexOf(notePart);
     int octave = octavePart.getIntValue();
+
 
     if (noteIndex == -1)
         return -1;
@@ -193,8 +229,26 @@ int MidiNotesTableModel::findFirstDigitName(const juce::String& name)
 {
     for (int i = 0; i < name.length(); i++)
     {
-        if (juce::CharacterFunctions::isDigit(name[i]))
+        if (juce::CharacterFunctions::isDigit(name[i]) || name[i]=='-')
             return i;
     }
     return -1;
+}
+
+void MidiNotesTableModel::handleMapNonExistingCase(juce::MidiMessage& oldMessage, juce::MidiMessage& newMessage, MidiChangeInfo& information)
+{
+    information.oldNumber = oldMessage.getNoteNumber();
+    information.oldTimeStamp = oldMessage.getTimeStamp();
+    information.oldVelocity = oldMessage.getVelocity();
+
+    information.newNumber = newMessage.getNoteNumber();
+    information.newTimeStamp = newMessage.getTimeStamp();
+    information.newVelocity = newMessage.getVelocity();
+}
+
+void MidiNotesTableModel::handleMapExistingCase(juce::MidiMessage& newMessage, MidiChangeInfo& information)
+{
+    information.newNumber = newMessage.getNoteNumber();
+    information.newTimeStamp = newMessage.getTimeStamp();
+    information.newVelocity = newMessage.getVelocity();
 }

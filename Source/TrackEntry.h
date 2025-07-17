@@ -23,6 +23,10 @@ struct TrackEntry
     double volumeAssociated = 0.0f;
     double originalBPM = 0.0f;
 
+    std::unordered_map<int, MidiChangeInfo> changesMap;
+
+
+
     juce::MidiMessageSequence sequence;
     juce::MidiMessageSequence originalSequenceTicks;
     TrackType type = TrackType::Melodic;
@@ -62,3 +66,14 @@ namespace TrackTypeConversion
         else return TrackType::Melodic;
     }
 }
+
+struct MidiChangeInfo
+{
+    int oldNumber = -1;
+    double oldTimeStamp = 0.0;
+    int oldVelocity = -1;
+
+    int newNumber = -1;
+    double newTimeStamp = 0.0;
+    int newVelocity = -1;
+};

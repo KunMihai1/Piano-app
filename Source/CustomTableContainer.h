@@ -16,10 +16,10 @@
 class TableContainer: public juce::Component
 {
 public:
-    TableContainer(const juce::MidiMessageSequence& seq, const juce::String& displayName, int channel)
+    TableContainer(const juce::MidiMessageSequence& seq, const juce::String& displayName, int channel, std::unordered_map<int,MidiChangeInfo>& map)
     {
         juce::String displayN = "Notes - " + displayName;
-        model = std::make_unique<MidiNotesTableModel>(seq, channel);
+        model = std::make_unique<MidiNotesTableModel>(seq, channel,map);
         table = std::make_unique<juce::TableListBox>(displayN, nullptr);
 
         model->onUpdate = [this](int rowNumber)
