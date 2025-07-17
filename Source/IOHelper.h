@@ -13,6 +13,16 @@
 #include <JuceHeader.h>
 #include "TrackEntry.h"
 
+class IOHelper
+{
+public:
+    static juce::File getFolder(const juce::String& name);
+    static juce::File getFile(const juce::String& name);
+
+private:
+
+};
+
 class TrackIOHelper
 {
 public:
