@@ -57,6 +57,7 @@ void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<
                     changeObj->setProperty("newVelocity", change.newVelocity);
 
                     changesObj->setProperty(juce::String(row), changeVar);
+
                 }
 
                 trackObj->setProperty("Changes", changesVar);
@@ -74,12 +75,12 @@ void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<
     file.replaceWithText(jsonString);
 }
 
-void TrackIOHelper::loadFromFile(const juce::File& file, std::unordered_map<juce::String, std::vector<TrackEntry>>& groupedTracks, std::vector<juce::String>& groupedTrackKeys)
+void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map<juce::String, std::vector<TrackEntry>>& groupedTracks, std::vector<juce::String>& groupedTrackKeys)
 {
-    if (!file.existsAsFile())
+    if (!fileParam.existsAsFile())
         return;
 
-    juce::String jsonString = file.loadFileAsString();
+    juce::String jsonString = fileParam.loadFileAsString();
     juce::var jsonVar = juce::JSON::parse(jsonString);
 
     if (!jsonVar.isArray())

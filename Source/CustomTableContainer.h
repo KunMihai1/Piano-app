@@ -42,6 +42,44 @@ public:
 
         addAndMakeVisible(table.get());
         
+        changeMultipleButton = std::make_unique<juce::TextButton>("Apply");
+        changeMultipleButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+        changeMultipleButton->onClick = [this]()
+        {
+            int selectedID = actionCB->getSelectedId();
+            if (selectedID == 1)
+            {
+
+            }
+            else if (selectedID == 2)
+            {
+
+            }
+            else if (selectedID == 3)
+            {
+
+            }
+            else if (selectedID == 4)
+            {
+
+            }
+
+        };
+        addAndMakeVisible(changeMultipleButton.get());
+
+        actionCB = std::make_unique<juce::ComboBox>();
+
+        actionCB->addItem("Everything to default",1);
+        actionCB->addItem("Notes to default", 2);
+        actionCB->addItem("Timestamps to default", 3);
+        actionCB->addItem("Velocities to default", 4);
+
+        actionCB->setSelectedId(1);
+
+        addAndMakeVisible(actionCB.get());
+
+
         disclaimerLabel = std::make_unique<juce::Label>();
         disclaimerLabel->setText("Note: This view shows the data used in the app only.\nYour original files remain unchanged.", juce::dontSendNotification);
         disclaimerLabel->setJustificationType(juce::Justification::centred);
@@ -52,13 +90,7 @@ public:
         table->updateContent();
     }
 
-    void resized() override {
-        auto area = getLocalBounds();
-        auto labelHeight = 40;
-
-        table->setBounds(area.removeFromTop(area.getHeight() - labelHeight));
-        disclaimerLabel->setBounds(area);
-    }
+    void resized() override;
 
     ~TableContainer() override
     {
@@ -66,7 +98,13 @@ public:
     }
 
 private:
+    /*for future reference, making this whole thing in a separate thread could benefit if mid playing(if it's needed, but prob not since the playing takes place on another thread,
+     with the timer so probably it's no issue)
+     */
     std::unique_ptr<juce::TableListBox> table;
     std::unique_ptr<MidiNotesTableModel> model;
     std::unique_ptr<juce::Label> disclaimerLabel;
+    std::unique_ptr<juce::TextButton> changeMultipleButton = nullptr;
+    std::unique_ptr<juce::ComboBox> actionCB = nullptr;
+
 };
