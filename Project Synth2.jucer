@@ -33,6 +33,9 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="m1agKm" name="TrackIOHelper.cpp" compile="1" resource="0"
+            file="Source/TrackIOHelper.cpp"/>
+      <FILE id="A1Vj1F" name="TrackIOHelper.h" compile="0" resource="0" file="Source/TrackIOHelper.h"/>
       <FILE id="NpdkDy" name="CustomTableContainer.h" compile="0" resource="0"
             file="Source/CustomTableContainer.h"/>
       <FILE id="hpLtHh" name="MidiNotesTableModel.cpp" compile="1" resource="0"

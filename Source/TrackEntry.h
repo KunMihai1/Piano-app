@@ -12,6 +12,17 @@
 
 enum class TrackType {Melodic,Percussion};
 
+struct MidiChangeInfo
+{
+    int oldNumber = -1;
+    double oldTimeStamp = 0.0;
+    int oldVelocity = -1;
+
+    int newNumber = -1;
+    double newTimeStamp = 0.0;
+    int newVelocity = -1;
+};
+
 struct TrackEntry
 {
     juce::String folderName;
@@ -66,14 +77,3 @@ namespace TrackTypeConversion
         else return TrackType::Melodic;
     }
 }
-
-struct MidiChangeInfo
-{
-    int oldNumber = -1;
-    double oldTimeStamp = 0.0;
-    int oldVelocity = -1;
-
-    int newNumber = -1;
-    double newTimeStamp = 0.0;
-    int newVelocity = -1;
-};

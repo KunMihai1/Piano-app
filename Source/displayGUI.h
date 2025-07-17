@@ -37,6 +37,7 @@
 #include "trackListComponentListener.h"
 #include "InstrumentChooser.h"
 #include "CustomBeatBar.h"
+#include "TrackIOHelper.h"
 
 class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener, public Subject<TrackListListener>
 {
@@ -75,23 +76,13 @@ public:
 
     void backToFolderView();
 
-    void saveToFile(const juce::File& fileToSave);
-
-    void loadFromFile(const juce::File& fileToLoad);
-
     std::vector<TrackEntry>& getAllAvailableTracks() const;
 
     juce::String extractDisplayNameFromTrack(const juce::MidiMessageSequence& trackSeq);
 
-    std::unordered_map<juce::Uuid, TrackEntry> buildTrackNameMap();
-
-    double getOriginalBpmFromFile(const juce::MidiFile& file);
-
     void initializeTracksFromList();
 
     void deallocateTracksFromList();
-
-    bool foundPercussion(const juce::MidiMessageSequence* sequence);
 
 
 private:
@@ -212,8 +203,9 @@ class CurrentStyleComponent : public juce::Component, private juce::MouseListene
 public:
     std::function<void()> anyTrackChanged;
     std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelectionFromTrack;
+    std::function<void()> updateTrackFile;
 
-    CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry>& map, std::weak_ptr<juce::MidiOutput> outputDevice);
+    CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice);
 
     void stoppingPlayer();
     
@@ -268,7 +260,7 @@ private:
 
     std::weak_ptr<juce::MidiOutput> outputDevice;
     std::unique_ptr<MultipleTrackPlayer> trackPlayer=nullptr;
-    std::unordered_map<juce::Uuid, TrackEntry>& mapNameToTrackEntry;
+    std::unordered_map<juce::Uuid, TrackEntry*>& mapNameToTrackEntry;
     Track* lastSelectedTrack = nullptr;
 
     juce::Slider tempoSlider;
@@ -387,6 +379,8 @@ public:
     void appendNewStyleInJson(const juce::String& newName);
     void removeStyleInJson(const juce::String& name);
 
+    std::unordered_map<juce::Uuid, TrackEntry*> buildTrackNameMap();
+
     void resized() override;
     const juce::var& getJsonVar();
 
@@ -425,7 +419,7 @@ private:
     std::unique_ptr<TrackListComponent> trackListComp;
     juce::var allStylesJsonVar; // this has a root object, acts like a map
 
-    std::unordered_map<juce::Uuid, TrackEntry> mapNameToTrack;
+    std::unordered_map<juce::Uuid, TrackEntry*> mapNameToTrack;
 
     //JUCE_LEAK_DETECTOR(Display)
 };
