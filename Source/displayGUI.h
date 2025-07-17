@@ -7,7 +7,7 @@
 
     TODO
 
-    -make reset to default settings, the structure for the json with the map, saving only those who have real changes
+    -make reset to default settings (uhm notes/time stamps/velocity/ all)
 
     -making a function for folder and json file to make the code less repetitive and also if i need to change the folder name/file name i will need to change in only one place
 
@@ -20,6 +20,8 @@
     -optimize with a variable juce var in memory for tracks.json
 
     -make bpm change mid play(not only before pressing play)
+
+    -put more settings that will include different well, settings for the playing of the actual styles which will relation with the highest note, lowest note, stops things like these
 
     -make it so that the the current style can be played by pressing a note(lowest) and end while highest note
 

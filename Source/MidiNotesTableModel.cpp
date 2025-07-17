@@ -168,6 +168,7 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
             label->setText(noteVelocity, juce::dontSendNotification);
         }
     }
+    label->setColour(juce::Label::textColourId,juce::Colours::darkgrey);
     return label;
 }
 
