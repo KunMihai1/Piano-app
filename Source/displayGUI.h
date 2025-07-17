@@ -7,9 +7,11 @@
 
     TODO
 
-    -when selecting a track from the list of 8, you can see all the notes listed from that uploaded track, aka the midi message sequence, and if possible, to put also the time stamps? in seconds
+    -make reset to default settings, the structure for the json with the map, saving only those who have real changes
 
-    -modify the starting time for each track
+    -making a function for folder and json file to make the code less repetitive and also if i need to change the folder name/file name i will need to change in only one place
+
+    -modify the starting time for each track + on all tracks if possible + build the map structure on the json for changes on the sequence to avoid storing the entire sequence
 
     -normalize the measure
 

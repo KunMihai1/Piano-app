@@ -109,7 +109,6 @@ void MultipleTrackPlayer::updatePlaybackSettings(int channel, int newVolume, int
 {
     if (auto sharedPtrDev=outputDevice.lock())
     {
-        DBG("Volume for channel " << channel << " is " << newVolume);
         if(newInstrument!=-1 && channel!=10)
             sharedPtrDev->sendMessageNow(juce::MidiMessage::programChange(channel, newInstrument));
 
