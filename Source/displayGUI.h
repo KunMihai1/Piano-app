@@ -7,11 +7,7 @@
 
     TODO
 
-    -make reset to default settings (uhm notes/time stamps/velocity/ all)
-
-    -making a function for folder and json file to make the code less repetitive and also if i need to change the folder name/file name i will need to change in only one place
-
-    -modify the starting time for each track + on all tracks if possible + build the map structure on the json for changes on the sequence to avoid storing the entire sequence
+    -modify the starting time for each track + on all tracks (when changing time stamps, do it for note off also)
 
     -normalize the measure
 

@@ -33,6 +33,10 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="K2Xsjg" name="SelectableLabel.cpp" compile="1" resource="0"
+            file="Source/SelectableLabel.cpp"/>
+      <FILE id="cazbKc" name="SelectableLabel.h" compile="0" resource="0"
+            file="Source/SelectableLabel.h"/>
       <FILE id="uwICeF" name="CustomTableContainer.cpp" compile="1" resource="0"
             file="Source/CustomTableContainer.cpp"/>
       <FILE id="m1agKm" name="IOHelper.cpp" compile="1" resource="0" file="Source/IOHelper.cpp"/>

@@ -80,12 +80,19 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
 
     int originalIndex = noteOnEvents[rowNumber].originalIndex;
 
-    auto* label = dynamic_cast<juce::Label*> (existingComponentToUpdate);
+    //auto* label = dynamic_cast<juce::Label*> (existingComponentToUpdate);
+
+    auto* label = dynamic_cast<SelectableLabel*> (existingComponentToUpdate);
+
+
     if (label == nullptr)
     {
-        label = new juce::Label();
+        label = new SelectableLabel{};
         label->setWantsKeyboardFocus(true);
-        label->setEditable(true, true, false);
+        label->setEditable(false, true, false);
+
+        
+
         label->onEditorHide = [this, rowNumber, columnId, label, originalIndex]()
         {
             auto* e = noteOnEvents[rowNumber].event;
@@ -169,6 +176,13 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
         }
     }
     label->setColour(juce::Label::textColourId,juce::Colours::darkgrey);
+
+    label->onClick = [this, rowNumber]()
+    {
+        DBG("Label clicked: row " + juce::String(rowNumber));
+        if (onRequestSelectRow)
+            onRequestSelectRow(rowNumber);
+    };
     return label;
 }
 

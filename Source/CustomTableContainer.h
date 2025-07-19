@@ -26,15 +26,37 @@ public:
 
     void onlyNotes();
 
+    void onlyNotesSelected(const juce::SparseSet<int>& allSelected);
+
     void onlyTimeStamps();
+
+    void onlyTimeStampsSelected(const juce::SparseSet<int>& allSelected);
     
     void onlyVelocities();
 
+    void onlyVelocitiesSelected(const juce::SparseSet<int>& allSelected);
+
     void allProperties();
+
+    void allPropertiesSelected(const juce::SparseSet<int>& allSelected);
 
     bool validForErase(MidiChangeInfo& info);
 
     void applyChangeToSequence(int index, const MidiChangeInfo& info);
+
+    void onConfirmed();
+
+    void changeAllUI();
+
+    void changeNotesUI();
+
+    void changeTimeStampsUI();
+
+    void changeVelocitiesUI();
+
+    bool anySelected();
+
+    void resetPropertyAndApply(std::function<void(MidiChangeInfo&)> resetProperty, const juce::SparseSet<int>* selected = nullptr);
 
 private:
     /*for future reference, making this whole thing in a separate thread could benefit if mid playing(if it's needed, but prob not since the playing takes place on another thread,
@@ -46,6 +68,6 @@ private:
     std::unique_ptr<juce::TextButton> changeMultipleButton = nullptr;
     std::unique_ptr<juce::ComboBox> actionCB = nullptr;
     juce::MidiMessageSequence& originalSequence;
-
+    int lastSelectedRow = -1;
     std::unordered_map<int, MidiChangeInfo>& changesMap;
 };
