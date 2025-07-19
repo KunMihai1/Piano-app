@@ -11,11 +11,13 @@
 #pragma once
 #include <JuceHeader.h>
 #include "TrackEntry.h"
+#include "SelectableLabel.h"
 
 class MidiNotesTableModel: public juce::TableListBoxModel
 {
 public:
     std::function<void(int rowNumber)> onUpdate;
+    std::function<void(int row)> onRequestSelectRow;
 
     MidiNotesTableModel(const juce::MidiMessageSequence& sequence ,int channel, std::unordered_map<int, MidiChangeInfo>& map);
 
