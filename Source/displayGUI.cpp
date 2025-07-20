@@ -2334,10 +2334,11 @@ void TrackListComponent::addToTrackList()
                     newEntry.originalSequenceTicks = *trackSequence;
 
                     newEntry.sequence = *trackSequence;
+
+                    newEntry.sequence.updateMatchedPairs();
                     newEntry.originalBPM = originalBpm;
 
                     newEntry.folderName = currentFolderName;
-                    DBG("Folder name is:" + newEntry.folderName);
 
                     if (TrackIOHelper::foundPercussion(trackSequence))
                         newEntry.type = TrackType::Percussion;

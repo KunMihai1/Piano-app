@@ -186,61 +186,25 @@ TableContainer::~TableContainer()
 
 void TableContainer::onlyNotes()
 {
-    for (auto it = changesMap.begin(); it != changesMap.end(); )
+    resetPropertyAndApply([](MidiChangeInfo& info)
     {
-        auto& key = it->first;
-        auto& info = it->second;
-        info.newNumber = info.oldNumber;
-        applyChangeToSequence(key, info);
-
-        if (validForErase(info))
-        {
-            it = changesMap.erase(it);
-        }
-        else
-            ++it;
-    }
+            info.newNumber = info.oldNumber;
+    });
 }
 
 void TableContainer::onlyNotesSelected(const juce::SparseSet<int>& allSelected)
 {
-    for (auto it = changesMap.begin(); it != changesMap.end(); )
-    {
-        auto& key = it->first;
-        auto& info = it->second;
-        if (allSelected.contains(key))
+    resetPropertyAndApply([](MidiChangeInfo& info)
         {
             info.newNumber = info.oldNumber;
-            applyChangeToSequence(key, info);
-        }
-        else return;
 
-
-        if (validForErase(info))
-        {
-            it = changesMap.erase(it);
-        }
-        else
-            ++it;
-    }
+        } ,
+        &allSelected);
 }
 
 void TableContainer::onlyTimeStamps()
 {
-    for (auto it = changesMap.begin(); it != changesMap.end(); )
-    {
-        auto& key = it->first;
-        auto& info = it->second;
-        info.newTimeStamp = info.oldTimeStamp;
-        applyChangeToSequence(key, info);
-
-        if (validForErase(info))
-        {
-            it = changesMap.erase(it);
-        }
-        else
-            ++it;
-    }
+    
 }
 
 void TableContainer::onlyTimeStampsSelected(const juce::SparseSet<int>& allSelected)
@@ -249,44 +213,22 @@ void TableContainer::onlyTimeStampsSelected(const juce::SparseSet<int>& allSelec
 
 void TableContainer::onlyVelocities()
 {
-    for (auto it = changesMap.begin(); it != changesMap.end(); )
-    {
-        auto& key = it->first;
-        auto& info = it->second;
-        info.newVelocity = info.oldVelocity;
-        applyChangeToSequence(key, info);
-
-        if (validForErase(info))
+    resetPropertyAndApply([](MidiChangeInfo& info)
         {
-            it = changesMap.erase(it);
-        }
-        else
-            ++it;
-    }
+            info.newVelocity = info.oldVelocity;
+
+        });
+    
 }
 
 void TableContainer::onlyVelocitiesSelected(const juce::SparseSet<int>& allSelected)
 {
-    for (auto it = changesMap.begin(); it != changesMap.end(); )
-    {
-        auto& key = it->first;
-        auto& info = it->second;
-        info.newVelocity = info.oldVelocity;
-
-        if (allSelected.contains(key))
+    resetPropertyAndApply([](MidiChangeInfo& info)
         {
             info.newVelocity = info.oldVelocity;
-            applyChangeToSequence(key, info);
-        }
-        else return;
 
-        if (validForErase(info))
-        {
-            it = changesMap.erase(it);
-        }
-        else
-            ++it;
-    }
+        },
+        &allSelected);
 }
 
 void TableContainer::allProperties()
@@ -306,28 +248,13 @@ void TableContainer::allProperties()
 
 void TableContainer::allPropertiesSelected(const juce::SparseSet<int>& allSelected)
 {
-    for (auto it = changesMap.begin(); it != changesMap.end(); )
-    {
-        auto& key = it->first;
-        auto& info = it->second;
-        
-        if (allSelected.contains(key))
+    resetPropertyAndApply([](MidiChangeInfo& info)
         {
             info.newNumber = info.oldNumber;
             info.newTimeStamp = info.oldTimeStamp;
             info.newVelocity = info.oldVelocity;
-
-            applyChangeToSequence(key, info);
-        }
-        else return;
-
-        if (validForErase(info))
-        {
-            it = changesMap.erase(it);
-        }
-        else
-            ++it;
-    }
+        }, 
+        &allSelected);
 }
 
 bool TableContainer::validForErase(MidiChangeInfo& info)
@@ -345,6 +272,12 @@ void TableContainer::applyChangeToSequence(int index, const MidiChangeInfo& info
 
     if (e->message.isNoteOn())
     {
+        double duration=0.0;
+        if (e->noteOffObject != nullptr)
+        {
+            auto* noteoffEvent = e->noteOffObject;
+            duration = noteoffEvent->message.getTimeStamp() - e->message.getTimeStamp();
+        }
         juce::MidiMessage newMsg = juce::MidiMessage::noteOn(
             e->message.getChannel(),
             info.newNumber,
@@ -352,15 +285,18 @@ void TableContainer::applyChangeToSequence(int index, const MidiChangeInfo& info
         );
         newMsg.setTimeStamp(info.newTimeStamp);
         e->message = newMsg;
-    }
-    else if (e->message.isNoteOff())
-    {
-        juce::MidiMessage newMsg = juce::MidiMessage::noteOff(
-            e->message.getChannel(),
-            info.newNumber
-        );
-        newMsg.setTimeStamp(info.newTimeStamp);
-        e->message = newMsg;
+
+        if (e->noteOffObject != nullptr)
+        {
+            auto* noteOffEvent = e->noteOffObject;
+            juce::MidiMessage offMsg = juce::MidiMessage::noteOff(
+                noteOffEvent->message.getChannel(),
+                info.newNumber
+            );
+            
+            offMsg.setTimeStamp(info.newTimeStamp + duration);
+            noteOffEvent->message = offMsg;
+        }
     }
 }
 
@@ -377,223 +313,66 @@ void TableContainer::onConfirmed()
 
 void TableContainer::changeAllUI()
 {
-    if (anySelected()==true)
-    {
-        auto* alert = new juce::AlertWindow("Confirm Action",
-            "What would you like to do with the track properties?",
-            juce::AlertWindow::QuestionIcon);
-
-        alert->addButton("Reset All", 1);
-        alert->addButton("Reset Selected", 2);
-        alert->addButton("Cancel", 0);
-
-        alert->enterModalState(true,
-            juce::ModalCallbackFunction::create(
-                [this](int result)
-                {
-                    if (result == 0)
-                        return;
-                    if (result == 1)
-                    {
-                        allProperties();
-                    }
-                    else if (result == 2)
-                    {
-                        allPropertiesSelected(table->getSelectedRows());
-                    }
-                    onConfirmed();
-                    
-                }),
-            true);
-    }
-    else
-    {
-
-        auto* alert = new juce::AlertWindow("Confirm Action",
-            "What would you like to do with all the track properties?",
-            juce::AlertWindow::QuestionIcon);
-
-        alert->addButton("Change All", 1);
-        alert->addButton("Cancel", 0);
-
-        alert->enterModalState(true,
-            juce::ModalCallbackFunction::create(
-                [this](int result)
-                {
-                    if (result == 1)
-                    {
-                        allProperties();
-                        onConfirmed();
-                    }
-
-                }),
-            true);
-    }
+    showChangeDialog("Confirm Action",
+        "What would you like to do with the track properties?",
+        "What would you like to do with the track properties?",
+        { "Change All", "Change selected", "Cancel" },
+        { "Change All", "Cancel" },
+        [this](int result)
+        {
+            if (result == 1)
+                allProperties();
+            else if (result == 2)
+                allPropertiesSelected(table->getSelectedRows());
+        });
 }
 
 void TableContainer::changeNotesUI()
 {
-    if (anySelected() == true)
-    {
-        auto* alert = new juce::AlertWindow("Confirm Action",
-            "What would you like to do with the notes?",
-            juce::AlertWindow::QuestionIcon);
-
-        alert->addButton("Change All", 1);
-        alert->addButton("Change selected", 2);
-        alert->addButton("Cancel", 0);
-
-        alert->enterModalState(true,
-            juce::ModalCallbackFunction::create(
-                [this](int result)
-                {
-                    if (result == 0)
-                        return;
-                    if (result == 1)
-                    {
-                        onlyNotes();
-                    }
-                    else if (result == 2)
-                    {
-                        onlyNotesSelected(table->getSelectedRows());
-                    }
-                    onConfirmed();
-
-                }),
-            true);
-    }
-    else {
-
-        auto* alert = new juce::AlertWindow("Confirm Action",
-            "What would you like to do with the notes?",
-            juce::AlertWindow::QuestionIcon);
-
-        alert->addButton("Change All", 1);
-        alert->addButton("Cancel", 0);
-
-        alert->enterModalState(true,
-            juce::ModalCallbackFunction::create(
-                [this](int result)
-                {
-                    if (result == 1)
-                    {
-                        onlyNotes();
-                        onConfirmed();
-                    }
-
-                }),
-            true);
-    }
+    showChangeDialog("Confirm Action",
+        "What would you like to do with the notes?",
+        "What would you like to do with the notes?",
+        { "Change All", "Change selected", "Cancel" },
+        { "Change All", "Cancel" },
+        [this](int result)
+        {
+            if (result == 1)
+                onlyNotes();
+            else if (result == 2)
+                onlyNotesSelected(table->getSelectedRows());
+        });
 }
 
 void TableContainer::changeTimeStampsUI()
 {
-    if (anySelected() == true)
-    {
-        auto* alert = new juce::AlertWindow("Confirm Action",
-            "What would you like to do with the time stamps?",
-            juce::AlertWindow::QuestionIcon);
-
-        alert->addButton("Change All", 1);
-        alert->addButton("Change selected", 2);
-        alert->addButton("Cancel", 0);
-
-        alert->enterModalState(true,
-            juce::ModalCallbackFunction::create(
-                [this](int result)
-                {
-                    if (result == 0)
-                        return;
-                    if (result == 1)
-                    {
-                        onlyTimeStamps();
-                    }
-                    else if (result == 2)
-                    {
-                        onlyTimeStampsSelected(table->getSelectedRows());
-                    }
-                    onConfirmed();
-
-                }),
-            true);
-    }
-    else {
-
-        auto* alert = new juce::AlertWindow("Confirm Action",
-            "What would you like to do with the time stamps?",
-            juce::AlertWindow::QuestionIcon);
-
-        alert->addButton("Change All", 1);
-        alert->addButton("Cancel", 0);
-
-        alert->enterModalState(true,
-            juce::ModalCallbackFunction::create(
-                [this](int result)
-                {
-                    if (result == 1)
-                    {
-                        onlyTimeStamps();
-                        onConfirmed();
-                    }
-
-                }),
-            true);
-    }
+    showChangeDialog("Confirm Action",
+        "What would you like to do with the time stamps?",
+        "What would you like to do with the time stamps?",
+        { "Change All", "Change selected", "Cancel" },
+        { "Change All", "Cancel" },
+        [this](int result)
+        {
+            if (result == 1)
+                onlyTimeStamps();
+            else if (result == 2)
+                onlyTimeStampsSelected(table->getSelectedRows());
+        });
 }
 
 void TableContainer::changeVelocitiesUI()
 {
-    if (anySelected() == true)
-    {
-        auto* alert = new juce::AlertWindow("Confirm Action",
-            "What would you like to do with the velocities?",
-            juce::AlertWindow::QuestionIcon);
-
-        alert->addButton("Change All", 1);
-        alert->addButton("Change selected", 2);
-        alert->addButton("Cancel", 0);
-
-        alert->enterModalState(true,
-            juce::ModalCallbackFunction::create(
-                [this](int result)
-                {
-                    if (result == 0)
-                        return;
-                    if (result == 1)
-                    {
-                        onlyVelocities();
-                    }
-                    else if (result == 2)
-                    {
-                        onlyVelocitiesSelected(table->getSelectedRows());
-                    }
-                    onConfirmed();
-
-                }),
-            true);
-    }
-    else {
-
-        auto* alert = new juce::AlertWindow("Confirm Action",
-            "What would you like to do with the velocities?",
-            juce::AlertWindow::QuestionIcon);
-
-        alert->addButton("Change All", 1);
-        alert->addButton("Cancel", 0);
-
-        alert->enterModalState(true,
-            juce::ModalCallbackFunction::create(
-                [this](int result)
-                {
-                    if (result == 1)
-                    {
-                        onlyVelocities();
-                        onConfirmed();
-                    }
-
-                }),
-            true);
-    }
+    showChangeDialog("Confirm Action",
+        "What would you like to do with the velocities?",
+        "What would you like to do with the velocities?",
+        { "Change All", "Change selected", "Cancel" },
+        { "Change All", "Cancel" },
+        [this](int result)
+        {
+            if (result == 1)
+                onlyVelocities();
+            else if (result == 2)
+                onlyVelocitiesSelected(table->getSelectedRows());
+        });
 }
 
 bool TableContainer::anySelected()
@@ -604,14 +383,14 @@ bool TableContainer::anySelected()
     return false;
 }
 
-void TableContainer::resetPropertyAndApply(std::function<void(MidiChangeInfo&)> resetProperty, const juce::SparseSet<int>* selected)
+void TableContainer::resetPropertyAndApply(const std::function<void(MidiChangeInfo&)>& resetProperty, const juce::SparseSet<int>* selected, bool isTimeStamps)
 {
     for (auto it = changesMap.begin(); it != changesMap.end(); )
     {
         auto& key = it->first;
         auto& info = it->second;
 
-        if (selected && !selected->contains(key))
+        if (selected && !selected->contains(model->getRowFromOriginalIndex(key)))
         {
             ++it;
             continue;
@@ -625,4 +404,23 @@ void TableContainer::resetPropertyAndApply(std::function<void(MidiChangeInfo&)> 
         else
             ++it;
     }
+}
+
+void TableContainer::showChangeDialog(const juce::String& title, const juce::String& messageAllSelected, const juce::String& messageNoSelection, const std::vector<juce::String>& buttonsWithSelection, const std::vector<juce::String>& buttonsWithoutSelection, std::function<void(int)> onValidResults)
+{
+    auto* alert = new juce::AlertWindow(title, anySelected() ? messageAllSelected : messageNoSelection, juce::AlertWindow::QuestionIcon);
+
+    auto& buttons = anySelected() ? buttonsWithSelection : buttonsWithoutSelection;
+
+    for (int i = 0; i < buttons.size(); i++)
+        alert->addButton(buttons[i], i + 1);
+
+    alert->enterModalState(true,
+        juce::ModalCallbackFunction::create([this, onValidResults](int result)
+            {
+                if (result == 0) return;
+                onValidResults(result);
+                onConfirmed();
+            }),
+        true);
 }
