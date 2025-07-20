@@ -204,11 +204,19 @@ void TableContainer::onlyNotesSelected(const juce::SparseSet<int>& allSelected)
 
 void TableContainer::onlyTimeStamps()
 {
-    
+    resetPropertyAndApply([](MidiChangeInfo& info)
+        {
+            info.newTimeStamp = info.oldTimeStamp;
+        });
 }
 
 void TableContainer::onlyTimeStampsSelected(const juce::SparseSet<int>& allSelected)
 {
+    resetPropertyAndApply([](MidiChangeInfo& info)
+        {
+            info.newTimeStamp = info.oldTimeStamp;
+        },
+        &allSelected);
 }
 
 void TableContainer::onlyVelocities()
