@@ -16,6 +16,7 @@
 class MidiNotesTableModel: public juce::TableListBoxModel
 {
 public:
+
     std::function<void(int rowNumber)> onUpdate;
     std::function<void(int row)> onRequestSelectRow;
 
@@ -41,12 +42,16 @@ public:
 
     void refreshVectorFromSequence(const juce::MidiMessageSequence& seq);
 
+    int getRowFromOriginalIndex(int originalIndex);
+
 private:
+    
     struct EventWithIndex {
         const juce::MidiMessageSequence::MidiEventHolder* event;
         int originalIndex;
     };
 
+    std::unordered_map<int, int> originalIndexToRowMap;
     std::vector<EventWithIndex> noteOnEvents;
     int channel;
     std::unordered_map<int, MidiChangeInfo>* changesMap=nullptr;

@@ -173,6 +173,7 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
             tr.trackIndex = trackIndex;
             tr.displayName = displayName;
             tr.sequence = *sequence;
+            tr.sequence.updateMatchedPairs();
             tr.originalBPM = originalBpm;
             tr.folderName = folderName;
 
@@ -268,7 +269,7 @@ void TrackIOHelper::convertTicksToSeconds(juce::MidiFile& midiFile, double bpm)
     if (tpqn <= 0)
         tpqn = 960;
 
-    const double defaultTempoBPM = bpm; //k so elapsed time need to match this btw TODO
+    const double defaultTempoBPM = bpm; 
     const double secondsPerQuarterNote = 60.0 / defaultTempoBPM;
     const double secondsPerTick = secondsPerQuarterNote / double(tpqn);
 

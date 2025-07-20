@@ -56,7 +56,11 @@ public:
 
     bool anySelected();
 
-    void resetPropertyAndApply(std::function<void(MidiChangeInfo&)> resetProperty, const juce::SparseSet<int>* selected = nullptr);
+    void resetPropertyAndApply(const std::function<void(MidiChangeInfo&)>& resetProperty, const juce::SparseSet<int>* selected = nullptr, bool isTimeStamps=false);
+
+    void showChangeDialog(const juce::String& title, const juce::String& messageAllSelected, const juce::String& messageNoSelection,
+        const std::vector<juce::String>& buttonsWithSelection, const std::vector<juce::String>& buttonsWithoutSelection,
+        std::function<void(int)> onValidResults);
 
 private:
     /*for future reference, making this whole thing in a separate thread could benefit if mid playing(if it's needed, but prob not since the playing takes place on another thread,
