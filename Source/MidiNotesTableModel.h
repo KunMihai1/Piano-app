@@ -44,6 +44,10 @@ public:
 
     int getRowFromOriginalIndex(int originalIndex);
 
+    int getOriginalIndexFromRow(int row);
+
+
+
 private:
     
     struct EventWithIndex {

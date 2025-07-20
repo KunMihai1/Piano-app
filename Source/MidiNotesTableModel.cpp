@@ -93,94 +93,99 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
         label = new SelectableLabel{};
         label->setWantsKeyboardFocus(true);
         label->setEditable(false, true, false);
-
-        
-
-        label->onEditorHide = [this, rowNumber, columnId, label, originalIndex]()
-        {
-            auto* e = noteOnEvents[rowNumber].event;
-            if (e == nullptr)
-                return;
-
-            auto oldMsg = e->message;
-            juce::MidiMessage newMsg;
-
-                if (columnId == 1)
-                {
-                    int newNoteNumber = getMidiNoteNumberFromName(label->getText());
-                    if (newNoteNumber == -1)
-                    {
-                        label->setText(juce::MidiMessage::getMidiNoteName(oldMsg.getNoteNumber(), true, true, 4), juce::dontSendNotification);
-                        return;
-                    }
-                    newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), newNoteNumber, (juce::uint8)oldMsg.getVelocity());
-                    newMsg.setTimeStamp(oldMsg.getTimeStamp());
-
-                    if (e->noteOffObject != nullptr)
-                    {
-                        auto* noteOffEvent = e->noteOffObject;
-                        juce::MidiMessage offMsg = juce::MidiMessage::noteOff(
-                            noteOffEvent->message.getChannel(),
-                            newNoteNumber
-                        );
-                        offMsg.setTimeStamp(noteOffEvent->message.getTimeStamp());
-                        noteOffEvent->message = offMsg;
-                    }
-                }
-            else if (columnId == 2)
-            {
-                double newTime = label->getText().getDoubleValue();
-                if (newTime < 0)
-                {
-                    label->setText(juce::String(oldMsg.getTimeStamp(), 6), juce::dontSendNotification);
-                    return;
-                }
-                newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), oldMsg.getNoteNumber(), oldMsg.getVelocity());
-                newMsg.setTimeStamp(newTime);
-                if (e->noteOffObject != nullptr)
-                {
-                    auto* noteOffEvent = e->noteOffObject;
-                    double oldNoteOnTime = oldMsg.getTimeStamp();
-                    double oldNoteOffTime = noteOffEvent->message.getTimeStamp();
-                    double duration = oldNoteOffTime - oldNoteOnTime;
-
-                    double newNoteOffTime = newTime + duration;
-                    noteOffEvent->message.setTimeStamp(newNoteOffTime);
-                }
-
-                auto* noteOffEvent = e->noteOffObject;
-            }
-            else if (columnId == 3)
-            {
-                int newVelocity = label->getText().getIntValue();
-                if (newVelocity < 0 || newVelocity>127)
-                {
-                    label->setText(juce::String(oldMsg.getVelocity()), juce::dontSendNotification);
-                    return;
-                }
-                newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), oldMsg.getNoteNumber(), (juce::uint8)newVelocity);
-                
-                newMsg.setTimeStamp(oldMsg.getTimeStamp());
-            }
-            
-            if (changesMap->find(originalIndex) != changesMap->end())
-            {
-                auto& current = (*changesMap)[originalIndex];
-                handleMapExistingCase(newMsg, current);
-            }
-            else
-            {
-                MidiChangeInfo current;
-                handleMapNonExistingCase(oldMsg, newMsg, current);
-                (*changesMap)[originalIndex] = current;
-            }
-
-            const_cast<juce::MidiMessageSequence::MidiEventHolder*>(e)->message = newMsg;
-
-            if (!areMidiMessagesEqual(newMsg,oldMsg) && onUpdate)
-                onUpdate(rowNumber);
-        };
     }
+
+    label->onEditorHide = [this, rowNumber, columnId, label, originalIndex]()
+    {
+        auto* e = noteOnEvents[rowNumber].event;
+        if (e == nullptr)
+            return;
+
+        auto oldMsg = e->message;
+        juce::MidiMessage newMsg;
+
+        if (columnId == 1)
+        {
+            int newNoteNumber = getMidiNoteNumberFromName(label->getText());
+            if (newNoteNumber == -1)
+            {
+                label->setText(juce::MidiMessage::getMidiNoteName(oldMsg.getNoteNumber(), true, true, 4), juce::dontSendNotification);
+                return;
+            }
+            newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), newNoteNumber, (juce::uint8)oldMsg.getVelocity());
+            newMsg.setTimeStamp(oldMsg.getTimeStamp());
+
+            if (e->noteOffObject != nullptr)
+            {
+                auto* noteOffEvent = e->noteOffObject;
+                juce::MidiMessage offMsg = juce::MidiMessage::noteOff(
+                    noteOffEvent->message.getChannel(),
+                    newNoteNumber
+                );
+                offMsg.setTimeStamp(noteOffEvent->message.getTimeStamp());
+                noteOffEvent->message = offMsg;
+            }
+        }
+        else if (columnId == 2)
+        {
+            double newTime = label->getText().getDoubleValue();
+            if (newTime < 0)
+            {
+                label->setText(juce::String(oldMsg.getTimeStamp(), 6), juce::dontSendNotification);
+                return;
+            }
+            newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), oldMsg.getNoteNumber(), oldMsg.getVelocity());
+            newMsg.setTimeStamp(newTime);
+            if (e->noteOffObject != nullptr)
+            {
+                auto* noteOffEvent = e->noteOffObject;
+                double oldNoteOnTime = oldMsg.getTimeStamp();
+                double oldNoteOffTime = noteOffEvent->message.getTimeStamp();
+                double duration = oldNoteOffTime - oldNoteOnTime;
+
+                double newNoteOffTime = newTime + duration;
+                noteOffEvent->message.setTimeStamp(newNoteOffTime);
+            }
+
+            auto* noteOffEvent = e->noteOffObject;
+        }
+        else if (columnId == 3)
+        {
+            int newVelocity = label->getText().getIntValue();
+            if (newVelocity < 0 || newVelocity>127)
+            {
+                label->setText(juce::String(oldMsg.getVelocity()), juce::dontSendNotification);
+                return;
+            }
+            newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), oldMsg.getNoteNumber(), (juce::uint8)newVelocity);
+
+            newMsg.setTimeStamp(oldMsg.getTimeStamp());
+        }
+
+        if (changesMap->find(originalIndex) != changesMap->end())
+        {
+            auto& current = (*changesMap)[originalIndex];
+            handleMapExistingCase(newMsg, current);
+        }
+        else
+        {
+            MidiChangeInfo current;
+            handleMapNonExistingCase(oldMsg, newMsg, current);
+            (*changesMap)[originalIndex] = current;
+        }
+
+        const_cast<juce::MidiMessageSequence::MidiEventHolder*>(e)->message = newMsg;
+
+        if (!areMidiMessagesEqual(newMsg, oldMsg) && onUpdate)
+            onUpdate(rowNumber);
+    };
+
+    label->onClick = [this, rowNumber]()
+    {
+        DBG("Label clicked: row " + juce::String(rowNumber));
+        if (onRequestSelectRow)
+            onRequestSelectRow(rowNumber);
+    };
 
     const auto& message = event->message;
     if (message.isNoteOn())
@@ -203,12 +208,6 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
     }
     label->setColour(juce::Label::textColourId,juce::Colours::darkgrey);
 
-    label->onClick = [this, rowNumber]()
-    {
-        DBG("Label clicked: row " + juce::String(rowNumber));
-        if (onRequestSelectRow)
-            onRequestSelectRow(rowNumber);
-    };
     return label;
 }
 
@@ -306,4 +305,11 @@ void MidiNotesTableModel::refreshVectorFromSequence(const juce::MidiMessageSeque
 int MidiNotesTableModel::getRowFromOriginalIndex(int originalIndex)
 {
     return originalIndexToRowMap[originalIndex];
+}
+
+int MidiNotesTableModel::getOriginalIndexFromRow(int row)
+{
+    if (row >= 0 && row < noteOnEvents.size())
+        return noteOnEvents[row].originalIndex;
+    return -1;
 }

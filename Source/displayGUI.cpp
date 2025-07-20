@@ -14,8 +14,8 @@
 
 Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : outputDevice{ outputDev }
 {
-    availableTracksFromFolder = std::make_shared<std::vector<TrackEntry>>();
-    groupedTracks = std::make_shared<std::unordered_map<juce::String, std::vector<TrackEntry>>>();
+    availableTracksFromFolder = std::make_shared<std::deque<TrackEntry>>();
+    groupedTracks = std::make_shared<std::unordered_map<juce::String, std::deque<TrackEntry>>>();
     groupedTrackKeys = std::make_shared<std::vector<juce::String>>();
 
     tabComp = std::make_unique<MyTabbedComponent>(juce::TabbedButtonBar::TabsAtLeft);
@@ -214,8 +214,8 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
 
             onTrackSelected(track.getDisplayName(), track.getUniqueID(), typeString);
 
-            if (mapNameToTrack.empty())
-                mapNameToTrack = buildTrackNameMap();
+            //if (mapNameToTrack.empty())
+             //   mapNameToTrack = buildTrackNameMap();
 
             if (trackListComp)
                 trackListComp->removeListener(this);
@@ -241,6 +241,12 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
     trackListComp->onRenameTrackFromList = [this](const juce::Uuid& uuid, const juce::String& newName)
     {
         updateTrackNameFromAllStyles(uuid, newName);
+    };
+
+
+    trackListComp->addToMapOnAdding= [this](TrackEntry* newEntry)
+    {
+        mapNameToTrack[newEntry->getUniqueID()] = newEntry;
     };
 
     tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.get(), false);
@@ -1121,9 +1127,11 @@ void CurrentStyleComponent::startPlaying()
         {
             for (const auto& tr : allTracks)
             {
+                DBG("We got in the for");
                 auto it = mapNameToTrackEntry.find(tr->getUsedID());
                 if (it != mapNameToTrackEntry.end())
                 {
+                    DBG("It's in the map bro");
                     it->second->instrumentAssociated = tr->getInstrumentNumber();
                     it->second->volumeAssociated = tr->getVolume();
                     selectedTracks.push_back(*it->second);
@@ -2095,8 +2103,8 @@ void Track::showNotesInformation()
         onShowInformation(uniqueIdentifierTrack, channel);
 }
 
-TrackListComponent::TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> tracks,
-    std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracksMap,
+TrackListComponent::TrackListComponent(std::shared_ptr<std::deque<TrackEntry>> tracks,
+    std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracksMap,
     std::shared_ptr<std::vector<juce::String>> groupedKeys,
     std::function<void(int)> onTrackChosen) : availableTracks{ tracks },
     groupedTracks{ groupedTracksMap },
@@ -2348,6 +2356,12 @@ void TrackListComponent::addToTrackList()
 
                     availableTracks->push_back(newEntry);
                     (*groupedTracks)[currentFolderName].push_back(newEntry);
+
+                    TrackEntry* storedPtr = &(*groupedTracks)[currentFolderName].back();
+
+                    if (addToMapOnAdding)
+                        addToMapOnAdding(storedPtr);
+
                     ++addedTracks;
                 }
 
@@ -2743,7 +2757,7 @@ void TrackListComponent::backToFolderView()
 //the flat list availableTracks doesn't need to be built rn, because we have grouped tracks and that's structured, but for future if
 //i wanna change anything, like to have idk, something with all the tracks, i won't need to iterate again through every structured folder name to get all the available tracks
 
-std::vector<TrackEntry>& TrackListComponent::getAllAvailableTracks() const
+std::deque<TrackEntry>& TrackListComponent::getAllAvailableTracks() const
 {
     return *availableTracks;
 }
