@@ -24,7 +24,7 @@ juce::File IOHelper::getFile(const juce::String& name)
      return appDataFolder.getChildFile(name);
 }
 
-void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::vector<TrackEntry>>& groupedTracks)
+void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::deque<TrackEntry>>& groupedTracks)
 {
     juce::Array<juce::var> foldersArray;
 
@@ -89,7 +89,7 @@ void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<
     file.replaceWithText(jsonString);
 }
 
-void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map<juce::String, std::vector<TrackEntry>>& groupedTracks, std::vector<juce::String>& groupedTrackKeys)
+void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map<juce::String, std::deque<TrackEntry>>& groupedTracks, std::vector<juce::String>& groupedTrackKeys)
 {
     if (!fileParam.existsAsFile())
         return;

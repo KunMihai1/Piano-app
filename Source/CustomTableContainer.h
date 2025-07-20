@@ -42,7 +42,7 @@ public:
 
     bool validForErase(MidiChangeInfo& info);
 
-    void applyChangeToSequence(int index, const MidiChangeInfo& info);
+    void applyChangeToSequence(int index, const MidiChangeInfo& info, bool modifyVelocity=false);
 
     void onConfirmed();
 
@@ -56,11 +56,25 @@ public:
 
     bool anySelected();
 
-    void resetPropertyAndApply(const std::function<void(MidiChangeInfo&)>& resetProperty, const juce::SparseSet<int>* selected = nullptr, bool isTimeStamps=false);
+    void modifyTimeStampsUI();
 
-    void showChangeDialog(const juce::String& title, const juce::String& messageAllSelected, const juce::String& messageNoSelection,
+    void modifyVelocitiesUI();
+
+    void modifyOnlyTimeStamps();
+
+    void modifyOnlyTimeStampsSelected(const juce::SparseSet<int>& allSelected);
+
+    void modifyOnlyVelocities();
+
+    void modifyOnlyVelocitiesSelected(const juce::SparseSet<int>& allSelected);
+
+    void resetPropertyAndApply(const std::function<void(MidiChangeInfo&)>& resetProperty, const juce::SparseSet<int>* selected = nullptr, bool modifyVelocity=false);
+
+    void newPropertyAndApply(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected = nullptr);
+
+    void showModifyChangeDialog(const juce::String& title, const juce::String& messageAllSelected, const juce::String& messageNoSelection,
         const std::vector<juce::String>& buttonsWithSelection, const std::vector<juce::String>& buttonsWithoutSelection,
-        std::function<void(int)> onValidResults);
+        std::function<void(int)> onValidResults, bool isModify=false);
 
 private:
     /*for future reference, making this whole thing in a separate thread could benefit if mid playing(if it's needed, but prob not since the playing takes place on another thread,
@@ -69,8 +83,14 @@ private:
     std::unique_ptr<juce::TableListBox> table;
     std::unique_ptr<MidiNotesTableModel> model;
     std::unique_ptr<juce::Label> disclaimerLabel;
-    std::unique_ptr<juce::TextButton> changeMultipleButton = nullptr;
-    std::unique_ptr<juce::ComboBox> actionCB = nullptr;
+    std::unique_ptr<juce::TextButton> changeToOriginalMultipleButton = nullptr;
+    std::unique_ptr<juce::ComboBox> actionToOriginalCB = nullptr;
+    std::unique_ptr<juce::Label> infoLabelChange = nullptr;
+
+    std::unique_ptr<juce::TextButton> modifyMultipleButton = nullptr;
+    std::unique_ptr<juce::ComboBox> actionModifyCB = nullptr;
+    std::unique_ptr<juce::Label> infoLabelModify = nullptr;
+
     juce::MidiMessageSequence& originalSequence;
     int lastSelectedRow = -1;
     std::unordered_map<int, MidiChangeInfo>& changesMap;

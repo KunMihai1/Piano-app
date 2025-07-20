@@ -26,10 +26,10 @@ private:
 class TrackIOHelper
 {
 public:
-    static void saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::vector<TrackEntry>>& groupedTracks);
+    static void saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::deque<TrackEntry>>& groupedTracks);
 
     static void loadFromFile(const juce::File& file,
-        std::unordered_map<juce::String, std::vector<TrackEntry>>& groupedTracks,
+        std::unordered_map<juce::String, std::deque<TrackEntry>>& groupedTracks,
         std::vector<juce::String>& groupedTrackKeys);
 
     static bool foundPercussion(const juce::MidiMessageSequence* sequence);

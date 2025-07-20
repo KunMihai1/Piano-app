@@ -7,7 +7,11 @@
 
     TODO
 
-    -modify the starting time for each track + on all tracks (when changing time stamps, do it for note off also)
+    -if you open the notes information while playing, you will get the exact note you're at and it will go on
+
+    -for keys recognition and intput device playing range, make a way for someone to add his device if not in there already
+
+    -modify the starting time on all tracks simulatnously (also velocities too) or also include that selected, to change for the selected ones
 
     -normalize the measure
 
@@ -44,9 +48,10 @@ public:
     std::function<void(const juce::Uuid& uuid)> onRemoveTrack;
     std::function<void(const std::vector<juce::Uuid>& uuids)> onRemoveMultipleTracks;
     std::function<void(const juce::Uuid& uuid, const juce::String& newName)> onRenameTrackFromList;
+    std::function<void(TrackEntry* newEntry)> addToMapOnAdding;
 
-    TrackListComponent(std::shared_ptr<std::vector<TrackEntry>> tracks,
-        std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracksMap,
+    TrackListComponent(std::shared_ptr<std::deque<TrackEntry>> tracks,
+        std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracksMap,
         std::shared_ptr<std::vector<juce::String>> groupedKeys,
         std::function<void(int)> onTrackChosen);
 
@@ -74,7 +79,7 @@ public:
 
     void backToFolderView();
 
-    std::vector<TrackEntry>& getAllAvailableTracks() const;
+    std::deque<TrackEntry>& getAllAvailableTracks() const;
 
     juce::String extractDisplayNameFromTrack(const juce::MidiMessageSequence& trackSeq);
 
@@ -93,8 +98,8 @@ private:
 
     ViewMode viewMode = ViewMode::FolderView;
 
-    std::shared_ptr<std::vector<TrackEntry>> availableTracks;
-    std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracks;
+    std::shared_ptr<std::deque<TrackEntry>> availableTracks;
+    std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracks;
     std::shared_ptr<std::vector<juce::String>> groupedTrackKeys;
 
     std::function<void(int)> trackChosenCallBack;
@@ -379,6 +384,8 @@ public:
 
     std::unordered_map<juce::Uuid, TrackEntry*> buildTrackNameMap();
 
+    void addNewTracksToMap();
+
     void resized() override;
     const juce::var& getJsonVar();
 
@@ -407,8 +414,8 @@ private:
     bool created = false;
     bool createdTracksTab = false;
 
-    std::shared_ptr<std::vector<TrackEntry>> availableTracksFromFolder;
-    std::shared_ptr<std::unordered_map<juce::String, std::vector<TrackEntry>>> groupedTracks;
+    std::shared_ptr<std::deque<TrackEntry>> availableTracksFromFolder;
+    std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracks;
     std::shared_ptr<std::vector<juce::String>> groupedTrackKeys;
 
     std::weak_ptr<juce::MidiOutput> outputDevice;
