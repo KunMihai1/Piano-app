@@ -16,6 +16,10 @@
 class MidiNotesTableModel: public juce::TableListBoxModel
 {
 public:
+    struct EventWithIndex {
+        const juce::MidiMessageSequence::MidiEventHolder* event;
+        int originalIndex;
+    };
 
     std::function<void(int rowNumber)> onUpdate;
     std::function<void(int row)> onRequestSelectRow;
@@ -46,14 +50,11 @@ public:
 
     int getOriginalIndexFromRow(int row);
 
+    double getFirstNoteOnTimeStamps();
 
+    std::vector<EventWithIndex> getEvents();
 
 private:
-    
-    struct EventWithIndex {
-        const juce::MidiMessageSequence::MidiEventHolder* event;
-        int originalIndex;
-    };
 
     std::unordered_map<int, int> originalIndexToRowMap;
     std::vector<EventWithIndex> noteOnEvents;

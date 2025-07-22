@@ -332,6 +332,7 @@ void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)
                 trackObj->setProperty("uuid", "noID");
                 trackObj->setProperty("name", "None");
                 trackObj->setProperty("instrumentNumber", -1);
+                trackObj->setProperty("type", "None");
             }
         }
     }
@@ -386,6 +387,7 @@ void Display::removeTracksFromAllStyles(const std::vector<juce::Uuid>& uuids)
                 trackObj->setProperty("uuid", "noID");
                 trackObj->setProperty("name", "None");
                 trackObj->setProperty("instrumentNumber", -1);
+                trackObj->setProperty("type", "None");
             }
         }
     }
@@ -1316,6 +1318,8 @@ void CurrentStyleComponent::removingTrack(const juce::Uuid& uuid)
         {
             track->setNameLabel("None");
             track->setUUID(juce::Uuid{ "noID" });
+            track->setTypeOfTrack("None");
+            track->setChannel(2);
         }
     }
 }
@@ -1331,6 +1335,8 @@ void CurrentStyleComponent::removingTracks(const std::vector<juce::Uuid>& uuids)
             {
                 track->setNameLabel("None");
                 track->setUUID(juce::Uuid{ "noID" });
+                track->setTypeOfTrack("None");
+                track->setChannel(2);
                 break;
             }
         }
@@ -1348,11 +1354,35 @@ void CurrentStyleComponent::renamingTrack(const juce::Uuid& uuid, const juce::St
 
 void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid& uuid, int channel)
 {
-    auto& track = mapNameToTrackEntry[uuid];
-    auto& sequence = track->sequence;
-    auto& map = track->changesMap;
+    juce::MidiMessageSequence* sequence = nullptr;
+    std::unordered_map<int, MidiChangeInfo>* changeMap = nullptr;
+    juce::String displayName = "<Unnamed>";
 
-    auto container = std::make_unique<TableContainer>(sequence, track->displayName, channel, map);
+    auto it = mapNameToTrackEntry.find(uuid);
+    if (it != mapNameToTrackEntry.end())
+    {
+        auto& track = it->second;
+        if (track != nullptr)
+        {
+            sequence = &track->sequence;
+            changeMap = &track->changesMap;
+
+            if (track->displayName.isNotEmpty())
+                displayName = track->displayName;
+        }
+    }
+
+    // Fallbacks if no data
+    static juce::MidiMessageSequence emptySequence;
+    static std::unordered_map<int, MidiChangeInfo> emptyMap;
+
+    auto container = std::make_unique<TableContainer>(
+        sequence ? *sequence : emptySequence,
+        displayName,
+        channel,
+        changeMap ? *changeMap : emptyMap
+        );
+
     container->setSize(350, 340);
 
     container->updateToFile = [this]()
@@ -1363,8 +1393,8 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
 
     juce::CallOutBox::launchAsynchronously(
         std::move(container),
-        getScreenBounds(),  
-        nullptr             
+        getScreenBounds(),
+        nullptr
     );
 
 }
@@ -1939,6 +1969,8 @@ void Track::mouseDown(const juce::MouseEvent& event)
                         setNameLabel(selectedTrack);
                         setUUID(uuid);
                         setTypeOfTrack(type);
+                        if (type.trim() == "percussion")
+                            this->channel = 10;
                     }
                 );
             }

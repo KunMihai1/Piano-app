@@ -7,6 +7,8 @@
 
     TODO
 
+    -glitch the table doesn't update when modifying for multiple(selected)
+
     -if you open the notes information while playing, you will get the exact note you're at and it will go on
 
     -for keys recognition and intput device playing range, make a way for someone to add his device if not in there already

@@ -313,3 +313,16 @@ int MidiNotesTableModel::getOriginalIndexFromRow(int row)
         return noteOnEvents[row].originalIndex;
     return -1;
 }
+
+double MidiNotesTableModel::getFirstNoteOnTimeStamps()
+{
+    if (noteOnEvents.empty())
+        return -1;
+
+    return noteOnEvents[0].event->message.getTimeStamp();
+}
+
+std::vector<MidiNotesTableModel::EventWithIndex> MidiNotesTableModel::getEvents()
+{
+    return noteOnEvents;
+}
