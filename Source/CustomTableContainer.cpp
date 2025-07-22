@@ -27,73 +27,76 @@ TableContainer::TableContainer(juce::MidiMessageSequence& seq, const juce::Strin
 
     model->onRequestSelectRow = [this](int row)
     {
-        auto mods = juce::ModifierKeys::getCurrentModifiers();
-
-        if (mods.isShiftDown())
+        if (row >= 0 && row < model->getNumRows())
         {
-            int anchor = (lastSelectedRow >= 0) ? lastSelectedRow : row;
-            int start = std::min(anchor, row);
-            int end = std::max(anchor, row);
+            auto mods = juce::ModifierKeys::getCurrentModifiers();
 
-            // Copy current selection to an array
-            juce::Array<int> selectionArray;
-            auto selectionSet = table->getSelectedRows();
-
-            for (int i = 0; i < selectionSet.size(); ++i)
-                selectionArray.add(selectionSet[i]);
-
-            // Add the new range to the array if not already selected
-            for (int i = start; i <= end; ++i)
-                if (!selectionArray.contains(i))
-                    selectionArray.add(i);
-
-            // Create new SparseSet for selection
-            juce::SparseSet<int> newSelection;
-            for (auto v : selectionArray)
-                newSelection.addRange({ v, v + 1 });  // add single row as range [v, v+1)
-
-            // Set the updated selection
-            table->setSelectedRows(newSelection);
-
-            lastSelectedRow = row;
-        }
-        else if (mods.isCtrlDown())
-        {
-            juce::Array<int> selectionArray;
-            auto selectionSet = table->getSelectedRows();
-            
-            for (int i = 0; i < selectionSet.size(); i++)
+            if (mods.isShiftDown())
             {
-                selectionArray.add(selectionSet[i]);
+                int anchor = (lastSelectedRow >= 0) ? lastSelectedRow : row;
+                int start = std::min(anchor, row);
+                int end = std::max(anchor, row);
+
+                // Copy current selection to an array
+                juce::Array<int> selectionArray;
+                auto selectionSet = table->getSelectedRows();
+
+                for (int i = 0; i < selectionSet.size(); ++i)
+                    selectionArray.add(selectionSet[i]);
+
+                // Add the new range to the array if not already selected
+                for (int i = start; i <= end; ++i)
+                    if (!selectionArray.contains(i))
+                        selectionArray.add(i);
+
+                // Create new SparseSet for selection
+                juce::SparseSet<int> newSelection;
+                for (auto v : selectionArray)
+                    newSelection.addRange({ v, v + 1 });  // add single row as range [v, v+1)
+
+                // Set the updated selection
+                table->setSelectedRows(newSelection);
+
+                lastSelectedRow = row;
             }
-
-            bool isSelected;
-
-            if (selectionSet.contains(row))
-                isSelected = true;
-            else isSelected = false;
-
-            if (isSelected)
+            else if (mods.isCtrlDown())
             {
-                selectionArray.removeFirstMatchingValue(row);
+                juce::Array<int> selectionArray;
+                auto selectionSet = table->getSelectedRows();
+
+                for (int i = 0; i < selectionSet.size(); i++)
+                {
+                    selectionArray.add(selectionSet[i]);
+                }
+
+                bool isSelected;
+
+                if (selectionSet.contains(row))
+                    isSelected = true;
+                else isSelected = false;
+
+                if (isSelected)
+                {
+                    selectionArray.removeFirstMatchingValue(row);
+                }
+                else {
+                    selectionArray.add(row);
+                }
+
+                juce::SparseSet<int> newSelection;
+                for (auto v : selectionArray)
+                    newSelection.addRange({ v, v + 1 });
+
+                table->setSelectedRows(newSelection);
+
+                lastSelectedRow = row;
             }
-            else {
-                selectionArray.add(row);
+            else
+            {
+                // Normal single selection, deselect others
+                table->selectRow(row, false);
+                lastSelectedRow = row;
             }
-
-            juce::SparseSet<int> newSelection;
-            for (auto v : selectionArray)
-                newSelection.addRange({ v, v + 1 });
-
-            table->setSelectedRows(newSelection);
-
-            lastSelectedRow = row;
-        }
-        else
-        {
-            // Normal single selection, deselect others
-            table->selectRow(row, false);
-            lastSelectedRow = row;
         }
     };
 
@@ -344,7 +347,7 @@ void TableContainer::applyChangeToSequence(int index, const MidiChangeInfo& info
         juce::MidiMessage newMsg = juce::MidiMessage::noteOn(
             e->message.getChannel(),
             info.newNumber,
-            (juce::uint8)info.newVelocity
+            (juce::uint8)juce::jlimit(0, 127, info.newVelocity)
         );
         newMsg.setTimeStamp(info.newTimeStamp);
         e->message = newMsg;
@@ -485,33 +488,66 @@ void TableContainer::modifyVelocitiesUI()
         [this](int result)
         {
             if (result == 1)
+            {
                 modifyOnlyVelocities();
+            }
             else if (result == 2)
+            {
                 modifyOnlyVelocitiesSelected(table->getSelectedRows());
+            }
         },true);
 }
 
 void TableContainer::modifyOnlyTimeStamps()
 {
-
+    newPropertyAndApply([this](MidiChangeInfo& info)
+        {
+            double old = info.newTimeStamp;
+            if (std::holds_alternative<double>(editorValue))
+                info.newTimeStamp = std::get<double>(editorValue)+old;
+            else if (std::holds_alternative<int>(editorValue))
+                info.newTimeStamp = static_cast<double>(std::get<int>(editorValue))+old;
+        });
 }
 
 void TableContainer::modifyOnlyTimeStampsSelected(const juce::SparseSet<int>& allSelected)
 {
+    newPropertyAndApply([this](MidiChangeInfo& info)
+        {
+            double old = info.newTimeStamp;
+            if (std::holds_alternative<double>(editorValue))
+                info.newTimeStamp = std::get<double>(editorValue)+old;
+            else if (std::holds_alternative<int>(editorValue))
+                info.newTimeStamp = static_cast<double>(std::get<int>(editorValue))+old;
 
+        },&allSelected);
 }
 
 void TableContainer::modifyOnlyVelocities()
 {
+    newPropertyAndApply([this](MidiChangeInfo& info)
+        {
+            if (std::holds_alternative<int>(editorValue))
+                info.newVelocity = std::get<int>(editorValue);
+            else if (std::holds_alternative<double>(editorValue))
+                info.newVelocity = static_cast<int>(std::get<double>(editorValue));
 
+        },nullptr,true);
 }
 
 void TableContainer::modifyOnlyVelocitiesSelected(const juce::SparseSet<int>& allSelected)
 {
+    newPropertyAndApply([this](MidiChangeInfo& info)
+        {
+            if (std::holds_alternative<int>(editorValue))
+                info.newVelocity = std::get<int>(editorValue);
+            else if (std::holds_alternative<double>(editorValue))
+                info.newVelocity = static_cast<int>(std::get<double>(editorValue));
 
+        },&allSelected,true);
 }
 
-//can be improved, the if selected to be first so that we won't iterate through all the changes map in that case
+
 void TableContainer::resetPropertyAndApply(const std::function<void(MidiChangeInfo&)>& resetProperty, const juce::SparseSet<int>* selected, bool modifyVelocity)
 {
     if (selected!=nullptr)
@@ -554,9 +590,83 @@ void TableContainer::resetPropertyAndApply(const std::function<void(MidiChangeIn
     }
 }
 
-void TableContainer::newPropertyAndApply(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected)
+void TableContainer::newPropertyAndApply(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected, bool modifyVelocity)
 {
-    
+    if (selected != nullptr)
+    {
+        for (int rangeIndex = 0; rangeIndex < selected->getNumRanges(); ++rangeIndex)
+        {
+            auto range = selected->getRange(rangeIndex);
+            for (int row = range.getStart(); row < range.getEnd(); ++row)
+            {
+                int originalIndex = model->getOriginalIndexFromRow(row);
+                newPropertyHelperFunction(newProperty, selected, modifyVelocity, originalIndex);
+            }
+        }
+    }
+    else
+    {
+        for (auto& entry : model->getEvents())
+        {
+            auto& originalIndex = entry.originalIndex;
+            newPropertyHelperFunction(newProperty, selected, modifyVelocity, originalIndex);
+        }
+    }
+
+}
+
+void TableContainer::newPropertyHelperFunction(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected, bool modifyVelocity, int originalIndex)
+{
+    auto* e = originalSequence.getEventPointer(originalIndex);
+    if (e == nullptr)
+        return;
+
+    auto oldMsg = e->message;
+
+    /*
+    auto it = changesMap.find(originalIndex);
+    MidiChangeInfo& info = (it != changesMap.end())
+        ? it->second
+        : changesMap[originalIndex];
+
+    if (it == changesMap.end())
+    {
+        info.oldNumber = oldMsg.getNoteNumber();
+        info.oldTimeStamp = oldMsg.getTimeStamp();
+        info.oldVelocity = oldMsg.getVelocity();
+
+        info.newNumber = oldMsg.getNoteNumber();
+        info.newTimeStamp = oldMsg.getTimeStamp();
+        info.newVelocity = oldMsg.getVelocity();
+    }
+    */
+
+    //only one look up variant, intersting
+
+
+    auto [it, inserted] = changesMap.try_emplace(originalIndex);
+    MidiChangeInfo& info = it->second;
+
+    if (inserted)
+    {
+        info.oldNumber = oldMsg.getNoteNumber();
+        info.oldTimeStamp = oldMsg.getTimeStamp();
+        info.oldVelocity = oldMsg.getVelocity();
+
+        info.newNumber = oldMsg.getNoteNumber();
+        info.newTimeStamp = oldMsg.getTimeStamp();
+        info.newVelocity = oldMsg.getVelocity();
+    }
+
+    newProperty(info);
+
+    if (modifyVelocity)
+        applyChangeToSequence(originalIndex, info, true);
+    else
+        applyChangeToSequence(originalIndex, info);
+
+    if (validForErase(info))
+        changesMap.erase(originalIndex);
 }
 
 void TableContainer::showModifyChangeDialog(
@@ -596,14 +706,69 @@ void TableContainer::showModifyChangeDialog(
        window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
 
        window->enterModalState(true,
-           juce::ModalCallbackFunction::create([this, window, selectedID](int result)
+           juce::ModalCallbackFunction::create([this, window, selectedID, title,messageAllSelected,messageNoSelection,buttonsWithSelection,buttonsWithoutSelection,onValidResults](int result)
                {
                    std::unique_ptr<juce::AlertWindow> cleanup{ window };
                    if (result != 1)
                        return;
 
                    juce::String userValue = window->getTextEditor("propertyEditor")->getText().trim();
+                   if (selectedID == 1)
+                   {
+                       if (!Validator::isValidMidiDoubleString(userValue))
+                       {
+                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify velocities", "Invalid value");
+                           return;
+                       }
 
+                       double doubleValue = userValue.getDoubleValue();
+
+                       double timeStampFirstNoteOn=model->getFirstNoteOnTimeStamps();
+                       if (timeStampFirstNoteOn == -1)
+                           return;
+
+                       if (!Validator::isValidMidiDoubleValueTimeStamps(doubleValue,timeStampFirstNoteOn))
+                       {
+                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify velocities", "Invalid value");
+                           return;
+                       }
+                       editorValue = doubleValue;
+                   }
+                   else if (selectedID == 2)
+                   {
+                       if (!Validator::isValidMidiIntegerString(userValue))
+                       {
+                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify time stamps", "Invalid value");
+                           return;
+                       }
+
+                       int intValue = userValue.getIntValue();
+
+                       if (!Validator::isValidMidiIntValue(intValue))
+                       {
+                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify time stamps", "Invalid value");
+                           return;
+                       }
+
+                       editorValue = intValue;
+                   }
+
+                   auto* alert = new juce::AlertWindow(title, anySelected() ? messageAllSelected : messageNoSelection, juce::AlertWindow::QuestionIcon);
+
+                   auto& buttons = anySelected() ? buttonsWithSelection : buttonsWithoutSelection;
+
+                   for (int i = 0; i < buttons.size(); i++)
+                       alert->addButton(buttons[i], i + 1);
+
+                   alert->enterModalState(true,
+                       juce::ModalCallbackFunction::create([this, onValidResults](int result)
+                           {
+                               if (result == 0) return;
+                               onValidResults(result);
+                               DBG("We got to confirmed");
+                               onConfirmed();
+                           }),
+                       true);
                    
                }));
        juce::MessageManager::callAsync([window]()

@@ -12,6 +12,8 @@
 
 #include <JuceHeader.h>
 #include "MidiNotesTableModel.h"
+#include "ValidatorUI.h"
+#include <variant>
 
 class TableContainer: public juce::Component
 {
@@ -70,7 +72,9 @@ public:
 
     void resetPropertyAndApply(const std::function<void(MidiChangeInfo&)>& resetProperty, const juce::SparseSet<int>* selected = nullptr, bool modifyVelocity=false);
 
-    void newPropertyAndApply(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected = nullptr);
+    void newPropertyAndApply(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected = nullptr, bool modifyVelocity=false);
+
+    void newPropertyHelperFunction(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected, bool modifyVelocity, int originalIndex);
 
     void showModifyChangeDialog(const juce::String& title, const juce::String& messageAllSelected, const juce::String& messageNoSelection,
         const std::vector<juce::String>& buttonsWithSelection, const std::vector<juce::String>& buttonsWithoutSelection,
@@ -94,4 +98,5 @@ private:
     juce::MidiMessageSequence& originalSequence;
     int lastSelectedRow = -1;
     std::unordered_map<int, MidiChangeInfo>& changesMap;
+    std::variant<int, double> editorValue=0;
 };

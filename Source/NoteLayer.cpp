@@ -176,11 +176,11 @@ void main()
 
 void NoteLayer::renderOpenGL()
 {
+    glClearColor(0.f, 0.f, 0.f, 0.f);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     if (shader != nullptr && particleVBO != 0 && !particles.empty())
     {
-        glClearColor(0.f, 0.f, 0.f, 0.f);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        //DBG("in here");
         shader->use();
 
         struct Vertex {
@@ -424,9 +424,12 @@ void NoteLayer::timerCallback()
     }
     else
     {
-        
+        particles.clear();
+        fallingNotes.clear();
+        activeNotes.clear();
         openGLContext.triggerRepaint();
         repaint();
+
         stopTimer();
     }
 }
