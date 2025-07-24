@@ -25,6 +25,11 @@ TableContainer::TableContainer(juce::MidiMessageSequence& seq, const juce::Strin
             updateToFile();
     };
 
+    model->refreshData = [this]()
+    {
+        table->updateContent();
+    };
+
     model->onRequestSelectRow = [this](int row)
     {
         if (row >= 0 && row < model->getNumRows())

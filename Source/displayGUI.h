@@ -7,19 +7,16 @@
 
     TODO
 
-    -glitch the table doesn't update when modifying for multiple(selected)
+    -std sort for when time stamps change so it's always sorted by time, or even better, let the user from the table to do that also(make it to auto sort when it happens, 
+    and also let him sort by idk, notes velocities, time stamps), even though, the most logical one is by time stamps
 
     -if you open the notes information while playing, you will get the exact note you're at and it will go on
 
     -for keys recognition and intput device playing range, make a way for someone to add his device if not in there already
 
-    -modify the starting time on all tracks simulatnously (also velocities too) or also include that selected, to change for the selected ones
-
     -normalize the measure
 
     -normalize the tpqn
-
-    -optimize with a variable juce var in memory for tracks.json
 
     -make bpm change mid play(not only before pressing play)
 

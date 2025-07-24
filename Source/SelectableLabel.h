@@ -20,6 +20,6 @@ public:
 
 
 private:
-    int row;
-    juce::TableListBox* table;
+    int row=0;
+    juce::TableListBox* table=nullptr;
 };
