@@ -12,8 +12,9 @@
 #include <JuceHeader.h>
 #include "TrackEntry.h"
 #include "SelectableLabel.h"
+#include "TrackPlayerListener.h"
 
-class MidiNotesTableModel: public juce::TableListBoxModel
+class MidiNotesTableModel: public juce::TableListBoxModel, public TrackPlayerListener
 {
 public:
     struct EventWithIndex {
@@ -24,6 +25,7 @@ public:
     std::function<void(int rowNumber)> onUpdate;
     std::function<void(int row)> onRequestSelectRow;
     std::function<void()> refreshData;
+    std::function<void(int row)> onMidPlayRepaint;
 
     MidiNotesTableModel(const juce::MidiMessageSequence& sequence ,int channel, std::unordered_map<int, MidiChangeInfo>& map);
 
@@ -57,8 +59,12 @@ public:
 
     std::vector<EventWithIndex> getEvents();
 
-private:
+    int getRowFromTime(double currentTime);
 
+    void updateCurrentRowBasedOnTime(double currentTime) override;
+
+private:
+    int highlightedRow = -1;
     std::unordered_map<int, int> originalIndexToRowMap;
     std::vector<EventWithIndex> noteOnEvents;
     int channel;

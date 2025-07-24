@@ -1391,6 +1391,16 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
             updateTrackFile();
     };
 
+    if (container)
+    {
+        container->addModelAsListener(trackPlayer.get());
+        container->removeModelFromListener = [this](TrackPlayerListener* listener)
+        {
+            if (trackPlayer)
+                trackPlayer->removeListener(listener);
+        };
+    }
+
     juce::CallOutBox::launchAsynchronously(
         std::move(container),
         getScreenBounds(),

@@ -7,8 +7,8 @@
 
     TODO
 
-    -std sort for when time stamps change so it's always sorted by time, or even better, let the user from the table to do that also(make it to auto sort when it happens, 
-    and also let him sort by idk, notes velocities, time stamps), even though, the most logical one is by time stamps
+
+    -delay issue
 
     -if you open the notes information while playing, you will get the exact note you're at and it will go on
 
@@ -39,6 +39,7 @@
 #include "InstrumentChooser.h"
 #include "CustomBeatBar.h"
 #include "IOHelper.h"
+#include "TrackPlayerListener.h"
 
 class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener, public Subject<TrackListListener>
 {

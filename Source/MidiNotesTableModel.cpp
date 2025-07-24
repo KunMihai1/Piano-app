@@ -183,14 +183,7 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
                 double newNoteOffTime = newTime + duration;
                 noteOffEvent->message.setTimeStamp(newNoteOffTime);
             }
-
-            auto* noteOffEvent = e->noteOffObject;
-
-            std::stable_sort(noteOnEvents.begin(), noteOnEvents.end(),
-                [](const EventWithIndex& first, const EventWithIndex& second)
-                {
-                    return first.event->message.getTimeStamp() < second.event->message.getTimeStamp();
-                });
+            
         }
         else if (columnId == 3)
         {
@@ -368,4 +361,45 @@ double MidiNotesTableModel::getFirstNoteOnTimeStamps()
 std::vector<MidiNotesTableModel::EventWithIndex> MidiNotesTableModel::getEvents()
 {
     return noteOnEvents;
+}
+
+int MidiNotesTableModel::getRowFromTime(double currentTime)
+{
+    if (noteOnEvents.empty())
+        return -1;
+
+    int left = 0;
+    int right = static_cast<int>(noteOnEvents.size()) - 1;
+    int result = -1;
+
+    while (left <= right)
+    {
+        int middle = (left + right) / 2;
+        double middleTime = noteOnEvents[middle].event->message.getTimeStamp();
+
+        if (middleTime <= currentTime)
+        {
+            result = middle;    
+            left = middle + 1;  
+        }
+        else
+        {
+            right = middle - 1;
+        }
+    }
+
+    return result; 
+    }
+
+void MidiNotesTableModel::updateCurrentRowBasedOnTime(double currentTime)
+{
+    DBG("time:" + juce::String(currentTime));
+    int toHighlitRow = getRowFromTime(currentTime);
+
+    if (highlightedRow != toHighlitRow)
+    {
+        highlightedRow = toHighlitRow;
+        if (onMidPlayRepaint)
+            onMidPlayRepaint(highlightedRow);
+    }
 }
