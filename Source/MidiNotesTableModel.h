@@ -23,10 +23,13 @@ public:
 
     std::function<void(int rowNumber)> onUpdate;
     std::function<void(int row)> onRequestSelectRow;
+    std::function<void()> refreshData;
 
     MidiNotesTableModel(const juce::MidiMessageSequence& sequence ,int channel, std::unordered_map<int, MidiChangeInfo>& map);
 
     int getNumRows() override;
+
+    void sortOrderChanged(int newSortColumnId, bool isForwards);
 
     void paintRowBackground(juce::Graphics& g, int rowNumber, int width, int height, bool rowIsSelected) override;
 

@@ -28,6 +28,43 @@ int MidiNotesTableModel::getNumRows()
     return static_cast<int>(noteOnEvents.size());
 }
 
+void MidiNotesTableModel::sortOrderChanged(int newSortColumnId, bool isForwards)
+{
+    if (newSortColumnId == 1)
+    {
+        std::stable_sort(noteOnEvents.begin(), noteOnEvents.end(),
+            [isForwards](const EventWithIndex& first, const EventWithIndex& second)
+            {
+                if (isForwards)
+                    return first.event->message.getNoteNumber() < second.event->message.getNoteNumber();
+                else return first.event->message.getNoteNumber() > second.event->message.getNoteNumber();
+            });
+    }
+    else if (newSortColumnId == 2)
+    {
+        std::stable_sort(noteOnEvents.begin(), noteOnEvents.end(),
+            [isForwards](const EventWithIndex& first, const EventWithIndex& second)
+            {
+                if (isForwards)
+                    return first.event->message.getTimeStamp() < second.event->message.getTimeStamp();
+                else return first.event->message.getTimeStamp() > second.event->message.getTimeStamp();
+            });
+    }
+    else if (newSortColumnId == 3)
+    {
+        std::stable_sort(noteOnEvents.begin(), noteOnEvents.end(),
+            [isForwards](const EventWithIndex& first, const EventWithIndex& second)
+            {
+                if (isForwards)
+                    return first.event->message.getVelocity() < second.event->message.getVelocity();
+                else return first.event->message.getVelocity() > second.event->message.getVelocity();
+            });
+    }
+
+    if (refreshData)
+        refreshData();
+}
+
 void MidiNotesTableModel::paintRowBackground(juce::Graphics& g, int rowNumber, int width, int height, bool rowIsSelected)
 {
     if (rowIsSelected)
@@ -148,6 +185,12 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
             }
 
             auto* noteOffEvent = e->noteOffObject;
+
+            std::stable_sort(noteOnEvents.begin(), noteOnEvents.end(),
+                [](const EventWithIndex& first, const EventWithIndex& second)
+                {
+                    return first.event->message.getTimeStamp() < second.event->message.getTimeStamp();
+                });
         }
         else if (columnId == 3)
         {
@@ -297,7 +340,7 @@ void MidiNotesTableModel::refreshVectorFromSequence(const juce::MidiMessageSeque
         if (event != nullptr && event->message.isNoteOn())
         {
             noteOnEvents.push_back({ event, i });
-            originalIndexToRowMap[i] = noteOnEvents.size() - 1;
+            originalIndexToRowMap[i] = static_cast<int>(noteOnEvents.size()) - 1;
         }
     }
 }
