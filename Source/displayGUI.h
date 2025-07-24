@@ -7,8 +7,12 @@
 
     TODO
 
+    glitches with changing time stamps and actual real time stamps modified when modifing the slider's value
+    be carerful when i do a change and the bpm change, then the changes map won't reflect the correct values
 
-    -delay issue
+    -change bpm when uhm, creating/ reloading current style component and also when selecting to put a new track so the changes reflect actual real time
+
+    -apply startup delay+ bpm change rescale time for the sequence present in the vector
 
     -if you open the notes information while playing, you will get the exact note you're at and it will go on
 
@@ -250,6 +254,10 @@ public:
 
     void syncPercussionTracksVolumeChange(double newVolume);
 
+    void applyBPMchangeBeforePlayback(double userBPM);
+
+    void applyBPMchangeForOne(double userBPM, const juce::Uuid& uuid);
+
 private:
     void mouseDown(const juce::MouseEvent& ev) override;
 
@@ -263,7 +271,7 @@ private:
 
     std::weak_ptr<juce::MidiOutput> outputDevice;
     std::unique_ptr<MultipleTrackPlayer> trackPlayer=nullptr;
-    std::unordered_map<juce::Uuid, TrackEntry*>& mapNameToTrackEntry;
+    std::unordered_map<juce::Uuid, TrackEntry*>& mapUuidToTrackEntry;
     Track* lastSelectedTrack = nullptr;
 
     juce::Slider tempoSlider;
@@ -382,7 +390,7 @@ public:
     void appendNewStyleInJson(const juce::String& newName);
     void removeStyleInJson(const juce::String& name);
 
-    std::unordered_map<juce::Uuid, TrackEntry*> buildTrackNameMap();
+    std::unordered_map<juce::Uuid, TrackEntry*> buildTrackUuidMap();
 
     void addNewTracksToMap();
 

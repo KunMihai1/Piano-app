@@ -172,6 +172,7 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
             tr.file = file;
             tr.trackIndex = trackIndex;
             tr.displayName = displayName;
+            tr.originalSequenceTicks = *sequence;
             tr.sequence = *sequence;
             tr.sequence.updateMatchedPairs();
             tr.originalBPM = originalBpm;

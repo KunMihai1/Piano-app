@@ -97,6 +97,7 @@ void MultipleTrackPlayer::start()
     startTime = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
     lastKnownSequenceTime = 0.0;
     currentElapsedTime = 0.0;
+    DBG("Playback started at time: " << startTime);
 
     for (auto& track : tracks)
         track.nextEventIndex = 0;
@@ -128,13 +129,10 @@ void MultipleTrackPlayer::applyBPMchangeDuringPlayback(double newBPM)
 
     double oldElapsed = currentElapsedTime;
 
-    // MIDI ticks per quarter note (you should get this from your MIDI files!)
     double tpqn = 960.0;
 
-    // Calculate new seconds per tick based on new BPM
     double newSecondsPerTick = 60.0 / (newBPM * tpqn);
 
-    // Update timestamps in filteredSequences, preserving channels and startup delays
     for (size_t i = 0; i < filteredSequences.size(); ++i)
     {
         auto& filteredSeq = filteredSequences[i];
@@ -142,12 +140,7 @@ void MultipleTrackPlayer::applyBPMchangeDuringPlayback(double newBPM)
         for (int e = 0; e < filteredSeq.getNumEvents(); ++e)
         {
             auto* event = filteredSeq.getEventPointer(e);
-            // Original tick timestamp (convert from seconds back to ticks first)
-            // This assumes original event timestamps were in seconds at old BPM
-            // We'll calculate new timestamp with new BPM.
 
-            // To do this accurately, you should store the original tick timestamp per event somewhere!
-            // If you don't, you can approximate by:
             double originalTickTime = event->message.getTimeStamp() / (60.0 / (currentBPM * tpqn));
             double newTimeInSeconds = originalTickTime * newSecondsPerTick;
 
@@ -169,7 +162,6 @@ void MultipleTrackPlayer::applyBPMchangeDuringPlayback(double newBPM)
     startTime = now - oldElapsed;
     currentElapsedTime = oldElapsed;
 
-    // Update nextEventIndex to resume playback at correct event
     for (auto& track : tracks)
     {
         auto& sequence = filteredSequences[track.filteredSequenceIndex];
@@ -348,7 +340,9 @@ void MultipleTrackPlayer::hiResTimerCallback()
 
                 if (eventTime <= elapsed)
                 {
-                    midiOut->sendMessageNow(midiEvent);  // Use locked shared_ptr here
+                    DBG("Playing event at timestamp: " << eventTime << " elapsed: " << elapsed);
+                    DBG("Sending MIDI msg at elapsed: " << elapsed << " actual timestamp: " << midiEvent.getTimeStamp());
+                    midiOut->sendMessageNow(midiEvent); 
                     track.nextEventIndex++;
                 }
                 else break;
