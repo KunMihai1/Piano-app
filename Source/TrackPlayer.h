@@ -13,8 +13,10 @@
 #include <JuceHeader.h>
 #include "TrackEntry.h"
 #include "TrackListener.h"
+#include "TrackPlayerListener.h"
+#include "SubjectInterface.h"
 
-class MultipleTrackPlayer: private juce::HighResolutionTimer, public TrackListener
+class MultipleTrackPlayer: private juce::HighResolutionTimer, public TrackListener, public Subject<TrackPlayerListener>
 {
 public:
     struct TrackPlaybackData {

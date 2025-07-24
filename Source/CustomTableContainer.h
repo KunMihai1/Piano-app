@@ -14,11 +14,13 @@
 #include "MidiNotesTableModel.h"
 #include "ValidatorUI.h"
 #include <variant>
+#include "SubjectInterface.h"
 
 class TableContainer: public juce::Component
 {
 public:
     std::function<void()> updateToFile;
+    std::function<void(TrackPlayerListener* listener)> removeModelFromListener;
 
     TableContainer(juce::MidiMessageSequence& seq, const juce::String& displayName, int channel, std::unordered_map<int, MidiChangeInfo>& map);
 
@@ -79,6 +81,8 @@ public:
     void showModifyChangeDialog(const juce::String& title, const juce::String& messageAllSelected, const juce::String& messageNoSelection,
         const std::vector<juce::String>& buttonsWithSelection, const std::vector<juce::String>& buttonsWithoutSelection,
         std::function<void(int)> onValidResults, bool isModify=false);
+
+    void addModelAsListener(Subject<TrackPlayerListener>* subject=nullptr);
 
 private:
     /*for future reference, making this whole thing in a separate thread could benefit if mid playing(if it's needed, but prob not since the playing takes place on another thread,

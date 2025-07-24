@@ -94,7 +94,6 @@ void MultipleTrackPlayer::stop()
 void MultipleTrackPlayer::start()
 {
 
-    DBG("Ticks per second: " << juce::Time::getHighResolutionTicksPerSecond());
     startTime = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
     lastKnownSequenceTime = 0.0;
     currentElapsedTime = 0.0;
@@ -332,10 +331,12 @@ void MultipleTrackPlayer::hiResTimerCallback()
 
         double adjustedBeatsElapsed = rawBeatsElapsed * noteLengthRatio;
 
-        juce::MessageManager::callAsync([this, adjustedBeatsElapsed]
+        juce::MessageManager::callAsync([this, adjustedBeatsElapsed,elapsed]
             {
                 onElapsedUpdate(adjustedBeatsElapsed);
+                notifyMidPlay(elapsed);
             });
+
 
         for (auto& track : tracks)
         {

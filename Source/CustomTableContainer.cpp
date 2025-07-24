@@ -105,6 +105,21 @@ TableContainer::TableContainer(juce::MidiMessageSequence& seq, const juce::Strin
         }
     };
 
+    model->onMidPlayRepaint = [this](int row)
+    {
+        if (row >= 0 && row < model->getNumRows())
+        {
+            table->deselectAllRows();
+
+            table->selectRow(row);
+
+            table->scrollToEnsureRowIsOnscreen(row);
+
+            table->repaint();
+        }
+        else table->deselectAllRows();
+    };
+
     table->setModel(model.get());
 
     table->setMultipleSelectionEnabled(true);
@@ -244,6 +259,9 @@ void TableContainer::resized()
 TableContainer::~TableContainer()
 {
     table->setModel(nullptr);
+
+    if (model && removeModelFromListener)
+        removeModelFromListener(model.get());
 }
 
 void TableContainer::onlyNotes()
@@ -800,4 +818,10 @@ void TableContainer::showModifyChangeDialog(
                 }),
             true);
     }
+}
+
+void TableContainer::addModelAsListener(Subject<TrackPlayerListener>* subject)
+{
+    if (subject)
+        subject->addListener(model.get());
 }

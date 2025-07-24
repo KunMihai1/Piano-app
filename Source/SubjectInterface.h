@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "TrackListener.h"
 #include "trackListComponentListener.h"
+#include "TrackPlayerListener.h"
 
 template <typename ListenerType>
 class Subject
@@ -37,6 +38,14 @@ public:
         listeners.call([=](ListenerType& listener)
             {
                 listener.updateUIbeforeAnyLoadingCase();
+            });
+    }
+
+    void notifyMidPlay(double currentTime)
+    {
+        listeners.call([=](ListenerType& listener)
+            {
+                listener.updateCurrentRowBasedOnTime(currentTime);
             });
     }
 
