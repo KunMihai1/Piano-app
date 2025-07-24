@@ -38,8 +38,9 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
     }
 
     TrackIOHelper::loadFromFile(jsonFile, *groupedTracks, *groupedTrackKeys);
+    
 
-    mapNameToTrack = buildTrackNameMap();
+    mapNameToTrack = buildTrackUuidMap();
 
     std::vector<juce::String> stylesNames = getAllStylesFromJson();
     DBG("Size of names is:" + juce::String(stylesNames.size()));
@@ -200,8 +201,10 @@ void Display::showCurrentStyleTab(const juce::String& name)
             }
         }
     }
-
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
+
+    double bpmToUse = currentStyleComponent->getTempo();
+    currentStyleComponent->applyBPMchangeBeforePlayback(bpmToUse);
 }
 
 void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> onTrackSelected)
@@ -693,7 +696,7 @@ void Display::removeStyleInJson(const juce::String& name)
     jsonFile.replaceWithText(jsonString);
 }
 
-std::unordered_map<juce::Uuid, TrackEntry*> Display::buildTrackNameMap()
+std::unordered_map<juce::Uuid, TrackEntry*> Display::buildTrackUuidMap()
 {
     std::unordered_map<juce::Uuid, TrackEntry*> map;
 
@@ -1122,6 +1125,7 @@ void CurrentStyleComponent::startPlaying()
     stopPlaying();
 
     std::vector<TrackEntry> selectedTracks;
+    //if i will need for example changes to reflect mid playing, i will store pointer to track entry instead of objects of trackentry thus no copies 
 
     if (auto midiOut=outputDevice.lock())
     {
@@ -1129,11 +1133,9 @@ void CurrentStyleComponent::startPlaying()
         {
             for (const auto& tr : allTracks)
             {
-                DBG("We got in the for");
-                auto it = mapNameToTrackEntry.find(tr->getUsedID());
-                if (it != mapNameToTrackEntry.end())
+                auto it = mapUuidToTrackEntry.find(tr->getUsedID());
+                if (it != mapUuidToTrackEntry.end() && it->second != nullptr)
                 {
-                    DBG("It's in the map bro");
                     it->second->instrumentAssociated = tr->getInstrumentNumber();
                     it->second->volumeAssociated = tr->getVolume();
                     selectedTracks.push_back(*it->second);
@@ -1144,8 +1146,8 @@ void CurrentStyleComponent::startPlaying()
         {
             if (lastSelectedTrack)
             {
-                auto it = mapNameToTrackEntry.find(lastSelectedTrack->getUsedID());
-                if (it != mapNameToTrackEntry.end())
+                auto it = mapUuidToTrackEntry.find(lastSelectedTrack->getUsedID());
+                if (it != mapUuidToTrackEntry.end())
                     selectedTracks.push_back(*it->second);
             }
         }
@@ -1155,7 +1157,7 @@ void CurrentStyleComponent::startPlaying()
             return;
         }
         trackPlayer->setTracks(selectedTracks);
-        trackPlayer->applyBPMchangeBeforePlayback(currentTempo);
+        //trackPlayer->applyBPMchangeBeforePlayback(currentTempo);
 
         trackPlayer->syncPlaybackSettings();
         trackPlayer->start();
@@ -1167,7 +1169,7 @@ void CurrentStyleComponent::startPlaying()
 
 }
 
-CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice) : name(name), mapNameToTrackEntry(map), outputDevice(outputDevice)
+CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice) : name(name), mapUuidToTrackEntry(map), outputDevice(outputDevice)
 {
     addMouseListener(this, true);
     nameOfStyle.setText(name, juce::dontSendNotification);
@@ -1241,10 +1243,12 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
             syncPercussionTracksVolumeChange(newVolume);
         };
 
-        newTrack->onRequestTrackSelection = [this](std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> trackChosenCallback)
+        newTrack->onRequestTrackSelection = [this,newTrack](std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> trackChosenCallback)
         {
             if (onRequestTrackSelectionFromTrack)
                 onRequestTrackSelectionFromTrack(trackChosenCallback);
+
+            applyBPMchangeForOne(currentTempo, newTrack->getUsedID());
         };
 
         newTrack->isPlaying = [this]() {
@@ -1272,14 +1276,24 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     tempoSlider.setValue(tempoSlider.getValue(), juce::sendNotificationSync);
     tempoSlider.updateText();
 
+    /*
     tempoSlider.onValueChange = [this]()
     {
         oldTempo = currentTempo;
         currentTempo = tempoSlider.getValue();
     };
+    */
 
     tempoSlider.onDragEnd = [this]()
     {
+        oldTempo = currentTempo;
+        currentTempo = tempoSlider.getValue();
+
+        if (trackPlayer)
+            trackPlayer->setCurrentBPM(currentTempo);
+        applyBPMchangeBeforePlayback(currentTempo);
+
+        DBG("Activated!");
         if (anyTrackChanged)
             anyTrackChanged();
     };
@@ -1358,8 +1372,8 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
     std::unordered_map<int, MidiChangeInfo>* changeMap = nullptr;
     juce::String displayName = "<Unnamed>";
 
-    auto it = mapNameToTrackEntry.find(uuid);
-    if (it != mapNameToTrackEntry.end())
+    auto it = mapUuidToTrackEntry.find(uuid);
+    if (it != mapUuidToTrackEntry.end())
     {
         auto& track = it->second;
         if (track != nullptr)
@@ -1428,6 +1442,173 @@ void CurrentStyleComponent::syncPercussionTracksVolumeChange(double newVolume)
             if (track->getVolume() != newVolume)
                 track->setVolumeSlider(newVolume);
         }
+    }
+}
+
+void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM)
+{
+    if (userBPM <= 0.0)
+        userBPM = 120.0;
+
+    currentTempo = userBPM;
+
+    if (trackPlayer)
+        trackPlayer->setCurrentBPM(currentTempo);
+
+    int channelCounter = 0;
+
+    for (const auto& trackPtr : allTracks)
+    {
+        auto& tr = mapUuidToTrackEntry[trackPtr->getUsedID()];
+        if (tr == nullptr)
+            continue;
+
+        int channel = (tr->type == TrackType::Percussion) ? 10 : (channelCounter + 2);
+        if (tr->type != TrackType::Percussion)
+            ++channelCounter;
+
+        juce::MidiMessageSequence scaledSequence;
+
+        double trackOriginalBPM = (tr->originalBPM > 0.0) ? tr->originalBPM : 120.0;
+
+        for (int i = 0; i < tr->originalSequenceTicks.getNumEvents(); ++i)
+        {
+            const auto& event = tr->originalSequenceTicks.getEventPointer(i)->message;
+
+            double scaledTime = event.getTimeStamp() * (trackOriginalBPM / userBPM);
+
+            juce::MidiMessage newMsg = event;
+            newMsg.setTimeStamp(scaledTime);
+            newMsg.setChannel(channel);
+
+            scaledSequence.addEvent(newMsg);
+        }
+
+        scaledSequence.sort();
+
+        // Add volume and program change events if needed
+        double firstNoteOnTime = 0.01;
+        for (int i = 0; i < scaledSequence.getNumEvents(); ++i)
+        {
+            const auto& msg = scaledSequence.getEventPointer(i)->message;
+            if (msg.isNoteOn())
+            {
+                firstNoteOnTime = std::max(0.01, msg.getTimeStamp() - 0.005);
+                break;
+            }
+        }
+
+        if (tr->volumeAssociated != -1)
+        {
+            scaledSequence.addEvent(
+                juce::MidiMessage::controllerEvent(channel, 7, (int)tr->volumeAssociated).withTimeStamp(firstNoteOnTime - 0.004));
+        }
+
+        if (channel != 10 && tr->instrumentAssociated != -1)
+        {
+            scaledSequence.addEvent(
+                juce::MidiMessage::programChange(channel, tr->instrumentAssociated).withTimeStamp(firstNoteOnTime - 0.002));
+        }
+
+        scaledSequence.updateMatchedPairs();
+
+        // Replace the working sequence with scaled sequence
+        tr->sequence = scaledSequence;
+
+        for (auto& [noteId, change] : tr->changesMap)
+        {
+            double ratio = trackOriginalBPM / userBPM;
+
+            double originalShift = change.newTimeStamp - change.oldTimeStamp;
+            change.oldTimeStamp *= ratio;
+            change.newTimeStamp = change.oldTimeStamp + originalShift;
+        }
+    }
+}
+
+void CurrentStyleComponent::applyBPMchangeForOne(double userBPM, const juce::Uuid& uuid)
+{
+    if (userBPM <= 0.0)
+        userBPM = 120.0;
+
+    currentTempo = userBPM;
+
+    int channelCounter = 0;
+    int targetChannel = 10;  
+
+    for (const auto& trackPtr : allTracks)
+    {
+        auto& tr = mapUuidToTrackEntry[trackPtr->getUsedID()];
+        if (tr == nullptr)
+            continue;
+
+        if (trackPtr->getUsedID() == uuid)
+        {
+            targetChannel = (tr->type == TrackType::Percussion) ? 10 : (channelCounter + 2);
+            break;
+        }
+
+        if (tr->type != TrackType::Percussion)
+            ++channelCounter;
+    }
+
+    auto& tr = mapUuidToTrackEntry[uuid];
+    if (tr == nullptr)
+        return;
+
+    juce::MidiMessageSequence scaledSequence;
+
+    double trackOriginalBPM = (tr->originalBPM > 0.0) ? tr->originalBPM : 120.0;
+
+    for (int i = 0; i < tr->originalSequenceTicks.getNumEvents(); ++i)
+    {
+        const auto& event = tr->originalSequenceTicks.getEventPointer(i)->message;
+
+        double scaledTime = event.getTimeStamp() * (trackOriginalBPM / userBPM);
+
+        juce::MidiMessage newMsg = event;
+        newMsg.setTimeStamp(scaledTime);
+        newMsg.setChannel(targetChannel);
+
+        scaledSequence.addEvent(newMsg);
+    }
+
+    scaledSequence.sort();
+
+    double firstNoteOnTime = 0.01;
+    for (int i = 0; i < scaledSequence.getNumEvents(); ++i)
+    {
+        const auto& msg = scaledSequence.getEventPointer(i)->message;
+        if (msg.isNoteOn())
+        {
+            firstNoteOnTime = std::max(0.01, msg.getTimeStamp() - 0.005);
+            break;
+        }
+    }
+
+    if (tr->volumeAssociated != -1)
+    {
+        scaledSequence.addEvent(
+            juce::MidiMessage::controllerEvent(targetChannel, 7, (int)tr->volumeAssociated).withTimeStamp(firstNoteOnTime - 0.004));
+    }
+
+    if (targetChannel != 10 && tr->instrumentAssociated != -1)
+    {
+        scaledSequence.addEvent(
+            juce::MidiMessage::programChange(targetChannel, tr->instrumentAssociated).withTimeStamp(firstNoteOnTime - 0.002));
+    }
+
+    scaledSequence.updateMatchedPairs();
+
+    tr->sequence = scaledSequence;
+
+    for (auto& [noteId, change] : tr->changesMap)
+    {
+        double ratio = trackOriginalBPM / userBPM;
+
+        double originalShift = change.newTimeStamp - change.oldTimeStamp;
+        change.oldTimeStamp *= ratio;
+        change.newTimeStamp = change.oldTimeStamp + originalShift;
     }
 }
 
