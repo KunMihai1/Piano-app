@@ -62,6 +62,8 @@ void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<
                     auto* changeObj = new juce::DynamicObject();
                     juce::var changeVar(changeObj);
 
+
+
                     changeObj->setProperty("oldNumber", change.oldNumber);
                     changeObj->setProperty("oldTimeStamp", change.oldTimeStamp);
                     changeObj->setProperty("oldVelocity", change.oldVelocity);
@@ -71,6 +73,8 @@ void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<
                     changeObj->setProperty("newVelocity", change.newVelocity);
 
                     changesObj->setProperty(juce::String(row), changeVar);
+
+                    DBG("WRITING: " + juce::String(change.oldTimeStamp) + " " + juce::String(change.newTimeStamp));
 
                 }
 
@@ -317,23 +321,5 @@ void TrackIOHelper::applyChangesToASequence(juce::MidiMessageSequence& sequence,
             eventHolder->message = newMsg;
         }
 
-    }
-
-    int eventIndexToCheck = 544;
-
-    if (eventIndexToCheck < sequence.getNumEvents())
-    {
-        auto* eventHolder = sequence.getEventPointer(eventIndexToCheck);
-        if (eventHolder != nullptr)
-        {
-            auto& msg = eventHolder->message;
-            DBG("Event " << eventIndexToCheck << ": note number = " << msg.getNoteNumber()
-                << ", time stamp = " << msg.getTimeStamp()
-                << ", velocity = " << (int)msg.getVelocity());
-        }
-    }
-    else
-    {
-        DBG("Event index " << eventIndexToCheck << " is out of range");
     }
 }

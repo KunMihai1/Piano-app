@@ -40,7 +40,7 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
     TrackIOHelper::loadFromFile(jsonFile, *groupedTracks, *groupedTrackKeys);
     
 
-    mapNameToTrack = buildTrackUuidMap();
+    mapUuidToTrack = buildTrackUuidMap();
 
     std::vector<juce::String> stylesNames = getAllStylesFromJson();
     DBG("Size of names is:" + juce::String(stylesNames.size()));
@@ -152,7 +152,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
 {
     if (!created)
     {
-        currentStyleComponent = std::make_unique<CurrentStyleComponent>(name, mapNameToTrack, outputDevice);
+        currentStyleComponent = std::make_unique<CurrentStyleComponent>(name, mapUuidToTrack, outputDevice);
         currentStyleComponent->onRequestTrackSelectionFromTrack = [this](std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> trackChosenCallback)
         {
             showListOfTracksToSelectFrom(trackChosenCallback);
@@ -218,7 +218,7 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
             onTrackSelected(track.getDisplayName(), track.getUniqueID(), typeString);
 
             //if (mapNameToTrack.empty())
-             //   mapNameToTrack = buildTrackNameMap();
+              //  mapNameToTrack = buildTrackNameMap();
 
             if (trackListComp)
                 trackListComp->removeListener(this);
@@ -249,7 +249,7 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
 
     trackListComp->addToMapOnAdding= [this](TrackEntry* newEntry)
     {
-        mapNameToTrack[newEntry->getUniqueID()] = newEntry;
+        mapUuidToTrack[newEntry->getUniqueID()] = newEntry;
     };
 
     tabComp->addTab("My tracks", juce::Colour::fromRGB(10, 15, 10), trackListComp.get(), false);
@@ -1445,7 +1445,7 @@ void CurrentStyleComponent::syncPercussionTracksVolumeChange(double newVolume)
     }
 }
 
-void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM)
+void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool whenLoading)
 {
     if (userBPM <= 0.0)
         userBPM = 120.0;
@@ -1463,30 +1463,51 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM)
         if (tr == nullptr)
             continue;
 
-        int channel = (tr->type == TrackType::Percussion) ? 10 : (channelCounter + 2);
+        int targetChannel = (tr->type == TrackType::Percussion) ? 10 : (channelCounter + 2);
         if (tr->type != TrackType::Percussion)
             ++channelCounter;
 
-        juce::MidiMessageSequence scaledSequence;
+        double originalBPM = (tr->originalBPM > 0.0) ? tr->originalBPM : 120.0;
+        double ratio = originalBPM / userBPM;
 
-        double trackOriginalBPM = (tr->originalBPM > 0.0) ? tr->originalBPM : 120.0;
+        juce::MidiMessageSequence scaledSequence;
 
         for (int i = 0; i < tr->originalSequenceTicks.getNumEvents(); ++i)
         {
             const auto& event = tr->originalSequenceTicks.getEventPointer(i)->message;
-
-            double scaledTime = event.getTimeStamp() * (trackOriginalBPM / userBPM);
+            double scaledTime = event.getTimeStamp() * ratio;
 
             juce::MidiMessage newMsg = event;
             newMsg.setTimeStamp(scaledTime);
-            newMsg.setChannel(channel);
+            newMsg.setChannel(targetChannel);
 
             scaledSequence.addEvent(newMsg);
         }
 
-        scaledSequence.sort();
+        for (auto& [noteId, change] : tr->changesMap)
+        {
+            change.oldTimeStamp *= ratio;
+            change.newTimeStamp *= ratio;
 
-        // Add volume and program change events if needed
+            double shift = change.newTimeStamp - change.oldTimeStamp;
+
+            for (int i = 0; i < scaledSequence.getNumEvents(); ++i)
+            {
+                auto& msg = scaledSequence.getEventPointer(i)->message;
+
+                if ((msg.isNoteOn() || msg.isNoteOff()) && msg.getNoteNumber() == change.oldNumber)
+                {
+                    if (std::abs(msg.getTimeStamp() - change.oldTimeStamp) < 0.01)
+                    {
+                        msg.setTimeStamp(msg.getTimeStamp() + shift);
+                    }
+                }
+            }
+        }
+
+        scaledSequence.sort();
+        scaledSequence.updateMatchedPairs();
+
         double firstNoteOnTime = 0.01;
         for (int i = 0; i < scaledSequence.getNumEvents(); ++i)
         {
@@ -1501,29 +1522,22 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM)
         if (tr->volumeAssociated != -1)
         {
             scaledSequence.addEvent(
-                juce::MidiMessage::controllerEvent(channel, 7, (int)tr->volumeAssociated).withTimeStamp(firstNoteOnTime - 0.004));
+                juce::MidiMessage::controllerEvent(targetChannel, 7, (int)tr->volumeAssociated)
+                .withTimeStamp(firstNoteOnTime - 0.004));
         }
 
-        if (channel != 10 && tr->instrumentAssociated != -1)
+        if (targetChannel != 10 && tr->instrumentAssociated != -1)
         {
             scaledSequence.addEvent(
-                juce::MidiMessage::programChange(channel, tr->instrumentAssociated).withTimeStamp(firstNoteOnTime - 0.002));
+                juce::MidiMessage::programChange(targetChannel, tr->instrumentAssociated)
+                .withTimeStamp(firstNoteOnTime - 0.002));
         }
 
-        scaledSequence.updateMatchedPairs();
-
-        // Replace the working sequence with scaled sequence
         tr->sequence = scaledSequence;
-
-        for (auto& [noteId, change] : tr->changesMap)
-        {
-            double ratio = trackOriginalBPM / userBPM;
-
-            double originalShift = change.newTimeStamp - change.oldTimeStamp;
-            change.oldTimeStamp *= ratio;
-            change.newTimeStamp = change.oldTimeStamp + originalShift;
-        }
     }
+
+    if (anyTrackChanged)
+        anyTrackChanged();
 }
 
 void CurrentStyleComponent::applyBPMchangeForOne(double userBPM, const juce::Uuid& uuid)
@@ -1532,6 +1546,9 @@ void CurrentStyleComponent::applyBPMchangeForOne(double userBPM, const juce::Uui
         userBPM = 120.0;
 
     currentTempo = userBPM;
+
+    if (trackPlayer)
+        trackPlayer->setCurrentBPM(currentTempo);
 
     int channelCounter = 0;
     int targetChannel = 10;  
@@ -1601,15 +1618,6 @@ void CurrentStyleComponent::applyBPMchangeForOne(double userBPM, const juce::Uui
     scaledSequence.updateMatchedPairs();
 
     tr->sequence = scaledSequence;
-
-    for (auto& [noteId, change] : tr->changesMap)
-    {
-        double ratio = trackOriginalBPM / userBPM;
-
-        double originalShift = change.newTimeStamp - change.oldTimeStamp;
-        change.oldTimeStamp *= ratio;
-        change.newTimeStamp = change.oldTimeStamp + originalShift;
-    }
 }
 
 void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)

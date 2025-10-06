@@ -194,85 +194,6 @@ int MultipleTrackPlayer::findNextEventIndex(const juce::MidiMessageSequence& seq
     return result;
 }
 
-void MultipleTrackPlayer::applyBPMchangeBeforePlayback(double userBPM)
-{
-    if (userBPM <= 0.0)
-        userBPM = 120.0;
-
-    currentBPM = userBPM;
-
-    int j = 0;
-
-    filteredSequences.clear();
-
-    for (const auto& tr : currentTracks)
-    {
-        int channel;
-        if (tr.type == TrackType::Percussion)
-            channel = 10;
-        else
-        {
-            channel = j + 2;
-            j += 1;
-        }
-
-        juce::MidiMessageSequence newSequence;
-
-        double trackOriginalBPM;
-
-        if (tr.originalBPM > 0)
-            trackOriginalBPM = tr.originalBPM;
-        else trackOriginalBPM = 120.0;
-
-        for (int i = 0; i < tr.sequence.getNumEvents(); ++i)
-        {
-            const auto& event = tr.sequence.getEventPointer(i)->message;
-
-            // Scale relative to original time in seconds using the track's original BPM
-            double scaledTime = event.getTimeStamp() * (trackOriginalBPM / userBPM);
-
-            juce::MidiMessage newMessage = event;
-            newMessage.setTimeStamp(scaledTime);
-            newMessage.setChannel(channel);
-            newSequence.addEvent(newMessage);
-        }
-
-        newSequence.sort();
-
-        double firstEventTime = 0.01;
-        for (int i = 0; i < newSequence.getNumEvents(); ++i)
-        {
-            const auto& msg = newSequence.getEventPointer(i)->message;
-            if (msg.isNoteOn())
-            {
-                firstEventTime = std::max(0.01, msg.getTimeStamp() - 0.005);
-                break;
-            }
-        }
-
-        if (tr.volumeAssociated != -1)
-        {
-            newSequence.addEvent(
-                juce::MidiMessage::controllerEvent(channel, 7, tr.volumeAssociated).withTimeStamp(firstEventTime - 0.004));
-        }
-
-        if (channel != 10 && tr.instrumentAssociated != -1)
-        {
-            newSequence.addEvent(
-                juce::MidiMessage::programChange(channel, tr.instrumentAssociated).withTimeStamp(firstEventTime - 0.002));
-        }
-
-        newSequence.updateMatchedPairs();
-        filteredSequences.push_back(newSequence);
-    }
-
-    tracks.clear();
-    for (int i = 0; i < (int)filteredSequences.size(); ++i)
-    {
-        tracks.push_back(TrackPlaybackData{ i, 0 });
-    }
-}
-
 void MultipleTrackPlayer::syncPlaybackSettings()
 {
     int j = 0;
@@ -340,8 +261,6 @@ void MultipleTrackPlayer::hiResTimerCallback()
 
                 if (eventTime <= elapsed)
                 {
-                    DBG("Playing event at timestamp: " << eventTime << " elapsed: " << elapsed);
-                    DBG("Sending MIDI msg at elapsed: " << elapsed << " actual timestamp: " << midiEvent.getTimeStamp());
                     midiOut->sendMessageNow(midiEvent); 
                     track.nextEventIndex++;
                 }
