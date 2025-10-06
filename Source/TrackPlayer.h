@@ -46,8 +46,6 @@ public:
     void applyBPMchangeDuringPlayback(double newBPM);
 
     int findNextEventIndex(const juce::MidiMessageSequence& seq, double currentTime);
-    
-    void applyBPMchangeBeforePlayback(double userBPM);
 
     void syncPlaybackSettings();
 

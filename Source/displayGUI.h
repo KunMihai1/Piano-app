@@ -7,14 +7,11 @@
 
     TODO
 
-    glitches with changing time stamps and actual real time stamps modified when modifing the slider's value
-    be carerful when i do a change and the bpm change, then the changes map won't reflect the correct values
+    -issue with the time stamp from table and the one in the json saved
 
     -change bpm when uhm, creating/ reloading current style component and also when selecting to put a new track so the changes reflect actual real time
 
     -apply startup delay+ bpm change rescale time for the sequence present in the vector
-
-    -if you open the notes information while playing, you will get the exact note you're at and it will go on
 
     -for keys recognition and intput device playing range, make a way for someone to add his device if not in there already
 
@@ -24,7 +21,7 @@
 
     -make bpm change mid play(not only before pressing play)
 
-    -put more settings that will include different well, settings for the playing of the actual styles which will relation with the highest note, lowest note, stops things like these
+    -put more settings that will include different well, settings for the playing of the actual styles which will relate with the highest note, lowest note, stops things like these
 
     -make it so that the the current style can be played by pressing a note(lowest) and end while highest note
 
@@ -254,7 +251,7 @@ public:
 
     void syncPercussionTracksVolumeChange(double newVolume);
 
-    void applyBPMchangeBeforePlayback(double userBPM);
+    void applyBPMchangeBeforePlayback(double userBPM, bool whenLoad=false);
 
     void applyBPMchangeForOne(double userBPM, const juce::Uuid& uuid);
 
@@ -431,7 +428,7 @@ private:
     std::unique_ptr<TrackListComponent> trackListComp;
     juce::var allStylesJsonVar; // this has a root object, acts like a map
 
-    std::unordered_map<juce::Uuid, TrackEntry*> mapNameToTrack;
+    std::unordered_map<juce::Uuid, TrackEntry*> mapUuidToTrack;
 
     //JUCE_LEAK_DETECTOR(Display)
 };
