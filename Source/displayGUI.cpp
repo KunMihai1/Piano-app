@@ -166,7 +166,15 @@ void Display::showCurrentStyleTab(const juce::String& name)
             TrackIOHelper::saveToFile(jsonFile, *groupedTracks);
         };
 
-        tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), false); //release, get potential issue
+        currentStyleComponent->keybindTabStarting = [this]()
+        {
+            playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote,maxNote,VID, PID);
+            playBackSettings->setBounds(getLocalBounds());
+            tabComp->addTab("Playback Settings", juce::Colour::fromRGB(10, 15, 10), playBackSettings.get(), false);
+            tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
+        };
+
+        tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), false);
         created = true;
     }
     else
@@ -296,6 +304,25 @@ void Display::updateUIbeforeAnyLoadingCase()
     DBG("sUNT IN CAZUL ASTA");
     //if (this->mapNameToTrack.empty())
     //    mapNameToTrack = trackListComp->buildTrackNameMap();
+}
+
+void Display::set_min_max(int min, int max)
+{
+    this->minNote = min;
+    this->maxNote = max;
+}
+
+void Display::set_VID_PID(const juce::String& VID, const juce::String& PID)
+{
+    this->VID = VID;
+    this->PID = PID;
+}
+
+void Display::homeButtonInteraction()
+{
+    tabComp->removeTab(tabComp->getNumTabs() - 1);
+    tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
+    this->currentStyleComponent->comboBoxChangeIndex(0);
 }
 
 void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)
@@ -1125,7 +1152,6 @@ void CurrentStyleComponent::startPlaying()
     stopPlaying();
 
     std::vector<TrackEntry> selectedTracks;
-    //if i will need for example changes to reflect mid playing, i will store pointer to track entry instead of objects of trackentry thus no copies 
 
     if (auto midiOut=outputDevice.lock())
     {
@@ -1180,7 +1206,9 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
 
     playSettingsTracks.addItem("All tracks", 1);
     playSettingsTracks.addItem("Solo track(last selected)", 2);
+    playSettingsTracks.addItem("Keybinds",3);
     playSettingsTracks.setSelectedId(1);
+    playSettingsTracks.addListener(this);
 
     addAndMakeVisible(playSettingsTracks);
     addAndMakeVisible(startPlayingTracks);
@@ -1636,6 +1664,23 @@ void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)
     }
 }
 
+void CurrentStyleComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
+{
+    if (comboBoxThatHasChanged == &playSettingsTracks)
+    {
+        int id = playSettingsTracks.getSelectedId();
+        if (id == 3)
+        {
+            keybindTabStarting();
+        }
+    }
+}
+
+void CurrentStyleComponent::comboBoxChangeIndex(int Index)
+{
+    playSettingsTracks.setSelectedItemIndex(Index);
+}
+
 void CurrentStyleComponent::setTempo(double newTempo)
 {
     oldTempo = currentTempo;
@@ -1712,6 +1757,8 @@ CurrentStyleComponent::~CurrentStyleComponent()
         for (auto& track : allTracks)
             track->removeListener(trackPlayer.get());
     }
+    if (&playSettingsTracks)
+        playSettingsTracks.removeListener(this);
 }
 
 juce::String CurrentStyleComponent::getName()

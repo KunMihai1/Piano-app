@@ -323,3 +323,62 @@ void TrackIOHelper::applyChangesToASequence(juce::MidiMessageSequence& sequence,
 
     }
 }
+
+void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBackSettings& settings)
+{
+    juce::var rootVar;
+
+    if (file.existsAsFile())
+    {
+        auto jsonText = file.loadFileAsString();
+        rootVar = juce::JSON::parse(jsonText);
+    }
+
+    if (!rootVar.isObject())
+        rootVar = new juce::DynamicObject();
+
+    auto* rootObj = rootVar.getDynamicObject();
+
+    juce::String key = juce::String(settings.VID) + "_" + juce::String(settings.PID);
+
+    auto keyboardObj = new juce::DynamicObject();
+
+    keyboardObj->setProperty("startNote", settings.startNote);
+    keyboardObj->setProperty("endNote", settings.endNote);
+
+    rootObj->setProperty(key, keyboardObj);
+
+    juce::String json = juce::JSON::toString(rootVar);
+    file.replaceWithText(json);
+}
+
+PlayBackSettings PlaybackSettingsIOHelper::loadFromFile(const juce::File& file, const juce::String& VID, const juce::String& PID)
+{
+    PlayBackSettings settings{ -1,-1, "", ""};
+
+    if (!file.existsAsFile())
+        return settings;
+
+    juce::String json = file.loadFileAsString();
+    juce::var rootVar = juce::JSON::parse(json);
+
+    juce::String key = juce::String(VID) + "_" + juce::String(PID);
+
+
+    auto* rootObj = rootVar.getDynamicObject();
+    if (!rootObj)
+        return settings;
+
+    if (rootObj->hasProperty(key))
+    {
+        auto keyboardVar = rootObj->getProperty(key);
+        auto* keyboardObj = keyboardVar.getDynamicObject();
+        if (keyboardObj)
+        {
+            settings.startNote = (int)keyboardObj->getProperty("startNote");
+            settings.endNote = (int)keyboardObj->getProperty("endNote");
+        }
+    }
+
+    return settings;
+}
