@@ -12,6 +12,7 @@
 
 #include <JuceHeader.h>
 #include "TrackEntry.h"
+#include "PlayBackSettingsCustomComponent.h"
 
 class IOHelper
 {
@@ -40,4 +41,15 @@ public:
 
 private:
     static void applyChangesToASequence(juce::MidiMessageSequence& sequence, const std::unordered_map<int, MidiChangeInfo>& changesMap);
+};
+
+class PlaybackSettingsIOHelper
+{
+public:
+    static void saveToFile(const juce::File& file, const PlayBackSettings& settings);
+
+    static PlayBackSettings loadFromFile(const juce::File& file, const juce::String& VID, const juce::String& PID);
+
+private:
+    
 };

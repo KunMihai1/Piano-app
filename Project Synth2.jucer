@@ -33,6 +33,10 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="nMJduY" name="PlayBackSettingsCustomComponent.cpp" compile="1"
+            resource="0" file="Source/PlayBackSettingsCustomComponent.cpp"/>
+      <FILE id="K0OsRB" name="PlayBackSettingsCustomComponent.h" compile="0"
+            resource="0" file="Source/PlayBackSettingsCustomComponent.h"/>
       <FILE id="CkPnSg" name="TrackPlayerListener.h" compile="0" resource="0"
             file="Source/TrackPlayerListener.h"/>
       <FILE id="BpF6r2" name="ValidatorUI.cpp" compile="1" resource="0" file="Source/ValidatorUI.cpp"/>

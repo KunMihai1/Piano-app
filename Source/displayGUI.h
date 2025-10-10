@@ -32,6 +32,7 @@
 
 #pragma once
 #include <JuceHeader.h>
+#include "PlayBackSettingsCustomComponent.h"
 #include "TrackEntry.h"
 #include "TrackPlayer.h"
 #include "CustomToolTip.h"
@@ -202,12 +203,13 @@ private:
     //JUCE_LEAK_DETECTOR(Track)
 };
 
-class CurrentStyleComponent : public juce::Component, private juce::MouseListener
+class CurrentStyleComponent : public juce::Component, private juce::MouseListener, private juce::ComboBox::Listener
 {
 public:
     std::function<void()> anyTrackChanged;
     std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelectionFromTrack;
     std::function<void()> updateTrackFile;
+    std::function<void()> keybindTabStarting;
 
     CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice);
 
@@ -254,6 +256,10 @@ public:
     void applyBPMchangeBeforePlayback(double userBPM, bool whenLoad=false);
 
     void applyBPMchangeForOne(double userBPM, const juce::Uuid& uuid);
+
+    void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
+
+    void comboBoxChangeIndex(int Index);
 
 private:
     void mouseDown(const juce::MouseEvent& ev) override;
@@ -372,6 +378,7 @@ public:
 class Display: public  juce::Component, public juce::ChangeListener, public TrackListListener
 {
 public:
+
     Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList=0);
     ~Display() override;
 
@@ -411,13 +418,22 @@ public:
 
     void updateUIbeforeAnyLoadingCase() override;
 
+    void set_min_max(int min, int max);
+
+    void set_VID_PID(const juce::String& VID, const juce::String& PID);
+
+    void homeButtonInteraction();
+
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
     std::unique_ptr<StylesListComponent> stylesListComponent;
     std::unique_ptr<MyTabbedComponent> tabComp;
     std::unique_ptr<CurrentStyleComponent> currentStyleComponent;
+    std::unique_ptr<PlayBackSettingsComponent> playBackSettings;
     bool created = false;
     bool createdTracksTab = false;
+    int minNote, maxNote;
+    juce::String VID, PID;
 
     std::shared_ptr<std::deque<TrackEntry>> availableTracksFromFolder;
     std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracks;

@@ -709,6 +709,9 @@ void MainComponent::homeButtonOnClick()
     this->noteLayer->resetState();
     if(this->recordPlayer.getIsPlaying())
         this->recordPlayer.stopPlayBack();
+
+    if (display)
+        display->homeButtonInteraction();
 }
 
 void MainComponent::playButtonOnClick()
@@ -740,10 +743,17 @@ void MainComponent::playButtonOnClick()
         }
 
         if (this->keyListener.getIsKeyboardInput())
+        {
             this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
+            this->display->set_min_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
+        }
         else
+        {
             this->keyboard.set_min_and_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
+            this->display->set_min_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
+        }
 
+        this->display->set_VID_PID(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
 
         keyboard.setIsDrawn(false);
         keyboard.repaint();
