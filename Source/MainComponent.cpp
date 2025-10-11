@@ -746,14 +746,16 @@ void MainComponent::playButtonOnClick()
         {
             this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
             this->display->set_min_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
+            this->display->set_VID_PID("", "");
         }
         else
         {
             this->keyboard.set_min_and_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
             this->display->set_min_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
+            this->display->set_VID_PID(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
         }
 
-        this->display->set_VID_PID(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
+        //this->display()
 
         keyboard.setIsDrawn(false);
         keyboard.repaint();

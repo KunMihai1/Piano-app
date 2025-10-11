@@ -30,7 +30,8 @@ public:
 
 private:
 
-    int lowestNote, highestNote,selectedStartNote=-1,selectedEndNote=-1;
+    int lowestNote, highestNote;
+    PlayBackSettings settings;
     juce::String VID, PID;
     juce::ComboBox startNoteBox;
     juce::ComboBox endNoteBox;

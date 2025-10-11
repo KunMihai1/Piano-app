@@ -323,6 +323,7 @@ void Display::homeButtonInteraction()
     tabComp->removeTab(tabComp->getNumTabs() - 1);
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
     this->currentStyleComponent->comboBoxChangeIndex(0);
+    this->playBackSettings.reset();
 }
 
 void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)
