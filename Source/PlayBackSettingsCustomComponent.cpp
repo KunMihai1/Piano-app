@@ -23,6 +23,9 @@ PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highest
     this->lowestNote = lowestNote;
     this->highestNote = highestNote;
 
+    DBG(juce::String(startNote) + "  SSSSS  " + juce::String(endNote));
+    DBG(VID + PID);
+
     this->settings.startNote = startNote;
     this->settings.endNote = endNote;
     this->settings.VID = VID;
