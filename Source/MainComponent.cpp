@@ -22,6 +22,9 @@ MainComponent::MainComponent()
 
     midiHandler.addListener(&recordPlayer);
     midiHandler.addListener(&keyboard);
+    
+    display->addListener(&midiHandler);
+    this->display->callingListeners();
 
     MIDIDevice.getAvailableDevicesMidiIN(this->devicesIN);
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
@@ -57,7 +60,11 @@ MainComponent::~MainComponent()
         midiHandler.removeListener(noteLayer.get());
     if(&keyboard)
         midiHandler.removeListener(&keyboard);
+    if (display)
+        display->removeListener(&midiHandler);
+
     volumeKnob.setLookAndFeel(nullptr);  
+
 }
 
 //==============================================================================
@@ -600,6 +607,7 @@ void MainComponent::displayInit()
 {
     display = std::make_unique<Display>(deviceOpenedOUT,400);
     headerPanel.addAndMakeVisible(display.get());
+    display->setVisible(false);
     display->setVisible(false);
 }
 

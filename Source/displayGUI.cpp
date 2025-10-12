@@ -114,6 +114,10 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
             
         }
     };
+
+    PlayBackSettings settingsLoaded = PlaybackSettingsIOHelper::loadFromFile(IOHelper::getFile("playbackSettings.json"), this->settings.VID, this->settings.PID);
+    this->settings.startNote = settingsLoaded.startNote;
+    this->settings.endNote = settingsLoaded.endNote;
 }
 
 Display::~Display()
@@ -168,8 +172,15 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
         currentStyleComponent->keybindTabStarting = [this]()
         {
-            playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote,maxNote,VID, PID);
+            playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote,maxNote,settings.startNote,settings.endNote,settings.VID, settings.PID);
             playBackSettings->setBounds(getLocalBounds());
+
+            playBackSettings->onChangingSettings = [this](PlayBackSettings newSettings)
+            {
+                this->settings = newSettings;
+                displayListeners.call(&DisplayListener::playBackSettingsChanged, this->settings);
+            };
+
             tabComp->addTab("Playback Settings", juce::Colour::fromRGB(10, 15, 10), playBackSettings.get(), false);
             tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
         };
@@ -314,8 +325,8 @@ void Display::set_min_max(int min, int max)
 
 void Display::set_VID_PID(const juce::String& VID, const juce::String& PID)
 {
-    this->VID = VID;
-    this->PID = PID;
+    this->settings.VID = VID;
+    this->settings.PID = PID;
 }
 
 void Display::homeButtonInteraction()
@@ -323,7 +334,33 @@ void Display::homeButtonInteraction()
     tabComp->removeTab(tabComp->getNumTabs() - 1);
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
     this->currentStyleComponent->comboBoxChangeIndex(0);
-    this->playBackSettings.reset();
+    this->playBackSettings.reset(); 
+}
+
+int Display::getStartNote()
+{
+    return this->settings.startNote;
+}
+
+int Display::getEndNote()
+{
+    return this->settings.endNote;
+}
+
+void Display::addListener(DisplayListener* listener)
+{
+    displayListeners.add(listener);
+}
+
+void Display::removeListener(DisplayListener* listener)
+{
+    displayListeners.remove(listener);
+}
+
+
+void Display::callingListeners()
+{
+    displayListeners.call(&DisplayListener::playBackSettingsChanged, this->settings);
 }
 
 void Display::removeTrackFromAllStyles(const juce::Uuid& uuid)

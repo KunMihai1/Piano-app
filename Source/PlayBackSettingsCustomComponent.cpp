@@ -11,50 +11,59 @@
 #include "PlayBackSettingsCustomComponent.h"
 #include "IOHelper.h"
 
-PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highestNote, const juce::String& VID, const juce::String& PID)
+PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highestNote, int startNote, int endNote,
+    const juce::String& VID, const juce::String& PID)
 {
     auto settingsFile = IOHelper::getFile("playbackSettings.json");
     if (!settingsFile.existsAsFile())
         settingsFile.create();
         
-    settings = PlaybackSettingsIOHelper::loadFromFile(IOHelper::getFile("playbackSettings.json"),VID,PID);
+
 
     this->lowestNote = lowestNote;
     this->highestNote = highestNote;
+
+    this->settings.startNote = startNote;
+    this->settings.endNote = endNote;
+    this->settings.VID = VID;
+    this->settings.PID = PID;
+
     juce::StringArray availableNotes;
     for (int i = lowestNote; i <= highestNote; i++)
     {
         availableNotes.add(juce::String(i));
     }
-
     addAndMakeVisible(startNoteBox);
+    addAndMakeVisible(endNoteBox);
+
+    startNoteBox.clear();
+    endNoteBox.clear();
+
     startNoteBox.addItemList(availableNotes, 1);
 
     addAndMakeVisible(startNoteLabel);
     startNoteLabel.setText("Start note", juce::dontSendNotification);
-
-    addAndMakeVisible(endNoteBox);
     endNoteBox.addItemList(availableNotes, 1);
 
     addAndMakeVisible(endNoteLabel);
     endNoteLabel.setText("End note", juce::dontSendNotification);
 
-    startNoteBox.clear();
-    endNoteBox.clear();
 
-    if (settings.startNote != -1)
+    if (startNote != -1)
     {
         //this->selectedStartNote = settings.startNote;
-        startNoteBox.setText(juce::String(settings.startNote), juce::dontSendNotification);
+        startNoteBox.setText(juce::String(startNote), juce::dontSendNotification);
     }
-    if (settings.endNote != -1)
+    if (endNote != -1)
     {
         //this->selectedEndNote = settings.endNote;
-        endNoteBox.setText(juce::String(settings.endNote), juce::dontSendNotification);
+        endNoteBox.setText(juce::String(endNote), juce::dontSendNotification);
     }
 
     startNoteBox.addListener(this);
     endNoteBox.addListener(this);
+
+
 }
 
 PlayBackSettingsComponent::~PlayBackSettingsComponent()
@@ -92,6 +101,9 @@ void PlayBackSettingsComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasC
     {
         settings.endNote = endNoteBox.getText().getIntValue();
     }
+
+    if(onChangingSettings)
+        onChangingSettings(settings);
 
     PlaybackSettingsIOHelper::saveToFile(IOHelper::getFile("playbackSettings.json"),this->settings);
 }

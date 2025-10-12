@@ -375,6 +375,12 @@ public:
     //JUCE_LEAK_DETECTOR(MyTabbedComponent)
 };
 
+class DisplayListener {
+public:
+    virtual ~DisplayListener() = default;
+    virtual void playBackSettingsChanged(const PlayBackSettings& settings)=0;
+};
+
 class Display: public  juce::Component, public juce::ChangeListener, public TrackListListener
 {
 public:
@@ -424,6 +430,16 @@ public:
 
     void homeButtonInteraction();
 
+    int getStartNote();
+
+    int getEndNote();
+
+    void addListener(DisplayListener* listener);
+
+    void removeListener(DisplayListener* listener);
+
+    void callingListeners();
+
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
     std::unique_ptr<StylesListComponent> stylesListComponent;
@@ -432,8 +448,9 @@ private:
     std::unique_ptr<PlayBackSettingsComponent> playBackSettings;
     bool created = false;
     bool createdTracksTab = false;
+
     int minNote, maxNote;
-    juce::String VID, PID;
+    PlayBackSettings settings;
 
     std::shared_ptr<std::deque<TrackEntry>> availableTracksFromFolder;
     std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracks;
@@ -446,5 +463,7 @@ private:
 
     std::unordered_map<juce::Uuid, TrackEntry*> mapUuidToTrack;
 
+
+    juce::ListenerList<DisplayListener> displayListeners;
     //JUCE_LEAK_DETECTOR(Display)
 };

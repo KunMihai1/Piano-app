@@ -20,7 +20,10 @@ struct PlayBackSettings
 
 class PlayBackSettingsComponent: public juce::Component, private juce::ComboBox::Listener {
 public:
-    PlayBackSettingsComponent(int lowestNote, int highestNote, const juce::String& VID, const juce::String& PID);
+
+    std::function<void(PlayBackSettings settings)> onChangingSettings;
+
+    PlayBackSettingsComponent(int lowestNote, int highestNote, int startNote, int endNote, const juce::String& VID, const juce::String& PID);
 
     ~PlayBackSettingsComponent();
 
@@ -32,7 +35,6 @@ private:
 
     int lowestNote, highestNote;
     PlayBackSettings settings;
-    juce::String VID, PID;
     juce::ComboBox startNoteBox;
     juce::ComboBox endNoteBox;
     juce::Label startNoteLabel;
