@@ -30,6 +30,20 @@ MainComponent::MainComponent()
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
     this->toFront(true);
 
+    midiHandler.onStartNoteSetting = [this]()
+    {
+        if (display)
+            display->startingPlayer();
+    };
+
+    midiHandler.onEndNoteSetting = [this]()
+    {
+        if (display)
+        {
+            display->stoppingPlayer();
+        }
+    };
+
     startTimer(1000);
 
 }

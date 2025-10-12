@@ -372,18 +372,33 @@ void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample
 }
 
 void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
+	int ok = 0;
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		//here we need to add and if the note received is by chance, start note or end note, do to the according things.
 		DBG("The note is" + juce::String(note) + " the setting one is:" + juce::String(startNoteSetting));
 		if (note != this->startNoteSetting && note!=this->endNoteSetting)
 		{
+			ok = 1;
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
 			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocity));
 		}
+		else if(note==this->startNoteSetting)
+		{
+			if(onStartNoteSetting)
+				onStartNoteSetting();
+		}
+		else if (note == this->endNoteSetting)
+		{
+			if (onEndNoteSetting)
+				onEndNoteSetting();
+		}
 	}
-	listeners.call(&MidiHandlerListener::noteOnReceived, note);
-	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocity));
+	if (ok)
+	{
+		listeners.call(&MidiHandlerListener::noteOnReceived, note);
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocity));
+	}
 }
 
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {

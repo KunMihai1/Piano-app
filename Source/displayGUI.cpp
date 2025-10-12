@@ -307,7 +307,13 @@ void Display::setDeviceOutput(std::weak_ptr<juce::MidiOutput> devOutput)
 void Display::stoppingPlayer()
 {
     if (currentStyleComponent)
-        this->currentStyleComponent->stoppingPlayer();
+        this->currentStyleComponent->triggerStopClick();
+}
+
+void Display::startingPlayer()
+{
+    if(currentStyleComponent)
+        this->currentStyleComponent->startPlaying();
 }
 
 void Display::updateUIbeforeAnyLoadingCase()
@@ -1802,6 +1808,11 @@ CurrentStyleComponent::~CurrentStyleComponent()
 juce::String CurrentStyleComponent::getName()
 {
     return name;
+}
+
+void CurrentStyleComponent::triggerStopClick()
+{
+    this->stopPlayingTracks.triggerClick();
 }
 
 void CurrentStyleComponent::stoppingPlayer()

@@ -33,6 +33,10 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="VWVIRr" name="HelperFunctions.cpp" compile="1" resource="0"
+            file="Source/HelperFunctions.cpp"/>
+      <FILE id="J64Aky" name="HelperFunctions.h" compile="0" resource="0"
+            file="Source/HelperFunctions.h"/>
       <FILE id="nMJduY" name="PlayBackSettingsCustomComponent.cpp" compile="1"
             resource="0" file="Source/PlayBackSettingsCustomComponent.cpp"/>
       <FILE id="K0OsRB" name="PlayBackSettingsCustomComponent.h" compile="0"

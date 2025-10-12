@@ -28,10 +28,10 @@ PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highest
     this->settings.VID = VID;
     this->settings.PID = PID;
 
-    juce::StringArray availableNotes;
+    juce::StringArray availableNotes="None";
     for (int i = lowestNote; i <= highestNote; i++)
     {
-        availableNotes.add(juce::String(i));
+        availableNotes.add(MapHelper::intToStringNote(i));
     }
     addAndMakeVisible(startNoteBox);
     addAndMakeVisible(endNoteBox);
@@ -51,15 +51,14 @@ PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highest
 
     if (startNote != -1)
     {
-        //this->selectedStartNote = settings.startNote;
-        startNoteBox.setText(juce::String(startNote), juce::dontSendNotification);
+        startNoteBox.setText(MapHelper::intToStringNote(startNote), juce::dontSendNotification);
     }
+    else startNoteBox.setText("None",juce::dontSendNotification);
     if (endNote != -1)
     {
-        //this->selectedEndNote = settings.endNote;
-        endNoteBox.setText(juce::String(endNote), juce::dontSendNotification);
+        endNoteBox.setText(MapHelper::intToStringNote(endNote), juce::dontSendNotification);
     }
-
+    else endNoteBox.setText("None", juce::dontSendNotification);
     startNoteBox.addListener(this);
     endNoteBox.addListener(this);
 
@@ -95,11 +94,11 @@ void PlayBackSettingsComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasC
 {   
     if (comboBoxThatHasChanged == &startNoteBox)
     {
-        settings.startNote=startNoteBox.getText().getIntValue();
+        settings.startNote=MapHelper::stringToIntNote(startNoteBox.getText());
     }
     else if (comboBoxThatHasChanged == &endNoteBox)
     {
-        settings.endNote = endNoteBox.getText().getIntValue();
+        settings.endNote =MapHelper::stringToIntNote(endNoteBox.getText());
     }
 
     if(onChangingSettings)

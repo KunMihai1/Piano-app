@@ -10,6 +10,7 @@
 
 #pragma once
 #include <JuceHeader.h>
+#include "HelperFunctions.h"
 
 struct PlayBackSettings
 {
