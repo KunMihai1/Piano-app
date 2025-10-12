@@ -215,6 +215,8 @@ public:
 
     void triggerStopClick();
 
+    void triggerStartClick();
+
     void stoppingPlayer();
     
     ~CurrentStyleComponent() override;
@@ -432,6 +434,8 @@ public:
 
     void set_VID_PID(const juce::String& VID, const juce::String& PID);
 
+    void readSettingsFromJSON();
+
     void homeButtonInteraction();
 
     int getStartNote();
@@ -443,6 +447,8 @@ public:
     void removeListener(DisplayListener* listener);
 
     void callingListeners();
+
+    int getNumTabs();
 
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;

@@ -12,7 +12,7 @@
 #include "InstrumentChooser.h"
 #include "CustomTableContainer.h"
 
-Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : outputDevice{ outputDev }
+Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : outputDevice{outputDev}
 {
     availableTracksFromFolder = std::make_shared<std::deque<TrackEntry>>();
     groupedTracks = std::make_shared<std::unordered_map<juce::String, std::deque<TrackEntry>>>();
@@ -114,10 +114,6 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
             
         }
     };
-
-    PlayBackSettings settingsLoaded = PlaybackSettingsIOHelper::loadFromFile(IOHelper::getFile("playbackSettings.json"), this->settings.VID, this->settings.PID);
-    this->settings.startNote = settingsLoaded.startNote;
-    this->settings.endNote = settingsLoaded.endNote;
 }
 
 Display::~Display()
@@ -161,7 +157,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
         {
             showListOfTracksToSelectFrom(trackChosenCallback);
         };
-        
+
         currentStyleComponent->updateTrackFile = [this]()
         {
             auto appDataFolder = IOHelper::getFolder("Piano Synth2");
@@ -172,7 +168,8 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
         currentStyleComponent->keybindTabStarting = [this]()
         {
-            playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote,maxNote,settings.startNote,settings.endNote,settings.VID, settings.PID);
+            DBG("Display settings VID/PID before creating PlaybackSettings: " + settings.VID + " / " + settings.PID);
+            playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote, maxNote, settings.startNote, settings.endNote, settings.VID, settings.PID);
             playBackSettings->setBounds(getLocalBounds());
 
             playBackSettings->onChangingSettings = [this](PlayBackSettings newSettings)
@@ -312,8 +309,8 @@ void Display::stoppingPlayer()
 
 void Display::startingPlayer()
 {
-    if(currentStyleComponent)
-        this->currentStyleComponent->startPlaying();
+    if (currentStyleComponent)
+        this->currentStyleComponent->triggerStartClick();
 }
 
 void Display::updateUIbeforeAnyLoadingCase()
@@ -333,6 +330,13 @@ void Display::set_VID_PID(const juce::String& VID, const juce::String& PID)
 {
     this->settings.VID = VID;
     this->settings.PID = PID;
+}
+
+void Display::readSettingsFromJSON()
+{
+    PlayBackSettings settingsLoaded = PlaybackSettingsIOHelper::loadFromFile(IOHelper::getFile("playbackSettings.json"), this->settings.VID, this->settings.PID);
+    this->settings.startNote = settingsLoaded.startNote;
+    this->settings.endNote = settingsLoaded.endNote;
 }
 
 void Display::homeButtonInteraction()
@@ -363,6 +367,10 @@ void Display::removeListener(DisplayListener* listener)
     displayListeners.remove(listener);
 }
 
+int Display::getNumTabs()
+{
+    return this->tabComp->getNumTabs();
+}
 
 void Display::callingListeners()
 {
@@ -1193,6 +1201,11 @@ void StylesListComponent::populate()
 void CurrentStyleComponent::startPlaying()
 {
     int selectedID = playSettingsTracks.getSelectedId();
+    if (selectedID == 3)
+        selectedID = 1; //if the keybinds tab is selected, move it to the default one, (first one=play all tracks)
+    
+    playSettingsTracks.setSelectedId(selectedID);
+
     stopPlaying();
 
     std::vector<TrackEntry> selectedTracks;
@@ -1814,6 +1827,12 @@ void CurrentStyleComponent::triggerStopClick()
 {
     this->stopPlayingTracks.triggerClick();
 }
+
+void CurrentStyleComponent::triggerStartClick()
+{
+    this->startPlayingTracks.triggerClick();
+}
+
 
 void CurrentStyleComponent::stoppingPlayer()
 {

@@ -329,19 +329,37 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(scaledVelocity);
 
+		int ok = 0;
 
 		if (auto midiOut = midiDevice.getDeviceOUT().lock())
 		{
-			//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+9, velocityByte));
-			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
-			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
-			//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+10, velocityByte));
+			if (note != this->startNoteSetting && note != this->endNoteSetting)
+			{
+				ok = 1;
+				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+9, velocityByte));
+				midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
+				midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
+				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+10, velocityByte));
+			}
+			else if (note == this->startNoteSetting)
+			{
+				if (onStartNoteSetting)
+					onStartNoteSetting();
+			}
+			else if (note == this->endNoteSetting)
+			{
+				if (onEndNoteSetting)
+					onEndNoteSetting();
+			}
 		}
 
-		listeners.call(&MidiHandlerListener::noteOnReceived, note);
-		//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
-		//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
-		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocityByte));
+		if (ok)
+		{
+			listeners.call(&MidiHandlerListener::noteOnReceived, note);
+			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
+			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
+			listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocityByte));
+		}
 
 	}
 
