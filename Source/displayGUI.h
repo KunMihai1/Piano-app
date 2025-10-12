@@ -213,6 +213,8 @@ public:
 
     CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice);
 
+    void triggerStopClick();
+
     void stoppingPlayer();
     
     ~CurrentStyleComponent() override;
@@ -421,6 +423,8 @@ public:
     void updateTrackNameFromAllStyles(const juce::Uuid& uuid, const juce::String& newName);
 
     void stoppingPlayer();
+
+    void startingPlayer();
 
     void updateUIbeforeAnyLoadingCase() override;
 

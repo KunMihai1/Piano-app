@@ -78,6 +78,9 @@ private:
 class MidiHandler :public juce::MidiInputCallback, public DisplayListener 
 {
 public:
+	std::function<void()> onStartNoteSetting;
+	std::function<void()> onEndNoteSetting;
+
 	MidiHandler(MidiDevice& device);
 	~MidiHandler();
 	void handleIncomingMidiMessage(juce::MidiInput* source, const juce::MidiMessage& message) override;
