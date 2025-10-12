@@ -374,8 +374,13 @@ void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample
 void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
-		midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
-		midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocity));
+		//here we need to add and if the note received is by chance, start note or end note, do to the according things.
+		DBG("The note is" + juce::String(note) + " the setting one is:" + juce::String(startNoteSetting));
+		if (note != this->startNoteSetting && note!=this->endNoteSetting)
+		{
+			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
+			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocity));
+		}
 	}
 	listeners.call(&MidiHandlerListener::noteOnReceived, note);
 	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocity));
@@ -412,6 +417,17 @@ void MidiHandler::setProgramNumber(int toSetNumber, const juce::String& name) {
 int MidiHandler::getProgramNumber()
 {
 	return programNumber;
+}
+
+void MidiHandler::set_start_end_notes(int start, int end)
+{
+	this->startNoteSetting = start;
+	this->endNoteSetting = end;
+}
+
+void MidiHandler::playBackSettingsChanged(const PlayBackSettings& settings)
+{
+	set_start_end_notes(settings.startNote, settings.endNote);
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)

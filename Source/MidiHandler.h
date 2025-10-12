@@ -4,6 +4,7 @@
 #include "MidiDevicesDB.h"
 #include "InstrumentHandler.h"
 #include "MidiHandlerAbstractSubject.h"
+#include "displayGUI.h"
 
 class MidiDevice {
 public:
@@ -74,7 +75,8 @@ private:
 	int minNote, maxNote;
 };
 
-class MidiHandler :public juce::MidiInputCallback {
+class MidiHandler :public juce::MidiInputCallback, public DisplayListener 
+{
 public:
 	MidiHandler(MidiDevice& device);
 	~MidiHandler();
@@ -92,6 +94,10 @@ public:
 	void allOffKeyboard();
 	void setProgramNumber(int toSetNumber, const juce::String& name="");
 	int getProgramNumber();
+	void set_start_end_notes(int start, int end);
+
+
+	void playBackSettingsChanged(const PlayBackSettings& settings) override;
 
 private:
 	//void sendCCifChanged(int ccNumber, int value, int& lastSentValue);
@@ -109,7 +115,9 @@ private:
 	juce::MidiBuffer incomingMidiMessages;
 	juce::CriticalSection midiMutex;
 	int programNumber = 0;
-	
+	int startNoteSetting=-1;
+	int endNoteSetting=-1;
+
 
 	int lastCC91=-1; //reverb
 	int lastCC74 = -1;  //brightness
