@@ -26,7 +26,7 @@ public:
 
     std::function<void(PlayBackSettings settings)> onChangingSettings;
 
-    PlayBackSettingsComponent(int lowestNote, int highestNote, const PlayBackSettings& settings);
+    PlayBackSettingsComponent(int lowestNote, int highestNote, PlayBackSettings& settings);
     
     ~PlayBackSettingsComponent();
 
@@ -41,7 +41,7 @@ public:
 private:
 
     int lowestNote, highestNote;
-    PlayBackSettings settings;
+    PlayBackSettings& settings;
     juce::ComboBox startNoteBox;
     juce::ComboBox endNoteBox;
     juce::Label startNoteLabel;

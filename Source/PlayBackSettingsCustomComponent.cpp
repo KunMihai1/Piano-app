@@ -11,7 +11,7 @@
 #include "PlayBackSettingsCustomComponent.h"
 #include "IOHelper.h"
 
-PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highestNote, const PlayBackSettings& settingsGiven)
+PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highestNote, PlayBackSettings& settingsGiven): settings{settingsGiven}
 {
     auto settingsFile = IOHelper::getFile("playbackSettings.json");
     if (!settingsFile.existsAsFile())
@@ -21,9 +21,6 @@ PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highest
 
     this->lowestNote = lowestNote;
     this->highestNote = highestNote;
-
-
-    this->settings = settingsGiven;
 
     startStopInit();
     handIntervalsInit();
@@ -88,7 +85,8 @@ void PlayBackSettingsComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasC
     }
 
     if(onChangingSettings)
-        onChangingSettings(settings);
+        onChangingSettings(settings); //this is to call the listeners of the display, midiHandler for example. MidiHandler could've had a reference to the structure PlayBackSettings
+                                      //that lives in the Display class, but it's more flexible this way, the design of the midiHandler.
 
     PlaybackSettingsIOHelper::saveToFile(IOHelper::getFile("playbackSettings.json"),this->settings);
 }
