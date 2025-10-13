@@ -124,6 +124,7 @@ void MainComponent::resized()
     homeButton.setBounds(10, 10, 75, 30);
     colourSelectorButton.setBounds(90, 10, 100, 30);
     instrumentSelectorButton.setBounds(195, 10, 100, 30);
+    particleToggle.setBounds(colourSelectorButton.getX(), colourSelectorButton.getY() +colourSelectorButton.getHeight(), 100, 25);
 
     startPlayback.setBounds(getWidth() - 30 - 35, 10, 30, 30);
     stopRecording.setBounds(startPlayback.getX()-30-10, 10, 30, 30);
@@ -322,6 +323,7 @@ void MainComponent::toggleHPanel()
     togglePlayRecordingButton();
     toggleKnobs();
     toggleDisplay();
+    toggleParticleToggle();
 }
 
 void MainComponent::toggleHomeButton()
@@ -388,6 +390,13 @@ void MainComponent::toggleDisplay()
     display->setVisible(true);
 }
 
+void MainComponent::toggleParticleToggle()
+{
+    if (particleToggle.isVisible())
+        particleToggle.setVisible(false);
+    else particleToggle.setVisible(true);
+}
+
 void MainComponent::toggleForPlaying()
 {
     if (this->midiButton.isVisible())
@@ -431,6 +440,7 @@ void MainComponent::playButtonInit()
 void MainComponent::colourSelectorButtonInit()
 {
     colourSelectorButton.setButtonText("Particle colours");
+    colourSelectorButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     colourSelectorButton.onClick = [this] {
         showColourSelector();
@@ -442,6 +452,7 @@ void MainComponent::colourSelectorButtonInit()
 void MainComponent::instrumentSelectorButtonInit()
 {
     instrumentSelectorButton.setButtonText("Instruments");
+    instrumentSelectorButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     instrumentSelectorButton.onClick = [this] {
         showInstrumentSelector();
@@ -625,6 +636,22 @@ void MainComponent::displayInit()
     display->setVisible(false);
 }
 
+void MainComponent::toggleButtonInit()
+{
+    particleToggle.setButtonText("Toggle particles");
+    particleToggle.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    particleToggle.onClick = [this]()
+    {
+        noteLayer->setSpawnParticleState(particleToggle.getToggleState());
+    };
+
+    particleToggle.setToggleState(false,juce::dontSendNotification);
+
+    headerPanel.addAndMakeVisible(particleToggle);
+    particleToggle.setVisible(false);
+}
+
 void MainComponent::keyBoardUIinit(int min, int max)
 {
     keyboardInitialized = true;
@@ -683,12 +710,14 @@ void MainComponent::headerPanelInit()
     recordButtonsInit();
     saveRecordingButtonInit();
     playRecordingButtonInit();
+    toggleButtonInit();
     knobsInit();
 }
 
 void MainComponent::homeButtonInit()
 {
     homeButton.setButtonText("Home");
+    homeButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     homeButton.onClick = [this] {
         homeButtonOnClick();

@@ -174,6 +174,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
             playBackSettings->onChangingSettings = [this](PlayBackSettings newSettings)
             {
+                //this->settings = newSettings; no need of this anymore since the PlaybackSettings class holds a reference to the settings;
                 displayListeners.call(&DisplayListener::playBackSettingsChanged, this->settings);
             };
 

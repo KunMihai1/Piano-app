@@ -102,6 +102,8 @@ public:
 
 	void playBackSettingsChanged(const PlayBackSettings& settings) override;
 
+	void setCorrectChannelBasedOnHand(int note);
+
 private:
 	//void sendCCifChanged(int ccNumber, int value, int& lastSentValue);
 
@@ -122,7 +124,7 @@ private:
 	int endNoteSetting=-1;
 	int leftHandBoundSetting = -1;
 	int rightHandBoundSetting = -1;
-
+	int channel = 1;
 
 	int lastCC91=-1; //reverb
 	int lastCC74 = -1;  //brightness

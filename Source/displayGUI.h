@@ -21,7 +21,8 @@
 
     -make bpm change mid play(not only before pressing play)
 
-    -making the sets so that you can select what to play on left hand and on right hand
+    -making the sets so that you can select what to play on left hand and on right hand (almost done, need to refine a little bit)
+    -make the toggle state particle and possible future settings in that sense, savable and loadable from a file.
 
   ==============================================================================
 */

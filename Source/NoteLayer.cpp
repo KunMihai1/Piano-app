@@ -273,6 +273,11 @@ void NoteLayer::setColourParticle(juce::Colour& colour)
     this->particleColourUser = colour;
 }
 
+void NoteLayer::setSpawnParticleState(bool state)
+{
+    this->spawnParticleState = state;
+}
+
 void NoteLayer::updateParticles()
 {
     float dt = 1.0f / 60.0f;
@@ -293,6 +298,9 @@ void NoteLayer::updateParticles()
 
 void NoteLayer::spawnParticlesForNote(int midiNote)
 {
+    if (!spawnParticleState)
+        return;
+
     auto keyBounds = this->keyBoardUI.keys[midiNote].bounds;
 
     // Convert pixel center to NDC [-1, 1]
