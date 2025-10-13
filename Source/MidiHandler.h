@@ -98,7 +98,7 @@ public:
 	void setProgramNumber(int toSetNumber, const juce::String& name="");
 	int getProgramNumber();
 	void set_start_end_notes(int start, int end);
-
+	void set_left_right_bounds(int left, int right);
 
 	void playBackSettingsChanged(const PlayBackSettings& settings) override;
 
@@ -120,6 +120,8 @@ private:
 	int programNumber = 0;
 	int startNoteSetting=-1;
 	int endNoteSetting=-1;
+	int leftHandBoundSetting = -1;
+	int rightHandBoundSetting = -1;
 
 
 	int lastCC91=-1; //reverb

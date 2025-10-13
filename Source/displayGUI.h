@@ -9,7 +9,7 @@
 
     -issue with the time stamp from table and the one in the json saved
 
-    -change bpm when uhm, creating/ reloading current style component and also when selecting to put a new track so the changes reflect actual real time
+    -change bpm when creating/ reloading current style component and also when selecting to put a new track so the changes reflect actual real time
 
     -apply startup delay+ bpm change rescale time for the sequence present in the vector
 
@@ -20,10 +20,6 @@
     -normalize the tpqn
 
     -make bpm change mid play(not only before pressing play)
-
-    -put more settings that will include different well, settings for the playing of the actual styles which will relate with the highest note, lowest note, stops things like these
-
-    -make it so that the the current style can be played by pressing a note(lowest) and end while highest note
 
     -making the sets so that you can select what to play on left hand and on right hand
 
@@ -441,6 +437,10 @@ public:
     int getStartNote();
 
     int getEndNote();
+
+    int getLeftBound();
+
+    int getRightBound();
 
     void addListener(DisplayListener* listener);
 

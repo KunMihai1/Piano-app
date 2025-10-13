@@ -169,7 +169,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
         currentStyleComponent->keybindTabStarting = [this]()
         {
             DBG("Display settings VID/PID before creating PlaybackSettings: " + settings.VID + " / " + settings.PID);
-            playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote, maxNote, settings.startNote, settings.endNote, settings.VID, settings.PID);
+            playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote, maxNote, settings);
             playBackSettings->setBounds(getLocalBounds());
 
             playBackSettings->onChangingSettings = [this](PlayBackSettings newSettings)
@@ -335,8 +335,7 @@ void Display::set_VID_PID(const juce::String& VID, const juce::String& PID)
 void Display::readSettingsFromJSON()
 {
     PlayBackSettings settingsLoaded = PlaybackSettingsIOHelper::loadFromFile(IOHelper::getFile("playbackSettings.json"), this->settings.VID, this->settings.PID);
-    this->settings.startNote = settingsLoaded.startNote;
-    this->settings.endNote = settingsLoaded.endNote;
+    this->settings = settingsLoaded;
 }
 
 void Display::homeButtonInteraction()
@@ -355,6 +354,16 @@ int Display::getStartNote()
 int Display::getEndNote()
 {
     return this->settings.endNote;
+}
+
+int Display::getLeftBound()
+{
+    return this->settings.leftHandBound;
+}
+
+int Display::getRightBound()
+{
+    return this->settings.rightHandBound;
 }
 
 void Display::addListener(DisplayListener* listener)
