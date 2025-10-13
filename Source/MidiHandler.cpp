@@ -391,6 +391,9 @@ void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample
 
 void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	int ok = 0;
+	int channel = 1;
+	if (rightHandBoundSetting != -1 && note >= rightHandBoundSetting)
+		channel = 16;
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		//here we need to add and if the note received is by chance, start note or end note, do to the according things.
