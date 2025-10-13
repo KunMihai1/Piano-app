@@ -11,8 +11,7 @@
 #include "PlayBackSettingsCustomComponent.h"
 #include "IOHelper.h"
 
-PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highestNote, int startNote, int endNote,
-    const juce::String& VID, const juce::String& PID)
+PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highestNote, const PlayBackSettings& settingsGiven)
 {
     auto settingsFile = IOHelper::getFile("playbackSettings.json");
     if (!settingsFile.existsAsFile())
@@ -23,15 +22,124 @@ PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highest
     this->lowestNote = lowestNote;
     this->highestNote = highestNote;
 
-    DBG(juce::String(startNote) + "  SSSSS  " + juce::String(endNote));
-    DBG(VID + PID);
 
-    this->settings.startNote = startNote;
-    this->settings.endNote = endNote;
-    this->settings.VID = VID;
-    this->settings.PID = PID;
+    this->settings = settingsGiven;
 
-    juce::StringArray availableNotes="None";
+    startStopInit();
+    handIntervalsInit();
+
+
+}
+
+PlayBackSettingsComponent::~PlayBackSettingsComponent()
+{
+    startNoteBox.removeListener(this);
+    endNoteBox.removeListener(this);
+}
+
+void PlayBackSettingsComponent::resized()
+{
+    auto area = getLocalBounds().reduced(10);
+
+    int comboWidth = 85;
+    int comboHeight = 20;
+    int labelHeight = 10;   
+    int spacing = 5;        
+
+    startNoteLabel.setBounds(area.removeFromLeft(comboWidth).withHeight(labelHeight));
+    startNoteBox.setBounds(startNoteLabel.getX(), startNoteLabel.getBottom() + spacing, comboWidth, comboHeight);
+
+    area.removeFromLeft(spacing);
+
+    endNoteLabel.setBounds(area.removeFromLeft(comboWidth).withHeight(labelHeight));
+    endNoteBox.setBounds(endNoteLabel.getX(), endNoteLabel.getBottom() + spacing, comboWidth, comboHeight);
+
+    area.removeFromLeft(spacing);
+
+    leftHandBoundLabel.setBounds(area.removeFromLeft(comboWidth).withHeight(labelHeight));
+    leftHandBoundBox.setBounds(leftHandBoundLabel.getX(), leftHandBoundLabel.getBottom() + spacing, comboWidth, comboHeight);
+
+    area.removeFromLeft(spacing);
+
+    rightHandBoundLabel.setBounds(area.removeFromLeft(comboWidth).withHeight(labelHeight));
+    rightHandBoundBox.setBounds(rightHandBoundLabel.getX(), rightHandBoundLabel.getBottom() + spacing, comboWidth, comboHeight);
+
+}
+
+void PlayBackSettingsComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
+{   
+    if (comboBoxThatHasChanged == &startNoteBox)
+    {
+        settings.startNote=MapHelper::stringToIntNote(startNoteBox.getText());
+    }
+    else if (comboBoxThatHasChanged == &endNoteBox)
+    {
+        settings.endNote =MapHelper::stringToIntNote(endNoteBox.getText());
+    }
+    else if (comboBoxThatHasChanged == &leftHandBoundBox)
+    {
+        juce::String text = leftHandBoundBox.getText();
+        settings.leftHandBound = MapHelper::stringToIntNote(text.fromFirstOccurrenceOf("-",false,false));
+    }
+    else if (comboBoxThatHasChanged == &rightHandBoundBox)
+    {
+        juce::String text = rightHandBoundBox.getText();
+        settings.rightHandBound = MapHelper::stringToIntNote(text.upToFirstOccurrenceOf("-", false, false));
+    }
+
+    if(onChangingSettings)
+        onChangingSettings(settings);
+
+    PlaybackSettingsIOHelper::saveToFile(IOHelper::getFile("playbackSettings.json"),this->settings);
+}
+
+void PlayBackSettingsComponent::handIntervalsInit()
+{
+    juce::StringArray availableRangeLeft= "None";
+    juce::StringArray availableRangeRight = "None";
+
+    addAndMakeVisible(leftHandBoundBox);
+    addAndMakeVisible(rightHandBoundBox);
+
+    leftHandBoundBox.clear();
+    rightHandBoundBox.clear();
+
+    addAndMakeVisible(leftHandBoundLabel);
+
+    leftHandBoundLabel.setText("Left hand", juce::dontSendNotification);
+
+    addAndMakeVisible(rightHandBoundLabel);
+
+    rightHandBoundLabel.setText("Right hand", juce::dontSendNotification);
+
+    leftHandBoundBox.addListener(this);
+    rightHandBoundBox.addListener(this);
+
+    juce::String lowestNoteString = MapHelper::intToStringNote(lowestNote);
+    juce::String highestNoteString = MapHelper::intToStringNote(highestNote);
+
+    for (int i = lowestNote; i <= highestNote; i++)
+    {
+        availableRangeLeft.add(lowestNoteString + "-" + MapHelper::intToStringNote(i));
+        availableRangeRight.add(MapHelper::intToStringNote(i) + "-" + highestNoteString);
+    }
+    
+
+    leftHandBoundBox.addItemList(availableRangeLeft, 1);
+    rightHandBoundBox.addItemList(availableRangeRight, 1);
+
+    if (settings.leftHandBound != -1)
+        leftHandBoundBox.setText(MapHelper::intToStringNote(settings.leftHandBound), juce::dontSendNotification);
+    else leftHandBoundBox.setText("None", juce::dontSendNotification);
+
+    if (settings.rightHandBound != -1)
+        rightHandBoundBox.setText(MapHelper::intToStringNote(settings.rightHandBound), juce::dontSendNotification);
+    else rightHandBoundBox.setText("None", juce::dontSendNotification);
+}
+
+void PlayBackSettingsComponent::startStopInit()
+{
+    juce::StringArray availableNotes = "None";
     for (int i = lowestNote; i <= highestNote; i++)
     {
         availableNotes.add(MapHelper::intToStringNote(i));
@@ -52,60 +160,16 @@ PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highest
     endNoteLabel.setText("End note", juce::dontSendNotification);
 
 
-    if (startNote != -1)
+    if (settings.startNote != -1)
     {
-        startNoteBox.setText(MapHelper::intToStringNote(startNote), juce::dontSendNotification);
+        startNoteBox.setText(MapHelper::intToStringNote(settings.startNote), juce::dontSendNotification);
     }
-    else startNoteBox.setText("None",juce::dontSendNotification);
-    if (endNote != -1)
+    else startNoteBox.setText("None", juce::dontSendNotification);
+    if (settings.endNote != -1)
     {
-        endNoteBox.setText(MapHelper::intToStringNote(endNote), juce::dontSendNotification);
+        endNoteBox.setText(MapHelper::intToStringNote(settings.endNote), juce::dontSendNotification);
     }
     else endNoteBox.setText("None", juce::dontSendNotification);
     startNoteBox.addListener(this);
     endNoteBox.addListener(this);
-
-
-}
-
-PlayBackSettingsComponent::~PlayBackSettingsComponent()
-{
-    startNoteBox.removeListener(this);
-    endNoteBox.removeListener(this);
-}
-
-void PlayBackSettingsComponent::resized()
-{
-    auto area = getLocalBounds().reduced(10);
-
-    int comboWidth = 100;
-    int comboHeight = 20;
-    int labelHeight = 10;   
-    int spacing = 5;        
-
-    startNoteLabel.setBounds(area.removeFromLeft(comboWidth).withHeight(labelHeight));
-    startNoteBox.setBounds(startNoteLabel.getX(), startNoteLabel.getBottom() + spacing, comboWidth, comboHeight);
-
-    area.removeFromLeft(spacing);
-
-    endNoteLabel.setBounds(area.removeFromLeft(comboWidth).withHeight(labelHeight));
-    endNoteBox.setBounds(endNoteLabel.getX(), endNoteLabel.getBottom() + spacing, comboWidth, comboHeight);
-
-}
-
-void PlayBackSettingsComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
-{   
-    if (comboBoxThatHasChanged == &startNoteBox)
-    {
-        settings.startNote=MapHelper::stringToIntNote(startNoteBox.getText());
-    }
-    else if (comboBoxThatHasChanged == &endNoteBox)
-    {
-        settings.endNote =MapHelper::stringToIntNote(endNoteBox.getText());
-    }
-
-    if(onChangingSettings)
-        onChangingSettings(settings);
-
-    PlaybackSettingsIOHelper::saveToFile(IOHelper::getFile("playbackSettings.json"),this->settings);
 }

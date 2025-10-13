@@ -345,6 +345,8 @@ void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBack
 
     keyboardObj->setProperty("startNote", settings.startNote);
     keyboardObj->setProperty("endNote", settings.endNote);
+    keyboardObj->setProperty("leftHandBound",settings.leftHandBound);
+    keyboardObj->setProperty("rightHandBound", settings.rightHandBound);
 
     rootObj->setProperty(key, keyboardObj);
 
@@ -354,7 +356,7 @@ void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBack
 
 PlayBackSettings PlaybackSettingsIOHelper::loadFromFile(const juce::File& file, const juce::String& VID, const juce::String& PID)
 {
-    PlayBackSettings settings{ -1,-1, "", ""};
+    PlayBackSettings settings{ -1,-1,-1,-1, "", ""};
 
     if (!file.existsAsFile())
         return settings;
@@ -377,6 +379,8 @@ PlayBackSettings PlaybackSettingsIOHelper::loadFromFile(const juce::File& file, 
         {
             settings.startNote = (int)keyboardObj->getProperty("startNote");
             settings.endNote = (int)keyboardObj->getProperty("endNote");
+            settings.leftHandBound = (int)keyboardObj->getProperty("leftHandBound");
+            settings.rightHandBound = (int)keyboardObj->getProperty("rightHandBound");
         }
     }
 

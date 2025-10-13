@@ -458,9 +458,16 @@ void MidiHandler::set_start_end_notes(int start, int end)
 	this->endNoteSetting = end;
 }
 
+void MidiHandler::set_left_right_bounds(int left, int right)
+{
+	this->leftHandBoundSetting = left;
+	this->rightHandBoundSetting = right;
+}
+
 void MidiHandler::playBackSettingsChanged(const PlayBackSettings& settings)
 {
 	set_start_end_notes(settings.startNote, settings.endNote);
+	set_left_right_bounds(settings.leftHandBound, settings.rightHandBound);
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)
