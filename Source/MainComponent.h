@@ -183,6 +183,7 @@ private:
     void togglePlayRecordingButton();
     void toggleKnobs();
     void toggleDisplay();
+    void toggleParticleToggle();
 
     void settingsInit();
     void playButtonInit();
@@ -199,6 +200,7 @@ private:
     void playRecordingButtonInit();
     void knobsInit();
     void displayInit();
+    void toggleButtonInit();
     
     void settingsButtonOnClick();
     void midiButtonOnClick();
@@ -249,10 +251,12 @@ private:
     juce::TextButton midiButton{ "MIDI Settings" };
     juce::TextButton playButton{ "Play" };
     juce::TextButton homeButton{ "Home" };
+    juce::ToggleButton particleToggle;
     juce::TextButton colourSelectorButton{ "Select colour" };
     juce::TextButton instrumentSelectorButton{ "Select instrument" };
     juce::TextButton saveRecordingButton{ "Save recording" };
     juce::TextButton playRecordingFileButton{ "Play recording file" };
+
 
     juce::DrawableButton startRecording{"Record",juce::DrawableButton::ImageFitted};
     juce::DrawableButton stopRecording{ "Stop", juce::DrawableButton::ImageFitted };

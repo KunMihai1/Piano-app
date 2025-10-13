@@ -391,9 +391,7 @@ void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample
 
 void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	int ok = 0;
-	int channel = 1;
-	if (rightHandBoundSetting != -1 && note >= rightHandBoundSetting)
-		channel = 16;
+	setCorrectChannelBasedOnHand(note);
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		//here we need to add and if the note received is by chance, start note or end note, do to the according things.
@@ -471,6 +469,13 @@ void MidiHandler::playBackSettingsChanged(const PlayBackSettings& settings)
 {
 	set_start_end_notes(settings.startNote, settings.endNote);
 	set_left_right_bounds(settings.leftHandBound, settings.rightHandBound);
+}
+
+void MidiHandler::setCorrectChannelBasedOnHand(int note)
+{
+	if (rightHandBoundSetting != -1 && note >= rightHandBoundSetting)
+		channel = 16;
+	else channel = 1;
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)

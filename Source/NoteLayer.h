@@ -34,6 +34,8 @@ public:
     void resetStateActiveNotes();
     void setColourParticle(juce::Colour& colour);
 
+    void setSpawnParticleState(bool state);
+
 private:
     void updateParticles();
     void spawnParticlesForNote(int midiNote);
@@ -75,4 +77,5 @@ private:
     std::vector<AnimatedNote> fallingNotes;
 
     bool isActive;
+    bool spawnParticleState = false;
 };
