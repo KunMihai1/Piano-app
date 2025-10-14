@@ -287,8 +287,10 @@ void MidiDevice::changeVolumeInstrument()
 	juce::uint8 midiValue = static_cast<juce::uint8>(juce::jlimit(0, 127, int(normalizedVolume * 127.0f)));
 
 	juce::MidiMessage volumeMessage = juce::MidiMessage::controllerEvent(1, 7, midiValue);
+	juce::MidiMessage volumeMessage2 = juce::MidiMessage::controllerEvent(16, 7, midiValue); //can add distinct volumes for left/right hand
 	//DBG("Changed to:" + juce::String(midiValue));
 	this->currentDeviceUSEDout->sendMessageNow(volumeMessage);
+	this->currentDeviceUSEDout->sendMessageNow(volumeMessage2);
 }
 
 void MidiDevice::changeReverbInstrument()
@@ -297,7 +299,10 @@ void MidiDevice::changeReverbInstrument()
 	float normalizedReverb = juce::jlimit(0.0f, 1.0f, reverb1 / 100.0f);
 	juce::uint8 midiValue= static_cast<juce::uint8>(juce::jlimit(0, 127, int(normalizedReverb * 127.0f)));
 	juce::MidiMessage reverbMessage = juce::MidiMessage::controllerEvent(1, 91, midiValue);
+	juce::MidiMessage reverbMessage2 = juce::MidiMessage::controllerEvent(16, 91, midiValue); //can add distinct reverbs for left/right hand
 	this->currentDeviceUSEDout->sendMessageNow(reverbMessage);
+	this->currentDeviceUSEDout->sendMessageNow(reverbMessage2);
+
 }
 
 const juce::String& MidiDevice::get_identifier() const
@@ -356,13 +361,13 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 			}
 		}
 
-		if (ok)
-		{
+		//if (ok)
+		//{
 			listeners.call(&MidiHandlerListener::noteOnReceived, note);
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
 			listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocityByte));
-		}
+		//}
 
 	}
 
@@ -373,11 +378,11 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 
 		if (auto midiOut = midiDevice.getDeviceOUT().lock())
 		{
-			midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note, velocityByte));
+			midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, note, velocityByte));
 		}
 
 		listeners.call(&MidiHandlerListener::noteOffReceived, note);
-		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(1, note, velocityByte));
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(channel, note, velocityByte));
 	}
 
 	incomingMidiMessages.addEvent(processedMessage, 0);
@@ -416,11 +421,11 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 				onEndNoteSetting();
 		}
 	}
-	if (ok)
-	{
+	//if (ok)
+	//{
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocity));
-	}
+	//}
 }
 
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
