@@ -184,6 +184,7 @@ private:
     void toggleKnobs();
     void toggleDisplay();
     void toggleParticleToggle();
+    void toggleHandInstrumentToggle();
 
     void settingsInit();
     void playButtonInit();
@@ -201,6 +202,7 @@ private:
     void knobsInit();
     void displayInit();
     void toggleButtonInit();
+    void toggleHandButtonsInit();
     
     void settingsButtonOnClick();
     void midiButtonOnClick();
@@ -257,6 +259,8 @@ private:
     juce::TextButton saveRecordingButton{ "Save recording" };
     juce::TextButton playRecordingFileButton{ "Play recording file" };
 
+    juce::ToggleButton leftHandInstrumentToggle,rightHandInstrumentToggle;
+
 
     juce::DrawableButton startRecording{"Record",juce::DrawableButton::ImageFitted};
     juce::DrawableButton stopRecording{ "Stop", juce::DrawableButton::ImageFitted };
@@ -289,7 +293,7 @@ private:
     {
         void paint(juce::Graphics& g) override
         {
-            juce::Colour translucentGray = juce::Colour::fromRGBA(169, 169, 169, 204); // Semi-transparent gray (80% opacity)
+            juce::Colour translucentGray = juce::Colour::fromRGBA(169, 169, 169, 204);
             juce::Colour option = juce::Colour::fromRGBA(50, 100, 95, 170);
 
             juce::Colour subtleBorderColor = juce::Colour::fromRGBA(169, 169, 169, 200);
