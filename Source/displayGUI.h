@@ -24,7 +24,12 @@
     -make the toggle state particle and possible future settings in that sense, savable and loadable from a file.
     -divide each track into intro ending... all parts
 
+
+
+
+
     -making the sets so that you can select what to play on left hand and on right hand (maybe a few hidden glitches)
+    ~fix the keyboard moving with z x, thus, the start note and end note and also the left hand right hand intervals should move accordingly. (only if pc keyboard input)
 
   ==============================================================================
 */
