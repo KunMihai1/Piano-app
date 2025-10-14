@@ -504,6 +504,7 @@ void MainComponent::recordButtonsInit()
     startRecording.onClick = [this] {
         recordPlayer.startRecording();
         recordPlayer.handleIncomingMessage(juce::MidiMessage::programChange(1, midiHandler.getProgramNumberLeftHand()));
+        recordPlayer.handleIncomingMessage(juce::MidiMessage::programChange(16, midiHandler.getProgramNumberRightHand()));
 
         saveRecordingButton.setVisible(false);
 
@@ -549,7 +550,8 @@ void MainComponent::recordButtonsInit()
 
     recordPlayer.applyPresetFunction= [&]()
     {
-        midiHandler.setProgramNumber(recordPlayer.getProgram());
+        midiHandler.setProgramNumber(midiHandler.getProgramNumberLeftHand(), "left");
+        midiHandler.setProgramNumber(midiHandler.getProgramNumberRightHand(), "right");
     };
 
     recordPlayer.notifyFunction = [&]()
@@ -827,7 +829,9 @@ void MainComponent::playButtonOnClick()
             DBG("HERE ARE" + juce::String(midiHandler.getProgramNumberLeftHand()) + juce::String(midiHandler.getProgramNumberRightHand() ));
             midiHandler.setProgramNumber(midiHandler.getProgramNumberLeftHand(), "left");
             midiHandler.setProgramNumber(midiHandler.getProgramNumberRightHand(), "right");
-            recordPlayer.setProgarmNumber(0);
+
+            recordPlayer.setProgarmNumber(midiHandler.getProgramNumberLeftHand(),"left");
+            recordPlayer.setProgarmNumber(midiHandler.getProgramNumberRightHand(), "right");
         }
         else {
             keyboard.setVisible(true);

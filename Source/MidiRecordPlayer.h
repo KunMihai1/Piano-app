@@ -49,7 +49,7 @@ public:
 
     void setOutputDevice(std::weak_ptr<juce::MidiOutput> outputDev);
     
-    void setProgarmNumber(int newProgram);
+    void setProgarmNumber(int newProgram, const juce::String& choice="");
 
     void setInitialProgram(int value);
 
@@ -65,7 +65,9 @@ public:
 
     int getSizeRecorded();
 
-    int getProgram();
+    int getProgramLeftHand();
+
+    int getProgramRightHand();
 
     std::vector<RecordedEvent>& getAllRecordedEvents();
 
@@ -88,5 +90,5 @@ private:
     std::weak_ptr<juce::MidiOutput> midiOutputDevice;
     std::vector<RecordedEvent> allEventsPlayed;
     std::vector<RecordedEvent> allEventsPlayedFile;
-    int program;
+    int programLeftHand,programRightHand;
 };

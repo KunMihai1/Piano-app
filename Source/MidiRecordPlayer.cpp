@@ -10,12 +10,12 @@
 
 #include "MidiRecordPlayer.h"
 
-MidiRecordPlayer::MidiRecordPlayer()
+MidiRecordPlayer::MidiRecordPlayer(): programLeftHand{0}, programRightHand{0}
 {
 
 }
 
-MidiRecordPlayer::MidiRecordPlayer(std::weak_ptr<juce::MidiOutput> out): midiOutputDevice{out}, program{0}
+MidiRecordPlayer::MidiRecordPlayer(std::weak_ptr<juce::MidiOutput> out): midiOutputDevice{out}, programLeftHand{0}, programRightHand{0}
 {
 }
 
@@ -151,9 +151,12 @@ void MidiRecordPlayer::setOutputDevice(std::weak_ptr<juce::MidiOutput> outputDev
     midiOutputDevice = outputDev;
 }
 
-void MidiRecordPlayer::setProgarmNumber(int newProgram)
+void MidiRecordPlayer::setProgarmNumber(int newProgram, const juce::String& choice)
 {
-    program = newProgram;
+    if (choice.toLowerCase() == "left")
+        programLeftHand = newProgram;
+    else if (choice.toLowerCase() == "right")
+        programRightHand = newProgram;
 }
 
 void MidiRecordPlayer::setInitialProgram(int value)
@@ -283,9 +286,14 @@ int MidiRecordPlayer::getSizeRecorded()
     return allEventsPlayed.size();
 }
 
-int MidiRecordPlayer::getProgram()
+int MidiRecordPlayer::getProgramLeftHand()
 {
-    return program;
+    return programLeftHand;
+}
+
+int MidiRecordPlayer::getProgramRightHand()
+{
+    return programRightHand;
 }
 
 std::vector<RecordedEvent>& MidiRecordPlayer::getAllRecordedEvents()
