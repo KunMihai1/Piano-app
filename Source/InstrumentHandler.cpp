@@ -34,8 +34,6 @@ void InstrumentHandler::initializeMAP()
 {
     instrumentPresetsMap.clear();
 
-    //+200 for same instrument family
-
     instrumentPresetsMap[0] = { {91, -1}, {93, 10}, {74, 100}, {71, 40}, {11, 127} }; //grand piano
     instrumentPresetsMap[4] = { {91, -1}, {93, 70}, {74, 90}, {71, 30}, {11, 127} }; //electric piano
     instrumentPresetsMap[32] = { {91, -1}, {93, 0}, {74, 60}, {71, 20}, {11, 100} };

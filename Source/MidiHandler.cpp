@@ -317,10 +317,13 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	const juce::ScopedLock lock(midiMutex);
 
 	juce::MidiMessage processedMessage = message;
-	DBG("Incoming MIDI: " + message.getDescription());
+
 	if (message.isNoteOn())
 	{
 		int note = message.getNoteNumber();
+
+		setCorrectChannelBasedOnHand(note);
+
 		float velocity = message.getFloatVelocity();
 
 		float volume = this->midiDevice.getVolume();
@@ -337,8 +340,8 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 			{
 				ok = 1;
 				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+9, velocityByte));
-				midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
-				midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocityByte));
+				midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
+				midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, note, velocityByte));
 				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+10, velocityByte));
 			}
 			else if (note == this->startNoteSetting)
@@ -358,7 +361,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 			listeners.call(&MidiHandlerListener::noteOnReceived, note);
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
-			listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocityByte));
+			listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocityByte));
 		}
 
 	}
@@ -399,8 +402,8 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 		if (note != this->startNoteSetting && note!=this->endNoteSetting)
 		{
 			ok = 1;
-			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(1, 0x2000));
-			midiOut->sendMessageNow(juce::MidiMessage::noteOn(1, note, velocity));
+			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
+			midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, note, velocity));
 		}
 		else if(note==this->startNoteSetting)
 		{
@@ -416,41 +419,53 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	if (ok)
 	{
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
-		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(1, note, velocity));
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocity));
 	}
 }
 
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
+	setCorrectChannelBasedOnHand(note);
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
-		midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, note,velocity));
+		midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, note,velocity));
 
 	}
 	listeners.call(&MidiHandlerListener::noteOffReceived,note);
-	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(1, note));
+	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(channel, note));
 }
 
 void MidiHandler::allOffKeyboard()
 {
 	for (int i = 0; i < 128; i++)
+	{
 		midiDevice.currentDeviceUSEDout->sendMessageNow(juce::MidiMessage::noteOff(1, i));
+		midiDevice.currentDeviceUSEDout->sendMessageNow(juce::MidiMessage::noteOff(16, i));
+	}
 }
 
-void MidiHandler::setProgramNumber(int toSetNumber, const juce::String& name) {
-	this->programNumber = toSetNumber;
+void MidiHandler::setProgramNumber(int toSetNumber, const juce::String& choice) {
+	if (choice.toLowerCase() == "left")
+		this->programNumberLeftHand = toSetNumber;
+	else if (choice.toLowerCase() == "right")
+		this->programNumberRightHand = toSetNumber;
+
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
-		DBG("SET TO" << toSetNumber);
-		const auto& preset = instrumentHandler.getPreset(programNumber);
+		const auto& preset = instrumentHandler.getPreset(toSetNumber);
 
-		applyInstrumentPreset(programNumber, preset);
+		applyInstrumentPreset(toSetNumber, preset,choice);
 		juce::Thread::sleep(5);
 	}
 }
 
-int MidiHandler::getProgramNumber()
+int MidiHandler::getProgramNumberLeftHand()
 {
-	return programNumber;
+	return programNumberLeftHand;
+}
+
+int MidiHandler::getProgramNumberRightHand()
+{
+	return programNumberRightHand;
 }
 
 void MidiHandler::set_start_end_notes(int start, int end)
@@ -474,8 +489,8 @@ void MidiHandler::playBackSettingsChanged(const PlayBackSettings& settings)
 void MidiHandler::setCorrectChannelBasedOnHand(int note)
 {
 	if (rightHandBoundSetting != -1 && note >= rightHandBoundSetting)
-		channel = 16;
-	else channel = 1;
+		this->channel = 16;
+	else this->channel = 1;
 }
 
 void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)
@@ -485,19 +500,22 @@ void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::Strin
 }
 
 
-void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair<int, int>> ccValues)
+void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair<int, int>> ccValues, const juce::String& choice)
 {
+	int channel = 1;
+	if (choice.toLowerCase() == "right")
+		channel = 16;
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		for (int i = 0; i < 128; ++i)
-			midiOut->sendMessageNow(juce::MidiMessage::noteOff(1, i));
+			midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, i));
 
-		midiOut->sendMessageNow(juce::MidiMessage::controllerEvent(1, 64, 0));
+		midiOut->sendMessageNow(juce::MidiMessage::controllerEvent(channel, 64, 0));
 		//juce::MidiMessage localOff = juce::MidiMessage::controllerEvent(1, 122, 0);
 		//midiOut->sendMessageNow(localOff);
 
-		midiOut->sendMessageNow(juce::MidiMessage::programChange(1, programNumber));
-		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::programChange(1, programNumber));
+		midiOut->sendMessageNow(juce::MidiMessage::programChange(channel, programNumber));
+		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::programChange(channel, programNumber));
 
 		for (auto& cc : ccValues)
 		{
@@ -506,7 +524,7 @@ void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair
 			if (ccNumber == 91 && ccValue == -1)
 				ccValue = midiDevice.getReverb();
 
-			juce::MidiMessage msg = juce::MidiMessage::controllerEvent(1, ccNumber, ccValue);
+			juce::MidiMessage msg = juce::MidiMessage::controllerEvent(channel, ccNumber, ccValue);
 			midiOut->sendMessageNow(msg);
 			listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
 		}

@@ -95,8 +95,11 @@ public:
 	void noteOnKeyboard(int note, juce::uint8 velocity);
 	void noteOffKeyboard(int note, juce::uint8 velocity);
 	void allOffKeyboard();
-	void setProgramNumber(int toSetNumber, const juce::String& name="");
-	int getProgramNumber();
+
+	void setProgramNumber(int toSetNumber, const juce::String& choice="");
+	int getProgramNumberLeftHand();
+	int getProgramNumberRightHand();
+
 	void set_start_end_notes(int start, int end);
 	void set_left_right_bounds(int left, int right);
 
@@ -107,7 +110,7 @@ public:
 private:
 	//void sendCCifChanged(int ccNumber, int value, int& lastSentValue);
 
-	void applyInstrumentPreset(int programNumber, std::vector<std::pair<int, int>> ccValues);
+	void applyInstrumentPreset(int programNumber, std::vector<std::pair<int, int>> ccValues, const juce::String& choice="");
 
 	void setPlayableRange(int nrKeys);
 	juce::ListenerList<MidiHandlerListener> listeners;
@@ -119,7 +122,8 @@ private:
 	bool receivedValidNote = false;
 	juce::MidiBuffer incomingMidiMessages;
 	juce::CriticalSection midiMutex;
-	int programNumber = 0;
+	int programNumberLeftHand = 0;
+	int programNumberRightHand = 0;
 	int startNoteSetting=-1;
 	int endNoteSetting=-1;
 	int leftHandBoundSetting = -1;

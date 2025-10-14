@@ -127,11 +127,11 @@ void PlayBackSettingsComponent::handIntervalsInit()
     rightHandBoundBox.addItemList(availableRangeRight, 1);
 
     if (settings.leftHandBound != -1)
-        leftHandBoundBox.setText(MapHelper::intToStringNote(settings.leftHandBound), juce::dontSendNotification);
+        leftHandBoundBox.setText(lowestNoteString + "-" + MapHelper::intToStringNote(settings.leftHandBound), juce::dontSendNotification);
     else leftHandBoundBox.setText("None", juce::dontSendNotification);
 
     if (settings.rightHandBound != -1)
-        rightHandBoundBox.setText(MapHelper::intToStringNote(settings.rightHandBound), juce::dontSendNotification);
+        rightHandBoundBox.setText(MapHelper::intToStringNote(settings.rightHandBound) + "-" + highestNoteString, juce::dontSendNotification);
     else rightHandBoundBox.setText("None", juce::dontSendNotification);
 }
 

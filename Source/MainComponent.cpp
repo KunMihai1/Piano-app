@@ -8,7 +8,6 @@ MainComponent::MainComponent()
     headerPanelInit();
     togglePlayButton();
     initalizeSaveFileForUser();
-    loadSettings();
     cachedImageMainWindow = juce::ImageFileFormat::loadFrom(BinaryData::MainWindow_png, BinaryData::MainWindow_pngSize);
     playBackground = juce::ImageFileFormat::loadFrom(BinaryData::playingBackground_png, BinaryData::playingBackground_pngSize);
     currentBackground = cachedImageMainWindow;
@@ -44,6 +43,7 @@ MainComponent::MainComponent()
         }
     };
 
+    loadSettings();
     startTimer(1000);
 
 }
@@ -125,6 +125,9 @@ void MainComponent::resized()
     colourSelectorButton.setBounds(90, 10, 100, 30);
     instrumentSelectorButton.setBounds(195, 10, 100, 30);
     particleToggle.setBounds(colourSelectorButton.getX(), colourSelectorButton.getY() +colourSelectorButton.getHeight(), 100, 25);
+
+    leftHandInstrumentToggle.setBounds(instrumentSelectorButton.getX(), instrumentSelectorButton.getY() + instrumentSelectorButton.getHeight(), 100, 25);
+    rightHandInstrumentToggle.setBounds(instrumentSelectorButton.getX(), leftHandInstrumentToggle.getY() + leftHandInstrumentToggle.getHeight(), 100, 25);
 
     startPlayback.setBounds(getWidth() - 30 - 35, 10, 30, 30);
     stopRecording.setBounds(startPlayback.getX()-30-10, 10, 30, 30);
@@ -254,6 +257,8 @@ void MainComponent::loadSettings()
     {
         double savedVolume = propertiesFile->getDoubleValue("midiVolume", 100.0);
         double savedReverb = propertiesFile->getDoubleValue("midiReverb", 100.0);
+        int leftHandInstrumentNumber = propertiesFile->getIntValue("leftInstrumentNumber", 0);
+        int rightHandInstrumentNumber = propertiesFile->getIntValue("rightInstrumentNumber", 0);
         if (midiWindow)
         {
             this->midiWindow->volumeSliderSetValue(savedVolume);
@@ -261,6 +266,8 @@ void MainComponent::loadSettings()
         }
         this->MIDIDevice.setVolume(savedVolume);
         this->MIDIDevice.setReverb(savedReverb);
+        this->midiHandler.setProgramNumber(leftHandInstrumentNumber, "left");
+        this->midiHandler.setProgramNumber(rightHandInstrumentNumber, "right");
     }
 }
 
@@ -324,6 +331,7 @@ void MainComponent::toggleHPanel()
     toggleKnobs();
     toggleDisplay();
     toggleParticleToggle();
+    toggleHandInstrumentToggle();
 }
 
 void MainComponent::toggleHomeButton()
@@ -395,6 +403,17 @@ void MainComponent::toggleParticleToggle()
     if (particleToggle.isVisible())
         particleToggle.setVisible(false);
     else particleToggle.setVisible(true);
+}
+
+void MainComponent::toggleHandInstrumentToggle()
+{
+    if (leftHandInstrumentToggle.isVisible())
+        leftHandInstrumentToggle.setVisible(false);
+    else leftHandInstrumentToggle.setVisible(true);
+
+    if (rightHandInstrumentToggle.isVisible())
+        rightHandInstrumentToggle.setVisible(false);
+    else rightHandInstrumentToggle.setVisible(true);
 }
 
 void MainComponent::toggleForPlaying()
@@ -484,7 +503,7 @@ void MainComponent::recordButtonsInit()
 
     startRecording.onClick = [this] {
         recordPlayer.startRecording();
-        recordPlayer.handleIncomingMessage(juce::MidiMessage::programChange(1, midiHandler.getProgramNumber()));
+        recordPlayer.handleIncomingMessage(juce::MidiMessage::programChange(1, midiHandler.getProgramNumberLeftHand()));
 
         saveRecordingButton.setVisible(false);
 
@@ -711,6 +730,7 @@ void MainComponent::headerPanelInit()
     saveRecordingButtonInit();
     playRecordingButtonInit();
     toggleButtonInit();
+    toggleHandButtonsInit();
     knobsInit();
 }
 
@@ -725,6 +745,25 @@ void MainComponent::homeButtonInit()
 
     headerPanel.addAndMakeVisible(homeButton);
     homeButton.setVisible(false);
+
+}
+
+void MainComponent::toggleHandButtonsInit()
+{
+    leftHandInstrumentToggle.setButtonText("Left hand");
+    leftHandInstrumentToggle.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    leftHandInstrumentToggle.setToggleState(false,juce::dontSendNotification);
+    headerPanel.addAndMakeVisible(leftHandInstrumentToggle);
+    leftHandInstrumentToggle.setVisible(false);
+
+
+    rightHandInstrumentToggle.setButtonText("Right hand");
+    rightHandInstrumentToggle.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    rightHandInstrumentToggle.setToggleState(false, juce::dontSendNotification);
+    headerPanel.addAndMakeVisible(rightHandInstrumentToggle);
+    rightHandInstrumentToggle.setVisible(false);
 
 }
 
@@ -785,7 +824,9 @@ void MainComponent::playButtonOnClick()
         if (!keyboardInitialized)
         {
             keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
-            midiHandler.setProgramNumber(0);
+            DBG("HERE ARE" + juce::String(midiHandler.getProgramNumberLeftHand()) + juce::String(midiHandler.getProgramNumberRightHand() ));
+            midiHandler.setProgramNumber(midiHandler.getProgramNumberLeftHand(), "left");
+            midiHandler.setProgramNumber(midiHandler.getProgramNumberRightHand(), "right");
             recordPlayer.setProgarmNumber(0);
         }
         else {
@@ -960,7 +1001,26 @@ InstrumentTreeItem* MainComponent::createInstrumentItem(const juce::Image& img, 
     auto item = std::make_unique<InstrumentTreeItem>(img,name,program);
     item->onProgramSelected = [&](int programNumber, juce::String name="")
     {
-        midiHandler.setProgramNumber(programNumber,name); //setting the actual sound to the new program for both midiHandler and also the recordPlayer by listener
+        if (leftHandInstrumentToggle.getToggleState() == true)
+        {
+            midiHandler.setProgramNumber(programNumber, "left"); //setting the actual sound to the new program for both midiHandler and also the recordPlayer by listener
+            if (propertiesFile)
+            {
+                propertiesFile->setValue("leftInstrumentNumber", programNumber);
+                propertiesFile->saveIfNeeded();
+            }
+        }
+
+        if (rightHandInstrumentToggle.getToggleState() == true)
+        {
+            midiHandler.setProgramNumber(programNumber, "right");
+            if (propertiesFile)
+            {
+                propertiesFile->setValue("rightInstrumentNumber", programNumber);
+                propertiesFile->saveIfNeeded();
+            }
+        }
+
         recordPlayer.setProgarmNumber(programNumber); //setting only the value
     };
 
