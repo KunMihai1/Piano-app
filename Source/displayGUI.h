@@ -5,32 +5,6 @@
     Created: 8 Jun 2025 2:44:43am
     Author:  Kisuke
 
-    TODO
-
-    -issue with the time stamp from table and the one in the json saved
-
-    -change bpm when creating/ reloading current style component and also when selecting to put a new track so the changes reflect actual real time
-
-    -apply startup delay+ bpm change rescale time for the sequence present in the vector
-
-    -for keys recognition and intput device playing range, make a way for someone to add his device if not in there already
-
-    -normalize the measure
-
-    -normalize the tpqn
-
-    -make bpm change mid play(not only before pressing play)
-
-    -make the toggle state particle and possible future settings in that sense, savable and loadable from a file.
-    -divide each track into intro ending... all parts
-
-
-
-
-
-    -making the sets so that you can select what to play on left hand and on right hand (maybe a few hidden glitches)
-    ~fix the keyboard moving with z x, thus, the start note and end note and also the left hand right hand intervals should move accordingly. (only if pc keyboard input)
-
   ==============================================================================
 */
 
