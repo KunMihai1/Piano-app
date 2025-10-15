@@ -1,72 +1,43 @@
-# Piano-app
-
-*Piano App — Synth & Arranger
+# Piano App — Synth & Arranger
 
 This is a synth/arranger app I built using JUCE. The idea was to make something that’s fun to play with but also useful for experimenting with tracks and arrangements. It’s still a work in progress, but it already lets you play, record, and mix MIDI tracks in real time.
 
+## Features
 
+- Play notes in real time — the piano keys respond instantly.
+- Record your performance — capture what you play without noticeable lag.
+- Load MIDI files — pick which tracks you want to play along with.
+- Visual keyboard — see which keys are active as you play.
+- Built with future arranger features in mind (more coming soon).
 
+## Tech
 
-*Features
+- **Framework:** JUCE
+- **Language:** C++
+- **Audio:** Low-latency, real-time processing
+- **UI:** JUCE components for cross-platform desktop apps
 
--Play notes in real time — the piano keys respond instantly.
+## What I Learned
 
--Record your performance — capture what you play without noticeable lag.
+Working on this project taught me a lot about low-latency audio programming and the challenges of real-time performance. Some highlights:
 
--Load MIDI files — pick which tracks you want to play along with.
+- Handling audio and GUI threads without lag
+- Recording and playing MIDI in sync
+- Structuring a JUCE project for expandability
+- Optimizing C++ code for real-time responsiveness
 
--Visual keyboard — see which keys are active as you play.
+It was a great experience for getting hands-on with how music software actually works under the hood.
 
--Built with future arranger features in mind (more coming soon).
+## Future Plans
 
+- Add full arranger features (track management, patterns, sequencing)
+- Improve visual feedback (velocity, timing, key animations)
+- Integrate MIDI controllers
 
+## Skills I Gained
 
-*Tech
-
--Framework: JUCE
-
--Language: C++
-
--Audio: Low-latency, real-time processing
-
--UI: JUCE components for cross-platform desktop apps
-
-
-
-
-*What I Learned
-
--Working on this project taught me a lot about low-latency audio programming and the challenges of real-time performance. Some highlights:
-
--Handling audio and GUI threads without lag
-
--Recording and playing MIDI in sync
-
--Structuring a JUCE project for expandability
-
--Optimizing C++ code for real-time responsiveness
-
--It was a great experience for getting hands-on with how music software actually works under the hood.
-
-
-
-*Future Plans
-
--Add full arranger features (track management, patterns, sequencing)
-
--Improve visual feedback (velocity, timing, key animations)
-
--Integrate MIDI controllers
-
-
-*Skills I Gained
-
--Real-time audio programming
-
--MIDI and event handling
-
--C++ and JUCE framework
-
--UI/UX for music applications
-
--Optimizing for performance
+- Real-time audio programming
+- MIDI and event handling
+- C++ and JUCE framework
+- UI/UX for music applications
+- Optimizing for performance
