@@ -48,7 +48,7 @@ It was a great experience for getting hands-on with how music software actually 
 
 - Add full arranger features (track management, patterns, sequencing)
 - Improve visual feedback (velocity, timing, key animations)
-- Integrate MIDI controllers
+- Improve MIDI controllers
 
 ## Skills I Gained
 
