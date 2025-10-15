@@ -46,9 +46,10 @@ It was a great experience for getting hands-on with how music software actually 
 
 ## Future Plans
 
-- Add full arranger features (track management, patterns, sequencing)
-- Improve visual feedback (velocity, timing, key animations)
-- Improve MIDI controllers
+-Expand arranger features: patterns, automation, loops, and divide tracks into sections (intro, main, ending)
+-Enhance visual feedback: velocity, timing, key animations
+-Integrate and improve MIDI controller support
+-Apply BPM changes dynamically, including during playback
 
 ## Skills I Gained
 
