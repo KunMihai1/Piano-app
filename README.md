@@ -1,3 +1,18 @@
+## Built With
+
+- [JUCE](https://juce.com) — an open-source C++ framework for developing cross-platform audio applications.
+
+This project uses JUCE under the terms of the [GNU General Public License v3 (GPLv3)](https://www.gnu.org/licenses/gpl-3.0.html).
+
+
+## Building
+
+1. Install [JUCE](https://juce.com/get-juce).
+2. Open the project in Projucer (`MyPlugin.jucer`).
+3. Configure your exporter (Xcode / Visual Studio / CLion).
+4. Build and run.
+
+
 # Piano App — Synth & Arranger
 
 This is a synth/arranger app I built using JUCE. The idea was to make something that’s fun to play with but also useful for experimenting with tracks and arrangements. It’s still a work in progress, but it already lets you play, record, and mix MIDI tracks in real time.
