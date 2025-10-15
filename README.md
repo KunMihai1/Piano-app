@@ -49,7 +49,7 @@ It was a great experience for getting hands-on with how music software actually 
 - Expand arranger features: patterns, automation, loops, and divide tracks into sections (intro, main, ending)
 - Enhance visual feedback: velocity, timing, key animations
 - Integrate and improve MIDI controller support
-- Apply BPM changes dynamically, including during playback
+- Apply BPM changes dynamically during playback, efficiently
 
 ## Skills I Gained
 
