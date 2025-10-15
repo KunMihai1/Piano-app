@@ -1,6 +1,7 @@
 ## Built With
 
-- [JUCE](https://juce.com) — an open-source C++ framework for developing cross-platform audio applications.
+- [JUCE](https://juce.com) — an open-source C++ framework for developing cross-platform audio applications.  
+- Licensed under the [JUCE License (GPLv3 / Commercial)](https://github.com/juce-framework/JUCE/blob/master/LICENSE.md)
 
 This project uses JUCE under the terms of the [GNU General Public License v3 (GPLv3)](https://www.gnu.org/licenses/gpl-3.0.html).
 
