@@ -25,6 +25,7 @@ This is a synth/arranger app I built using JUCE. The idea was to make something 
 - Load MIDI files — pick which tracks you want to play along with.
 - Track Modifications — modify time stamps, velocities, notes without affecting the original state of the track.
 - Visual keyboard — see which keys are active as you play.
+- Keyboard range assignment — select distinct ranges for left and right hands and assign different instruments to each, enabling layered performances.
 - Built with future arranger features in mind (more coming soon).
 
 ## Tech
