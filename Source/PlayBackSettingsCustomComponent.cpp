@@ -171,3 +171,39 @@ void PlayBackSettingsComponent::startStopInit()
     startNoteBox.addListener(this);
     endNoteBox.addListener(this);
 }
+
+void PlayBackSettingsComponent::setNewSettings(PlayBackSettings& newSettings)
+{
+    this->settings = newSettings;
+    if (settings.startNote != -1)
+    {
+        startNoteBox.setText(MapHelper::intToStringNote(settings.startNote), juce::dontSendNotification);
+    }
+    else startNoteBox.setText("None", juce::dontSendNotification);
+    if (settings.endNote != -1)
+    {
+        endNoteBox.setText(MapHelper::intToStringNote(settings.endNote), juce::dontSendNotification);
+    }
+    else endNoteBox.setText("None", juce::dontSendNotification);
+
+
+    juce::String lowestNoteString = MapHelper::intToStringNote(lowestNote);
+    juce::String highestNoteString = MapHelper::intToStringNote(highestNote);
+
+    if (settings.leftHandBound != -1)
+        leftHandBoundBox.setText(lowestNoteString + "-" + MapHelper::intToStringNote(settings.leftHandBound), juce::dontSendNotification);
+    else leftHandBoundBox.setText("None", juce::dontSendNotification);
+
+    if (settings.rightHandBound != -1)
+        rightHandBoundBox.setText(MapHelper::intToStringNote(settings.rightHandBound) + "-" + highestNoteString, juce::dontSendNotification);
+    else rightHandBoundBox.setText("None", juce::dontSendNotification);
+
+    if (onChangingSettings)
+        onChangingSettings(settings);
+}
+
+void PlayBackSettingsComponent::setLowestHighest(int lowest, int highest)
+{
+    this->lowestNote = lowest;
+    this->highestNote = highest;
+}

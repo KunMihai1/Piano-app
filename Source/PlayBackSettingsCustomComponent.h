@@ -38,6 +38,10 @@ public:
 
     void startStopInit();
 
+    void setNewSettings(PlayBackSettings& newSettings);
+
+    void setLowestHighest(int lowest, int highest);
+
 private:
 
     int lowestNote, highestNote;

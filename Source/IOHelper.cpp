@@ -83,7 +83,8 @@ void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<
                         stylesObj->setProperty(styleName, styleChangesVar);
                 }
 
-                trackObj->setProperty("Styles", stylesVar);
+                if (stylesObj->getProperties().size() > 0)
+                    trackObj->setProperty("Styles", stylesVar);
             }
 
             trackArray.add(trackVar);
