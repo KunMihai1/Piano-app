@@ -34,7 +34,7 @@ struct TrackEntry
     double volumeAssociated = 0.0f;
     double originalBPM = 0.0f;
 
-    std::unordered_map<int, MidiChangeInfo> changesMap;
+    std::unordered_map<juce::String, std::unordered_map<int, MidiChangeInfo>> styleChangesMap;
 
 
 

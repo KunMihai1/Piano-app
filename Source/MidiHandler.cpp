@@ -361,13 +361,13 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 			}
 		}
 
-		//if (ok)
-		//{
+		if (ok)
+		{
 			listeners.call(&MidiHandlerListener::noteOnReceived, note);
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
 			listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocityByte));
-		//}
+		}
 
 	}
 
@@ -421,11 +421,11 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 				onEndNoteSetting();
 		}
 	}
-	//if (ok)
-	//{
+	if (ok)
+	{
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocity));
-	//}
+	}
 }
 
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {

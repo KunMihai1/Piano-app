@@ -57,6 +57,10 @@ public:
 
     double getFirstNoteOnTimeStamps();
 
+    double getPreviousNoteOnTimeStamp(int currentIndex);
+
+    double getCurrentNoteOnTimeStamp(int currentIndex);
+
     std::vector<EventWithIndex> getEvents();
 
     int getRowFromTime(double currentTime);
