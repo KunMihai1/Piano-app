@@ -439,6 +439,8 @@ public:
 
     int getNumTabs();
 
+    void setNewSettingsHelperFunction(int value);
+
 private:
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
     std::unique_ptr<StylesListComponent> stylesListComponent;

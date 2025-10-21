@@ -168,7 +168,6 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
         currentStyleComponent->keybindTabStarting = [this]()
         {
-            DBG("Display settings VID/PID before creating PlaybackSettings: " + settings.VID + " / " + settings.PID);
             playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote, maxNote, settings);
             playBackSettings->setBounds(getLocalBounds());
 
@@ -323,8 +322,15 @@ void Display::updateUIbeforeAnyLoadingCase()
 
 void Display::set_min_max(int min, int max)
 {
-    this->minNote = min;
-    this->maxNote = max;
+    if (min < 21)
+        this->minNote = 21;
+    else this->minNote = min;
+
+    if (max > 108)
+        this->maxNote = 108;
+    else this->maxNote = max;
+    if (playBackSettings)
+        this->playBackSettings->setLowestHighest(minNote, maxNote);
 }
 
 void Display::set_VID_PID(const juce::String& VID, const juce::String& PID)
@@ -380,6 +386,37 @@ void Display::removeListener(DisplayListener* listener)
 int Display::getNumTabs()
 {
     return this->tabComp->getNumTabs();
+}
+
+void Display::setNewSettingsHelperFunction(int value)
+{
+    if(settings.startNote!=-1)
+        settings.startNote += value;
+
+    if(settings.endNote!=-1)
+        settings.endNote += value;
+
+    if(settings.leftHandBound!=-1)
+        settings.leftHandBound += value;
+
+    if(settings.rightHandBound!=-1)
+        settings.rightHandBound += value;
+
+    if (settings.startNote < 21)
+        settings.startNote = 21;
+
+    if (settings.endNote > 108)
+        settings.endNote = 108;
+
+    if (settings.leftHandBound < 21)
+        settings.leftHandBound = 21;
+
+    if (settings.rightHandBound > 108)
+        settings.rightHandBound = 108;
+
+    if(playBackSettings)
+        this->playBackSettings->setNewSettings(settings);
+    else displayListeners.call(&DisplayListener::playBackSettingsChanged, this->settings);
 }
 
 void Display::callingListeners()

@@ -185,6 +185,8 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
             this->keyListener.resetState();
             this->keyboard.setIsDrawn(false);
             this->keyboard.repaint();
+            this->display->set_min_max(startNote - 12, finishNote - 12);
+            this->display->setNewSettingsHelperFunction(-12);
         }
     }
     else if (key.getKeyCode() == 'X')
@@ -201,6 +203,8 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
             this->keyListener.resetState();
             this->keyboard.setIsDrawn(false);
             this->keyboard.repaint();
+            this->display->set_min_max(startNote + 12, finishNote + 12);
+            this->display->setNewSettingsHelperFunction(12);
         }
     }
     return false;
