@@ -221,6 +221,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
     double bpmToUse = currentStyleComponent->getTempo();
     currentStyleComponent->applyBPMchangeBeforePlayback(bpmToUse);
+    currentStyleComponent->applyChangesForAllTracksCurrentStyle();
 }
 
 void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> onTrackSelected)
@@ -568,6 +569,7 @@ void Display::initializeAllStyles()
         juce::String styleName = "Style " + juce::String(i + 1);
         styleObj->setProperty("name", styleName);
         styleObj->setProperty("BPM", 120.0f);
+        styleObj->setProperty("StyleID", "style_" + juce::String(i+1));
 
         juce::Array<juce::var> tracksArray;
         for (int t = 0; t < 8; ++t)
@@ -720,10 +722,14 @@ void Display::appendNewStyleInJson(const juce::String& newName)
     if (stylesArray == nullptr)
         return;
 
+    const int numExistingStyles = stylesArray->size();
+    const juce::String styleID = "style_" + juce::String(numExistingStyles);
+
 
     auto* newStyle = new juce::DynamicObject();
     newStyle->setProperty("name", newName);
     newStyle->setProperty("BPM", 120.0f);
+    newStyle->setProperty("StyleID", styleID);
     juce::Array<juce::var> tracksArray;
     for (int i = 0; i < 8; ++i)
     {
@@ -1418,6 +1424,26 @@ void CurrentStyleComponent::setDeviceOutputCurrentStyle(std::weak_ptr<juce::Midi
         trackPlayer->setDeviceOutputTrackPlayer(newOutput);
 }
 
+void CurrentStyleComponent::applyChangesForOneTrack(TrackEntry& track)
+{
+    track.sequence = track.originalSequenceTicks;
+    track.sequence.updateMatchedPairs();
+
+    auto it = track.styleChangesMap.find(styleID);
+    if (it != track.styleChangesMap.end())
+        TrackIOHelper::applyChangesToASequence(track.sequence, it->second);
+}
+
+void CurrentStyleComponent::applyChangesForAllTracksCurrentStyle()
+{
+    for (auto& [uuid, track] : mapUuidToTrackEntry)
+    {
+        if (track)
+            applyChangesForOneTrack(*track);
+    }
+
+}
+
 void CurrentStyleComponent::removingTrack(const juce::Uuid& uuid)
 {
     for (auto& track : allTracks)
@@ -1473,7 +1499,7 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
         if (track != nullptr)
         {
             sequence = &track->sequence;
-            changeMap = &track->changesMap;
+            changeMap = &track->styleChangesMap[styleID];
 
             if (track->displayName.isNotEmpty())
                 displayName = track->displayName;
@@ -1578,7 +1604,7 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool wh
             scaledSequence.addEvent(newMsg);
         }
 
-        for (auto& [noteId, change] : tr->changesMap)
+        for (auto& [noteId, change] : tr->styleChangesMap[styleID])
         {
             change.oldTimeStamp *= ratio;
             change.newTimeStamp *= ratio;
@@ -1754,6 +1780,11 @@ void CurrentStyleComponent::setTempo(double newTempo)
     this->tempoSlider.setValue(newTempo);
 }
 
+void CurrentStyleComponent::setStyleID(const juce::String& newID)
+{
+    this->styleID = newID;
+}
+
 
 void CurrentStyleComponent::resized()
 {
@@ -1858,6 +1889,7 @@ juce::DynamicObject* CurrentStyleComponent::getJson() const
 
     styleObj->setProperty("name", name);
     styleObj->setProperty("BPM", currentTempo);
+    styleObj->setProperty("StyleID", styleID);
 
     juce::Array<juce::var> tracksArray;
 
@@ -1883,6 +1915,7 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
 
     updateName(obj->getProperty("name").toString());
     setTempo(static_cast<double>(obj->getProperty("BPM")));
+    setStyleID(obj->getProperty("StyleID").toString());
 
     auto tracksVar = obj->getProperty("tracks");
 

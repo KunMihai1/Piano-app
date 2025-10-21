@@ -217,6 +217,12 @@ public:
 
     void setTempo(double newTempo);
 
+    void setStyleID(const juce::String& newID);
+
+    void applyChangesForOneTrack(TrackEntry& track);
+
+    void applyChangesForAllTracksCurrentStyle();
+
     void removingTrack(const juce::Uuid& uuid);
 
     void removingTracks(const std::vector<juce::Uuid>& uuids);
@@ -264,6 +270,7 @@ private:
     double currentTempo = 120.0;
     double baseTempo = 120.0;
     bool isPlaying = false;
+    juce::String styleID;
 
     std::unique_ptr<Track> copiedTrack=nullptr;
     BeatBar customBeatBar;

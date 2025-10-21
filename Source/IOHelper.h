@@ -39,8 +39,9 @@ public:
 
     static void convertTicksToSeconds(juce::MidiFile& midiFile, double bpm);
 
-private:
     static void applyChangesToASequence(juce::MidiMessageSequence& sequence, const std::unordered_map<int, MidiChangeInfo>& changesMap);
+
+private:
 };
 
 class PlaybackSettingsIOHelper

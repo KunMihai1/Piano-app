@@ -22,7 +22,7 @@ public:
 
     static bool isValidMidiDoubleValue(double value);
 
-    static bool isValidMidiDoubleValueTimeStamps(double value, double lowestNoteOnStartingPoint=-1);
+    static bool isValidMidiDoubleValueTimeStamps(double value, double currentTimeStamp=-1, double previousTimeStamp=-1);
 
     static bool isValidMidiDoubleString(const juce::String& s);
 

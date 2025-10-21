@@ -52,33 +52,38 @@ void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<
             trackObj->setProperty("displayName", tr.displayName);
             trackObj->setProperty("uuid", tr.uuid.toString());
 
-            auto* changesObj = new juce::DynamicObject();
-            juce::var changesVar(changesObj);
-
-            if (!tr.changesMap.empty())
+            if (!tr.styleChangesMap.empty())
             {
-                for (const auto& [row, change] : tr.changesMap)
+                auto* stylesObj = new juce::DynamicObject();
+                juce::var stylesVar(stylesObj);
+
+                for (const auto& [styleName, changeMap] : tr.styleChangesMap)
                 {
-                    auto* changeObj = new juce::DynamicObject();
-                    juce::var changeVar(changeObj);
+                    auto* styleChangesObj = new juce::DynamicObject();
+                    juce::var styleChangesVar(styleChangesObj);
 
+                    for (const auto& [row, change] : changeMap)
+                    {
 
+                        auto* changeObj = new juce::DynamicObject();
+                        juce::var changeVar(changeObj);
 
-                    changeObj->setProperty("oldNumber", change.oldNumber);
-                    changeObj->setProperty("oldTimeStamp", change.oldTimeStamp);
-                    changeObj->setProperty("oldVelocity", change.oldVelocity);
+                        changeObj->setProperty("oldNumber", change.oldNumber);
+                        changeObj->setProperty("oldTimeStamp", change.oldTimeStamp);
+                        changeObj->setProperty("oldVelocity", change.oldVelocity);
 
-                    changeObj->setProperty("newNumber", change.newNumber);
-                    changeObj->setProperty("newTimeStamp", change.newTimeStamp);
-                    changeObj->setProperty("newVelocity", change.newVelocity);
+                        changeObj->setProperty("newNumber", change.newNumber);
+                        changeObj->setProperty("newTimeStamp", change.newTimeStamp);
+                        changeObj->setProperty("newVelocity", change.newVelocity);
 
-                    changesObj->setProperty(juce::String(row), changeVar);
+                        styleChangesObj->setProperty(juce::String(row), changeVar);
+                    }
 
-                    DBG("WRITING: " + juce::String(change.oldTimeStamp) + " " + juce::String(change.newTimeStamp));
-
+                    if (styleChangesObj->getProperties().size() > 0)
+                        stylesObj->setProperty(styleName, styleChangesVar);
                 }
 
-                trackObj->setProperty("Changes", changesVar);
+                trackObj->setProperty("Styles", stylesVar);
             }
 
             trackArray.add(trackVar);
@@ -191,37 +196,44 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
             else tr.uuid = TrackEntry::generateUUID();
 
 
-            auto* changesDynamicObj = trackObj->getProperty("Changes").getDynamicObject();
-
-            if (changesDynamicObj != nullptr)
+            auto* stylesDynamicObj = trackObj->getProperty("Styles").getDynamicObject();
+            if (stylesDynamicObj != nullptr)
             {
-                
-                for (int i = 0; i < changesDynamicObj->getProperties().size(); ++i)
+                for (int s = 0; s < stylesDynamicObj->getProperties().size(); ++s)
                 {
-                    juce::Identifier key = changesDynamicObj->getProperties().getName(i);
-                    juce::var changeVar = changesDynamicObj->getProperties().getValueAt(i);
-                    auto* changeObj = changeVar.getDynamicObject();
-                    if (changeObj == nullptr)
+                    juce::Identifier styleKey = stylesDynamicObj->getProperties().getName(s);
+                    juce::var styleVar = stylesDynamicObj->getProperties().getValueAt(s);
+
+                    auto* styleChangesObj = styleVar.getDynamicObject();
+                    if (styleChangesObj == nullptr)
                         continue;
 
-                    MidiChangeInfo changeInfo;
+                    std::unordered_map<int, MidiChangeInfo> styleChanges;
 
-                    changeInfo.oldNumber= (int)changeObj->getProperty("oldNumber");
-                    changeInfo.oldTimeStamp = (double)changeObj->getProperty("oldTimeStamp");
-                    changeInfo.oldVelocity = (int)changeObj->getProperty("oldVelocity");
+                    for (int i = 0; i < styleChangesObj->getProperties().size(); ++i)
+                    {
+                        juce::Identifier key = styleChangesObj->getProperties().getName(i);
+                        juce::var changeVar = styleChangesObj->getProperties().getValueAt(i);
 
-                    changeInfo.newNumber = (int)changeObj->getProperty("newNumber");
-                    changeInfo.newTimeStamp = (double)changeObj->getProperty("newTimeStamp");
-                    changeInfo.newVelocity = (int)changeObj->getProperty("newVelocity");
+                        auto* changeObj = changeVar.getDynamicObject();
+                        if (changeObj == nullptr)
+                            continue;
 
-                    int row = key.toString().getIntValue();
-                    tr.changesMap[row] = changeInfo;
+
+                        MidiChangeInfo changeInfo;
+                        changeInfo.oldNumber = (int)changeObj->getProperty("oldNumber");
+                        changeInfo.oldTimeStamp = (double)changeObj->getProperty("oldTimeStamp");
+                        changeInfo.oldVelocity = (int)changeObj->getProperty("oldVelocity");
+                        changeInfo.newNumber = (int)changeObj->getProperty("newNumber");
+                        changeInfo.newTimeStamp = (double)changeObj->getProperty("newTimeStamp");
+                        changeInfo.newVelocity = (int)changeObj->getProperty("newVelocity");
+
+                        int row = key.toString().getIntValue();
+                        styleChanges[row] = changeInfo;
+                    }
+
+                    tr.styleChangesMap[styleKey.toString()] = styleChanges;
                 }
-            }
-
-            if (!tr.changesMap.empty())
-            {
-                applyChangesToASequence(tr.sequence, tr.changesMap);
             }
 
             groupedTracks[folderName].push_back(tr);

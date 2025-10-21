@@ -527,9 +527,9 @@ void TableContainer::modifyOnlyTimeStamps()
         {
             double old = info.newTimeStamp;
             if (std::holds_alternative<double>(editorValue))
-                info.newTimeStamp = std::get<double>(editorValue)+old;
+                info.newTimeStamp = old+std::get<double>(editorValue);
             else if (std::holds_alternative<int>(editorValue))
-                info.newTimeStamp = static_cast<double>(std::get<int>(editorValue))+old;
+                info.newTimeStamp = old+ static_cast<double>(std::get<int>(editorValue));
         });
 }
 
@@ -537,11 +537,11 @@ void TableContainer::modifyOnlyTimeStampsSelected(const juce::SparseSet<int>& al
 {
     newPropertyAndApply([this](MidiChangeInfo& info)
         {
-            double old = info.newTimeStamp;
+            double old= info.newTimeStamp;
             if (std::holds_alternative<double>(editorValue))
-                info.newTimeStamp = std::get<double>(editorValue)+old;
+                info.newTimeStamp = old + std::get<double>(editorValue);
             else if (std::holds_alternative<int>(editorValue))
-                info.newTimeStamp = static_cast<double>(std::get<int>(editorValue))+old;
+                info.newTimeStamp = old + static_cast<double>(std::get<int>(editorValue));
 
         },&allSelected);
 }
@@ -740,19 +740,23 @@ void TableContainer::showModifyChangeDialog(
                    {
                        if (!Validator::isValidMidiDoubleString(userValue))
                        {
-                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify velocities", "Invalid value");
+                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify time stamps", "Invalid value");
                            return;
                        }
 
                        double doubleValue = userValue.getDoubleValue();
 
-                       double timeStampFirstNoteOn=model->getFirstNoteOnTimeStamps();
-                       if (timeStampFirstNoteOn == -1)
+                       int currentRow = table->getSelectedRows()[0];
+
+                       double timeStampPreviousNoteOn=model->getPreviousNoteOnTimeStamp(currentRow);
+                       double timeStampCurrentNoteOn = model->getCurrentNoteOnTimeStamp(currentRow);
+
+                       if (timeStampPreviousNoteOn == -1)
                            return;
 
-                       if (!Validator::isValidMidiDoubleValueTimeStamps(doubleValue,timeStampFirstNoteOn))
+                       if (!Validator::isValidMidiDoubleValueTimeStamps(doubleValue,timeStampCurrentNoteOn,timeStampPreviousNoteOn))
                        {
-                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify velocities", "Invalid value");
+                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify time stamps", "Invalid value");
                            return;
                        }
                        editorValue = doubleValue;

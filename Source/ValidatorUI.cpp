@@ -24,12 +24,20 @@ bool Validator::isValidMidiDoubleValue(double value)
     return true;
 }
 
-bool Validator::isValidMidiDoubleValueTimeStamps(double value, double lowestNoteOnStartingPoint)
+bool Validator::isValidMidiDoubleValueTimeStamps(double value, double currentTimeStamp, double previousTimeStamp)
 {
     if (!isValidMidiDoubleValue(value))
         return false;
 
-    if (lowestNoteOnStartingPoint + value < 0.1)
+    if (currentTimeStamp + value < 0)
+        return false;
+
+
+
+    if (currentTimeStamp != previousTimeStamp && currentTimeStamp + value - previousTimeStamp < 0)
+        return false;
+
+    else if (currentTimeStamp == previousTimeStamp && currentTimeStamp + value < 0)
         return false;
 
     return true;
