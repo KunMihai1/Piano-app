@@ -216,6 +216,9 @@ void Display::showCurrentStyleTab(const juce::String& name)
             }
         }
     }
+
+    currentStyleComponent->normalizeAllTracks();
+
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 
     double bpmToUse = currentStyleComponent->getTempo();
@@ -313,11 +316,10 @@ void Display::startingPlayer()
         this->currentStyleComponent->triggerStartClick();
 }
 
-void Display::updateUIbeforeAnyLoadingCase()
+void Display::normalizeAddingTrackCase()
 {
-    DBG("sUNT IN CAZUL ASTA");
-    //if (this->mapNameToTrack.empty())
-    //    mapNameToTrack = trackListComp->buildTrackNameMap();
+    if (currentStyleComponent)
+        currentStyleComponent->normalizeAllTracks();
 }
 
 void Display::set_min_max(int min, int max)
@@ -1793,6 +1795,18 @@ void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)
     }
 }
 
+double CurrentStyleComponent::firstNoteOffsetInSeconds(const juce::MidiMessageSequence& seq)
+{
+    for (int i = 0; i < seq.getNumEvents(); ++i)
+    {
+        if (seq.getEventPointer(i)->message.isNoteOn())
+        {
+            return seq.getEventPointer(i)->message.getTimeStamp();
+        }
+    }
+    return 0.0;
+}
+
 void CurrentStyleComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 {
     if (comboBoxThatHasChanged == &playSettingsTracks)
@@ -1810,11 +1824,102 @@ void CurrentStyleComponent::comboBoxChangeIndex(int Index)
     playSettingsTracks.setSelectedItemIndex(Index);
 }
 
+void CurrentStyleComponent::normalizeAllTracks()
+{
+    const double targetTPQN = 960.0;
+
+    for (const auto& track : allTracks)
+    {
+        auto& tr = mapUuidToTrackEntry[track->getUsedID()];
+        if (!tr)
+            continue;
+
+        if (tr->hasBeenNormalized)
+            continue;
+
+
+        normalizeTPQN(tr->originalSequenceTicks, tr->originalTPQN, targetTPQN);
+        tr->originalTPQN = targetTPQN;
+
+
+        normalizeMeasure(tr->originalSequenceTicks, targetTPQN, tr->originalBPM, 4);
+
+        TrackIOHelper::convertSequenceTicksToSeconds(tr->originalSequenceTicks, targetTPQN, tr->originalBPM);
+
+        tr->trackStartOffsetInSeconds = firstNoteOffsetInSeconds(tr->originalSequenceTicks);
+
+        tr->sequence = tr->originalSequenceTicks;
+        tr->normalizedTPQN = targetTPQN;
+        tr->hasBeenNormalized = true;
+    }
+}
+
+
+
+void CurrentStyleComponent::normalizeMeasure(juce::MidiMessageSequence& seq, double tpqn, double bpm, int beatsPerBar)
+{
+    if(seq.getNumEvents() == 0 || bpm <= 0.0)
+        return;
+
+    double firstNoteTick = -1.0;
+    for (int i = 0; i < seq.getNumEvents(); ++i)
+    {
+        auto& msg = seq.getEventPointer(i)->message;
+        if (msg.isNoteOn())
+        {
+            firstNoteTick = msg.getTimeStamp();
+            break;
+        }
+    }
+
+    if (firstNoteTick >= 0.0)
+    {
+        for (int i = 0; i < seq.getNumEvents(); ++i)
+            seq.getEventPointer(i)->message.setTimeStamp(seq.getEventPointer(i)->message.getTimeStamp() - firstNoteTick);
+    }
+
+    double lastTick = 0.0;
+    for (int i = 0; i < seq.getNumEvents(); ++i)
+        lastTick = std::max(lastTick, seq.getEventPointer(i)->message.getTimeStamp());
+
+    double ticksPerBar = tpqn * beatsPerBar;
+    int numBars = static_cast<int>(std::ceil(lastTick / ticksPerBar));
+    double targetEndTick = numBars * ticksPerBar;
+
+    if (targetEndTick > lastTick)
+    {
+        juce::MidiMessage endMsg = juce::MidiMessage::endOfTrack();
+        endMsg.setTimeStamp(targetEndTick);
+        seq.addEvent(endMsg);
+    }
+
+    seq.sort();
+    seq.updateMatchedPairs();
+}
+
+
+void CurrentStyleComponent::normalizeTPQN(juce::MidiMessageSequence& seq, double originalTPQN, double targetTPQN)
+{
+    if (originalTPQN <= 0.0 || targetTPQN <= 0.0 || seq.getNumEvents() == 0)
+        return;
+
+    double ratio = targetTPQN / originalTPQN;
+
+    for (int i = 0; i < seq.getNumEvents(); ++i)
+        seq.getEventPointer(i)->message.setTimeStamp(seq.getEventPointer(i)->message.getTimeStamp() * ratio);
+
+    seq.sort();
+    seq.updateMatchedPairs();
+}
+
 void CurrentStyleComponent::setTempo(double newTempo)
 {
     oldTempo = currentTempo;
     this->currentTempo = newTempo;
     this->tempoSlider.setValue(newTempo);
+
+    if (trackPlayer)
+        trackPlayer->setCurrentBPM(currentTempo);
 }
 
 void CurrentStyleComponent::setStyleID(const juce::String& newID)
@@ -2047,7 +2152,7 @@ Track::Track()
                 openInstrumentChooser();
             else
             {
-                juce::String toShow = "Since this is a track for percussion, the instrument change won't take effect!\nIf you want to change anything, you must change the original notes!";
+                juce::String toShow = "Since this is a track for percussion, the instrument change won't take effect!\nIf you want to change anything, you must change the original notes in the original file!";
                 showInstantInfo(toShow);
             }
         }
@@ -2734,7 +2839,9 @@ void TrackListComponent::addToTrackList()
                 }
 
                 double originalBpm = TrackIOHelper::getOriginalBpmFromFile(midiFile);
-                TrackIOHelper::convertTicksToSeconds(midiFile, originalBpm);
+                int tpqn = midiFile.getTimeFormat();
+                if (tpqn <= 0) tpqn = 960;
+                //TrackIOHelper::convertTicksToSeconds(midiFile, originalBpm);
 
                 int totalTracks = midiFile.getNumTracks();
                 int addedTracks = 0;
@@ -2764,12 +2871,14 @@ void TrackListComponent::addToTrackList()
                     newEntry.file = file;
                     newEntry.trackIndex = i;
                     newEntry.displayName = displayName;
+
                     newEntry.originalSequenceTicks = *trackSequence;
 
                     newEntry.sequence = *trackSequence;
 
-                    newEntry.sequence.updateMatchedPairs();
+                    //newEntry.sequence.updateMatchedPairs();
                     newEntry.originalBPM = originalBpm;
+                    newEntry.originalTPQN = tpqn;
 
                     newEntry.folderName = currentFolderName;
 

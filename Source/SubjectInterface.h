@@ -37,7 +37,7 @@ public:
     {
         listeners.call([=](ListenerType& listener)
             {
-                listener.updateUIbeforeAnyLoadingCase();
+                listener.normalizeAddingTrackCase();
             });
     }
 

@@ -27,5 +27,7 @@ public:
 private:
     int numerator;
     int denominator;
+    double bpm;
+    double currentTimeSeconds;
     double currentBeatsElapsed = 0.0;
 };

@@ -13,6 +13,6 @@
 class TrackListListener
 {
 public:
-    virtual void updateUIbeforeAnyLoadingCase() = 0;
+    virtual void normalizeAddingTrackCase() = 0;
     virtual ~TrackListListener() = default;
 };

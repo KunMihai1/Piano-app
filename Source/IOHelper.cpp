@@ -157,8 +157,12 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
 
 
         double originalBpm = getOriginalBpmFromFile(midiFile);
+        int tpqn = midiFile.getTimeFormat();
 
-        convertTicksToSeconds(midiFile, originalBpm);
+        if (tpqn < 0)
+            tpqn = 960;
+
+        //convertTicksToSeconds(midiFile, originalBpm);
 
         for (auto& trackItem : *trackArray)
         {
@@ -186,6 +190,7 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
             tr.sequence = *sequence;
             tr.sequence.updateMatchedPairs();
             tr.originalBPM = originalBpm;
+            tr.originalTPQN = tpqn;
             tr.folderName = folderName;
 
             if (foundPercussion(sequence))
@@ -281,28 +286,21 @@ double TrackIOHelper::getOriginalBpmFromFile(const juce::MidiFile& midiFile)
     return 120.0;
 }
 
-void TrackIOHelper::convertTicksToSeconds(juce::MidiFile& midiFile, double bpm)
+void TrackIOHelper::convertSequenceTicksToSeconds(juce::MidiMessageSequence& seq, double tpqn, double bpm)
 {
-    int tpqn = midiFile.getTimeFormat();
-    if (tpqn <= 0)
-        tpqn = 960;
+    if (tpqn <= 0.0 || bpm <= 0.0 || seq.getNumEvents() == 0)
+        return;
 
-    const double defaultTempoBPM = bpm; 
-    const double secondsPerQuarterNote = 60.0 / defaultTempoBPM;
-    const double secondsPerTick = secondsPerQuarterNote / double(tpqn);
+    double secondsPerTick = 60.0 / (tpqn * bpm);
 
-    for (int t = 0; t < midiFile.getNumTracks(); ++t)
+    for (int i = 0; i < seq.getNumEvents(); ++i)
     {
-        if (auto* seq = midiFile.getTrack(t))
-        {
-            for (int e = 0; e < seq->getNumEvents(); ++e)
-            {
-                auto& msg = seq->getEventPointer(e)->message;
-                double ticks = msg.getTimeStamp();
-                msg.setTimeStamp(ticks * secondsPerTick);
-            }
-        }
+        auto& msg = seq.getEventPointer(i)->message;
+        msg.setTimeStamp(msg.getTimeStamp() * secondsPerTick);
     }
+
+    seq.sort();
+    seq.updateMatchedPairs();
 }
 
 void TrackIOHelper::applyChangesToASequence(juce::MidiMessageSequence& sequence, const std::unordered_map<int, MidiChangeInfo>& changesMap)
@@ -335,6 +333,16 @@ void TrackIOHelper::applyChangesToASequence(juce::MidiMessageSequence& sequence,
         }
 
     }
+}
+
+double TrackIOHelper::secondsToTicks(double ticks, double tpqn, double bpm)
+{
+    return ticks * (60.0 / (tpqn * bpm));
+}
+
+double TrackIOHelper::ticksToSeconds(double seconds, double tpqn, double bpm)
+{
+    return seconds * (tpqn * bpm / 60.0);
 }
 
 void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBackSettings& settings)

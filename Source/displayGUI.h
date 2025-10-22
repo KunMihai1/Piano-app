@@ -249,8 +249,16 @@ public:
 
     void comboBoxChangeIndex(int Index);
 
+    void normalizeAllTracks();
+
+    void normalizeMeasure(juce::MidiMessageSequence& seq, double tpqn, double bpm, int beatsPerBar=4);
+
+    void normalizeTPQN(juce::MidiMessageSequence& seq, double originalTPQN, double targetTPQN);
+
 private:
     void mouseDown(const juce::MouseEvent& ev) override;
+
+    double firstNoteOffsetInSeconds(const juce::MidiMessageSequence& seq);
 
     juce::String name;
     juce::Label nameOfStyle;
@@ -413,7 +421,7 @@ public:
 
     void startingPlayer();
 
-    void updateUIbeforeAnyLoadingCase() override;
+    void normalizeAddingTrackCase() override;
 
     void set_min_max(int min, int max);
 

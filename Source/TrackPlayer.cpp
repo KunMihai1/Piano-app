@@ -80,6 +80,7 @@ void MultipleTrackPlayer::stop()
     if (onElapsedUpdate)
     {
         juce::MessageManager::callAsync([this]() {
+
             onElapsedUpdate(0.0);
             });
     }
@@ -240,7 +241,7 @@ void MultipleTrackPlayer::hiResTimerCallback()
         double rawBeatsElapsed = elapsed * (currentBPM / 60.0);
 
 
-        double noteLengthRatio = 4.0 / timeSignatureDenominator;
+        double noteLengthRatio = timeSignatureDenominator / 4.0;
 
         double adjustedBeatsElapsed = rawBeatsElapsed * noteLengthRatio;
 

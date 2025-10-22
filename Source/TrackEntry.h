@@ -37,6 +37,12 @@ struct TrackEntry
     std::unordered_map<juce::String, std::unordered_map<int, MidiChangeInfo>> styleChangesMap;
 
 
+    double originalTPQN=960.0;
+    double normalizedTPQN;
+
+    bool hasBeenNormalized = false;
+
+    double trackStartOffsetInSeconds = 0.0;
 
     juce::MidiMessageSequence sequence;
     juce::MidiMessageSequence originalSequenceTicks;

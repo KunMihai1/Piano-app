@@ -10,7 +10,7 @@
 
 #include "CustomBeatBar.h"
 
-BeatBar::BeatBar(): numerator{4}, denominator{4}
+BeatBar::BeatBar(): numerator{4}, denominator{4}, bpm{120.0}, currentTimeSeconds{0.0}
 {
 
 }
@@ -41,7 +41,6 @@ void BeatBar::paint(juce::Graphics& g)
         g.setColour(juce::Colours::blanchedalmond.withAlpha(0.3f));
         g.drawRoundedRectangle(beatRect, cornerSize, 1.0f);
     }
-
 }
 
 void BeatBar::resized()

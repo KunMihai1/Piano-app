@@ -37,9 +37,13 @@ public:
 
     static double getOriginalBpmFromFile(const juce::MidiFile& midiFile);
 
-    static void convertTicksToSeconds(juce::MidiFile& midiFile, double bpm);
+    static void convertSequenceTicksToSeconds(juce::MidiMessageSequence& seq, double tpqn, double bpm);
 
     static void applyChangesToASequence(juce::MidiMessageSequence& sequence, const std::unordered_map<int, MidiChangeInfo>& changesMap);
+
+    static double ticksToSeconds(double ticks, double tpqn, double bpm);
+
+    static double secondsToTicks(double seconds, double tpqn, double bpm);
 
 private:
 };
