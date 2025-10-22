@@ -38,7 +38,7 @@ struct TrackEntry
 
 
     double originalTPQN=960.0;
-    double normalizedTPQN;
+    double normalizedTPQN=960.0;
 
     bool hasBeenNormalized = false;
 

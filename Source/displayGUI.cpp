@@ -1837,6 +1837,7 @@ void CurrentStyleComponent::normalizeAllTracks()
         if (tr->hasBeenNormalized)
             continue;
 
+        stripTempoMetaEvents(tr->originalSequenceTicks);
 
         normalizeTPQN(tr->originalSequenceTicks, tr->originalTPQN, targetTPQN);
         tr->originalTPQN = targetTPQN;
@@ -1910,6 +1911,15 @@ void CurrentStyleComponent::normalizeTPQN(juce::MidiMessageSequence& seq, double
 
     seq.sort();
     seq.updateMatchedPairs();
+}
+
+void CurrentStyleComponent::stripTempoMetaEvents(juce::MidiMessageSequence& seq)
+{
+    for (int i = 0; i < seq.getNumEvents(); ++i)
+    {
+        if (seq.getEventPointer(i)->message.isTempoMetaEvent())
+            seq.deleteEvent(i--,false);
+    }
 }
 
 void CurrentStyleComponent::setTempo(double newTempo)

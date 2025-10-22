@@ -255,6 +255,8 @@ public:
 
     void normalizeTPQN(juce::MidiMessageSequence& seq, double originalTPQN, double targetTPQN);
 
+    void stripTempoMetaEvents(juce::MidiMessageSequence& seq);
+
 private:
     void mouseDown(const juce::MouseEvent& ev) override;
 
