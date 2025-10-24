@@ -140,20 +140,72 @@ public:
     This component lives inside our window, and this is where you should put all
     your controls and content.
 */
+/**
+ * @class MainComponent
+* @brief Main GUI component for the application.
+*
+* Handles UI elements, MIDI input/output, playback, recording, 
+* and keyboard shortcuts.
+*/
 class MainComponent : public juce::Component, public juce::ChangeListener, public juce::KeyListener, public juce::Timer
 {
 public:
     //==============================================================================
+
+    /**
+     * @brief Constructor.
+     * Initializes UI components, MIDI devices, background images,
+     * listeners, and settings.
+     */
     MainComponent();
+
+    /**
+     * @brief Destructor.
+     * Safely closes MIDI devices, removes listeners, and cleans up UI components.
+     */
     ~MainComponent() override;
 
     //==============================================================================
+    /**
+     * @brief Paint callback.
+     * Draws the background image and sets colors/fonts.
+     * @param g Graphics context.
+     */
     void paint(juce::Graphics&) override;
+
+    /**
+     * @brief Resize callback.
+     * Dynamically positions all child components and UI elements.
+     */
     void resized() override;
     bool isMouseDownInsideLabel = false;
+
+    /**
+     * @brief Change listener callback.
+     * Handles changes from colour selectors and updates visual effects.
+     * @param source The broadcaster that triggered the change.
+     */
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+
+    /**
+     * @brief Key press handler.
+     * Handles keyboard shortcuts for adjusting MIDI keyboard ranges.
+     * @param key The key that was pressed.
+     * @param component The component that received the key press.
+     * @return True if key was handled, false otherwise.
+     */
     bool keyPressed(const juce::KeyPress& key, juce::Component*) override;
+
+    /**
+     * @brief Timer callback.
+     * Periodically checks if MIDI input device is still connected.
+     */
     void timerCallback() override;
+
+    /**
+     * @brief Checks if the currently selected MIDI input device is valid.
+     * Resets active notes and closes devices if disconnected.
+     */
     void checkMidiInputDeviceValid();
 
 private:
@@ -163,60 +215,335 @@ private:
     int xPlay = 750, yPlay = 690;
 
     bool hasBeenResized = false;
+
+    /**
+     * @brief Initializes a user-specific save file for storing application settings.
+     */
     void initalizeSaveFileForUser();
+
+    
+    /**
+     * @brief Loads saved settings from the user properties file.
+     *
+     * Restores MIDI volume, reverb, and selected instruments.
+     */
     void loadSettings();
 
-
+    /**
+     * @brief Callback triggered when the component gains focus.
+     * Brings the noteLayer to the front.
+     * @param type Focus change type.
+     */
     void focusGained(FocusChangeType) override;
+
+    /**
+     * @brief Toggles the visibility of the settings panel.
+     */
     void toggleSettingsPanel();
+
+    /**
+     * @brief Toggles the visibility of the settings button.
+     */
     void toggleSettingsButton();
+
+    /**
+     * @brief Toggles the visibility of the MIDI button.
+     */
     void toggleMIDIButton();
+
+    /**
+     * @brief Toggles the visibility of the play button.
+     */
     void togglePlayButton();
+
+    /**
+     * @brief Toggles the visibility of the MIDI settings/help icon.
+     */
     void toggleMIDIsettingsIcon();
+
+    /**
+     * @brief Toggles the visibility of the header panel and all its subcomponents.
+     */
     void toggleHPanel();
+
+    
+    /**
+     * @brief Toggles the visibility of the home button.
+     */
     void toggleHomeButton();
+
+    /**
+     * @brief Hides multiple UI components to prepare the interface for playing mode.
+     */
     void toggleForPlaying();
+
+    /**
+     * @brief Toggles the visibility of the colour selector button.
+     */
     void toggleColourSelectorButton();
+
+    /**
+     * @brief Toggles the visibility of the instrument selector button.
+     */
     void toggleInstrumentSelectorButton();
+
+    /**
+     * @brief Toggles the visibility of the record, stop, and playback buttons.
+     */
     void toggleRecordButtons();
+
+    /**
+     * @brief Toggles the visibility of the save recording button.
+     */
     void toggleSaveRecordingButton();
+
+    /**
+     * @brief Toggles the visibility of the play recording button.
+     */
     void togglePlayRecordingButton();
+
+    /**
+     * @brief Toggles the visibility of volume and other knobs.
+     */
     void toggleKnobs();
+
+    /**
+     * @brief Toggles the visibility of the main display.
+     */
     void toggleDisplay();
+
+    /**
+     * @brief Toggles the visibility of the particle effects toggle button.
+     */
     void toggleParticleToggle();
+
+    /**
+     * @brief Toggles the visibility of left and right hand instrument toggles.
+     */
     void toggleHandInstrumentToggle();
 
+    /**
+     * @brief Initializes the settings button and related panels.
+     */
     void settingsInit();
+
+    /**
+     * @brief Initializes the play button.
+     */
     void playButtonInit();
+
+    /**
+     * @brief Initializes the on-screen keyboard UI and note layer.
+     *
+     * @param min Minimum MIDI note
+     * @param max Maximum MIDI note
+     *
+     * Adds the keyboard and noteLayer to the component and sets bounds.
+     */
     void keyBoardUIinit(int min, int max);
+
+    /**
+     * @brief Initializes the settings panel.
+     *
+     *Adds it to the component, brings it to front, and hides it initially.
+     */
     void panelInit();
+
+    /**
+     * @brief Initializes the settings panel.
+     *
+     * Adds it to the component, brings it to front, and hides it initially.
+     */
     void midiIconInit();
+
+    /**
+     * @brief Initializes the MIDI settings button.
+     *
+     * Sets text, click callback, cursor, adds to settings panel, hides it initially.
+     */
     void midiSettingsInit();
+
+    /**
+     * @brief Initializes the header panel and all its child components.
+     *
+     * Adds header panel, brings to front, hides it initially, and calls init for:
+     * home button, colour selector, instrument selector, record buttons,
+     * save/play recording buttons, particle toggle, hand toggles, and knobs.
+     */
     void headerPanelInit();
+
+    /**
+     * @brief Initializes the home button.
+     *
+     * Sets text, cursor, click callback, adds to header panel, hides it initially.
+     */
     void homeButtonInit();
+
+    /**
+     * @brief Initializes the colour selector button inside the header panel.
+     */
     void colourSelectorButtonInit();
+
+    /**
+     * @brief Initializes the instrument selector button inside the header panel.
+     */
     void instrumentSelectorButtonInit();
+
+    /**
+     * @brief Initializes the record, stop, and playback buttons.
+     *
+     * Configures SVG images, mouse cursors, click callbacks,
+     * and temporary messages for user feedback.
+     */
     void recordButtonsInit();
+
+    /**
+     * @brief Initializes the save recording button.
+     *
+     * Configures click callback and adds it to the header panel.
+     */
     void saveRecordingButtonInit();
+
+    /**
+     * @brief Initializes the play recording file button.
+     *
+     * Sets the button text, click callback, cursor, adds it to the header panel,
+     * and hides it initially.
+     */
     void playRecordingButtonInit();
+
+    /**
+     * @brief Initializes volume and other knobs.
+     *
+     * Configures the rotary slider style, look and feel, adds to the header panel,
+     * and hides it initially.
+     */
     void knobsInit();
+
+    /**
+     * @brief Initializes the main display component.
+     *
+     * Creates a display, adds it to the header panel, and hides it initially.
+     */
     void displayInit();
-    void toggleButtonInit();
-    void toggleHandButtonsInit();
+
     
+    /**
+     * @brief Initializes the particle toggle button.
+     *
+     * Configures text, cursor, click callback to control particle spawning,
+     * sets initial toggle state, adds to header panel, and hides it.
+     */
+    void toggleButtonInit();
+
+    /**
+     * @brief Callback when settings button is clicked.
+     *
+     * Toggles settings panel, MIDI button, and help icon visibility.
+     */
+    void toggleHandButtonsInit();
+
+    
+    /**
+     * @brief Callback when MIDI button is clicked.
+     *
+     * Opens a MIDI settings window if not already opened, otherwise brings it to front.
+     */
     void settingsButtonOnClick();
+
+    /**
+     * @brief Callback when MIDI button is clicked.
+     *
+     * Opens a MIDI settings window if not already opened, otherwise brings it to front.
+     */
     void midiButtonOnClick();
+
+    
+    /**
+     * @brief Callback when play button is clicked.
+     *
+     * Opens MIDI devices for playback, sets up keyboard, note layer, display,
+     * MIDI handler, record player, and hides unnecessary UI components.
+     */
     void homeButtonOnClick();
+
+    /**
+     * @brief Loads and returns an image for a given instrument type.
+     *
+     * @param type The instrument type string identifier
+     *@return juce::Image corresponding to the instrument type, or an empty image if type unknown
+     */
     void playButtonOnClick();
 
+    /**
+     * @brief Builds the instrument tree for selection UI.
+     *
+     * Adds categories like Pianos, Basses, Guitars, Woodwinds, Brass, Strings, Reeds, Organs,
+     * creates instrument items, and attaches them to the tree view.
+     */
     juce::Image getImageForInstruments(const std::string& type);
+
+    /**
+     * @brief Builds the instrument tree for selection UI.
+     *
+     * Adds categories like Pianos, Basses, Guitars, Woodwinds, Brass, Strings, Reeds, Organs,
+     * creates instrument items, and attaches them to the tree view.
+     */
     void buildTree();
+
+    /**
+     * @brief Creates a tree item representing an instrument.
+     *
+     * @param img Image of the instrument
+     * @param name Name of the instrument
+     * @param program Program number for MIDI
+     * @return Pointer to a new InstrumentTreeItem
+     *
+     * Sets up the onProgramSelected callback to update MIDI handler,
+     * record player, and properties file when instrument is selected.
+     */
     InstrumentTreeItem* createInstrumentItem(const juce::Image& img, const juce::String& name, int program);
+
+    /**
+     * @brief Opens the selected MIDI input and output devices for playback.
+     *
+     * Checks for available devices and opens them.
+     * If the PC keyboard is selected as input, sets keyboard input mode.
+     * @return true if devices successfully opened, false otherwise.
+     */
     bool openingDevicesForPlay();
-   
+
+    /**
+     * @brief Displays the colour selector UI for particle effects.
+     *
+     * Hides the note layer, disables keyboard drawing,
+     * and launches the colour selector in a CallOutBox.
+     */
     void showColourSelector();
+
+    /**
+     * @brief Displays the instrument selector tree view UI.
+     *
+     * Builds the instrument tree, hides the note layer,
+     * disables keyboard drawing, and launches the tree view in a CallOutBox.
+     */
     void showInstrumentSelector();
+
+    /**
+     * @brief Saves the current recording to a MIDI file.
+     *
+     * Opens a FileChooser to select the save location.
+     * @param tempo Optional tempo value to save with the recording.
+     */
     void saveRecordingToFile(double tempo=120.0);
+
+    /**
+     * @brief Plays a recording from a MIDI file.
+     *
+     * Opens a FileChooser to select the MIDI file.
+     * Parses the file and starts playback if valid.
+     * @param tempo Optional tempo value for playback.
+     */
     void playRecordingFromFile(double tempo = 120.0);
     
     //void 
