@@ -21,50 +21,118 @@
 #include "IOHelper.h"
 #include "TrackPlayerListener.h"
 
+/**
+ * @class TrackListComponent
+ * @brief Component that displays and manages a list of tracks and folders.
+ *
+ * Supports adding, removing, renaming, sorting, and selecting MIDI tracks.
+ * Tracks can be organized into folders, and double-clicking a track triggers a callback.
+ */
 class TrackListComponent : public juce::Component, private juce::ListBoxModel, public juce::ComboBox::Listener, public Subject<TrackListListener>
 {
 public:
 
+    /** 
+     * @brief Callback triggered when a single track is removed from the list.
+     * @param uuid The UUID of the removed track.
+     */
     std::function<void(const juce::Uuid& uuid)> onRemoveTrack;
+
+    /** 
+     * @brief Callback triggered when multiple tracks are removed at once.
+     * @param uuids A vector of UUIDs corresponding to the removed tracks.
+     */
     std::function<void(const std::vector<juce::Uuid>& uuids)> onRemoveMultipleTracks;
+
+    /** 
+     * @brief Callback triggered when a track is renamed from the list.
+     * @param uuid The UUID of the renamed track.
+     * @param newName The new name assigned to the track.
+     */
     std::function<void(const juce::Uuid& uuid, const juce::String& newName)> onRenameTrackFromList;
+
+    /** 
+     * @brief Callback called when a new TrackEntry is added and should be added to a map for lookup.
+     * @param newEntry Pointer to the newly added TrackEntry.
+     */
     std::function<void(TrackEntry* newEntry)> addToMapOnAdding;
 
+    /**
+     * @brief Constructor.
+     * @param tracks Shared deque of currently available tracks (flat list).
+     * @param groupedTracksMap Shared map of folder names to tracks.
+     * @param groupedKeys Shared vector of folder names.
+     * @param onTrackChosen Callback triggered when a track is double-clicked.
+     */
     TrackListComponent(std::shared_ptr<std::deque<TrackEntry>> tracks,
         std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracksMap,
         std::shared_ptr<std::vector<juce::String>> groupedKeys,
         std::function<void(int)> onTrackChosen);
 
+    /** @brief Lays out buttons and list box. */
     void resized() override;
 
+    /** @brief Returns number of rows in the ListBox. */
     int getNumRows() override;
 
+    /** @brief Handles sorting when the sort combo box is changed. */
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
 
+    /**
+     * @brief Draws each row in the ListBox.
+     * @param rowNumber The index of the row to paint.
+     * @param g Graphics context.
+     * @param width Width of the row.
+     * @param height Height of the row.
+     * @param rowIsSelected True if the row is selected.
+     */
     void paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected) override;
 
+    /**
+     * @brief Handles mouse click on a row.
+     * @param row Row index clicked.
+     * @param event Mouse event information.
+     */
     void listBoxItemClicked(int row, const juce::MouseEvent& event) override;
 
+    /** @brief Adds a MIDI track to the current list using a file chooser. */
     void addToTrackList();
-    
+
+    /** @brief Removes selected track(s) from the current list. */
     void removeFromTrackList();
 
+    /** @brief Renames the selected track. */
     void renameFromTrackList();
 
+    /** @brief Adds a new folder to organize tracks. */
     void addToFolderList();
 
+    /** @brief Removes selected folder(s) and their tracks. */
     void removeFromFolderList();
 
+    /** @brief Renames the selected folder. */
     void renameFromFolderList();
 
+    /** @brief Switches view back to folder mode. */
     void backToFolderView();
 
+    /**
+     * @brief Returns a reference to all available tracks in the current view.
+     * @return deque of TrackEntry objects
+     */
     std::deque<TrackEntry>& getAllAvailableTracks() const;
 
+    /**
+     * @brief Extracts a display name from a MIDI track sequence.
+     * @param trackSeq The MIDI sequence.
+     * @return Display name combining track name and instrument if available.
+     */
     juce::String extractDisplayNameFromTrack(const juce::MidiMessageSequence& trackSeq);
 
+     /** @brief Initializes view for flat track list (TrackView). */
     void initializeTracksFromList();
 
+    /** @brief Deallocates dynamic buttons/comboBox used in TrackView. */
     void deallocateTracksFromList();
 
 
