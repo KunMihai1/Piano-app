@@ -34,7 +34,7 @@ struct PlayBackSettings
 class PlayBackSettingsComponent: public juce::Component, private juce::ComboBox::Listener {
 public:
 
-    /** Callback when settings are changed by the user. */
+    /**@brief Callback when settings are changed by the user. */
     std::function<void(PlayBackSettings settings)> onChangingSettings;
 
     /**
