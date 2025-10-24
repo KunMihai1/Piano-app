@@ -181,85 +181,202 @@ private:
     //JUCE_LEAK_DETECTOR(Track)
 };
 
+/**
+ * @brief Component representing the currently selected style.
+ *
+ * Manages playback of tracks associated with a style, allows for tempo adjustments,
+ * track selection, renaming, removal, and displays track information. Handles 
+ * MIDI output via a shared device and syncs playback with MultipleTrackPlayer.
+ *
+ * Inherits from juce::Component, juce::MouseListener, and juce::ComboBox::Listener.
+ */
 class CurrentStyleComponent : public juce::Component, private juce::MouseListener, private juce::ComboBox::Listener
 {
 public:
+    /** @brief Callback invoked whenever any track changes (volume, notes, etc.). */
     std::function<void()> anyTrackChanged;
+
+    /**
+     * @brief Callback invoked to request track selection.
+     * @param callback Function that receives selected track info: name, UUID, type.
+     */
     std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelectionFromTrack;
+  
+    /** @brief Callback to update the current track file. */
     std::function<void()> updateTrackFile;
+
+    /** @brief Callback invoked when the keybinds tab starts. */
     std::function<void()> keybindTabStarting;
 
+    /**
+     * @brief Constructor for CurrentStyleComponent.
+     * @param name Name of the style to display.
+     * @param map Reference to a map of track UUIDs to TrackEntry pointers.
+     * @param outputDevice Weak pointer to a shared MIDI output device.
+     */
     CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice);
 
+    /** @brief Stops playback via the start/stop buttons programmatically. */
     void triggerStopClick();
 
+    /** @brief Starts playback via the start/stop buttons programmatically. */
     void triggerStartClick();
 
+    /** @brief Stops the track player immediately. */
     void stoppingPlayer();
-    
+
+    /** @brief Destructor. */
     ~CurrentStyleComponent() override;
 
+    /** @brief Handles resizing of the component and child elements. */
     void resized() override;
 
+    /**
+     * @brief Updates the displayed style name.
+     * @param newName The new name to display.
+     */
     void updateName(const juce::String& newName);
 
+    /**
+     * @brief Returns the current name of the style.
+     * @return The style name.
+     */
     juce::String getName();
 
+    /**
+     * @brief Retrieves the internal JSON representation of this style.
+     * @return Pointer to a DynamicObject representing the JSON data.
+     */
     juce::DynamicObject* getJson() const;
 
+    /**
+     * @brief Loads style data from a JSON variable.
+     * @param styleVar The JSON variable containing style data.
+     */
     void loadJson(const juce::var& styleVar);
 
+    /** @brief Starts playback of selected tracks based on the playSettingsTracks selection. */
     void startPlaying();
 
+    /** @brief Stops playback of tracks. */
     void stopPlaying();
 
+    /** @brief Returns the current playback tempo in BPM. */
     double getTempo();
 
+    /** @brief Sets the current playback tempo.
+     *  @param newTempo New BPM value.
+     */
     void setTempo(double newTempo);
 
+    /** @brief Sets the unique ID of the style for internal mapping. */
     void setStyleID(const juce::String& newID);
 
+    /**
+     * @brief Applies style changes to a single track.
+     * @param track Reference to the TrackEntry to update.
+     */
     void applyChangesForOneTrack(TrackEntry& track);
 
+    /** @brief Applies style changes to all tracks in the current style. */
     void applyChangesForAllTracksCurrentStyle();
 
+    /**
+     * @brief Removes a single track from the current style.
+     * @param uuid UUID of the track to remove.
+     */
     void removingTrack(const juce::Uuid& uuid);
 
+    /**
+     * @brief Removes multiple tracks from the current style.
+     * @param uuids Vector of UUIDs for tracks to remove.
+     */
     void removingTracks(const std::vector<juce::Uuid>& uuids);
 
+    /**
+     * @brief Renames a track within the current style.
+     * @param uuid UUID of the track to rename.
+     * @param newName New name for the track.
+     */
     void renamingTrack(const juce::Uuid& uuid, const juce::String& newName);
 
+    /**
+     * @brief Shows detailed note information for a specific track.
+     * @param uuid UUID of the track.
+     * @param channel MIDI channel to display.
+     */
     void showingTheInformationNotesFromTrack(const juce::Uuid& uuid, int channel);
+
+    /** @brief Returns the base tempo (original BPM of style). */
 
     double getBaseTempo();
 
+    /**
+     * @brief Updates the MIDI output device used by this component and the track player.
+     * @param newOutput Weak pointer to the new MIDI output device.
+     */
     void setDeviceOutputCurrentStyle(std::weak_ptr<juce::MidiOutput> newOutput);
 
+    /** @brief Returns all track components associated with this style. */
     juce::OwnedArray<Track>& getAllTracks();
 
+    /** @brief Returns a pointer to the MultipleTrackPlayer instance. */
     MultipleTrackPlayer* getTrackPlayer();
 
+    /**
+     * @brief Synchronizes volume for all percussion tracks.
+     * @param newVolume New volume value (0–127).
+     */
     void syncPercussionTracksVolumeChange(double newVolume);
 
+    /**
+     * @brief Applies BPM changes to all tracks before playback.
+     * @param userBPM Target BPM.
+     * @param whenLoad Flag indicating whether this is applied during style load.
+     */
     void applyBPMchangeBeforePlayback(double userBPM, bool whenLoad=false);
 
+    /**
+     * @brief Applies BPM changes to a single track.
+     * @param userBPM Target BPM.
+     * @param uuid UUID of the track to update.
+     */
     void applyBPMchangeForOne(double userBPM, const juce::Uuid& uuid);
 
+    /** @brief JUCE ComboBox listener callback. */
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
 
+    /** @brief Sets the selected index of the play settings combo box. */
     void comboBoxChangeIndex(int Index);
 
+     /** @brief Normalizes all tracks (TPQN, measure offset, etc.) */
     void normalizeAllTracks();
 
+    /**
+     * @brief Normalizes a MIDI sequence to a target TPQN and beat structure.
+     * @param seq Sequence to normalize.
+     * @param tpqn Target ticks per quarter note.
+     * @param bpm Tempo in beats per minute.
+     * @param beatsPerBar Number of beats per bar (default 4).
+     */
     void normalizeMeasure(juce::MidiMessageSequence& seq, double tpqn, double bpm, int beatsPerBar=4);
 
+    /**
+     * @brief Scales MIDI sequence timestamps to a target TPQN.
+     * @param seq Sequence to scale.
+     * @param originalTPQN Original TPQN of the sequence.
+     * @param targetTPQN Desired TPQN.
+     */
     void normalizeTPQN(juce::MidiMessageSequence& seq, double originalTPQN, double targetTPQN);
 
+    /** @brief Removes all tempo meta events from a sequence. */
     void stripTempoMetaEvents(juce::MidiMessageSequence& seq);
 
 private:
+    /** @brief Mouse listener to handle track selection via clicks. */
     void mouseDown(const juce::MouseEvent& ev) override;
 
+    /** @brief Returns the time offset of the first note in a sequence in seconds. */
     double firstNoteOffsetInSeconds(const juce::MidiMessageSequence& seq);
 
     juce::String name;
@@ -288,27 +405,79 @@ private:
     //JUCE_LEAK_DETECTOR(CurrentStyleComponent)
 };
 
+/**
+ * @brief A clickable UI element that displays and manages a single style name.
+ *
+ * Handles:
+ * - Selecting a style (left-click)
+ * - Context menu actions: Rename / Delete (right-click)
+ * - Validating name changes through external callbacks
+ */
 class StyleViewComponent : public juce::Component, public juce::MouseListener
 {
 public:
-    std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRenamed;
+
+    /** @brief Notifies when style name changes. */
+    std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRenamed;  
+
+    /**
+     * @brief Validates name uniqueness among sibling items.
+     *
+     * @return true if the name already exists.
+     */
     std::function<bool(const juce::String& name)> isInListNames;
+
+    /** @brief Requests removal of this component from lists. */
     std::function<void(const juce::String& name)> onStyleRemoveComponent;
 
+    /**
+     * @brief Creates a visual item that displays the given style name.
+     *
+     * @param styleName Initial string displayed in the label.
+     */
     StyleViewComponent(const juce::String& styleName);
 
+    /** @brief Adjusts internal label bounds based on text size. */
     void resized() override;
 
+    /**
+     * @brief Handles selection or popup menu based on mouse button.
+     *
+     * @param event Mouse click information.
+     */
     void mouseUp(const juce::MouseEvent& event) override;
 
+    /**
+     * @brief Updates the visible style label text.
+     *
+     * @param name New display name.
+     */
     void setNameLabel(const juce::String& name);
 
+    /**
+     * @brief Retrieves the current style label text.
+     *
+     * @return The displayed name.
+     */
     juce::String getNameLabel() const;
 
+    /**
+     * @brief Prompts the user to rename this style.
+     *
+     * Validates:
+     * - New name is not empty
+     * - New name is unique (checked via `isInListNames` callback)
+     */
     void changeNameLabel();
 
+    /**
+     * @brief Prompts the user to confirm and delete this style.
+     *
+     * Calls `onStyleRemoveComponent` if accepted.
+     */
     void removeStyle();
 
+    /** @brief Fired when the label is left-clicked. */
     std::function<void(const juce::String&)> onStyleClicked;
 
 private:
@@ -317,35 +486,91 @@ private:
     //JUCE_LEAK_DETECTOR(StyleViewComponent)
 };
 
+
+/**
+ * @brief Displays a scrollable, interactive grid of StyleViewComponent items.
+ *
+ * Features:
+ * - Add new style button + popup input dialog
+ * - Rename / delete actions propagate through callbacks
+ * - Auto-grid layout when resized
+ */
 class StylesListComponent : public juce::Component
 {
 public:
+    /**
+     * @brief Constructs list UI and populates with initial names.
+     *
+     * @param stylesNamesOut Initial style names to show.
+     * @param onStyleClicked Callback fired when a style is clicked.
+     * @param widthSize Initial width used for layout calculation.
+     */
     StylesListComponent(std::vector<juce::String> stylesNames, std::function<void(const juce::String&)> onStyleClicked, int widthSize=0);
 
+    /** @brief Fired when a rename completes. */
     std::function<void(const juce::String& oldName, const juce::String& newName)> onStyleRename;
+
+    /** @brief Fired after a style is created. */
     std::function<void(const juce::String& newName)> onStyleAdd;
+
+    /** @brief Fired when a style is deleted. */
     std::function<void(const juce::String& name)> onStyleRemove;
 
+    /** @brief Arranges add button + scroll area + style tiles. */
     void resized() override;
+
+     /** @brief Paints top toolbar background + separator line. */
     void paint(juce::Graphics& g) override;
 
+    /** @brief Sets new width used for internal layout. */
     void setWidthSize(const int newWidth);
 
+    /**
+     * @brief Updates displayed item positions in a 2-column grid.
+     *
+     * Called on resize and after list changes.
+     */
     void layoutStyles();
 
+    /**
+     * @brief Refreshes UI items based on current stored names.
+     */
     void repopulate();
 
+    /**
+     * @brief Shows modal input dialog for adding new styles.
+     *
+     * Ensures:
+     * - Non-empty name
+     * - Name uniqueness
+     *
+     * Then updates list and fires callbacks.
+     */
     void addNewStyle();
 
+    /**
+     * @brief Binds all callbacks for a newly created style item.
+     *
+     * @param newStyle Created StyleViewComponent.
+     * @param currentName Temporary name used for rename validation.
+     */
     void allCallBacks(StyleViewComponent* newStyle, const juce::String& currentName);
 
+    /**
+     * @brief Removes an item from the UI list before external deletion.
+     *
+     * Rebuilds UI and triggers `onStyleRemove`.
+     */
     void removeStyleLocally(const juce::String& name);
 
+    /** @brief Inserts a style visually without invoking dialogs. */
     void addStyleLocally(const juce::String& newName);
 
+    /** @brief Re-builds internal names array from component list. */
     void rebuildStyleNames();
 
 private:
+    /** @brief Fully repopulates StyleViewComponents. */
     void populate();
 
     juce::OwnedArray<StyleViewComponent> allStyles;
