@@ -102,67 +102,147 @@ private:
     //JUCE_LEAK_DETECTOR(TrackListComponent)
 };
 
+/**
+ * @brief Represents a single track in a style.
+ *
+ * Handles volume control, instrument selection, track naming, copy/paste operations,
+ * MIDI channel assignment, and mouse interactions for track management.
+ */
 class Track : public juce::Component, private juce::MouseListener, public Subject<TrackListener>
 {
 public:
+    /** @brief Callback when the track changes (volume, instrument, etc.). */
     std::function<void()> onChange;
+
+    /** @brief Callback for requesting track selection. */
     std::function<void(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)>)> onRequestTrackSelection;
+  
+    /** 
+     * @brief Callback to check if the track is currently playing. 
+     * Used in volumeSlider.onDragEnd to decide if a MIDI message should be sent.
+     */
     std::function<bool()> isPlaying;
+
+    /** @brief Callback to sync volume across all percussion tracks. */
     std::function<void(double newVolume)> syncVolumePercussionTracks;
+
+    /** @brief Callback triggered when the track is copied. */
     std::function<void(Track* copiedTrack)> onCopy;
+
+    /** @brief Callback triggered when the track is pasted. */
     std::function<void(Track* toPaste)> onPaste;
+
+    /** @brief Callback triggered to show detailed information about notes. */
     std::function<void(const juce::Uuid& uuid, int channel)> onShowInformation;
 
+    /** @brief Default constructor. Initializes sliders, labels, and buttons. */
     Track();
+
+    /** @brief Destructor. Clears slider callbacks to avoid dangling references. */
     ~Track();
 
+    /** @brief Called when the component is resized to layout sliders, labels, and buttons. */
     void resized() override;
-    
+
+    /** @brief Draws the component outline. */
     void paint(juce::Graphics& g) override;
 
+    /** @brief Mouse hover enter event. Shows tooltip for track name. */
     void mouseEnter(const juce::MouseEvent& ev) override;
 
+    /** @brief Mouse hover exit event. Hides tooltip. */
     void mouseExit(const juce::MouseEvent& ev) override;
 
+    /** @brief Returns a JSON representation of the track properties. */
     juce::DynamicObject* getJson() const;
 
+    /**
+     * @brief Shows an instant info message near the track.
+     * @param text Text to display.
+     */
     void showInstantInfo(const juce::String& text);
 
+    /**
+     * @brief Loads JSON from a file.
+     * @param file File to load.
+     * @return Parsed JSON variable or empty if failed.
+     */
     juce::var loadJson(const juce::File& file);
 
+    /** @brief Sets the volume slider value. */
     void setVolumeSlider(double value);
+
+    /** @brief Updates the volume label and optionally notifies the track player. */
     void setVolumeLabel(const juce::String& value, bool shouldNotify=false);
+
+    /** @brief Sets the track name label. */
     void setNameLabel(const juce::String& name);
+
+    /** @brief Returns the track name. */
     juce::String getName() const;
+
+    /** @brief Opens the instrument chooser dialog. */
     void openInstrumentChooser();
+
+    /** @brief Builds the list of available GM instruments. */
     juce::StringArray instrumentListBuild();
+
+    /** @brief Sets the instrument number and optionally notifies the track player. */
     void setInstrumentNumber(int newInstrumentNumber, bool shouldNotify=false);
+
+    /** @brief Returns the currently assigned instrument number. */
     int getInstrumentNumber() const;
+
+    /** @brief Sets the track UUID. */
     void setUUID(const juce::Uuid& newUUID);
+
+    /** @brief Sets the track type (e.g., "Percussion"). */
     void setTypeOfTrack(const juce::String& newType);
+
+    /** @brief Returns the track type. */
     juce::String getTypeOfTrack() const;
+
+    /** @brief Returns the currently assigned UUID. */
     juce::Uuid getUsedID() const;
 
+    /** @brief Sets the MIDI channel for the track. */
     void setChannel(int newChannel);
+
+    /** @brief Returns the track's MIDI channel. */
     int getChannel() const;
 
+    /** @brief Returns the current volume slider value. */
     double getVolume() const;
 
+    /**
+     * @brief Copies all properties from another track.
+     * @param other Track to copy from.
+     */
     void copyFrom(const Track& other);
-    
+
+    /**
+     * @brief Pastes properties from another track.
+     * @param source Track to paste from.
+     */
     void pasteFrom(const Track& source);
 
+    /** @brief Opens a modal dialog to rename the track. */
     void renameOneTrack();
 
+    /** @brief Opens a confirmation dialog to delete the track. */
     void deleteOneTrack();
 
+    /** @brief Copies the track for later pasting. */
     void copyOneTrack();
 
+    /** @brief Pastes the previously copied track into this track. */
     void pasteOneTrack();
 
+    /** @brief Shows detailed notes information for this track. */
     void showNotesInformation();
 
 private:
+    /** @brief Mouse click event. Handles left-click for selection and right-click for context menu. */
     void mouseDown(const juce::MouseEvent& event) override;
     int usedInstrumentNumber=-1;
     int channel;
