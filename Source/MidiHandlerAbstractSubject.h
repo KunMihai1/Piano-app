@@ -20,6 +20,7 @@
  */
 class MidiHandlerListener {
 public:
+    /**@brief Virtual destructor */
     virtual ~MidiHandlerListener()=default;
 
     /**
