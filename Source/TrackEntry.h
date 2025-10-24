@@ -8,10 +8,28 @@
   ==============================================================================
 */
 
+/**
+ * @file TrackEntry.h
+ * @brief Defines structures for MIDI track information and related metadata.
+ * 
+ * This file includes definitions for TrackEntry, MidiChangeInfo, TrackType, 
+ * and helper functions for TrackType conversions.
+ */
+
 #pragma once
 
+
+/**
+ * @enum TrackType
+ * @brief Represents the type of MIDI track.
+ */
 enum class TrackType {Melodic,Percussion};
 
+
+/**
+ * @struct MidiChangeInfo
+ * @brief Stores information about a MIDI event change.
+ */
 struct MidiChangeInfo
 {
     int oldNumber = -1;
@@ -23,6 +41,11 @@ struct MidiChangeInfo
     int newVelocity = -1;
 };
 
+
+/**
+ * @struct TrackEntry
+ * @brief Stores all relevant information for a MIDI track.
+ */
 struct TrackEntry
 {
     juce::String folderName;
@@ -48,6 +71,11 @@ struct TrackEntry
     juce::MidiMessageSequence originalSequenceTicks;
     TrackType type = TrackType::Melodic;
 
+
+    /**
+     * @brief Returns the display name, or filename if empty.
+     * @return Display name string.
+     */
     juce::String getDisplayName() const
     {
         return displayName.isNotEmpty()
@@ -55,11 +83,19 @@ struct TrackEntry
             : file.getFileNameWithoutExtension();
     }
 
+    /**
+     * @brief Returns the unique ID string for this track.
+     * @return Unique identifier string.
+     */
     juce::String getUniqueID() const
     {
         return uuid.toString();
     }
 
+    /**
+     * @brief Generates a new UUID.
+     * @return Newly generated UUID.
+     */
     static juce::Uuid generateUUID()
     {
         return juce::Uuid();
@@ -67,8 +103,18 @@ struct TrackEntry
 
 };
 
+
+/**
+ * @namespace TrackTypeConversion
+ * @brief Helper functions for converting TrackType to/from string.
+ */
 namespace TrackTypeConversion
 {
+    /**
+     * @brief Converts a TrackType to string.
+     * @param type TrackType value.
+     * @return String representation ("melodic" or "percussion").
+     */
     inline juce::String toString(TrackType type)
     {
         if (type == TrackType::Melodic) return "melodic";
@@ -76,6 +122,11 @@ namespace TrackTypeConversion
         return "unknown";
     }
 
+    /**
+     * @brief Converts a string to TrackType.
+     * @param str String representation of track type.
+     * @return Corresponding TrackType value.
+     */
     inline TrackType fromString(const juce::String& str)
     {
         if (str.compareIgnoreCase("percussion") == 0)
