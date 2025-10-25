@@ -1630,18 +1630,21 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool wh
         double ratio = originalBPM / userBPM;
 
         juce::MidiMessageSequence scaledSequence;
+        juce::MidiMessageSequence& sequenceToScale = tr->originalSequenceTicks;
 
         for (int i = 0; i < tr->originalSequenceTicks.getNumEvents(); ++i)
-        {
-            const auto& event = tr->originalSequenceTicks.getEventPointer(i)->message;
-            double scaledTime = event.getTimeStamp() * ratio;
+            for (int i = 0; i < sequenceToScale.getNumEvents(); ++i)
+            {
+                const auto& event = tr->originalSequenceTicks.getEventPointer(i)->message;
+                auto& event = sequenceToScale.getEventPointer(i)->message;
+                double scaledTime = event.getTimeStamp() * ratio;
 
-            juce::MidiMessage newMsg = event;
-            newMsg.setTimeStamp(scaledTime);
-            newMsg.setChannel(targetChannel);
+                juce::MidiMessage newMsg = event;
+                newMsg.setTimeStamp(scaledTime);
+                newMsg.setChannel(targetChannel);
 
-            scaledSequence.addEvent(newMsg);
-        }
+                scaledSequence.addEvent(newMsg);
+            }
 
         for (auto& [noteId, change] : tr->styleChangesMap[styleID])
         {
@@ -1693,6 +1696,36 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool wh
         }
 
         tr->sequence = scaledSequence;
+
+        /*
+        auto it = tr->styleChangesMap.find(styleID);
+        if (it != tr->styleChangesMap.end())
+        {
+            for (auto& [row, change] : it->second)
+            {
+                auto* eventHolder = tr->sequence.getEventPointer(row);
+                if (eventHolder)
+                {
+                    auto& msg = eventHolder->message;
+                    if (msg.isNoteOnOrOff())
+                    {
+                        int channel = msg.getChannel();
+                        bool isNoteOn = msg.isNoteOn();
+                        juce::MidiMessage newMsg;
+                        if (isNoteOn)
+                            newMsg = juce::MidiMessage::noteOn(channel, change.newNumber, (juce::uint8)change.newVelocity);
+                        else newMsg = juce::MidiMessage::noteOff(channel, change.newNumber);
+
+                        double diff = change.newTimeStamp - change.oldTimeStamp;
+                        newMsg.setTimeStamp(msg.getTimeStamp() + diff);
+                        eventHolder->message = newMsg;
+                    }
+                }
+            }
+        }
+        */
+        tr->sequence.sort();
+        tr->sequence.updateMatchedPairs();
     }
 
     if (anyTrackChanged)
