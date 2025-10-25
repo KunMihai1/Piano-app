@@ -73,7 +73,7 @@ public:
     /**
      * @brief Called when a note-on MIDI event is received.
      * @param midiNote MIDI note number that was pressed.
-     *//
+     */
     void noteOnReceived(int midiNote) override;
 
     /**

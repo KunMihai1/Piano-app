@@ -42,6 +42,13 @@ struct MidiChangeInfo
 };
 
 
+struct TrackSection
+{
+    juce::String name;
+    int startIndex = 0;
+    int endIndex = 0;
+};
+
 /**
  * @struct TrackEntry
  * @brief Stores all relevant information for a MIDI track.
@@ -57,6 +64,7 @@ struct TrackEntry
     double volumeAssociated = 0.0f;
     double originalBPM = 0.0f;
 
+    std::vector<TrackSection> sections;
     std::unordered_map<juce::String, std::unordered_map<int, MidiChangeInfo>> styleChangesMap;
 
 
