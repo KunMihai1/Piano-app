@@ -18,24 +18,26 @@ BeatBar::BeatBar(): numerator{4}, denominator{4}
 void BeatBar::paint(juce::Graphics& g)
 {
     auto area = getLocalBounds().toFloat();
-
-    float beatWidth = area.getWidth() / numerator;
+    g.fillAll(juce::Colours::black);
     float height = area.getHeight();
 
-    g.fillAll(juce::Colours::black);
+    float beatsPerBar = static_cast<float>(numerator);
+    float subBeatsPerBeat = static_cast<float>(denominator) / 4.0f;
+    float totalSubdivisions = beatsPerBar * subBeatsPerBeat;
+    float subBeatWidth = area.getWidth() / totalSubdivisions;
 
-    int currentBeat = static_cast<int>(std::floor(currentBeatsElapsed)) % numerator;
+    double beatInBar = std::fmod(currentBeatsElapsed, beatsPerBar);
+    if (beatInBar < 0) beatInBar += beatsPerBar;
+    int currentSubdivision = static_cast<int>(std::floor(beatInBar * subBeatsPerBeat));
 
-    float cornerSize = juce::jmin(beatWidth, height) * 0.3f;
+    float cornerSize = juce::jmin(subBeatWidth, height) * 0.3f;
 
-    for (int i = 0; i < numerator; ++i)
+    for (int i = 0; i < static_cast<int>(totalSubdivisions); ++i)
     {
-        juce::Rectangle<float> beatRect(area.getX() + i * beatWidth, area.getY(), beatWidth, height);
-        if (i == currentBeat)
-            g.setColour(juce::Colours::yellow.withAlpha(0.8f));
-        else
-            g.setColour(juce::Colours::dimgrey);
+        juce::Rectangle<float> beatRect(area.getX() + i * subBeatWidth, area.getY(), subBeatWidth, height);
 
+        g.setColour(i == currentSubdivision ? juce::Colours::yellow.withAlpha(0.8f)
+            : juce::Colours::dimgrey);
         g.fillRoundedRectangle(beatRect, cornerSize);
 
         g.setColour(juce::Colours::blanchedalmond.withAlpha(0.3f));

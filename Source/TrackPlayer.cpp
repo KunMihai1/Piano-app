@@ -240,13 +240,11 @@ void MultipleTrackPlayer::hiResTimerCallback()
         double rawBeatsElapsed = elapsed * (currentBPM / 60.0);
 
 
-        double noteLengthRatio = 4.0 / timeSignatureDenominator;
+        double beatsElapsed = elapsed * (currentBPM / 60.0);
 
-        double adjustedBeatsElapsed = rawBeatsElapsed * noteLengthRatio;
-
-        juce::MessageManager::callAsync([this, adjustedBeatsElapsed,elapsed]
+        juce::MessageManager::callAsync([this,beatsElapsed,elapsed]
             {
-                onElapsedUpdate(adjustedBeatsElapsed);
+                onElapsedUpdate(beatsElapsed);
                 notifyMidPlay(elapsed);
             });
 
