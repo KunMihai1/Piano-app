@@ -22,6 +22,7 @@
 #include "InstrumentTreeItem.h"
 #include "MidiRecordPlayer.h"
 #include "displayGUI.h"
+#include "addDeviceWindow.h"
 
 /**
  * @class SmoothRotarySlider
@@ -271,6 +272,7 @@ private:
     std::unique_ptr<TemporaryMessage> temporaryPopup;
     std::unique_ptr<juce::FileChooser> fileChooser;
     std::unique_ptr<Display> display = nullptr;
+    std::unique_ptr<AddDeviceWindow> addDeviceWindow=nullptr;
 
     //==========================================================================
     // Panels

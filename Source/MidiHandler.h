@@ -80,12 +80,13 @@ class MidiHandler :public juce::MidiInputCallback, public DisplayListener
 public:
 	std::function<void()> onStartNoteSetting;
 	std::function<void()> onEndNoteSetting;
+	std::function<void(const juce::String& vid, const juce::String& pid, std::function<void(const juce::String&, int)>)> onAddCallBack;
 
 	MidiHandler(MidiDevice& device);
 	~MidiHandler();
 	void handleIncomingMidiMessage(juce::MidiInput* source, const juce::MidiMessage& message) override;
 
-	void handlePlayableRange(const juce::String& vid, const juce:: String& pid);
+	int handlePlayableRange(const juce::String& vid, const juce:: String& pid);
 
 
 	void addListener(MidiHandlerListener* listener) { listeners.add(listener); }

@@ -59,11 +59,7 @@ void MidiDevicesDataBase::jsonEnsureExistance()
 	juce::File jsonFile = getJsonFile();
 	if (!jsonFile.existsAsFile())
 	{
-		juce::DynamicObject* rootObject = new juce::DynamicObject();
-		juce::Array<juce::var> devicesArray;
-
-		rootObject->setProperty("devices", juce::Array<juce::var>{});
-		jsonData = juce::var(rootObject);
+		jsonData = juce::var(new juce::DynamicObject());
 		populateInitialDevices();
 		saveJsonFile();
 	}
@@ -89,70 +85,57 @@ void MidiDevicesDataBase::saveJsonFile()
 void MidiDevicesDataBase::addDeviceJson(const juce::String& vid, const juce::String& pid, const juce::String& name, int numKeys)
 {
 	if (!jsonData.isObject())
-		return;
+	{
+		jsonData = juce::var(new juce::DynamicObject());
+	}
 
 	juce::DynamicObject* rootObject = jsonData.getDynamicObject();
 
 	if (!rootObject)
 		return;
 
-	juce::var devicesVar = rootObject->getProperty("devices");
-	if (!devicesVar.isArray())
-	{
-		juce::Array<juce::var> emptyArray;
-		rootObject->setProperty("devices", emptyArray);
-		devicesVar = rootObject->getProperty("devices");
-	}
-	auto* devicesArrayPtr = devicesVar.getArray();
-	if (devicesArrayPtr == nullptr) {
-		DBG("Devices array pointer is null!");
+	juce::String key = vid + pid;
+
+	if (key.isEmpty())
 		return;
-	}
-	juce::Array<juce::var>& devicesArray = *devicesArrayPtr;
 
-	for (const auto& device : devicesArray)
-	{
-		if (device.isObject())
-		{
-			auto* obj = device.getDynamicObject();
-			if (obj->getProperty("vid").toString() == vid && obj->getProperty("pid").toString() == pid)
-				return;
-		}
-	}
+	if (rootObject->hasProperty(key))
+		return;
 
-	juce::DynamicObject* newDevice = new juce::DynamicObject{};
-	newDevice->setProperty("vid", vid);
-	newDevice->setProperty("pid", pid);
+	auto* newDevice = new juce::DynamicObject();
 	newDevice->setProperty("name", name);
 	newDevice->setProperty("keys", numKeys);
-	devicesArray.add(newDevice);
+
+	rootObject->setProperty(key, juce::var(newDevice));
+
 	saveJsonFile();
 }
 
 int MidiDevicesDataBase::getNrKeysPidVid(const juce::String& vid, const juce::String& pid)
 {
-	if (jsonData.isObject())
-	{
-		auto* rootObject = jsonData.getDynamicObject();
-		juce::var devicesVar = rootObject->getProperty("devices");
+	if (!jsonData.isObject())
+		return -1;
 
-		auto devicesArrayPtr = devicesVar.getArray();
-		if (devicesArrayPtr == nullptr)
-			return -1;
+	auto* rootObject = jsonData.getDynamicObject();
+	if (!rootObject)
+		return -1;
 
-		juce::Array<juce::var>& devicesArray = *devicesArrayPtr;
+	juce::String key = vid + pid;
+	if (key.isEmpty())
+		return -1;
 
-		for (const auto& device : devicesArray)
-		{
-			auto* obj = device.getDynamicObject();
-			if (device.isObject())
-			{
-				if (obj->getProperty("vid").toString() == vid && obj->getProperty("pid").toString() == pid)
-					return static_cast<int>(obj->getProperty("keys"));
-			}
-		}
-	}
-	return -1;
+	if (!rootObject->hasProperty(key))
+		return -1;
+
+	auto deviceVar = rootObject->getProperty(key);
+	if (!deviceVar.isObject())
+		return -2;
+
+	auto* deviceObj = deviceVar.getDynamicObject();
+	if (!deviceObj)
+		return -1;
+
+	return static_cast<int>(deviceObj->getProperty("keys"));
 }
 
 juce::File MidiDevicesDataBase::getAppDataFolder()

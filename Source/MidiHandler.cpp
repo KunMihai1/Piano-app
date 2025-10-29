@@ -498,10 +498,25 @@ void MidiHandler::setCorrectChannelBasedOnHand(int note)
 	else this->channel = 1;
 }
 
-void MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)
+int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)
 {
 	int nrKeys = dataBase.getNrKeysPidVid(vid, pid);
-	setPlayableRange(nrKeys);
+	if (nrKeys<0)
+	{
+		if (onAddCallBack)
+		{
+			onAddCallBack(vid, pid, [this, vid, pid](const juce::String& name, int keys)
+				{
+					dataBase.addDeviceJson(vid, pid, name, keys);
+					setPlayableRange(keys);
+				});
+		}
+		return -1;
+	}
+	else {
+		setPlayableRange(nrKeys);
+		return 1;
+	}
 }
 
 
