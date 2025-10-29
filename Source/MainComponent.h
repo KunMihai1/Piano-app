@@ -1,3 +1,13 @@
+/*
+  ==============================================================================
+
+    MainComponent.h
+    Created: 29 Oct 2025
+    Author:  Kisuke
+
+  ==============================================================================
+*/
+
 #pragma once
 
 #include <JuceHeader.h>
@@ -13,161 +23,147 @@
 #include "MidiRecordPlayer.h"
 #include "displayGUI.h"
 
+/**
+ * @class SmoothRotarySlider
+ * @brief Custom rotary slider with smooth dragging behavior.
+ *
+ * Overrides mouse drag behavior to allow fine adjustments.
+ */
 class SmoothRotarySlider : public juce::Slider
 {
 public:
-    SmoothRotarySlider()
-    {
-        setSliderStyle(juce::Slider::Rotary);
-    }
+    /** @brief Constructor sets rotary style */
+    SmoothRotarySlider();
 
-    void mouseDown(const juce::MouseEvent& e) override
-    {
-        dragStartValue = getValue();
-        dragStartPos = e.position;
-        juce::Slider::mouseDown(e);
-    }
+    /** @brief Handles mouse down to store starting value and position */
+    void mouseDown(const juce::MouseEvent& e) override;
 
-    void mouseDrag(const juce::MouseEvent& e) override
-    {
-        float dx = e.position.x - dragStartPos.x;
-        float dy = dragStartPos.y - e.position.y; // inverted Y-axis
-
-        float sensitivity = 0.005f; // adjust as needed
-
-        float delta = dx + dy;
-
-        float newValue = dragStartValue + delta * sensitivity * (getMaximum() - getMinimum());
-
-        setValue(newValue, juce::dontSendNotification);
-    }
+    /** @brief Handles mouse drag for smooth value changes */
+    void mouseDrag(const juce::MouseEvent& e) override;
 
 private:
-    float dragStartValue = 0.0f;
-    juce::Point<float> dragStartPos;
+    float dragStartValue = 0.0f;          ///< Slider value at drag start
+    juce::Point<float> dragStartPos;      ///< Mouse position at drag start
 };
 
+/**
+ * @class KnobLookAndFeel
+ * @brief Custom LookAndFeel for rotary knob using an image.
+ *
+ * Draws a knob from BinaryData image and rotates it according to slider value.
+ */
 class KnobLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-    KnobLookAndFeel()
-    {
-        // Load knob image once (make sure your BinaryData::Knob_png is tightly cropped!)
-        rawKnobImage = juce::ImageCache::getFromMemory(BinaryData::Knob_png, BinaryData::Knob_pngSize);
+    /** @brief Constructor loads knob image and sets angles */
+    KnobLookAndFeel();
 
-        // Standard JUCE rotary angle range (approx 270 degrees sweep)
-        rotaryStartAngle = juce::MathConstants<float>::pi * 1.25f; // 225 degrees
-        rotaryEndAngle = juce::MathConstants<float>::pi * 2.75f;   // 495 degrees
-    }
-
+    /**
+     * @brief Draws the rotary slider
+     * @param g Graphics context
+     * @param x X position
+     * @param y Y position
+     * @param width Width of slider
+     * @param height Height of slider
+     * @param sliderPosProportional Proportional slider position [0..1]
+     * @param rotaryStart Start angle (ignored, using internal angles)
+     * @param rotaryEnd End angle (ignored, using internal angles)
+     * @param slider Reference to slider
+     */
     void drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height,
-        float sliderPosProportional, float rotaryStart, float rotaryEnd,
-        juce::Slider& slider) override
-    {
-        // Use consistent rotary range to avoid glitches
-        float startAngle = rotaryStartAngle;
-        float endAngle = rotaryEndAngle;
-
-        // Clamp sliderPosProportional just in case
-        sliderPosProportional = juce::jlimit(0.0f, 1.0f, sliderPosProportional);
-
-        float angle = startAngle + sliderPosProportional * (endAngle - startAngle);
-
-        const float cx = x + width * 0.5f;
-        const float cy = y + height * 0.5f;
-        const int knobSize = juce::jmin(width, height);
-
-        g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
-
-        if (rawKnobImage.isValid())
-        {
-            // Rescale knob image to fit knobSize
-            juce::Image scaledKnob = rawKnobImage.rescaled(knobSize, knobSize);
-
-            // Transform: translate origin to center, rotate, translate back to center position
-            juce::AffineTransform transform =
-                juce::AffineTransform::translation(-scaledKnob.getWidth() * 0.5f, -scaledKnob.getHeight() * 0.5f)
-                .rotated(angle)
-                .translated(cx, cy);
-
-            g.drawImageTransformed(scaledKnob, transform);
-        }
-        else
-        {
-            // If image not available, draw a simple rotating line as fallback
-
-            float radius = knobSize * 0.5f - 4.0f;
-
-            // Draw base circle
-            g.setColour(juce::Colours::darkgrey);
-            g.fillEllipse(cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
-
-            // Draw rotating indicator line
-            g.setColour(juce::Colours::orange);
-            juce::Point<float> lineStart(cx, cy);
-            juce::Point<float> lineEnd(cx + radius * std::cos(angle), cy + radius * std::sin(angle));
-            g.drawLine(lineStart.x, lineStart.y, lineEnd.x, lineEnd.y, 3.0f);
-        }
-    }
+                          float sliderPosProportional, float rotaryStart, float rotaryEnd,
+                          juce::Slider& slider) override;
 
 private:
-    juce::Image rawKnobImage;
-    float rotaryStartAngle, rotaryEndAngle;
+    juce::Image rawKnobImage; ///< Knob image
+    float rotaryStartAngle;   ///< Start angle of rotation
+    float rotaryEndAngle;     ///< End angle of rotation
 };
 
+/**
+ * @class CustomLookAndFeel
+ * @brief LookAndFeel customization for buttons and text.
+ */
 class CustomLookAndFeel : public juce::LookAndFeel_V4
 {
 public:
-    juce::Font getTextButtonFont(juce::TextButton& button, int buttonHeight) override
-    {
-        juce::ignoreUnused(button, buttonHeight);
-        return juce::Font(30.0f, juce::Font::bold);
-    }
+    /** @brief Returns font for text buttons */
+    juce::Font getTextButtonFont(juce::TextButton& button, int buttonHeight) override;
 
+    /**
+     * @brief Draws button background
+     * @param g Graphics context
+     * @param button Button reference
+     * @param backgroundColour Button background color
+     * @param isMouseOverButton True if mouse is over button
+     * @param isButtonDown True if button is pressed
+     */
     void drawButtonBackground(juce::Graphics& g,
-        juce::Button& button,
-        const juce::Colour& backgroundColour,
-        bool isMouseOverButton,
-        bool isButtonDown) override 
-    {
-        juce::ignoreUnused(button, isMouseOverButton, isButtonDown);
-        g.fillAll(backgroundColour);
-    }
+                              juce::Button& button,
+                              const juce::Colour& backgroundColour,
+                              bool isMouseOverButton,
+                              bool isButtonDown) override;
 };
 
-//==============================================================================
-/*
-    This component lives inside our window, and this is where you should put all
-    your controls and content.
-*/
-class MainComponent : public juce::Component, public juce::ChangeListener, public juce::KeyListener, public juce::Timer
+/**
+ * @class MainComponent
+ * @brief Main UI component containing all controls and displays.
+ *
+ * Handles MIDI input/output, keyboard UI, instrument selection, recording/playback,
+ * and all window controls.
+ */
+class MainComponent : public juce::Component,
+                      public juce::ChangeListener,
+                      public juce::KeyListener,
+                      public juce::Timer
 {
 public:
-    //==============================================================================
+    /** @brief Constructor initializes UI and MIDI */
     MainComponent();
+
+    /** @brief Destructor */
     ~MainComponent() override;
 
-    //==============================================================================
-    void paint(juce::Graphics&) override;
+    /** @brief Paints the main window */
+    void paint(juce::Graphics& g) override;
+
+    /** @brief Handles component resizing */
     void resized() override;
-    bool isMouseDownInsideLabel = false;
+
+    /** @brief Handles key presses
+     *  @param key Pressed key
+     *  @param component Component that received the key
+     */
+    bool keyPressed(const juce::KeyPress& key, juce::Component* component) override;
+
+    /** @brief Callback for change events */
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
-    bool keyPressed(const juce::KeyPress& key, juce::Component*) override;
+
+    /** @brief Timer callback for periodic updates */
     void timerCallback() override;
+
+    /** @brief Checks if the currently selected MIDI input device is valid */
     void checkMidiInputDeviceValid();
 
 private:
-    int initialWidth = 0;
-    int initialHeight = 0;
+    int initialWidth = 0;  ///< Initial window width
+    int initialHeight = 0; ///< Initial window height
 
-    int xPlay = 750, yPlay = 690;
+    int xPlay = 750;       ///< X coordinate of play button
+    int yPlay = 690;       ///< Y coordinate of play button
 
-    bool hasBeenResized = false;
+    bool hasBeenResized = false; ///< True if window has been resized
+
+    /** @brief Initializes save file for the user */
     void initalizeSaveFileForUser();
+
+    /** @brief Loads settings from disk */
     void loadSettings();
 
-
+    /** @brief Called when component gains focus */
     void focusGained(FocusChangeType) override;
+
+    // UI toggles
     void toggleSettingsPanel();
     void toggleSettingsButton();
     void toggleMIDIButton();
@@ -186,6 +182,7 @@ private:
     void toggleParticleToggle();
     void toggleHandInstrumentToggle();
 
+    // Initialization functions
     void settingsInit();
     void playButtonInit();
     void keyBoardUIinit(int min, int max);
@@ -203,52 +200,47 @@ private:
     void displayInit();
     void toggleButtonInit();
     void toggleHandButtonsInit();
-    
+
+    // Button click callbacks
     void settingsButtonOnClick();
     void midiButtonOnClick();
     void homeButtonOnClick();
     void playButtonOnClick();
 
+    // Instrument/UI helpers
     juce::Image getImageForInstruments(const std::string& type);
     void buildTree();
     InstrumentTreeItem* createInstrumentItem(const juce::Image& img, const juce::String& name, int program);
     bool openingDevicesForPlay();
-   
     void showColourSelector();
     void showInstrumentSelector();
-    void saveRecordingToFile(double tempo=120.0);
+    void saveRecordingToFile(double tempo = 120.0);
     void playRecordingFromFile(double tempo = 120.0);
-    
-    //void 
 
-    //==============================================================================
-    // Your private member variables go here...
-    juce::ApplicationProperties appProperties;
-    juce::PropertiesFile* propertiesFile = nullptr;
+    //==========================================================================
+    // Member variables
+    juce::ApplicationProperties appProperties; ///< Application properties manager
+    juce::PropertiesFile* propertiesFile = nullptr; ///< Pointer to properties file
 
-    CustomLookAndFeel customLookAndFeel;
-    juce::Image cachedImageMainWindow;
-    juce::Image playBackground;
-    juce::Image currentBackground;
-    juce::Label helpIcon;
-    juce::TooltipWindow tooltipWindow{ this, 200 };
+    CustomLookAndFeel customLookAndFeel; ///< Custom look and feel
+    juce::Image cachedImageMainWindow;   ///< Cached main window image
+    juce::Image playBackground;          ///< Background when playing
+    juce::Image currentBackground;       ///< Currently displayed background
+    juce::Label helpIcon;                ///< Help icon label
+    juce::TooltipWindow tooltipWindow{ this, 200 }; ///< Tooltip manager
 
+    std::weak_ptr<juce::MidiInput> deviceOpenedIN; ///< Currently opened MIDI input device
+    std::weak_ptr<juce::MidiOutput> deviceOpenedOUT; ///< Currently opened MIDI output device
 
-    std::weak_ptr<juce::MidiInput> deviceOpenedIN;
-    std::weak_ptr<juce::MidiOutput> deviceOpenedOUT;
+    MidiDevice MIDIDevice{};       ///< MIDI device instance
+    MidiHandler midiHandler{ MIDIDevice }; ///< MIDI event handler
+    KeyboardListener keyListener{ midiHandler }; ///< Keyboard listener
+    MidiRecordPlayer recordPlayer{}; ///< MIDI recording/playback
 
-    MidiDevice MIDIDevice{};
-    MidiHandler midiHandler{ MIDIDevice };
-    KeyboardListener keyListener{ midiHandler };
-    MidiRecordPlayer recordPlayer{};
-    //ReverbProcessor revProcessor{ midiHandler };
+    std::vector<std::string> devicesIN;  ///< List of input devices
+    std::vector<std::string> devicesOUT; ///< List of output devices
 
-    std::vector<std::string> devicesIN;
-    std::vector<std::string> devicesOUT;
-
-    //UI->refresh button+label of AVAILABLE DEVICES
-
-    //UI->settings
+    // UI buttons and toggles
     juce::TextButton settingsButton{ "Settings" };
     juce::TextButton midiButton{ "MIDI Settings" };
     juce::TextButton playButton{ "Play" };
@@ -258,72 +250,43 @@ private:
     juce::TextButton instrumentSelectorButton{ "Select instrument" };
     juce::TextButton saveRecordingButton{ "Save recording" };
     juce::TextButton playRecordingFileButton{ "Play recording file" };
+    juce::ToggleButton leftHandInstrumentToggle, rightHandInstrumentToggle;
 
-    juce::ToggleButton leftHandInstrumentToggle,rightHandInstrumentToggle;
-
-
-    juce::DrawableButton startRecording{"Record",juce::DrawableButton::ImageFitted};
+    juce::DrawableButton startRecording{ "Record", juce::DrawableButton::ImageFitted };
     juce::DrawableButton stopRecording{ "Stop", juce::DrawableButton::ImageFitted };
     juce::DrawableButton startPlayback{ "Play", juce::DrawableButton::ImageFitted };
     std::unique_ptr<juce::Drawable> recordDrawable, stopDrawable, playDrawable;
     juce::Slider volumeKnob, reverbKnob;
     KnobLookAndFeel customKnobLookAndFeel;
 
-    juce::ColourSelector* colourSelector;
-    std::unique_ptr<juce::TreeView> treeView=nullptr;
+    juce::ColourSelector* colourSelector; ///< Colour selector pointer
+    std::unique_ptr<juce::TreeView> treeView = nullptr; ///< Instrument tree
 
-
-    //UI->windows
-
-    std::unique_ptr<MIDIWindow> midiWindow = { nullptr };
-
+    // UI windows
+    std::unique_ptr<MIDIWindow> midiWindow = nullptr;
     KeyboardUI keyboard{ midiHandler };
     std::unique_ptr<NoteLayer> noteLayer;
-    bool keyboardInitialized = false;
-
-    bool usingKeyboardInput = false;
-
+    bool keyboardInitialized = false; ///< True if keyboard is initialized
+    bool usingKeyboardInput = false;  ///< True if using keyboard input
     std::unique_ptr<TemporaryMessage> temporaryPopup;
     std::unique_ptr<juce::FileChooser> fileChooser;
+    std::unique_ptr<Display> display = nullptr;
 
-    std::unique_ptr<Display> display=nullptr;
-
-private:
+    //==========================================================================
+    // Panels
     struct Panel : public juce::Component
     {
-        void paint(juce::Graphics& g) override
-        {
-            juce::Colour translucentGray = juce::Colour::fromRGBA(169, 169, 169, 204);
-            juce::Colour option = juce::Colour::fromRGBA(50, 100, 95, 170);
-
-            juce::Colour subtleBorderColor = juce::Colour::fromRGBA(169, 169, 169, 200);
-            juce::Colour secondBorder = juce::Colour::fromRGBA(140, 140, 140, 220);
-
-            g.fillAll(option); // Background of the panel
-            g.setColour(subtleBorderColor);
-            g.drawRect(getLocalBounds(), 3);
-
-        }
+        /** @brief Paints panel background and borders */
+        void paint(juce::Graphics& g) override;
     };
-
     Panel settingsPanel;
 
-    struct headerPanel : public::juce::Component
+    struct headerPanel : public juce::Component
     {
-        void paint(juce::Graphics& g) override {
-            juce::Colour startColour = juce::Colour(128, 0, 32);   // Deep Burgundy
-            juce::Colour endColour = juce::Colour(212, 175, 55);  // Metallic Gold
-            //juce::Colour startColour = juce::Colour(160, 40, 60); // Softer burgundy
-            //juce::Colour endColour = juce::Colour(210, 165, 100); // Lighter gold
-            juce::ColourGradient gradient(startColour, 0, 0, endColour, 0, 50, false);
-            g.setGradientFill(gradient);
-            g.fillAll();
-        }
+        /** @brief Paints header gradient */
+        void paint(juce::Graphics& g) override;
     };
-
     headerPanel headerPanel;
-
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(MainComponent)
 };
-
