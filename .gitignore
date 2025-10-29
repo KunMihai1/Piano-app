@@ -37,3 +37,6 @@ JuceLibraryCode/
 .vs/VSWorkspaceState.json
 Project Synth2.jucer
 Project Synth2.jucer
+Doxyfile
+/html
+/latex
