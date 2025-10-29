@@ -809,69 +809,127 @@ public:
     virtual void playBackSettingsChanged(const PlayBackSettings& settings)=0;
 };
 
-class Display: public  juce::Component, public juce::ChangeListener, public TrackListListener
+
+
+/**
+ * @class Display
+ * @brief Main UI component for managing styles, tracks, and playback settings.
+ *
+ * The `Display` class handles the visual representation of styles, the currently
+ * selected style, and associated tracks. It provides functionality to add, remove,
+ * and rename styles, manage track assignments, and interact with playback settings.
+ * This class also persists style and track data in JSON format.
+ */
+class Display : public juce::Component,
+                public juce::ChangeListener,
+                public TrackListListener
 {
 public:
+    //==============================================================================
+    /**
+     * @brief Constructs a Display component.
+     * @param outputDev Optional MIDI output device.
+     * @param widthForList Width of the style list component.
+     */
+    Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList = 0);
 
-    Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList=0);
+    /** @brief Destructor */
     ~Display() override;
 
+    /** @brief Callback from `ChangeBroadcaster` */
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
+    /**
+     * @brief Gets the tab index for a tab by its name.
+     * @param name Name of the tab.
+     * @return Index of the tab, or -1 if not found.
+     */
     int getTabIndexByName(const juce::String& name);
 
+    /** @brief Initializes all default styles in JSON if missing */
     void initializeAllStyles();
+
+    /** @brief Returns all style names currently in JSON */
     std::vector<juce::String> getAllStylesFromJson();
+
+    /** @brief Loads all styles from JSON into memory */
     void loadAllStyles();
+
+    /** @brief Updates the current style in JSON */
     void updateStyleInJson(const juce::String& name);
+
+    /** @brief Updates a style's name in JSON */
     void updateStyleNameInJson(const juce::String& oldName, const juce::String& newName);
+
+    /** @brief Appends a new style to JSON */
     void appendNewStyleInJson(const juce::String& newName);
+
+    /** @brief Removes a style from JSON */
     void removeStyleInJson(const juce::String& name);
 
+    /** @brief Builds a map of Track UUIDs to `TrackEntry` pointers */
     std::unordered_map<juce::Uuid, TrackEntry*> buildTrackUuidMap();
 
+    /** @brief Adds new tracks to the internal map */
     void addNewTracksToMap();
 
+    /** @brief Handles resizing of the component */
     void resized() override;
+
+    /** @brief Returns the root JSON variable representing all styles */
     const juce::var& getJsonVar();
 
+    /** @brief Displays the currently selected style tab */
     void showCurrentStyleTab(const juce::String& name);
-    void showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> onTrackSelected);
 
+    /**
+     * @brief Shows a list of tracks to select from and returns the selected track via callback
+     * @param onTrackSelected Callback when a track is selected
+     */
+    void showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid&, const juce::String& type)> onTrackSelected);
+
+    /** @brief Returns a list of available tracks from a folder */
     std::vector<TrackEntry> getAvailableTracksFromFolder(const juce::File& folder);
 
+    /** @brief Sets the MIDI output device */
     void setDeviceOutput(std::weak_ptr<juce::MidiOutput> devOutput);
 
+    /** @brief Removes a track from all styles */
     void removeTrackFromAllStyles(const juce::Uuid& uuid);
 
+    /** @brief Removes multiple tracks from all styles */
     void removeTracksFromAllStyles(const std::vector<juce::Uuid>& uuids);
 
+    /** @brief Updates a track name in all styles */
     void updateTrackNameFromAllStyles(const juce::Uuid& uuid, const juce::String& newName);
 
+    /** @brief Stops playback */
     void stoppingPlayer();
 
+    /** @brief Starts playback */
     void startingPlayer();
 
+    /** @brief Updates UI before any loading operation */
     void updateUIbeforeAnyLoadingCase() override;
 
+    /** @brief Sets minimum and maximum MIDI note boundaries */
     void set_min_max(int min, int max);
 
+    /** @brief Sets VID and PID for playback settings */
     void set_VID_PID(const juce::String& VID, const juce::String& PID);
 
+    /** @brief Loads playback settings from JSON */
     void readSettingsFromJSON();
 
+    /** @brief Handles home button interactions */
     void homeButtonInteraction();
 
     int getStartNote();
-
     int getEndNote();
-
     int getLeftBound();
-
     int getRightBound();
 
     void addListener(DisplayListener* listener);
-
     void removeListener(DisplayListener* listener);
 
     void callingListeners();
@@ -881,29 +939,27 @@ public:
     void setNewSettingsHelperFunction(int value);
 
 private:
-    juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache;
-    std::unique_ptr<StylesListComponent> stylesListComponent;
-    std::unique_ptr<MyTabbedComponent> tabComp;
-    std::unique_ptr<CurrentStyleComponent> currentStyleComponent;
-    std::unique_ptr<PlayBackSettingsComponent> playBackSettings;
-    bool created = false;
-    bool createdTracksTab = false;
+    //==============================================================================
+    juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache; ///< Cached style data
+    std::unique_ptr<StylesListComponent> stylesListComponent; ///< UI component for style list
+    std::unique_ptr<MyTabbedComponent> tabComp; ///< Tabbed component for styles & tracks
+    std::unique_ptr<CurrentStyleComponent> currentStyleComponent; ///< UI for current style
+    std::unique_ptr<PlayBackSettingsComponent> playBackSettings; ///< Playback settings UI
+    bool created = false; ///< Flag for style tab creation
+    bool createdTracksTab = false; ///< Flag for tracks tab creation
 
     int minNote, maxNote;
-    PlayBackSettings settings;
+    PlayBackSettings settings; ///< Playback settings
 
-    std::shared_ptr<std::deque<TrackEntry>> availableTracksFromFolder;
-    std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracks;
-    std::shared_ptr<std::vector<juce::String>> groupedTrackKeys;
+    std::shared_ptr<std::deque<TrackEntry>> availableTracksFromFolder; ///< Tracks loaded from folder
+    std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracks; ///< Tracks grouped by folder
+    std::shared_ptr<std::vector<juce::String>> groupedTrackKeys; ///< Keys for grouped tracks
 
-    std::weak_ptr<juce::MidiOutput> outputDevice;
+    std::weak_ptr<juce::MidiOutput> outputDevice; ///< MIDI output device
 
-    std::unique_ptr<TrackListComponent> trackListComp;
-    juce::var allStylesJsonVar; // this has a root object, acts like a map
+    std::unique_ptr<TrackListComponent> trackListComp; ///< Track selection component
+    juce::var allStylesJsonVar; ///< Root JSON object storing all styles
+    std::unordered_map<juce::Uuid, TrackEntry*> mapUuidToTrack; ///< Map of track UUIDs to entries
 
-    std::unordered_map<juce::Uuid, TrackEntry*> mapUuidToTrack;
-
-
-    juce::ListenerList<DisplayListener> displayListeners;
-    //JUCE_LEAK_DETECTOR(Display)
+    juce::ListenerList<DisplayListener> displayListeners; ///< Registered listeners
 };
