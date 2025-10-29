@@ -1192,3 +1192,104 @@ void MainComponent::playRecordingFromFile(double tempo)
             fileChooser.reset();
         });
 }
+
+SmoothRotarySlider::SmoothRotarySlider()
+{
+    setSliderStyle(juce::Slider::Rotary);
+}
+
+void SmoothRotarySlider::mouseDown(const juce::MouseEvent& e)
+{
+    dragStartValue = getValue(); 
+    dragStartPos = e.position; 
+    juce::Slider::mouseDown(e);
+}
+
+void SmoothRotarySlider::mouseDrag(const juce::MouseEvent& e)
+{
+    float dx = e.position.x - dragStartPos.x;
+    float dy = dragStartPos.y - e.position.y;
+
+    float sensitivity = 0.005f;
+
+    float delta = dx + dy;
+
+    float newValue = dragStartValue + delta * sensitivity * (getMaximum() - getMinimum());
+    setValue(newValue, juce::dontSendNotification);
+}
+
+KnobLookAndFeel::KnobLookAndFeel()
+{
+    rawKnobImage = juce::ImageCache::getFromMemory(BinaryData::Knob_png, BinaryData::Knob_pngSize);
+    rotaryStartAngle = juce::MathConstants<float>::pi * 1.25f;
+    rotaryEndAngle = juce::MathConstants<float>::pi * 2.75f; 
+}
+
+void KnobLookAndFeel::drawRotarySlider(juce::Graphics& g, int x, int y, int width, int height, float sliderPosProportional, float rotaryStart, float rotaryEnd, juce::Slider& slider)
+{
+    float startAngle = rotaryStartAngle; 
+    
+    
+    float endAngle = rotaryEndAngle;
+
+    sliderPosProportional = juce::jlimit(0.0f, 1.0f, sliderPosProportional);
+
+    float angle = startAngle + sliderPosProportional * (endAngle - startAngle);
+
+    const float cx = x + width * 0.5f;
+    const float cy = y + height * 0.5f; 
+    const int knobSize = juce::jmin(width, height);
+
+    g.setImageResamplingQuality(juce::Graphics::highResamplingQuality);
+    if (rawKnobImage.isValid())
+    {
+        juce::Image scaledKnob = rawKnobImage.rescaled(knobSize, knobSize);
+        juce::AffineTransform transform = juce::AffineTransform::translation(-scaledKnob.getWidth() * 0.5f, -scaledKnob.getHeight() * 0.5f).rotated(angle).translated(cx, cy);
+        g.drawImageTransformed(scaledKnob, transform);
+    }
+    else
+    {
+        float radius = knobSize * 0.5f - 4.0f;
+        g.setColour(juce::Colours::darkgrey); 
+        
+        g.fillEllipse(cx - radius, cy - radius, radius * 2.0f, radius * 2.0f);
+
+        g.setColour(juce::Colours::orange);
+
+        juce::Point<float> lineStart(cx, cy); 
+        juce::Point<float> lineEnd(cx + radius * std::cos(angle), cy + radius * std::sin(angle)); 
+        g.drawLine(lineStart.x, lineStart.y, lineEnd.x, lineEnd.y, 3.0f);
+    }
+}
+
+juce::Font CustomLookAndFeel::getTextButtonFont(juce::TextButton& button, int buttonHeight)
+{
+    return juce::Font(40.0f, juce::Font::bold);
+}
+
+void CustomLookAndFeel::drawButtonBackground(juce::Graphics& g, juce::Button& button, const juce::Colour& backgroundColour, bool isMouseOverButton, bool isButtonDown)
+{
+    juce::ignoreUnused(button, isMouseOverButton, isButtonDown); g.fillAll(backgroundColour);
+}
+
+void MainComponent::Panel::paint(juce::Graphics& g)
+{
+    juce::Colour translucentGray = juce::Colour::fromRGBA(169, 169, 169, 204);
+    juce::Colour option = juce::Colour::fromRGBA(50, 100, 95, 170);
+    juce::Colour subtleBorderColor = juce::Colour::fromRGBA(169, 169, 169, 200);
+    juce::Colour secondBorder = juce::Colour::fromRGBA(140, 140, 140, 220);
+
+    g.fillAll(option); // Background of the panel
+    g.setColour(subtleBorderColor); 
+    g.drawRect(getLocalBounds(), 3);
+}
+
+void MainComponent::headerPanel::paint(juce::Graphics& g)
+{
+    juce::Colour startColour = juce::Colour(128, 0, 32);
+    juce::Colour endColour = juce::Colour(212, 175, 55); 
+
+    juce::ColourGradient gradient(startColour, 0, 0, endColour, 0, 50, false); 
+    g.setGradientFill(gradient); 
+    g.fillAll();
+}
