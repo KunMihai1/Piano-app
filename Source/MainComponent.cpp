@@ -815,7 +815,20 @@ void MainComponent::playButtonOnClick()
     MIDIDevice.getAvailableDevicesMidiIN(devicesIN);
     MIDIDevice.getAvailableDevicesMidiOUT(devicesOUT);
     if (openingDevicesForPlay()) {
-        midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
+        if (!this->keyListener.getIsKeyboardInput())
+        {
+            midiHandler.onAddCallBack = [this](const juce::String& vid, const juce::String& pid, std::function<void(const juce::String&, int)> resultCallback)
+            {
+                addDeviceWindow = std::make_unique<AddDeviceWindow>(vid, pid);
+                addDeviceWindow->onAddDevice = [resultCallback](const juce::String& name, int keys)
+                {
+                    resultCallback(name, keys);
+                };
+                addDeviceWindow->setVisible(true);
+            };
+        }
+        if (midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier())) < 0)
+            return;
         this->recordPlayer.setOutputDevice(MIDIDevice.getDeviceOUT());
         if(midiWindow)
             this->midiWindow->setVisible(false);

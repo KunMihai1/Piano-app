@@ -219,8 +219,9 @@ void Display::showCurrentStyleTab(const juce::String& name)
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 
     double bpmToUse = currentStyleComponent->getTempo();
+    DBG("BPM TO USE:" + juce::String(bpmToUse));
     currentStyleComponent->applyBPMchangeBeforePlayback(bpmToUse);
-    currentStyleComponent->applyChangesForAllTracksCurrentStyle();
+    //currentStyleComponent->applyChangesForAllTracksCurrentStyle();
 }
 
 void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> onTrackSelected)

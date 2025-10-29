@@ -33,6 +33,10 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="ZSMmrT" name="addDeviceWindow.cpp" compile="1" resource="0"
+            file="Source/addDeviceWindow.cpp"/>
+      <FILE id="vh8BuR" name="addDeviceWindow.h" compile="0" resource="0"
+            file="Source/addDeviceWindow.h"/>
       <FILE id="VWVIRr" name="HelperFunctions.cpp" compile="1" resource="0"
             file="Source/HelperFunctions.cpp"/>
       <FILE id="J64Aky" name="HelperFunctions.h" compile="0" resource="0"
@@ -67,10 +71,6 @@
       <FILE id="rm0gSJ" name="SubjectInterface.h" compile="0" resource="0"
             file="Source/SubjectInterface.h"/>
       <FILE id="zfMrzS" name="TrackListener.h" compile="0" resource="0" file="Source/TrackListener.h"/>
-      <FILE id="Al4rAz" name="CustomLevelMeter.cpp" compile="1" resource="0"
-            file="Source/CustomLevelMeter.cpp"/>
-      <FILE id="K8BnDB" name="CustomLevelMeter.h" compile="0" resource="0"
-            file="Source/CustomLevelMeter.h"/>
       <FILE id="xDGyFE" name="CustomToolTip.cpp" compile="1" resource="0"
             file="Source/CustomToolTip.cpp"/>
       <FILE id="vCYJ2n" name="CustomToolTip.h" compile="0" resource="0" file="Source/CustomToolTip.h"/>
@@ -83,10 +83,6 @@
       <FILE id="PkpDN9" name="TrackPlayer.h" compile="0" resource="0" file="Source/TrackPlayer.h"/>
       <FILE id="HiLb6c" name="displayGUI.cpp" compile="1" resource="0" file="Source/displayGUI.cpp"/>
       <FILE id="ICOTvm" name="displayGUI.h" compile="0" resource="0" file="Source/displayGUI.h"/>
-      <FILE id="fbt5jX" name="ChannelHandler.cpp" compile="1" resource="0"
-            file="Source/ChannelHandler.cpp"/>
-      <FILE id="BOzZtI" name="ChannelHandler.h" compile="0" resource="0"
-            file="Source/ChannelHandler.h"/>
       <FILE id="z2Hsoc" name="MidiHandlerAbstractSubject.h" compile="0" resource="0"
             file="Source/MidiHandlerAbstractSubject.h"/>
       <FILE id="dExTT9" name="temporaryNotificationUI.cpp" compile="1" resource="0"
