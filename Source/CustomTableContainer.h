@@ -16,91 +16,219 @@
 #include <variant>
 #include "SubjectInterface.h"
 
+/**
+ * @class TableContainer
+ * @brief A component that displays a table of MIDI notes and allows editing of note properties.
+ */
 class TableContainer: public juce::Component
 {
 public:
+    /// Callback for updating the file when changes occur.
     std::function<void()> updateToFile;
+
+    /// Callback for removing the model from a listener.
     std::function<void(TrackPlayerListener* listener)> removeModelFromListener;
 
+    /**
+     * @brief Constructor.
+     * @param seq MIDI message sequence to display and modify.
+     * @param displayName Name of the track to display in the table header.
+     * @param channel MIDI channel for filtering notes.
+     * @param map Map of MIDI changes to track modifications.
+     */
     TableContainer(juce::MidiMessageSequence& seq, const juce::String& displayName, int channel, std::unordered_map<int, MidiChangeInfo>& map);
 
-    void resized() override;
-
+    /**
+     * @brief Destructor.
+     */
     ~TableContainer() override;
 
+    /**
+     * @brief Called when the component is resized.
+     */
+    void resized() override;
+
+    /**
+     * @brief Reset all note numbers to their original values.
+     */
     void onlyNotes();
 
+    /**
+     * @brief Reset note numbers of selected rows to their original values.
+     * @param allSelected Selected rows.
+     */
     void onlyNotesSelected(const juce::SparseSet<int>& allSelected);
 
+    /**
+     * @brief Reset all time stamps to their original values.
+     */
     void onlyTimeStamps();
 
+    /**
+     * @brief Reset time stamps of selected rows to their original values.
+     * @param allSelected Selected rows.
+     */
     void onlyTimeStampsSelected(const juce::SparseSet<int>& allSelected);
-    
+
+    /**
+     * @brief Reset all velocities to their original values.
+     */
     void onlyVelocities();
 
+    /**
+     * @brief Reset velocities of selected rows to their original values.
+     * @param allSelected Selected rows.
+     */
     void onlyVelocitiesSelected(const juce::SparseSet<int>& allSelected);
 
+    /**
+     * @brief Reset all properties (note, timestamp, velocity) to their original values.
+     */
     void allProperties();
 
+    /**
+     * @brief Reset properties of selected rows to their original values.
+     * @param allSelected Selected rows.
+     */
     void allPropertiesSelected(const juce::SparseSet<int>& allSelected);
 
+    /**
+     * @brief Check if a MIDI change can be erased (i.e., matches the original state).
+     * @param info MIDI change info to check.
+     * @return True if change matches the original, false otherwise.
+     */
     bool validForErase(MidiChangeInfo& info);
 
+    /**
+     * @brief Apply a change to a specific MIDI event in the sequence.
+     * @param index Index of the MIDI event.
+     * @param info Change information.
+     * @param modifyVelocity If true, only modify the velocity.
+     */
     void applyChangeToSequence(int index, const MidiChangeInfo& info, bool modifyVelocity=false);
 
+    /**
+     * @brief Refresh table and reapply changes after a modification is confirmed.
+     */
     void onConfirmed();
 
+    /**
+     * @brief Show a dialog and apply changes to all or selected properties.
+     */
     void changeAllUI();
 
+    /**
+     * @brief Show a dialog and apply changes to all or selected notes.
+     */
     void changeNotesUI();
 
+    /**
+     * @brief Show a dialog and apply changes to all or selected time stamps.
+     */
     void changeTimeStampsUI();
 
+    /**
+     * @brief Show a dialog and apply changes to all or selected velocities.
+     */
     void changeVelocitiesUI();
 
+    /**
+     * @brief Check if any row is selected.
+     * @return True if at least one row is selected.
+     */
     bool anySelected();
 
+    /**
+     * @brief Show a dialog and modify time stamps for all or selected rows.
+     */
     void modifyTimeStampsUI();
 
+    /**
+     * @brief Show a dialog and modify velocities for all or selected rows.
+     */
     void modifyVelocitiesUI();
 
+    /**
+     * @brief Modify time stamps for all rows according to editor value.
+     */
     void modifyOnlyTimeStamps();
 
+    /**
+     * @brief Modify time stamps for selected rows according to editor value.
+     * @param allSelected Selected rows.
+     */
     void modifyOnlyTimeStampsSelected(const juce::SparseSet<int>& allSelected);
 
+    /**
+     * @brief Modify velocities for all rows according to editor value.
+     */
     void modifyOnlyVelocities();
 
+    /**
+     * @brief Modify velocities for selected rows according to editor value.
+     * @param allSelected Selected rows.
+     */
     void modifyOnlyVelocitiesSelected(const juce::SparseSet<int>& allSelected);
 
+    /**
+     * @brief Reset a property and apply changes to the sequence.
+     * @param resetProperty Function to reset the property.
+     * @param selected Optional selected rows.
+     * @param modifyVelocity If true, only modify velocity.
+     */
     void resetPropertyAndApply(const std::function<void(MidiChangeInfo&)>& resetProperty, const juce::SparseSet<int>* selected = nullptr, bool modifyVelocity=false);
 
+    /**
+     * @brief Apply a new property to the sequence.
+     * @param newProperty Function that applies the new property.
+     * @param selected Optional selected rows.
+     * @param modifyVelocity If true, only modify velocity.
+     */
     void newPropertyAndApply(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected = nullptr, bool modifyVelocity=false);
 
+    /**
+     * @brief Helper function for applying a new property to a specific row.
+     * @param newProperty Function that applies the new property.
+     * @param selected Optional selected rows.
+     * @param modifyVelocity If true, only modify velocity.
+     * @param originalIndex Index of the MIDI event in the original sequence.
+     */
     void newPropertyHelperFunction(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected, bool modifyVelocity, int originalIndex);
 
+    /**
+     * @brief Show a confirmation dialog for modifying or changing properties.
+     * @param title Title of the dialog.
+     * @param messageAllSelected Message to show if rows are selected.
+     * @param messageNoSelection Message to show if no row is selected.
+     * @param buttonsWithSelection Buttons to show if rows are selected.
+     * @param buttonsWithoutSelection Buttons to show if no row is selected.
+     * @param onValidResults Callback called with the selected button index.
+     * @param isModify True if this is a modification dialog.
+     */
     void showModifyChangeDialog(const juce::String& title, const juce::String& messageAllSelected, const juce::String& messageNoSelection,
         const std::vector<juce::String>& buttonsWithSelection, const std::vector<juce::String>& buttonsWithoutSelection,
         std::function<void(int)> onValidResults, bool isModify=false);
 
+    /**
+     * @brief Add the table model as a listener to a subject.
+     * @param subject Subject to add the model as listener to (optional).
+     */
     void addModelAsListener(Subject<TrackPlayerListener>* subject=nullptr);
 
 private:
-    /*for future reference, making this whole thing in a separate thread could benefit if mid playing(if it's needed, but prob not since the playing takes place on another thread,
-     with the timer so probably it's no issue)
-     */
-    std::unique_ptr<juce::TableListBox> table;
-    std::unique_ptr<MidiNotesTableModel> model;
-    std::unique_ptr<juce::Label> disclaimerLabel;
-    std::unique_ptr<juce::TextButton> changeToOriginalMultipleButton = nullptr;
-    std::unique_ptr<juce::ComboBox> actionToOriginalCB = nullptr;
-    std::unique_ptr<juce::Label> infoLabelChange = nullptr;
+    std::unique_ptr<juce::TableListBox> table;        ///< Table displaying MIDI notes
+    std::unique_ptr<MidiNotesTableModel> model;       ///< Model providing data to the table
+    std::unique_ptr<juce::Label> disclaimerLabel;     ///< Label showing disclaimer text
+    std::unique_ptr<juce::TextButton> changeToOriginalMultipleButton = nullptr; ///< Button for changing properties to original
+    std::unique_ptr<juce::ComboBox> actionToOriginalCB = nullptr;              ///< ComboBox to choose which property to reset
+    std::unique_ptr<juce::Label> infoLabelChange = nullptr;                    ///< Info label for reset actions
 
-    std::unique_ptr<juce::TextButton> modifyMultipleButton = nullptr;
-    std::unique_ptr<juce::ComboBox> actionModifyCB = nullptr;
-    std::unique_ptr<juce::Label> infoLabelModify = nullptr;
+    std::unique_ptr<juce::TextButton> modifyMultipleButton = nullptr;          ///< Button for applying modifications
+    std::unique_ptr<juce::ComboBox> actionModifyCB = nullptr;                  ///< ComboBox to choose which property to modify
+    std::unique_ptr<juce::Label> infoLabelModify = nullptr;                    ///< Info label for modify actions
 
-    juce::MidiMessageSequence& originalSequence;
-    int lastSelectedRow = -1;
-    std::unordered_map<int, MidiChangeInfo>& changesMap;
-    std::variant<int, double> editorValue=0;
+    juce::MidiMessageSequence& originalSequence;  ///< Reference to the original MIDI sequence
+    int lastSelectedRow = -1;                     ///< Last selected row for shift selection
+    std::unordered_map<int, MidiChangeInfo>& changesMap; ///< Map of MIDI changes
+    std::variant<int, double> editorValue=0;      ///< Value entered in the modify dialog
 };
