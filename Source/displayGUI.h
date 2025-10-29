@@ -924,18 +924,31 @@ public:
     /** @brief Handles home button interactions */
     void homeButtonInteraction();
 
+    /** @brief get the start note of playing range */
     int getStartNote();
+
+    /** @brief get the end note of playing range */
     int getEndNote();
+
+    /** @brief get the left max bound of playing range left hand */
     int getLeftBound();
+
+    /** @brief get the right min bound of playing range rigt hand */
     int getRightBound();
 
+    /** @brief adds display listener */
     void addListener(DisplayListener* listener);
+
+    /** @brief removes display listener */
     void removeListener(DisplayListener* listener);
 
+    /** @brief calling the listener's function that they inherit */
     void callingListeners();
 
+    /** @brief get total number of tabs of the tabbed component */
     int getNumTabs();
 
+    /** @brief sets all the settings including min,max note, playing range on left/right hand */
     void setNewSettingsHelperFunction(int value);
 
 private:
@@ -948,7 +961,7 @@ private:
     bool created = false; ///< Flag for style tab creation
     bool createdTracksTab = false; ///< Flag for tracks tab creation
 
-    int minNote, maxNote;
+    int minNote, maxNote;  ///< min and max notes of playing range
     PlayBackSettings settings; ///< Playback settings
 
     std::shared_ptr<std::deque<TrackEntry>> availableTracksFromFolder; ///< Tracks loaded from folder
