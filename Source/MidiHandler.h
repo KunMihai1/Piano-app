@@ -86,7 +86,7 @@ public:
 	~MidiHandler();
 	void handleIncomingMidiMessage(juce::MidiInput* source, const juce::MidiMessage& message) override;
 
-	int handlePlayableRange(const juce::String& vid, const juce:: String& pid);
+	int handlePlayableRange(const juce::String& vid, const juce:: String& pid, bool isKeyboardInput=false);
 
 
 	void addListener(MidiHandlerListener* listener) { listeners.add(listener); }
@@ -105,6 +105,8 @@ public:
 	void set_left_right_bounds(int left, int right);
 
 	void playBackSettingsChanged(const PlayBackSettings& settings) override;
+
+	void playBackSettingsTransposeChanged(int transposeValue) override;
 
 	void setCorrectChannelBasedOnHand(int note);
 
@@ -130,6 +132,7 @@ private:
 	int leftHandBoundSetting = -1;
 	int rightHandBoundSetting = -1;
 	int channel = 1;
+	int transposeValue = 0;
 
 	int lastCC91=-1; //reverb
 	int lastCC74 = -1;  //brightness

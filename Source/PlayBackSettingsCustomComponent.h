@@ -47,6 +47,7 @@ public:
      * @brief Callback triggered when the user changes playback settings.
      */
     std::function<void(PlayBackSettings settings)> onChangingSettings;
+    std::function<void(int transposeValue)> onChangingTranspose;
 
     /**
      * @brief Constructor
@@ -73,6 +74,8 @@ public:
 
     /** @brief Initializes start and end note ComboBoxes */
     void startStopInit();
+
+    void transposeSliderInit();
 
     /**
      * @brief Updates the component with a new set of settings.
@@ -102,4 +105,6 @@ private:
 
     juce::ComboBox leftHandBoundBox;  /**< ComboBox to select left hand range */
     juce::ComboBox rightHandBoundBox; /**< ComboBox to select right hand range */
+
+    juce::Slider transposeSlider;
 };
