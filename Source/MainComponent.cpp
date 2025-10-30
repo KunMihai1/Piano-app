@@ -827,8 +827,10 @@ void MainComponent::playButtonOnClick()
                 addDeviceWindow->setVisible(true);
             };
         }
-        if (midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier())) < 0)
+        if (midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier())
+            ,this->keyListener.getStartNoteKeyboardInput()) < 0)
             return;
+
         this->recordPlayer.setOutputDevice(MIDIDevice.getDeviceOUT());
         if(midiWindow)
             this->midiWindow->setVisible(false);

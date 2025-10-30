@@ -841,6 +841,8 @@ public:
      * @param settings The new playback settings
      */
     virtual void playBackSettingsChanged(const PlayBackSettings& settings)=0;
+
+    virtual void playBackSettingsTransposeChanged(int transposeValue) = 0;
 };
 
 

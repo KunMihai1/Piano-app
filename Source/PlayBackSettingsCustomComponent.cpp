@@ -24,6 +24,7 @@ PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highest
 
     startStopInit();
     handIntervalsInit();
+    transposeSliderInit();
 
 
 }
@@ -45,6 +46,9 @@ void PlayBackSettingsComponent::resized()
 
     startNoteLabel.setBounds(area.removeFromLeft(comboWidth).withHeight(labelHeight));
     startNoteBox.setBounds(startNoteLabel.getX(), startNoteLabel.getBottom() + spacing, comboWidth, comboHeight);
+
+    int sliderHeight = 30;
+    transposeSlider.setBounds(startNoteBox.getX(), startNoteBox.getBottom() + spacing*2, comboWidth, sliderHeight);
 
     area.removeFromLeft(spacing);
 
@@ -170,6 +174,22 @@ void PlayBackSettingsComponent::startStopInit()
     else endNoteBox.setText("None", juce::dontSendNotification);
     startNoteBox.addListener(this);
     endNoteBox.addListener(this);
+}
+
+void PlayBackSettingsComponent::transposeSliderInit()
+{
+    addAndMakeVisible(transposeSlider);
+    transposeSlider.setRange(-12, 12, 1);
+    transposeSlider.setValue(0);
+    transposeSlider.setTextValueSuffix(" semitones");
+    transposeSlider.setSliderStyle(juce::Slider::IncDecButtons);
+    transposeSlider.setTextBoxStyle(juce::Slider::TextBoxLeft, false, 60, 20);
+
+    transposeSlider.onDragEnd = [this]()
+    {
+        if (onChangingTranspose)
+            onChangingTranspose(transposeSlider.getValue());
+    };
 }
 
 void PlayBackSettingsComponent::setNewSettings(PlayBackSettings& newSettings)

@@ -328,6 +328,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		int note = message.getNoteNumber();
 
 		setCorrectChannelBasedOnHand(note);
+		int transposedNote = juce::jlimit(0, 127, note + transposeValue);
 
 		float velocity = message.getFloatVelocity();
 
@@ -346,7 +347,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 				ok = 1;
 				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+9, velocityByte));
 				midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
-				midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, note, velocityByte));
+				midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocityByte));
 				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+10, velocityByte));
 			}
 			else if (note == this->startNoteSetting)
@@ -374,11 +375,12 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	if (message.isNoteOff())
 	{
 		int note = message.getNoteNumber();
+		int transposedNote = juce::jlimit(0, 127, note + transposeValue);
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(message.getFloatVelocity());
 
 		if (auto midiOut = midiDevice.getDeviceOUT().lock())
 		{
-			midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, note, velocityByte));
+			midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, transposedNote, velocityByte));
 		}
 
 		listeners.call(&MidiHandlerListener::noteOffReceived, note);
@@ -400,15 +402,17 @@ void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample
 void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	int ok = 0;
 	setCorrectChannelBasedOnHand(note);
+	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		//here we need to add and if the note received is by chance, start note or end note, do to the according things.
-		DBG("The note is" + juce::String(note) + " the setting one is:" + juce::String(startNoteSetting));
+		//DBG("The note is" + juce::String(note) + " the setting one is:" + juce::String(startNoteSetting));
 		if (note != this->startNoteSetting && note!=this->endNoteSetting)
 		{
 			ok = 1;
+
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
-			midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, note, velocity));
+			midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocity));
 		}
 		else if(note==this->startNoteSetting)
 		{
@@ -430,9 +434,10 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
 	setCorrectChannelBasedOnHand(note);
+	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
-		midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, note,velocity));
+		midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, transposedNote,velocity));
 
 	}
 	listeners.call(&MidiHandlerListener::noteOffReceived,note);
@@ -491,6 +496,12 @@ void MidiHandler::playBackSettingsChanged(const PlayBackSettings& settings)
 	set_left_right_bounds(settings.leftHandBound, settings.rightHandBound);
 }
 
+void MidiHandler::playBackSettingsTransposeChanged(int transposeValue)
+{
+	this->transposeValue = transposeValue;
+	allOffKeyboard();
+}
+
 void MidiHandler::setCorrectChannelBasedOnHand(int note)
 {
 	if (rightHandBoundSetting != -1 && note >= rightHandBoundSetting)
@@ -498,13 +509,14 @@ void MidiHandler::setCorrectChannelBasedOnHand(int note)
 	else this->channel = 1;
 }
 
-int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid)
+int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid, bool isKeyboardInput)
 {
 	int nrKeys = dataBase.getNrKeysPidVid(vid, pid);
-	if (nrKeys<0)
+	if (nrKeys<0 && !isKeyboardInput)
 	{
 		if (onAddCallBack)
 		{
+			DBG("onAddCallBack triggered!");
 			onAddCallBack(vid, pid, [this, vid, pid](const juce::String& name, int keys)
 				{
 					dataBase.addDeviceJson(vid, pid, name, keys);

@@ -177,6 +177,11 @@ void Display::showCurrentStyleTab(const juce::String& name)
                 displayListeners.call(&DisplayListener::playBackSettingsChanged, this->settings);
             };
 
+            playBackSettings->onChangingTranspose = [this](int transposeValue)
+            {
+                displayListeners.call(&DisplayListener::playBackSettingsTransposeChanged, transposeValue);
+            };
+
             tabComp->addTab("Playback Settings", juce::Colour::fromRGB(10, 15, 10), playBackSettings.get(), false);
             tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
         };
