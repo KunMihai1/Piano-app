@@ -352,7 +352,8 @@ void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBack
 
     auto* rootObj = rootVar.getDynamicObject();
 
-    juce::String key = juce::String(settings.VID) + "_" + juce::String(settings.PID);
+    juce::String key = settings.VID + "_" + settings.PID;
+    DBG("Key is: " + key);
 
     auto keyboardObj = new juce::DynamicObject();
 

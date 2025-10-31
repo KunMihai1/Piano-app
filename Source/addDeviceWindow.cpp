@@ -39,6 +39,12 @@ AddDeviceWindow::AddDeviceWindow(const juce::String& vid, const juce::String& pi
         {
             if (onAddDevice)
                 onAddDevice(name, keys);
+            juce::AlertWindow::showMessageBoxAsync(
+                juce::AlertWindow::InfoIcon,
+                "Successfull adding",
+                "Your device named: " + name + " with: " + juce::String(keys) + " keys has been added sucesffuly!"
+            );
+
             closeButtonPressed();
         }
         else
