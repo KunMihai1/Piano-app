@@ -828,12 +828,16 @@ void MainComponent::playButtonOnClick()
             };
         }
         if (midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier())
-            ,this->keyListener.getStartNoteKeyboardInput()) < 0)
+            ,this->keyListener.getIsKeyboardInput()) < 0)
             return;
+
+
 
         this->recordPlayer.setOutputDevice(MIDIDevice.getDeviceOUT());
         if(midiWindow)
             this->midiWindow->setVisible(false);
+
+        this->display->readSettingsFromJSON();
         currentBackground = playBackground;
         repaint();
         toggleHPanel();
@@ -867,9 +871,14 @@ void MainComponent::playButtonOnClick()
         {
             this->keyboard.set_min_and_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
             this->display->set_min_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
+            DBG("VID SI PID : "
+                + MIDIDevice.extractVID(MIDIDevice.get_identifier())
+                + " "
+                + MIDIDevice.extractPID(MIDIDevice.get_identifier())
+            );
             this->display->set_VID_PID(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
         }
-        this->display->readSettingsFromJSON();
+        
         this->midiHandler.set_start_end_notes(this->display->getStartNote(), this->display->getEndNote());
         this->midiHandler.set_left_right_bounds(this->display->getLeftBound(), this->display->getRightBound());
 

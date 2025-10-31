@@ -17,6 +17,8 @@ PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highest
     if (!settingsFile.existsAsFile())
         settingsFile.create();
         
+    DBG("Constructor: " + settingsGiven.VID + settingsGiven.PID);
+    DBG("Constructor: " + settings.VID + settings.PID);
 
 
     this->lowestNote = lowestNote;

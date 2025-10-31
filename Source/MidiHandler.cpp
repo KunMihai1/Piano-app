@@ -375,6 +375,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	if (message.isNoteOff())
 	{
 		int note = message.getNoteNumber();
+		setCorrectChannelBasedOnHand(note);
 		int transposedNote = juce::jlimit(0, 127, note + transposeValue);
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(message.getFloatVelocity());
 
@@ -512,6 +513,8 @@ void MidiHandler::setCorrectChannelBasedOnHand(int note)
 int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid, bool isKeyboardInput)
 {
 	int nrKeys = dataBase.getNrKeysPidVid(vid, pid);
+	int isK = isKeyboardInput;
+	DBG("NR KEYS: " + juce::String(nrKeys) + juce::String(isK));
 	if (nrKeys<0 && !isKeyboardInput)
 	{
 		if (onAddCallBack)

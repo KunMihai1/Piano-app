@@ -168,7 +168,9 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
         currentStyleComponent->keybindTabStarting = [this]()
         {
-            playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote, maxNote, settings);
+            DBG("it works");
+            DBG(this->settings.VID + " " + this->settings.PID);
+            playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote, maxNote, this->settings);
             playBackSettings->setBounds(getLocalBounds());
 
             playBackSettings->onChangingSettings = [this](PlayBackSettings newSettings)
@@ -343,6 +345,7 @@ void Display::set_VID_PID(const juce::String& VID, const juce::String& PID)
 {
     this->settings.VID = VID;
     this->settings.PID = PID;
+    DBG("In setter:" + this->settings.VID + " " + this->settings.PID);
 }
 
 void Display::readSettingsFromJSON()
