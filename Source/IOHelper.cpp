@@ -379,7 +379,7 @@ PlayBackSettings PlaybackSettingsIOHelper::loadFromFile(const juce::File& file, 
     juce::var rootVar = juce::JSON::parse(json);
 
     juce::String key = juce::String(VID) + "_" + juce::String(PID);
-
+    DBG("the key in load phase is:" + key);
 
     auto* rootObj = rootVar.getDynamicObject();
     if (!rootObj)

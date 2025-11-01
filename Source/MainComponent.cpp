@@ -837,6 +837,12 @@ void MainComponent::playButtonOnClick()
         if(midiWindow)
             this->midiWindow->setVisible(false);
 
+        juce::String PID = MIDIDevice.extractPID(MIDIDevice.get_identifier());
+        juce::String VID = MIDIDevice.extractVID(MIDIDevice.get_identifier());
+        if (VID.length() < 4 || PID.length() < 4)
+            this->display->set_VID_PID("", "");
+        else this->display->set_VID_PID(VID, PID);
+
         this->display->readSettingsFromJSON();
         currentBackground = playBackground;
         repaint();
@@ -865,18 +871,11 @@ void MainComponent::playButtonOnClick()
         {
             this->keyboard.set_min_and_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
             this->display->set_min_max(keyListener.getStartNoteKeyboardInput(), keyListener.getFinishNoteKeyboardInput());
-            this->display->set_VID_PID("", "");
         }
         else
         {
             this->keyboard.set_min_and_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
             this->display->set_min_max(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
-            DBG("VID SI PID : "
-                + MIDIDevice.extractVID(MIDIDevice.get_identifier())
-                + " "
-                + MIDIDevice.extractPID(MIDIDevice.get_identifier())
-            );
-            this->display->set_VID_PID(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier()));
         }
         
         this->midiHandler.set_start_end_notes(this->display->getStartNote(), this->display->getEndNote());
