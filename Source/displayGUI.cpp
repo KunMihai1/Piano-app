@@ -348,6 +348,16 @@ void Display::set_VID_PID(const juce::String& VID, const juce::String& PID)
     DBG("In setter:" + this->settings.VID + " " + this->settings.PID);
 }
 
+juce::String Display::getVID()
+{
+    return this->settings.VID;
+}
+
+juce::String Display::getPID()
+{
+    return this->settings.PID;
+}
+
 void Display::readSettingsFromJSON()
 {
     PlayBackSettings settingsLoaded = PlaybackSettingsIOHelper::loadFromFile(IOHelper::getFile("playbackSettings.json"), this->settings.VID, this->settings.PID);

@@ -398,5 +398,8 @@ PlayBackSettings PlaybackSettingsIOHelper::loadFromFile(const juce::File& file, 
         }
     }
 
+    settings.VID = VID;
+    settings.PID = PID;
+
     return settings;
 }

@@ -843,7 +843,10 @@ void MainComponent::playButtonOnClick()
             this->display->set_VID_PID("", "");
         else this->display->set_VID_PID(VID, PID);
 
+        DBG("VID AND PID in main comp" + VID + " " + PID);
         this->display->readSettingsFromJSON();
+
+        DBG("vid and pid in main comp after reading from json" + this->display->getVID() + " " + this->display->getPID());
         currentBackground = playBackground;
         repaint();
         toggleHPanel();
