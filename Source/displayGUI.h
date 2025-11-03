@@ -954,6 +954,10 @@ public:
     /** @brief Sets VID and PID for playback settings */
     void set_VID_PID(const juce::String& VID, const juce::String& PID);
 
+    juce::String getVID();
+
+    juce::String getPID();
+
     /** @brief Loads playback settings from JSON */
     void readSettingsFromJSON();
 
