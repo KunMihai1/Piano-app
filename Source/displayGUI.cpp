@@ -19,6 +19,7 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
     groupedTrackKeys = std::make_shared<std::vector<juce::String>>();
 
     tabComp = std::make_unique<MyTabbedComponent>(juce::TabbedButtonBar::TabsAtLeft);
+
     addAndMakeVisible(tabComp.get());
 
     initializeAllStyles();
@@ -111,8 +112,20 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
 
             trackListComp.reset();
             createdTracksTab = false;
-            
+            return;
         }
+
+        if (createdPlaybackSettingsTab && newIndex==0)
+        {
+            int mySettingsIndex = tabComp->getNumTabs() - 1;
+            tabComp->removeTab(mySettingsIndex);
+
+            playBackSettings.reset();
+            createdPlaybackSettingsTab = false;
+            return;
+        }
+
+        
     };
 }
 
@@ -168,8 +181,16 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
         currentStyleComponent->keybindTabStarting = [this]()
         {
-            DBG("it works");
-            DBG(this->settings.VID + " " + this->settings.PID);
+
+            int existingIndex = getTabIndexByName("Playback Settings");
+
+            if (existingIndex >= 0)
+            {
+                tabComp->setCurrentTabIndex(existingIndex);
+                return;
+            }
+
+
             playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote, maxNote, this->settings);
             playBackSettings->setBounds(getLocalBounds());
 
@@ -184,8 +205,13 @@ void Display::showCurrentStyleTab(const juce::String& name)
                 displayListeners.call(&DisplayListener::playBackSettingsTransposeChanged, transposeValue);
             };
 
+            createdPlaybackSettingsTab = true;
             tabComp->addTab("Playback Settings", juce::Colour::fromRGB(10, 15, 10), playBackSettings.get(), false);
-            tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
+
+            existingIndex = tabComp->getNumTabs() - 1;
+
+            
+            tabComp->setCurrentTabIndex(existingIndex);
         };
 
         tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), false);
@@ -203,6 +229,11 @@ void Display::showCurrentStyleTab(const juce::String& name)
     currentStyleComponent->anyTrackChanged = [this, name]()
     {
         updateStyleInJson(name);
+    };
+
+    currentStyleComponent->tabExsitsCallback = [this](const juce::String& name)
+    {
+        return this->existsTab(name);
     };
 
     if (allStylesJsonVar.isObject())
@@ -421,10 +452,10 @@ void Display::setNewSettingsHelperFunction(int value)
     if(settings.rightHandBound!=-1)
         settings.rightHandBound += value;
 
-    if (settings.startNote < 21)
+    if (settings.startNote < 21 && settings.startNote!=-1)
         settings.startNote = 21;
 
-    if (settings.endNote > 108)
+    if (settings.endNote > 108 && settings.endNote!=-1)
         settings.endNote = 108;
 
     if (settings.leftHandBound < 21)
@@ -436,6 +467,16 @@ void Display::setNewSettingsHelperFunction(int value)
     if(playBackSettings)
         this->playBackSettings->setNewSettings(settings);
     else displayListeners.call(&DisplayListener::playBackSettingsChanged, this->settings);
+}
+
+bool Display::existsTab(const juce::String& name)
+{
+    for (auto& tabName : tabComp->getTabNames())
+    {
+        if (tabName == name)
+            return true;
+    }
+    return false;
 }
 
 void Display::callingListeners()
@@ -1333,7 +1374,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
 
     playSettingsTracks.addItem("All tracks", 1);
     playSettingsTracks.addItem("Solo track(last selected)", 2);
-    playSettingsTracks.addItem("Keybinds",3);
+    playSettingsTracks.addItem("Settings",3);
     playSettingsTracks.setSelectedId(1);
     playSettingsTracks.addListener(this);
 
@@ -1819,6 +1860,7 @@ void CurrentStyleComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChang
         if (id == 3)
         {
             keybindTabStarting();
+            playSettingsTracks.setSelectedId(1);
         }
     }
 }
@@ -3293,8 +3335,37 @@ void TrackListComponent::deallocateTracksFromList()
     sortComboBox = nullptr;
 }
 
+MyTabbedComponent::MyTabbedComponent(juce::TabbedButtonBar::Orientation orientation) : juce::TabbedComponent(orientation)
+{
+    getTabbedButtonBar().addMouseListener(this, true);
+    
+}
+
+MyTabbedComponent::~MyTabbedComponent()
+{
+    getTabbedButtonBar().removeMouseListener(this);
+}
+
 void MyTabbedComponent::currentTabChanged(int newCurrentTabIndex, const juce::String& newTabName)
 {
     if (onTabChanged)
         onTabChanged(newCurrentTabIndex, newTabName);
+}
+
+void MyTabbedComponent::mouseDown(const juce::MouseEvent& event)
+{
+    if (!event.mods.isRightButtonDown()) return;
+
+    int numTabs = getNumTabs();
+    if (numTabs <= 1) return;
+
+    int tabWidth = getWidth() / numTabs;
+    int clickedIndex = event.x / tabWidth;
+
+    if (clickedIndex > 0 && clickedIndex < numTabs)
+    {
+        juce::PopupMenu menu;
+        menu.addItem("Close Tab", [this, clickedIndex]() { removeTab(clickedIndex); });
+        menu.showMenuAsync(juce::PopupMenu::Options());
+    }
 }

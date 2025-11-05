@@ -94,7 +94,6 @@ void PlayBackSettingsComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasC
         onChangingSettings(settings); //this is to call the listeners of the display, midiHandler for example. MidiHandler could've had a reference to the structure PlayBackSettings
                                       //that lives in the Display class, but it's more flexible this way, the design of the midiHandler.
 
-    DBG("inainte de a salva:" + this->settings.VID + " " + this->settings.PID);
     PlaybackSettingsIOHelper::saveToFile(IOHelper::getFile("playbackSettings.json"),this->settings);
 }
 

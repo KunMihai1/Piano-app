@@ -402,6 +402,9 @@ class CurrentStyleComponent : public juce::Component,
 {
 public:
     //==============================================================================
+
+    std::function<bool(const juce::String& name)> tabExsitsCallback;
+
     /** @brief Called whenever any track within the style is modified. */
     std::function<void()> anyTrackChanged;
 
@@ -798,7 +801,8 @@ private:
  * Extends `juce::TabbedComponent` and adds a std::function callback
  * `onTabChanged` which is called whenever the current tab is changed.
  */
-class MyTabbedComponent : public juce::TabbedComponent
+
+class MyTabbedComponent : public juce::TabbedComponent, private juce::MouseListener
 {
 public:
 
@@ -806,9 +810,9 @@ public:
      * @brief Constructs a MyTabbedComponent with a specified tab orientation.
      * @param orientation Orientation of the tab bar (e.g., TabsAtTop, TabsAtLeft)
      */
-    MyTabbedComponent(juce::TabbedButtonBar::Orientation orientation)
-        : juce::TabbedComponent(orientation) {}
+    MyTabbedComponent(juce::TabbedButtonBar::Orientation orientation);
 
+    ~MyTabbedComponent();
 
      /**
      * @brief Called by JUCE when the current tab changes.
@@ -819,6 +823,8 @@ public:
 
     /** @brief Callback function triggered whenever the current tab changes */
     std::function<void(int, juce::String)> onTabChanged;
+
+    void mouseDown(const juce::MouseEvent& event) override;
 
     //JUCE_LEAK_DETECTOR(MyTabbedComponent)
 };
@@ -991,6 +997,8 @@ public:
     /** @brief sets all the settings including min,max note, playing range on left/right hand */
     void setNewSettingsHelperFunction(int value);
 
+    bool existsTab(const juce::String& name);
+
 private:
     //==============================================================================
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache; ///< Cached style data
@@ -1000,6 +1008,7 @@ private:
     std::unique_ptr<PlayBackSettingsComponent> playBackSettings; ///< Playback settings UI
     bool created = false; ///< Flag for style tab creation
     bool createdTracksTab = false; ///< Flag for tracks tab creation
+    bool createdPlaybackSettingsTab = false;
 
     int minNote, maxNote;  ///< min and max notes of playing range
     PlayBackSettings settings; ///< Playback settings
