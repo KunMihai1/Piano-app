@@ -101,8 +101,11 @@ void MidiRecordPlayer::handleIncomingMessage(const juce::MidiMessage& message)
 {
     if (!isRecording)
         return;
+
+    juce::MidiMessage newMessage = remapChannel(message);
+
     double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
-    RecordedEvent ev{ message,now - recordStartTime };
+    RecordedEvent ev{ newMessage,now - recordStartTime };
     allEventsPlayed.push_back(ev);
 }
 
@@ -299,4 +302,31 @@ int MidiRecordPlayer::getProgramRightHand()
 std::vector<RecordedEvent>& MidiRecordPlayer::getAllRecordedEvents()
 {
     return this->allEventsPlayed;
+}
+
+juce::MidiMessage MidiRecordPlayer::remapChannel(const juce::MidiMessage& message)
+{
+    int newChannel = message.getChannel();
+
+    if (message.getChannel() == 1)
+        newChannel = 14;
+    else if (message.getChannel() == 16)
+        newChannel = 15;
+
+    if (message.isNoteOn())
+        return juce::MidiMessage::noteOn(newChannel, message.getNoteNumber(), message.getVelocity());
+
+    if (message.isNoteOff())
+        return juce::MidiMessage::noteOff(newChannel, message.getNoteNumber());
+
+    if (message.isController())
+        return juce::MidiMessage::controllerEvent(newChannel, message.getControllerNumber(), message.getControllerValue());
+
+    if (message.isProgramChange())
+        return juce::MidiMessage::programChange(newChannel, message.getProgramChangeNumber());
+
+    if (message.isPitchWheel())
+        return juce::MidiMessage::pitchWheel(newChannel, message.getPitchWheelValue());
+
+    return message;
 }
