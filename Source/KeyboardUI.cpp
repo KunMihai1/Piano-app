@@ -96,8 +96,16 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
 
             if (21 + noteAccount >= min_draw && 21 + noteAccount <= max_draw) {
                 if (isDrawn && keys[21 + noteAccount].isActive == true)
-                    g.setColour(juce::Colours::green);
-                else g.setColour(juce::Colours::white);
+                {
+                    juce::ColourGradient greenGradient(juce::Colours::green.brighter(0.5f), 0, 0,
+                        juce::Colours::green.darker(0.5f), 0, keyHeight, false);
+                    g.setGradientFill(greenGradient);
+                    //g.setColour(juce::Colours::green);
+                }
+                else
+                {
+                    g.setColour(juce::Colours::white);
+                }
             }
             else {
                 g.setColour(juce::Colours::white.withAlpha(0.5f));
@@ -105,6 +113,8 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
 
             juce::Rectangle<int> keyRectangle(x, 0, whiteKeyWidth, keyHeight);
             g.fillRect(keyRectangle);
+
+
             g.setColour(juce::Colours::black);
             g.drawRect(static_cast<int>(x), 0, static_cast<int>(whiteKeyWidth), static_cast<int>(keyHeight));
 
@@ -130,13 +140,35 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
 
         if (22 >= min_draw && 22 <= max_draw) {
             if (isDrawn && keys[22].isActive == true)
-                g.setColour(juce::Colours::green);
-            else  g.setColour(juce::Colours::black);
+            {
+                juce::ColourGradient greenGradient(juce::Colours::green.brighter(0.5f), 0, 0,
+                    juce::Colours::green.darker(0.5f), 0, blackKeyHeight, false);
+                g.setGradientFill(greenGradient);
+                //g.setColour(juce::Colours::green);
+            }
+            else
+            {
+                juce::ColourGradient blackGradient(juce::Colours::black.brighter(0.5f), 0, 0,
+                    juce::Colours::black.darker(0.5f), 0, blackKeyHeight, false);
+                g.setGradientFill(blackGradient);
+                //g.setColour(juce::Colours::black);
+            }
         }
         else
-            g.setColour(juce::Colours::black.withAlpha(1.0f));
+        {
+            juce::ColourGradient blackGradient(juce::Colours::black.withAlpha(1.0f).brighter(0.5f), 0, 0,
+                juce::Colours::black.withAlpha(1.0f).darker(0.5f), 0, blackKeyHeight, false);
+            g.setGradientFill(blackGradient);
+            //g.setColour(juce::Colours::black.withAlpha(1.0f));
+        }
 
         g.fillRect(static_cast<int>(firstBlackKeyX), 0, static_cast<int>(blackKeyWidth), static_cast<int>(blackKeyHeight));
+
+        //g.setColour(juce::Colours::white.withAlpha(0.2f));
+
+        //g.fillRect(juce::Rectangle<int>(static_cast<int>(firstBlackKeyX), 0, static_cast<int>(blackKeyWidth), static_cast<int>(blackKeyHeight * 0.2f)));
+
+
         keys[22].bounds = juce::Rectangle<int>(firstBlackKeyX, 0, blackKeyWidth, blackKeyHeight);
         if (!isDrawn)
             keys[22].isActive = false;
@@ -149,8 +181,16 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
 
             if (21 + noteAccount >= min_draw && 21 + noteAccount <= max_draw) {
                 if (isDrawn && keys[21 + noteAccount].isActive == true)
-                    g.setColour(juce::Colours::green);
-                else g.setColour(juce::Colours::white);
+                {
+                    juce::ColourGradient greenGradient(juce::Colours::green.brighter(0.5f), 0, 0,
+                        juce::Colours::green.darker(0.5f), 0, keyHeight, false);
+                    g.setGradientFill(greenGradient);
+                    //g.setColour(juce::Colours::green);
+                }
+                else
+                {
+                    g.setColour(juce::Colours::white);
+                }
             }
             else {
                 g.setColour(juce::Colours::white.withAlpha(0.5f));
@@ -158,6 +198,10 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
 
             juce::Rectangle<int> keyRectangle(x, 0, whiteKeyWidth, keyHeight);
             g.fillRect(keyRectangle);
+
+            //g.setColour(juce::Colours::white.withAlpha(0.4f));
+            //g.fillRect(keyRectangle.withHeight(keyHeight * 0.2f));
+
             g.setColour(juce::Colours::black);
             g.drawRect(keyRectangle);
 
@@ -191,16 +235,36 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
                 int whiteIndex = octaveStartIndex + static_cast<int>(blackOffsets[j]);
                 if (whiteIndex < whiteKeyPositions.size() - 1) {
                     float x = whiteKeyPositions[whiteIndex] + whiteKeyWidth - (blackKeyWidth * 0.5f);
+                    juce::Rectangle<int> keyRectangle(x, 0, blackKeyWidth, blackKeyHeight);
 
                     if (21 + noteAccount >= min_draw && 21 + noteAccount <= max_draw) {
                         if (isDrawn && keys[21 + noteAccount].isActive == true)
+                        {
+                            juce::ColourGradient greenGradient(juce::Colours::green.brighter(0.5f), 0, 0,
+                                juce::Colours::green.darker(0.5f), 0, blackKeyHeight, false);
+                            g.setGradientFill(greenGradient);
                             g.setColour(juce::Colours::green);
-                        else g.setColour(juce::Colours::black);
+                        }
+                        else {
+                            juce::ColourGradient blackGradient(juce::Colours::black.brighter(0.5f), 0, 0,
+                                juce::Colours::black.darker(0.5f), 0, blackKeyHeight, false);
+                            g.setGradientFill(blackGradient);
+                            //g.setColour(juce::Colours::black);
+                        } 
                     }
                     else
-                        g.setColour(juce::Colours::black.withAlpha(1.0f));
+                    {
+                        juce::ColourGradient blackGradient(juce::Colours::black.withAlpha(1.0f).brighter(0.5f), 0, 0,
+                            juce::Colours::black.withAlpha(1.0f).darker(0.5f), 0, blackKeyHeight, false);
+                        g.setGradientFill(blackGradient);
+                        //g.setColour(juce::Colours::black.withAlpha(1.0f));
+                    }
 
                     g.fillRect(static_cast<int>(x), 0, static_cast<int>(blackKeyWidth), static_cast<int>(blackKeyHeight));
+
+                    //g.setColour(juce::Colours::white.withAlpha(0.2f));
+                    //g.fillRect(keyRectangle.withHeight(blackKeyHeight * 0.2f));
+
                     keys[21 + noteAccount].bounds = juce::Rectangle<int>(x, 0, blackKeyWidth, blackKeyHeight);
                     if (!isDrawn)
                         keys[21 + noteAccount].isActive = false;
@@ -225,33 +289,47 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
         {
             if (MidiNote.isActive)
             {
-                g.setColour(juce::Colours::green);
+                juce::ColourGradient greenGradient(juce::Colours::green.brighter(0.5f), 0, 0,
+                    juce::Colours::green.darker(0.5f), 0, MidiNote.bounds.getHeight(), false);
+                g.setGradientFill(greenGradient);
                 g.fillRect(MidiNote.bounds);
             }
             else
             {
                 if (MidiNote.type == "white")
                 {
-                    if (key<min_draw || key>max_draw)
-                    {
+                    juce::ColourGradient whiteGradient;
+                    if (key<min_draw || key>max_draw){
                         g.setColour(juce::Colours::white.withAlpha(0.5f));
                     }
                     else {
                         g.setColour(juce::Colours::white);
                     }
+
+                    g.fillRect(MidiNote.bounds);
+
                 }
                 else {
+                    juce::ColourGradient blackGradient;
                     if (key<min_draw || key>max_draw)
                     {
-                        g.setColour(juce::Colours::black.withAlpha(1.0f));
+                        blackGradient = juce::ColourGradient(juce::Colours::black.withAlpha(1.0f).brighter(0.5f), 0, 0,
+                            juce::Colours::black.withAlpha(1.0f).darker(0.5f), 0, MidiNote.bounds.getHeight(), false);
+
                     }
                     else
                     {
-                        g.setColour(juce::Colours::black);
+                        blackGradient = juce::ColourGradient(juce::Colours::black.brighter(0.5f), 0, 0,
+                            juce::Colours::black.darker(0.5f), 0, MidiNote.bounds.getHeight(), false);
                     }
+
+                    g.setGradientFill(blackGradient);
+                    g.fillRect(MidiNote.bounds);
+                    //g.setColour(juce::Colours::white.withAlpha(0.2f));
+                    //g.fillRect(MidiNote.bounds.withHeight(MidiNote.bounds.getHeight() * 0.2f));
                 }
             }
-            g.fillRect(MidiNote.bounds);
+            //g.fillRect(MidiNote.bounds);
             g.setColour(juce::Colours::black);
             g.drawRect(MidiNote.bounds);
         }
