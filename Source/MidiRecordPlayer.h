@@ -103,6 +103,8 @@ public:
     /** @brief Returns all recorded events */
     std::vector<RecordedEvent>& getAllRecordedEvents();
 
+    juce::MidiMessage remapChannel(const juce::MidiMessage& message);
+
 private:
     int initialProgram = 0;                      /**< Initial program number */
     int reverb = 50;                             /**< Reverb level */
