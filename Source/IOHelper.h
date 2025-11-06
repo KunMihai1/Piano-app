@@ -105,7 +105,7 @@ public:
      * @param file File to save to
      * @param settings Settings to save
      */
-    static void saveToFile(const juce::File& file, const PlayBackSettings& settings);
+    static void saveToFile(const juce::File& file, const PlayBackSettings& settings, int lowest, int highest);
 
     /**
      * @brief Loads playback settings from a file.

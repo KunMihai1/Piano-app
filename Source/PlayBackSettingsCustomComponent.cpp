@@ -196,6 +196,18 @@ void PlayBackSettingsComponent::transposeSliderInit()
 
 void PlayBackSettingsComponent::setNewSettings(PlayBackSettings& newSettings)
 {
+    juce::StringArray availableNotes = "None";
+    for (int i = lowestNote; i <= highestNote; i++)
+    {
+        availableNotes.add(MapHelper::intToStringNote(i));
+    }
+
+    startNoteBox.clear();
+    endNoteBox.clear();
+
+    startNoteBox.addItemList(availableNotes, 1);
+    endNoteBox.addItemList(availableNotes, 1);
+
     this->settings = newSettings;
     if (settings.startNote != -1)
     {
@@ -211,6 +223,22 @@ void PlayBackSettingsComponent::setNewSettings(PlayBackSettings& newSettings)
 
     juce::String lowestNoteString = MapHelper::intToStringNote(lowestNote);
     juce::String highestNoteString = MapHelper::intToStringNote(highestNote);
+
+    leftHandBoundBox.clear();
+    rightHandBoundBox.clear();
+
+    juce::StringArray availableRangeLeft = "None";
+    juce::StringArray availableRangeRight = "None";
+
+    for (int i = lowestNote; i <= highestNote; i++)
+    {
+        availableRangeLeft.add(lowestNoteString + "-" + MapHelper::intToStringNote(i));
+        availableRangeRight.add(MapHelper::intToStringNote(i) + "-" + highestNoteString);
+    }
+
+
+    leftHandBoundBox.addItemList(availableRangeLeft, 1);
+    rightHandBoundBox.addItemList(availableRangeRight, 1);
 
     if (settings.leftHandBound != -1)
         leftHandBoundBox.setText(lowestNoteString + "-" + MapHelper::intToStringNote(settings.leftHandBound), juce::dontSendNotification);
