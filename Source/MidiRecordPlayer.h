@@ -40,7 +40,10 @@ public:
     /** Callback to apply presets when starting recording */
     std::function<void()> applyPresetFunction;
 
+    /** @brief Default constructor  */
     MidiRecordPlayer();
+
+    /** @brief Constructor with an output device linked with the record player */
     MidiRecordPlayer(std::weak_ptr<juce::MidiOutput> out);
 
     /** @brief Starts recording incoming MIDI messages */
@@ -103,6 +106,7 @@ public:
     /** @brief Returns all recorded events */
     std::vector<RecordedEvent>& getAllRecordedEvents();
 
+    /** @brief Returns a message mapped to a different channel due to the program changes of a single channel that may affect the recording */
     juce::MidiMessage remapChannel(const juce::MidiMessage& message);
 
 private:
