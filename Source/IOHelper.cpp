@@ -337,8 +337,14 @@ void TrackIOHelper::applyChangesToASequence(juce::MidiMessageSequence& sequence,
     }
 }
 
-void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBackSettings& settings)
+void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBackSettings& settings, int lowest, int highest)
 {
+    int baseStart = 60;
+    bool keyboardInputCase=false;
+    if (highest - lowest < 49)
+        keyboardInputCase = true;
+
+
     juce::var rootVar;
 
     if (file.existsAsFile())
@@ -357,10 +363,20 @@ void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBack
 
     auto keyboardObj = new juce::DynamicObject();
 
-    keyboardObj->setProperty("startNote", settings.startNote);
-    keyboardObj->setProperty("endNote", settings.endNote);
-    keyboardObj->setProperty("leftHandBound",settings.leftHandBound);
-    keyboardObj->setProperty("rightHandBound", settings.rightHandBound);
+    if (keyboardInputCase && lowest != 60)
+    {
+
+        keyboardObj->setProperty("startNote", baseStart+settings.startNote%12);
+        keyboardObj->setProperty("endNote", baseStart+settings.endNote%12);
+        keyboardObj->setProperty("leftHandBound", baseStart+settings.leftHandBound%12);
+        keyboardObj->setProperty("rightHandBound", baseStart+settings.rightHandBound%12);
+    }
+    else {
+        keyboardObj->setProperty("startNote", settings.startNote);
+        keyboardObj->setProperty("endNote", settings.endNote);
+        keyboardObj->setProperty("leftHandBound", settings.leftHandBound);
+        keyboardObj->setProperty("rightHandBound", settings.rightHandBound);
+    }
 
     rootObj->setProperty(key, keyboardObj);
 
