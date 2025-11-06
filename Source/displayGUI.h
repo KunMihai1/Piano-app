@@ -912,9 +912,6 @@ public:
     /** @brief Builds a map of Track UUIDs to `TrackEntry` pointers */
     std::unordered_map<juce::Uuid, TrackEntry*> buildTrackUuidMap();
 
-    /** @brief Adds new tracks to the internal map */
-    void addNewTracksToMap();
-
     /** @brief Handles resizing of the component */
     void resized() override;
 
@@ -960,8 +957,10 @@ public:
     /** @brief Sets VID and PID for playback settings */
     void set_VID_PID(const juce::String& VID, const juce::String& PID);
 
+    /** @brief Gets the VID of the current input device */
     juce::String getVID();
 
+    /** @brief Gets the PID of the current input device*/
     juce::String getPID();
 
     /** @brief Loads playback settings from JSON */
@@ -997,6 +996,7 @@ public:
     /** @brief sets all the settings including min,max note, playing range on left/right hand */
     void setNewSettingsHelperFunction(int value);
 
+    /** @brief Checks if a certain tab exists in the tabbed component*/
     bool existsTab(const juce::String& name);
 
 private:

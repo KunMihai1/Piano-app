@@ -514,7 +514,6 @@ int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String
 {
 	int nrKeys = dataBase.getNrKeysPidVid(vid, pid);
 	int isK = isKeyboardInput;
-	DBG("NR KEYS: " + juce::String(nrKeys) + juce::String(isK));
 	if (nrKeys<0 && !isKeyboardInput)
 	{
 		if (onAddCallBack)
