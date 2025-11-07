@@ -21,6 +21,19 @@ MidiDevice::~MidiDevice()
 		this->currentDeviceUSEDout.reset();
 }
 
+std::vector<std::pair<juce::String, juce::String>> MidiDevice::getAvailableInputDevicesNameIdentifier()
+{
+	std::vector<std::pair<juce::String, juce::String>> vec;
+	refreshDeviceListNew(vec);
+	if (vec.empty())
+	{
+		vec.clear();
+		vec.push_back({ "No devices found!",""});
+	}
+
+	return vec;
+}
+
 void MidiDevice::getAvailableDevicesMidiIN(std::vector<std::string>& devices)
 {
 	refreshDeviceList();
@@ -101,9 +114,53 @@ void MidiDevice::refreshDeviceList(int choice)
 			}
 			this->devicesChange = true;
 			this->currentDevicesIN.push_back("PC Keyboard");
+			this->deviceCheckedForUpdateAtLeastOnce = false;
 		}
 		else
 			this->devicesChange = false;
+
+	}
+	else if (choice == 1)
+	{
+		juce::Array<juce::MidiDeviceInfo> newDevices = juce::MidiOutput::getAvailableDevices();
+		if (newDevices != this->CachedDevicesOUT)
+		{
+			this->CachedDevicesOUT = newDevices;
+			this->currentDevicesOUT.clear();
+			for (int i = 0; i < newDevices.size(); i++)
+			{
+				if (newDevices[i].name.isNotEmpty())
+					this->currentDevicesOUT.push_back(newDevices[i].name.toStdString());
+			}
+			this->devicesChange = true;
+		}
+		else
+			this->devicesChange = false;
+	}
+}
+
+void MidiDevice::refreshDeviceListNew(std::vector<std::pair<juce::String, juce::String>>& vec, int choice)
+{
+	if (choice == 0)
+	{
+		juce::Array<juce::MidiDeviceInfo> newDevices = juce::MidiInput::getAvailableDevices();
+		if (newDevices != this->CachedDevicesIN || deviceCheckedForUpdateAtLeastOnce==false)
+		{
+			this->CachedDevicesIN = newDevices;
+			vec.clear();
+			for (int i = 0; i < newDevices.size(); i++)
+			{
+				if (newDevices[i].name.isNotEmpty())
+					vec.push_back({ newDevices[i].name,newDevices[i].identifier });
+			}
+			this->devicesChange = true;
+			this->deviceCheckedForUpdateAtLeastOnce = true;
+			//push_back("PC Keyboard");
+		}
+		else
+		{
+			this->devicesChange = false;
+		}
 
 	}
 	else if (choice == 1)
@@ -508,6 +565,16 @@ void MidiHandler::setCorrectChannelBasedOnHand(int note)
 	if (rightHandBoundSetting != -1 && note >= rightHandBoundSetting)
 		this->channel = 16;
 	else this->channel = 1;
+}
+
+void MidiHandler::updateDeviceInDBBridgeFunction(const juce::String& VID, const juce::String& PID, const juce::String name, int numKeys)
+{
+	this->dataBase.updateDeviceJson(VID, PID, name, numKeys);
+}
+
+bool MidiHandler::deviceExistsBridgeFunction(const juce::String VID, const juce::String& PID)
+{
+	return this->dataBase.deviceExists(VID, PID);
 }
 
 int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid, bool isKeyboardInput)

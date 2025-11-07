@@ -111,6 +111,54 @@ void MidiDevicesDataBase::addDeviceJson(const juce::String& vid, const juce::Str
 	saveJsonFile();
 }
 
+void MidiDevicesDataBase::updateDeviceJson(const juce::String& vid, const juce::String pid, const juce::String name, int numKeys)
+{
+	if (!jsonData.isObject())
+		return;
+
+	auto* rootObject = jsonData.getDynamicObject();
+	if (!rootObject)
+		return ;
+
+	juce::String key = vid + pid;
+	if (key.isEmpty())
+		return ;
+
+	if (!rootObject->hasProperty(key))
+		return ;	
+
+	auto deviceVar = rootObject->getProperty(key);
+	if (!deviceVar.isObject())
+		return ;
+
+	auto* deviceObj = deviceVar.getDynamicObject();
+	if (!deviceObj)
+		return ;
+
+	if(!name.isEmpty())
+		deviceObj->setProperty("name", name);
+	deviceObj->setProperty("keys", numKeys);
+
+	saveJsonFile();
+}
+
+bool MidiDevicesDataBase::deviceExists(const juce::String& VID, const juce::String& PID)
+{
+	if (!jsonData.isObject())
+		return -1;
+
+	auto* rootObject = jsonData.getDynamicObject();
+	if (!rootObject)
+		return -1;
+
+	juce::String key = VID + PID;
+	if (key.isEmpty())
+		return -1;
+
+	if (!rootObject->hasProperty(key))
+		return -1;
+}
+
 int MidiDevicesDataBase::getNrKeysPidVid(const juce::String& vid, const juce::String& pid)
 {
 	if (!jsonData.isObject())

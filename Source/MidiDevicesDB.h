@@ -36,6 +36,11 @@ public:
      */
     void addDeviceJson(const juce::String& vid, const juce::String& pid, const juce::String& name, int numKeys);
 
+
+    void updateDeviceJson(const juce::String& vid, const juce::String pid, const juce::String name, int numKeys);
+
+    bool deviceExists(const juce::String& VID, const juce::String& PID);
+
     /**
      * @brief Returns the number of keys for a device matching VID and PID
      * @param vid Vendor ID

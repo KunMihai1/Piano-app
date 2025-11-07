@@ -19,6 +19,9 @@ public:
 	 * @brief Populates a vector with the current available devices for MIDI input
 	 * @param devices Vector to be populated with input devices
 	 */
+
+	std::vector<std::pair<juce::String, juce::String>> getAvailableInputDevicesNameIdentifier();
+
 	void getAvailableDevicesMidiIN(std::vector<std::string>& devices);
 
 	/**
@@ -192,6 +195,8 @@ private:
 	friend class MidiHandler;
 	void refreshDeviceList(int choice = 0);
 
+	void refreshDeviceListNew(std::vector<std::pair<juce::String,juce::String>>& vec, int choice=0);
+
 	std::vector<std::string> currentDevicesIN;
 	juce::Array<juce::MidiDeviceInfo> CachedDevicesIN;
 
@@ -210,6 +215,8 @@ private:
 	bool devicesChange = false;
 	bool isdeviceOpenIN = false;
 	bool isdeviceOpenOUT = false;
+
+	bool deviceCheckedForUpdateAtLeastOnce = false;
 	juce::String identifier;
 
 	float reverb{ 0.0f };
@@ -329,6 +336,10 @@ public:
 	 * @param note MIDI note number to determine the channel for
 	 */
 	void setCorrectChannelBasedOnHand(int note);
+
+	void updateDeviceInDBBridgeFunction(const juce::String& VID, const juce::String& PID, const juce::String name, int numKeys);
+
+	bool deviceExistsBridgeFunction(const juce::String VID, const juce::String& PID);
 
 private:
 	//void sendCCifChanged(int ccNumber, int value, int& lastSentValue);

@@ -29,6 +29,8 @@ MainComponent::MainComponent()
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
     this->toFront(true);
 
+    populateUpdateComboBoxDevices();
+
     midiHandler.onStartNoteSetting = [this]()
     {
         if (display)
@@ -250,6 +252,28 @@ void MainComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
     if (comboBoxThatHasChanged == &devicesCBUpdate)
     {
 
+    }
+}
+
+void MainComponent::populateUpdateComboBoxDevices()
+{
+    int i = 1;
+    for (auto& dev : this->MIDIDevice.getAvailableInputDevicesNameIdentifier())
+    {
+        juce::String name = dev.first;
+        juce::String identifier = dev.second;
+        juce::String PID = MIDIDevice.extractPID(identifier);
+        juce::String VID = MIDIDevice.extractVID(identifier);
+        if (midiHandler.deviceExistsBridgeFunction(VID, PID)==-1)
+            continue;
+
+        if (i == 1)
+            updateDevicesMap.clear();
+
+
+        updateDevicesMap[name] = identifier;
+
+        this->devicesCBUpdate.addItem(name, i++);
     }
 }
 
@@ -820,6 +844,7 @@ void MainComponent::updateKeysButtonInit()
 
 void MainComponent::devicesCBUpdateInit()
 {
+    devicesCBUpdate.setText("Select a device", juce::dontSendNotification);
     devicesCBUpdate.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     settingsPanel.addAndMakeVisible(devicesCBUpdate);
     devicesCBUpdate.setVisible(false);
@@ -946,6 +971,67 @@ void MainComponent::playButtonOnClick()
 
 void MainComponent::updateKeysButtonOnClick()
 {
+    juce::String selectedText = devicesCBUpdate.getText();
+    if (selectedText == "Select a device" || selectedText == "No devices found!")
+        return;
+
+    juce::String identifier = updateDevicesMap[selectedText];
+    juce::String VID = MIDIDevice.extractVID(identifier);
+    juce::String PID = MIDIDevice.extractPID(identifier);
+
+
+    auto* window = new juce::AlertWindow(
+        "Enter Number of Keys",
+        "Please enter how many keys this device has:",
+        juce::AlertWindow::QuestionIcon
+    );
+
+    window->addTextEditor("keys", "", "Number of keys");
+    window->addButton("OK", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    window->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+    window->enterModalState(
+        true, // make modal
+        juce::ModalCallbackFunction::create(
+            [this, VID, PID, selectedText, window](int result)
+            {
+                if (result == 0)
+                {
+                    delete window;
+                    return;
+                }
+
+                juce::String keysStr = window->getTextEditorContents("keys").trim();
+                delete window;
+
+                if (!keysStr.containsOnly("0123456789"))
+                {
+                    juce::AlertWindow::showMessageBoxAsync(
+                        juce::AlertWindow::WarningIcon,
+                        "Invalid Input",
+                        "Please enter a valid number of keys.");
+                    return;
+                }
+
+                int numKeys = keysStr.getIntValue();
+                if (numKeys != 49 && numKeys != 61 && numKeys != 76 && numKeys != 88)
+                {
+                    juce::AlertWindow::showMessageBoxAsync(
+                        juce::AlertWindow::WarningIcon,
+                        "Invalid Key Count",
+                        "Please enter one of: 49, 61, 76 or 88.");
+                    return;
+                }
+
+                midiHandler.updateDeviceInDBBridgeFunction(VID, PID, "", numKeys);
+
+                juce::AlertWindow::showMessageBoxAsync(
+                    juce::AlertWindow::InfoIcon,
+                    "Success",
+                    "Device updated successfully!");
+            }
+        )
+    );
+
 }
 
 juce::Image MainComponent::getImageForInstruments(const std::string& type)
