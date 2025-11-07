@@ -114,9 +114,10 @@ public:
  * and all window controls.
  */
 class MainComponent : public juce::Component,
-                      public juce::ChangeListener,
-                      public juce::KeyListener,
-                      public juce::Timer
+    public juce::ChangeListener,
+    public juce::KeyListener,
+    public juce::Timer,
+    public juce::ComboBox::Listener
 {
 public:
     /** @brief Constructor initializes UI and MIDI */
@@ -145,6 +146,8 @@ public:
 
     /** @brief Checks if the currently selected MIDI input device is valid */
     void checkMidiInputDeviceValid();
+
+    void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
 
 private:
     int initialWidth = 0;  ///< Initial window width
@@ -182,6 +185,8 @@ private:
     void toggleDisplay();
     void toggleParticleToggle();
     void toggleHandInstrumentToggle();
+    void toggleUpdateKeysButton();
+    void toggleDevicesCBUpdate();
 
     // Initialization functions
     void settingsInit();
@@ -201,12 +206,15 @@ private:
     void displayInit();
     void toggleButtonInit();
     void toggleHandButtonsInit();
+    void updateKeysButtonInit();
+    void devicesCBUpdateInit();
 
     // Button click callbacks
     void settingsButtonOnClick();
     void midiButtonOnClick();
     void homeButtonOnClick();
     void playButtonOnClick();
+    void updateKeysButtonOnClick();
 
     // Instrument/UI helpers
     juce::Image getImageForInstruments(const std::string& type);
@@ -252,6 +260,10 @@ private:
     juce::TextButton saveRecordingButton{ "Save recording" };
     juce::TextButton playRecordingFileButton{ "Play recording file" };
     juce::ToggleButton leftHandInstrumentToggle, rightHandInstrumentToggle;
+
+
+    juce::TextButton updateNumberOfKeysDevice{"Update number of keys"};
+    juce::ComboBox devicesCBUpdate;
 
     juce::DrawableButton startRecording{ "Record", juce::DrawableButton::ImageFitted };
     juce::DrawableButton stopRecording{ "Stop", juce::DrawableButton::ImageFitted };

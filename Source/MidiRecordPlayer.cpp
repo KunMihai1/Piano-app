@@ -106,6 +106,8 @@ void MidiRecordPlayer::handleIncomingMessage(const juce::MidiMessage& message)
 
     double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
     RecordedEvent ev{ newMessage,now - recordStartTime };
+
+    const SpinLock::ScopedLockType sl(lock);
     allEventsPlayed.push_back(ev);
 }
 

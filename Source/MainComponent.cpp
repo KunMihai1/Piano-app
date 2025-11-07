@@ -118,6 +118,9 @@ void MainComponent::resized()
     settingsButton.setBounds(0, 0, 250, 70);
     settingsPanel.setBounds(0, 70, 250, getHeight());
     midiButton.setBounds(0, 5, 200, 50);
+    updateNumberOfKeysDevice.setBounds(0, midiButton.getBottom() + 10, 200, 50);
+    devicesCBUpdate.setBounds(0, updateNumberOfKeysDevice.getBottom() + 5, 200, 25);
+
     helpIcon.setBounds(210, 20, 100, 20);
 
     headerPanel.setBounds(0, 0, getWidth(), 100);
@@ -239,6 +242,14 @@ void MainComponent::checkMidiInputDeviceValid()
 
         this->MIDIDevice.deviceCloseIN();
         this->MIDIDevice.deviceCloseOUT();
+    }
+}
+
+void MainComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
+{
+    if (comboBoxThatHasChanged == &devicesCBUpdate)
+    {
+
     }
 }
 
@@ -420,6 +431,20 @@ void MainComponent::toggleHandInstrumentToggle()
     else rightHandInstrumentToggle.setVisible(true);
 }
 
+void MainComponent::toggleUpdateKeysButton()
+{
+    if (updateNumberOfKeysDevice.isVisible())
+        updateNumberOfKeysDevice.setVisible(false);
+    else updateNumberOfKeysDevice.setVisible(true);
+}
+
+void MainComponent::toggleDevicesCBUpdate()
+{
+    if (devicesCBUpdate.isVisible())
+        devicesCBUpdate.setVisible(false);
+    else devicesCBUpdate.setVisible(true);
+}
+
 void MainComponent::toggleForPlaying()
 {
     if (this->midiButton.isVisible())
@@ -432,6 +457,10 @@ void MainComponent::toggleForPlaying()
         this->settingsPanel.setVisible(false);
     if (this->settingsButton.isVisible())
         this->settingsButton.setVisible(false);
+    if (this->updateNumberOfKeysDevice.isVisible())
+        this->updateNumberOfKeysDevice.setVisible(false);
+    if (this->devicesCBUpdate.isVisible())
+        this->devicesCBUpdate.setVisible(false);
 }
 
 void MainComponent::settingsInit()
@@ -444,6 +473,8 @@ void MainComponent::settingsInit()
     panelInit();
     midiSettingsInit();
     midiIconInit();
+    updateKeysButtonInit();
+    devicesCBUpdateInit();
 }
 
 
@@ -773,9 +804,30 @@ void MainComponent::toggleHandButtonsInit()
 
 }
 
+void MainComponent::updateKeysButtonInit()
+{
+    updateNumberOfKeysDevice.setButtonText("Update number of keys");
+    updateNumberOfKeysDevice.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    updateNumberOfKeysDevice.onClick = [this]()
+    {
+        updateKeysButtonOnClick();
+    };
+
+    settingsPanel.addAndMakeVisible(updateNumberOfKeysDevice);
+    updateNumberOfKeysDevice.setVisible(false);
+}
+
+void MainComponent::devicesCBUpdateInit()
+{
+    devicesCBUpdate.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    settingsPanel.addAndMakeVisible(devicesCBUpdate);
+    devicesCBUpdate.setVisible(false);
+}
+
 void MainComponent::settingsButtonOnClick()
 {
-    toggleSettingsPanel(); toggleMIDIButton(); toggleMIDIsettingsIcon();
+    toggleSettingsPanel(); toggleMIDIButton(); toggleMIDIsettingsIcon(); toggleUpdateKeysButton(); toggleDevicesCBUpdate();
 }
 
 void MainComponent::midiButtonOnClick()
@@ -890,6 +942,10 @@ void MainComponent::playButtonOnClick()
         keyboard.repaint();
         toggleForPlaying();
     }
+}
+
+void MainComponent::updateKeysButtonOnClick()
+{
 }
 
 juce::Image MainComponent::getImageForInstruments(const std::string& type)

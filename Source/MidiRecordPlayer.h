@@ -122,6 +122,8 @@ private:
     int nextEventIndex = 0;                      /**< Next event index during playback */
     int nextEventFileIndex = 0;                  /**< Next event index for file playback */
 
+    juce::SpinLock lock;
+
     std::weak_ptr<juce::MidiOutput> midiOutputDevice; /**< MIDI output device */
     std::vector<RecordedEvent> allEventsPlayed;       /**< Recorded events from live input */
     std::vector<RecordedEvent> allEventsPlayedFile;   /**< Events loaded from file */
