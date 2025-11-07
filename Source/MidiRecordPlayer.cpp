@@ -107,7 +107,7 @@ void MidiRecordPlayer::handleIncomingMessage(const juce::MidiMessage& message)
     double now = juce::Time::getMillisecondCounterHiRes() * 0.001;
     RecordedEvent ev{ newMessage,now - recordStartTime };
 
-    const SpinLock::ScopedLockType sl(lock);
+    const juce::SpinLock::ScopedLockType sl(lock);
     allEventsPlayed.push_back(ev);
 }
 
@@ -121,34 +121,49 @@ void MidiRecordPlayer::timerCallback()
 
     if (isPlaying)
     {
-        while (nextEventIndex < allEventsPlayed.size() && allEventsPlayed[nextEventIndex].timeFromStart <= elapsedTime)
+        while (true)
         {
-            if (auto midiOutShared = midiOutputDevice.lock())
+            RecordedEvent ev;
             {
-                if (isPlaying)
-                    midiOutShared->sendMessageNow(allEventsPlayed[nextEventIndex].message);
+                const juce::SpinLock::ScopedLockType sl(lock);
+                if (nextEventIndex >= allEventsPlayed.size() ||
+                    allEventsPlayed[nextEventIndex].timeFromStart > elapsedTime)
+                    break;
+
+                ev = allEventsPlayed[nextEventIndex];
                 nextEventIndex++;
             }
+
+            if (auto midiOutShared = midiOutputDevice.lock())
+                midiOutShared->sendMessageNow(ev.message);
         }
+
         if (nextEventIndex >= allEventsPlayed.size())
             stopPlayBack();
     }
 
     else if (isPlayingFile)
     {
-        while (nextEventFileIndex < allEventsPlayedFile.size() && allEventsPlayedFile[nextEventFileIndex].timeFromStart <= elapsedTime)
+        while (true)
         {
-            if (auto midiOutShared = midiOutputDevice.lock())
+            RecordedEvent ev;
             {
-                if (isPlayingFile)
-                    midiOutShared->sendMessageNow(allEventsPlayedFile[nextEventFileIndex].message);
+                const juce::SpinLock::ScopedLockType sl(lock);
+                if (nextEventFileIndex >= allEventsPlayedFile.size() ||
+                    allEventsPlayedFile[nextEventFileIndex].timeFromStart > elapsedTime)
+                    break;
+
+                ev = allEventsPlayedFile[nextEventFileIndex];
                 nextEventFileIndex++;
             }
+
+            if (auto midiOutShared = midiOutputDevice.lock())
+                midiOutShared->sendMessageNow(ev.message);
         }
+
         if (nextEventFileIndex >= allEventsPlayedFile.size())
             stopRecordingFilePlaying();
     }
-
 }
 
 void MidiRecordPlayer::setOutputDevice(std::weak_ptr<juce::MidiOutput> outputDev)
