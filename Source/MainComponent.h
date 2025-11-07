@@ -252,6 +252,8 @@ private:
     std::vector<std::string> devicesIN;  ///< List of input devices
     std::vector<std::string> devicesOUT; ///< List of output devices
 
+    int last=-1, lastOfLast=-1;
+
     // UI buttons and toggles
     juce::TextButton settingsButton{ "Settings" };
     juce::TextButton midiButton{ "MIDI Settings" };
