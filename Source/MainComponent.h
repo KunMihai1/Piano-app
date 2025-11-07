@@ -149,7 +149,10 @@ public:
 
     void comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged) override;
 
+    void populateUpdateComboBoxDevices();
+
 private:
+
     int initialWidth = 0;  ///< Initial window width
     int initialHeight = 0; ///< Initial window height
 
@@ -260,7 +263,8 @@ private:
     juce::TextButton saveRecordingButton{ "Save recording" };
     juce::TextButton playRecordingFileButton{ "Play recording file" };
     juce::ToggleButton leftHandInstrumentToggle, rightHandInstrumentToggle;
-
+    
+    std::unordered_map<juce::String, juce::String> updateDevicesMap;
 
     juce::TextButton updateNumberOfKeysDevice{"Update number of keys"};
     juce::ComboBox devicesCBUpdate;
