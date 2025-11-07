@@ -29,7 +29,8 @@ MainComponent::MainComponent()
     MIDIDevice.getAvailableDevicesMidiOUT(this->devicesOUT);
     this->toFront(true);
 
-    populateUpdateComboBoxDevices();
+    if(settingsPanel.isVisible())
+        populateUpdateComboBoxDevices();
 
     midiHandler.onStartNoteSetting = [this]()
     {
@@ -219,6 +220,9 @@ void MainComponent::timerCallback()
 {
     if(this->keyListener.getIsKeyboardInput()==false)
         checkMidiInputDeviceValid();
+
+    if (settingsPanel.isVisible())
+        populateUpdateComboBoxDevices();
 }
 
 void MainComponent::checkMidiInputDeviceValid()
@@ -257,6 +261,17 @@ void MainComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 
 void MainComponent::populateUpdateComboBoxDevices()
 {
+    bool ok = false;
+    if (last == -1 || last != MIDIDevice.getNrInputActualDevices())
+    {
+        lastOfLast = last;
+        last = MIDIDevice.getNrInputActualDevices();
+        ok = true;
+    }
+
+    if (!ok)
+        return;
+    devicesCBUpdate.clear();
     int i = 1;
     for (auto& dev : this->MIDIDevice.getAvailableInputDevicesNameIdentifier())
     {
@@ -268,13 +283,19 @@ void MainComponent::populateUpdateComboBoxDevices()
             continue;
 
         if (i == 1)
-            updateDevicesMap.clear();
+            updateDevicesMap.clear(); //map needs to be here because if we are here that means there has been at least a change in the devices, otherwise we clear the map each time
 
 
         updateDevicesMap[name] = identifier;
 
         this->devicesCBUpdate.addItem(name, i++);
     }
+    if(lastOfLast!=-1)
+    {
+        devicesCBUpdate.hidePopup();
+        devicesCBUpdate.showPopup();
+    }
+    devicesCBUpdate.setSelectedId(1);
 }
 
 void MainComponent::initalizeSaveFileForUser()

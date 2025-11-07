@@ -191,6 +191,8 @@ public:
 	 */
 	juce::String extractVID(const juce::String& indentifierReceived);
 
+	int getNrInputActualDevices();
+
 private:
 	friend class MidiHandler;
 	void refreshDeviceList(int choice = 0);
