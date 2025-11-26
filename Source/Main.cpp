@@ -67,13 +67,16 @@ public:
             setUsingNativeTitleBar(true);
             setContentOwned(new MainComponent(), true);
 
-#if JUCE_IOS || JUCE_ANDROID
+            /*
+        #if JUCE_IOS || JUCE_ANDROID
             setFullScreen(true);
-#else
+        #else
             setResizable(true, false);
             centreWithSize(getWidth(), getHeight());
-#endif
+        #endif
 
+        */
+            setFullScreen(true);
             setVisible(true);
         }
 

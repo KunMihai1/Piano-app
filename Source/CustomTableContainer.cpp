@@ -352,9 +352,9 @@ bool TableContainer::validForErase(MidiChangeInfo& info)
     return false;
 }
 
-void TableContainer::applyChangeToSequence(int index, const MidiChangeInfo& info, bool modifyVelocity)
+void TableContainer::applyChangeToSequence(int originalIndex, const MidiChangeInfo& info, bool modifyVelocity)
 {
-    auto* e = originalSequence.getEventPointer(index);
+    auto* e = originalSequence.getEventPointer(originalIndex);
     if (e == nullptr)
         return;
 
@@ -581,7 +581,8 @@ void TableContainer::resetPropertyAndApply(const std::function<void(MidiChangeIn
             for (int row = range.getStart(); row < range.getEnd(); ++row)
             {
                 int originalIndex = model->getOriginalIndexFromRow(row);
-                auto it = changesMap.find(originalIndex);
+                int noteOnIndex = model->getChangesMapIndexFromRow(row);
+                auto it = changesMap.find(noteOnIndex);
 
                 if (it != changesMap.end())
                 {
@@ -602,8 +603,10 @@ void TableContainer::resetPropertyAndApply(const std::function<void(MidiChangeIn
             auto& key = it->first;
             auto& info = it->second;
 
+            int originalIndex = model->getOriginalIndexFromRow(key);
+
             resetProperty(info);
-            applyChangeToSequence(key, info, modifyVelocity);
+            applyChangeToSequence(originalIndex, info, modifyVelocity);
 
             if (validForErase(info))
                 it = changesMap.erase(it);
@@ -623,7 +626,8 @@ void TableContainer::newPropertyAndApply(const std::function<void(MidiChangeInfo
             for (int row = range.getStart(); row < range.getEnd(); ++row)
             {
                 int originalIndex = model->getOriginalIndexFromRow(row);
-                newPropertyHelperFunction(newProperty, selected, modifyVelocity, originalIndex);
+                int noteOnIndex = model->getChangesMapIndexFromRow(row);
+                newPropertyHelperFunction(newProperty, selected, modifyVelocity,originalIndex, noteOnIndex);
             }
         }
     }
@@ -632,13 +636,14 @@ void TableContainer::newPropertyAndApply(const std::function<void(MidiChangeInfo
         for (auto& entry : model->getEvents())
         {
             auto& originalIndex = entry.originalIndex;
-            newPropertyHelperFunction(newProperty, selected, modifyVelocity, originalIndex);
+            auto& noteOnIndex = entry.indexForChangesMap;
+            newPropertyHelperFunction(newProperty, selected, modifyVelocity,originalIndex, noteOnIndex);
         }
     }
 
 }
 
-void TableContainer::newPropertyHelperFunction(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected, bool modifyVelocity, int originalIndex)
+void TableContainer::newPropertyHelperFunction(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected, bool modifyVelocity, int originalIndex, int noteOnIndex)
 {
     auto* e = originalSequence.getEventPointer(originalIndex);
     if (e == nullptr)
@@ -667,7 +672,7 @@ void TableContainer::newPropertyHelperFunction(const std::function<void(MidiChan
     //only one look up variant, intersting
 
 
-    auto [it, inserted] = changesMap.try_emplace(originalIndex);
+    auto [it, inserted] = changesMap.try_emplace(noteOnIndex);
     MidiChangeInfo& info = it->second;
 
     if (inserted)
@@ -689,7 +694,7 @@ void TableContainer::newPropertyHelperFunction(const std::function<void(MidiChan
         applyChangeToSequence(originalIndex, info);
 
     if (validForErase(info))
-        changesMap.erase(originalIndex);
+        changesMap.erase(noteOnIndex);
 }
 
 void TableContainer::showModifyChangeDialog(

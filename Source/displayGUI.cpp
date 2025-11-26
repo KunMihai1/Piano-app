@@ -259,7 +259,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
     double bpmToUse = currentStyleComponent->getTempo();
     DBG("BPM TO USE:" + juce::String(bpmToUse));
     currentStyleComponent->applyBPMchangeBeforePlayback(bpmToUse);
-    //currentStyleComponent->applyChangesForAllTracksCurrentStyle();
+    currentStyleComponent->applyChangesForAllTracksCurrentStyle();
 }
 
 void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> onTrackSelected)
@@ -1522,12 +1522,16 @@ void CurrentStyleComponent::setDeviceOutputCurrentStyle(std::weak_ptr<juce::Midi
 
 void CurrentStyleComponent::applyChangesForOneTrack(TrackEntry& track)
 {
-    track.sequence = track.originalSequenceTicks;
-    track.sequence.updateMatchedPairs();
+    //track.sequence = track.originalSequenceTicks;
+    //track.sequence.updateMatchedPairs();
 
     auto it = track.styleChangesMap.find(styleID);
     if (it != track.styleChangesMap.end())
-        TrackIOHelper::applyChangesToASequence(track.sequence, it->second);
+    {
+        std::vector<juce::MidiMessage*> toApply;
+        TrackIOHelper::extractNoteOnEvents(track.sequence, toApply);
+        TrackIOHelper::applyChangesToASequence(toApply, it->second);
+    }
 }
 
 void CurrentStyleComponent::applyChangesForAllTracksCurrentStyle()
@@ -1661,7 +1665,7 @@ void CurrentStyleComponent::syncPercussionTracksVolumeChange(double newVolume)
     }
 }
 
-void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool whenLoading)
+void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool whenLoading, bool applyStyleChanges)
 {
     if (userBPM <= 0.0)
         userBPM = 120.0;
@@ -1700,6 +1704,7 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool wh
             scaledSequence.addEvent(newMsg);
         }
 
+        /*
         for (auto& [noteId, change] : tr->styleChangesMap[styleID])
         {
             change.oldTimeStamp *= ratio;
@@ -1720,6 +1725,7 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool wh
                 }
             }
         }
+        */
 
         scaledSequence.sort();
         scaledSequence.updateMatchedPairs();

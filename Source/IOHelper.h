@@ -90,7 +90,12 @@ public:
      */
     static void applyChangesToASequence(juce::MidiMessageSequence& sequence, const std::unordered_map<int, MidiChangeInfo>& changesMap);
 
+    static void applyChangesToASequence(std::vector<juce::MidiMessage*>& events, const std::unordered_map<int, MidiChangeInfo>& changesMap);
+
+    static void extractNoteOnEvents(juce::MidiMessageSequence& sequence, std::vector<juce::MidiMessage*>& noteOnVector);
+
 private:
+    
 };
 
 /**
