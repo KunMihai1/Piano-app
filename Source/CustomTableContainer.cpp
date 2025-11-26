@@ -361,8 +361,6 @@ void TableContainer::applyChangeToSequence(int originalIndex, const MidiChangeIn
     if (e == nullptr)
         return;
 
-    DBG("In the original seq:" + juce::String(e->message.getNoteNumber()) + "  TS:" + juce::String(e->message.getTimeStamp()));
-
     if (e->message.isNoteOn())
     {
         double duration=0.0;
@@ -587,8 +585,6 @@ void TableContainer::resetPropertyAndApply(const std::function<void(MidiChangeIn
             {
                 int originalIndex = model->getOriginalIndexFromRow(row);
                 int noteOnIndex = model->getChangesMapIndexFromRow(row);
-
-                DBG("Original index:" + juce::String(originalIndex) + " noteOnIndex:" + juce::String(noteOnIndex));
 
                 auto it = changesMap.find(noteOnIndex);
 
