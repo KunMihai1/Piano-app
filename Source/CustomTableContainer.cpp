@@ -324,12 +324,15 @@ void TableContainer::allProperties()
     for (auto& pair : changesMap)
     {
         auto& key = pair.first;
+        
+        int originalIndex = model->getOriginalIndexFromRow(key);
+
         auto& info = pair.second;
         info.newNumber = info.oldNumber;
         info.newTimeStamp = info.oldTimeStamp;
         info.newVelocity = info.oldVelocity;
 
-        applyChangeToSequence(key, info);
+        applyChangeToSequence(originalIndex, info);
     }
     changesMap.clear();
 }
@@ -357,6 +360,8 @@ void TableContainer::applyChangeToSequence(int originalIndex, const MidiChangeIn
     auto* e = originalSequence.getEventPointer(originalIndex);
     if (e == nullptr)
         return;
+
+    DBG("In the original seq:" + juce::String(e->message.getNoteNumber()) + "  TS:" + juce::String(e->message.getTimeStamp()));
 
     if (e->message.isNoteOn())
     {
@@ -582,6 +587,9 @@ void TableContainer::resetPropertyAndApply(const std::function<void(MidiChangeIn
             {
                 int originalIndex = model->getOriginalIndexFromRow(row);
                 int noteOnIndex = model->getChangesMapIndexFromRow(row);
+
+                DBG("Original index:" + juce::String(originalIndex) + " noteOnIndex:" + juce::String(noteOnIndex));
+
                 auto it = changesMap.find(noteOnIndex);
 
                 if (it != changesMap.end())

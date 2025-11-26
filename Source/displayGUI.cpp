@@ -1528,9 +1528,12 @@ void CurrentStyleComponent::applyChangesForOneTrack(TrackEntry& track)
     auto it = track.styleChangesMap.find(styleID);
     if (it != track.styleChangesMap.end())
     {
-        std::vector<juce::MidiMessage*> toApply;
-        TrackIOHelper::extractNoteOnEvents(track.sequence, toApply);
+        std::vector<TrackIOHelper::NotePair> toApply;
+        TrackIOHelper::extractNotePairEvents(track.sequence, toApply);
         TrackIOHelper::applyChangesToASequence(toApply, it->second);
+
+        track.sequence.sort();
+        track.sequence.updateMatchedPairs();
     }
 }
 

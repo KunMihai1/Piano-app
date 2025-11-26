@@ -45,6 +45,11 @@ private:
 class TrackIOHelper
 {
 public:
+    struct NotePair {
+        juce::MidiMessage* noteOn;
+        juce::MidiMessage* noteOff;
+    };
+
     /**
      * @brief Saves grouped tracks to a file in JSON format.
      * @param file File to save the data
@@ -90,9 +95,9 @@ public:
      */
     static void applyChangesToASequence(juce::MidiMessageSequence& sequence, const std::unordered_map<int, MidiChangeInfo>& changesMap);
 
-    static void applyChangesToASequence(std::vector<juce::MidiMessage*>& events, const std::unordered_map<int, MidiChangeInfo>& changesMap);
+    static void applyChangesToASequence(std::vector<NotePair>& events, const std::unordered_map<int, MidiChangeInfo>& changesMap);
 
-    static void extractNoteOnEvents(juce::MidiMessageSequence& sequence, std::vector<juce::MidiMessage*>& noteOnVector);
+    static void extractNotePairEvents(juce::MidiMessageSequence& sequence, std::vector<NotePair>& noteOnVector);
 
 private:
     

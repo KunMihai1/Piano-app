@@ -52,7 +52,8 @@ void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
         if (filteredSeq.getNumEvents() > 0)
         {
             filteredSeq.updateMatchedPairs();
-
+            
+            /*
             for (int e = 0; e < filteredSeq.getNumEvents(); ++e)
             {
                 auto* event = filteredSeq.getEventPointer(e);
@@ -60,10 +61,12 @@ void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
                 shiftedMsg.setTimeStamp(shiftedMsg.getTimeStamp() + startupDelay);
                 filteredSeq.getEventPointer(e)->message = shiftedMsg;
             }
+            */
 
             filteredSequences.push_back(filteredSeq);
             int newIndex = static_cast<int>(filteredSequences.size()) - 1;
             tracks.push_back(TrackPlaybackData{ newIndex, 0 });
+            
         }
     }
 }
