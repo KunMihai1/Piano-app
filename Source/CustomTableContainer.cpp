@@ -761,6 +761,8 @@ void TableContainer::showModifyChangeDialog(
                        double timeStampCurrentNoteOn = model->getCurrentNoteOnTimeStamp(currentRow);
                        double timeStampNextNoteOn = model->getNextNoteOnTimeStamp(currentRow);
 
+                       DBG("Time stamps:" + juce::String(timeStampPreviousNoteOn) + " " + juce::String(timeStampCurrentNoteOn) + " " + juce::String(timeStampNextNoteOn));
+
                        if (timeStampPreviousNoteOn == -1)
                            return;
 
