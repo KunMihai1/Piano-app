@@ -29,18 +29,14 @@ bool Validator::isValidMidiDoubleValueTimeStamps(double value, double currentTim
     if (!isValidMidiDoubleValue(value))
         return false;
 
-    if (currentTimeStamp + value < 0)
+    double newTime = currentTimeStamp + value;
+    if (newTime < 0.0)
         return false;
 
-
-
-    if (currentTimeStamp != previousTimeStamp && currentTimeStamp + value - previousTimeStamp < 0)
+    if (newTime - previousTimeStamp < 0.0)
         return false;
 
-    else if (currentTimeStamp == previousTimeStamp && currentTimeStamp + value < 0)
-        return false;
-
-    else if (currentTimeStamp + value - nextTimeStamp > 0)
+    if (newTime - nextTimeStamp > 0.0)
         return false;
 
     return true;
