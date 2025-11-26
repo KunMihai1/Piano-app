@@ -759,11 +759,12 @@ void TableContainer::showModifyChangeDialog(
 
                        double timeStampPreviousNoteOn=model->getPreviousNoteOnTimeStamp(currentRow);
                        double timeStampCurrentNoteOn = model->getCurrentNoteOnTimeStamp(currentRow);
+                       double timeStampNextNoteOn = model->getNextNoteOnTimeStamp(currentRow);
 
                        if (timeStampPreviousNoteOn == -1)
                            return;
 
-                       if (!Validator::isValidMidiDoubleValueTimeStamps(doubleValue,timeStampCurrentNoteOn,timeStampPreviousNoteOn))
+                       if (!Validator::isValidMidiDoubleValueTimeStamps(doubleValue,timeStampCurrentNoteOn,timeStampPreviousNoteOn,timeStampNextNoteOn))
                        {
                            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify time stamps", "Invalid value");
                            return;

@@ -63,7 +63,7 @@ public:
      * @param previousTimeStamp Optional previous timestamp (default -1).
      * @return true if valid, false otherwise.
      */
-    static bool isValidMidiDoubleValueTimeStamps(double value, double currentTimeStamp=-1, double previousTimeStamp=-1);
+    static bool isValidMidiDoubleValueTimeStamps(double value, double currentTimeStamp=-1, double previousTimeStamp=-1, double nextTimeStamp=-1);
 
     /**
      * @brief Checks if a string represents a valid MIDI double value.

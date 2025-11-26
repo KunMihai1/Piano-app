@@ -24,7 +24,7 @@ bool Validator::isValidMidiDoubleValue(double value)
     return true;
 }
 
-bool Validator::isValidMidiDoubleValueTimeStamps(double value, double currentTimeStamp, double previousTimeStamp)
+bool Validator::isValidMidiDoubleValueTimeStamps(double value, double currentTimeStamp, double previousTimeStamp, double nextTimeStamp)
 {
     if (!isValidMidiDoubleValue(value))
         return false;
@@ -38,6 +38,9 @@ bool Validator::isValidMidiDoubleValueTimeStamps(double value, double currentTim
         return false;
 
     else if (currentTimeStamp == previousTimeStamp && currentTimeStamp + value < 0)
+        return false;
+
+    else if (currentTimeStamp + value - nextTimeStamp > 0)
         return false;
 
     return true;

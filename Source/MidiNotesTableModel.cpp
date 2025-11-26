@@ -380,6 +380,20 @@ double MidiNotesTableModel::getCurrentNoteOnTimeStamp(int currentIndex)
     return noteOnEvents[currentIndex].event->message.getTimeStamp();
 }
 
+double MidiNotesTableModel::getNextNoteOnTimeStamp(int currentIndex)
+{
+    if (noteOnEvents.empty() || currentIndex == -1)
+        return -1;
+
+    if (currentIndex >= noteOnEvents.size())
+        return -1;
+
+    if (currentIndex == noteOnEvents.size() - 1)
+        return noteOnEvents[currentIndex].event->message.getTimeStamp();
+
+    return noteOnEvents[currentIndex + 1].event->message.getTimeStamp();
+}
+
 std::vector<MidiNotesTableModel::EventWithIndex> MidiNotesTableModel::getEvents()
 {
     return noteOnEvents;
