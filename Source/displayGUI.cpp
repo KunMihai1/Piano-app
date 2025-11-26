@@ -272,6 +272,11 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
 
             onTrackSelected(track.getDisplayName(), track.getUniqueID(), typeString);
 
+            mapUuidToTrack[track.getUniqueID()] = &track;
+            
+            if (currentStyleComponent)
+                currentStyleComponent->applyBPMchangeForOne(currentStyleComponent->getTempo(), track.getUniqueID());
+
             //if (mapNameToTrack.empty())
               //  mapNameToTrack = buildTrackNameMap();
 
@@ -284,6 +289,7 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
                 tabComp->setCurrentTabIndex(in);
             }
         });
+
     trackListComp->addListener(this);
 
     trackListComp->onRemoveTrack = [this](const juce::Uuid& uuid)
@@ -893,7 +899,6 @@ std::unordered_map<juce::Uuid, TrackEntry*> Display::buildTrackUuidMap()
 
     for (auto& [folderName, tracks] : *groupedTracks)
     {
-        DBG("yuppiii");
         for (auto& tr : tracks)
         {
             map[tr.getUniqueID()] = &tr;
@@ -1444,7 +1449,10 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
             if (onRequestTrackSelectionFromTrack)
                 onRequestTrackSelectionFromTrack(trackChosenCallback);
 
-            applyBPMchangeForOne(currentTempo, newTrack->getUsedID());
+            
+
+            //DBG("Current tempo before change:" + juce::String(currentTempo));
+            //applyBPMchangeForOne(currentTempo, newTrack->getUsedID());
         };
 
         newTrack->isPlaying = [this]() {
@@ -1707,29 +1715,6 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool wh
             scaledSequence.addEvent(newMsg);
         }
 
-        /*
-        for (auto& [noteId, change] : tr->styleChangesMap[styleID])
-        {
-            change.oldTimeStamp *= ratio;
-            change.newTimeStamp *= ratio;
-
-            double shift = change.newTimeStamp - change.oldTimeStamp;
-
-            for (int i = 0; i < scaledSequence.getNumEvents(); ++i)
-            {
-                auto& msg = scaledSequence.getEventPointer(i)->message;
-
-                if ((msg.isNoteOn() || msg.isNoteOff()) && msg.getNoteNumber() == change.oldNumber)
-                {
-                    if (std::abs(msg.getTimeStamp() - change.oldTimeStamp) < 0.01)
-                    {
-                        msg.setTimeStamp(msg.getTimeStamp() + shift);
-                    }
-                }
-            }
-        }
-        */
-
         scaledSequence.sort();
         scaledSequence.updateMatchedPairs();
 
@@ -1796,11 +1781,16 @@ void CurrentStyleComponent::applyBPMchangeForOne(double userBPM, const juce::Uui
 
     auto& tr = mapUuidToTrackEntry[uuid];
     if (tr == nullptr)
+    {
+        DBG("Track not found in mapUuidToTrackEntry for uuid: " + uuid.toString());
         return;
+    }
 
     juce::MidiMessageSequence scaledSequence;
 
     double trackOriginalBPM = (tr->originalBPM > 0.0) ? tr->originalBPM : 120.0;
+
+    DBG("BPMS: " + juce::String(userBPM) + " " + juce::String(trackOriginalBPM));
 
     for (int i = 0; i < tr->originalSequenceTicks.getNumEvents(); ++i)
     {
@@ -2429,6 +2419,7 @@ void Track::mouseDown(const juce::MouseEvent& event)
                 onRequestTrackSelection([this](const juce::String& selectedTrack, const juce::Uuid& uuid, const juce::String& type)
                     {
                         setNameLabel(selectedTrack);
+                        DBG("Track selection uuid:" + uuid.toString());
                         setUUID(uuid);
                         setTypeOfTrack(type);
                         if (type.trim() == "percussion")
