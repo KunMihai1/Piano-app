@@ -99,6 +99,8 @@ public:
     /** @brief Returns the timestamp of the current note-on event given a row index */
     double getCurrentNoteOnTimeStamp(int currentIndex);
 
+    double getNextNoteOnTimeStamp(int currentIndex);
+
     /** @brief Returns a vector of all stored note-on events */
     std::vector<EventWithIndex> getEvents();
 
