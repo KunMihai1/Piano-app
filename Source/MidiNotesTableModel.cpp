@@ -12,17 +12,11 @@
 
 MidiNotesTableModel::MidiNotesTableModel(const juce::MidiMessageSequence& seq, int ch, std::unordered_map<int, MidiChangeInfo>& map): channel{ch}, changesMap{&map}
 {
-    int ok = 0;
     for (int i = 0; i < seq.getNumEvents(); ++i)
     {
         const auto* event = seq.getEventPointer(i);
         if (event != nullptr && event->message.isNoteOn())
         {
-            if (ok == 0)
-            {
-                ok = 1;
-                DBG("Inauntru la table model cand am deschis: " + juce::String(i) + " si " + juce::String(event->message.getNoteNumber()) + " " + juce::String(event->message.getTimeStamp()) + " smecherie:" + juce::String(noteOnEvents.size()));
-            }
             int indexInNoteOn = noteOnEvents.size();
             noteOnEvents.push_back({ event, i, indexInNoteOn });
             //originalIndexToRowMap[i] = noteOnEvents.size()-1;

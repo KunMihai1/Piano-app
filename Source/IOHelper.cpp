@@ -189,17 +189,6 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
             tr.sequence.updateMatchedPairs();
             tr.originalBPM = originalBpm;
             tr.folderName = folderName;
-            int c = 0;
-            for (int i = 0; i < tr.sequence.getNumEvents(); i++)
-            {
-                const auto* event = tr.sequence.getEventPointer(i);
-                if (event != nullptr && event->message.isNoteOn())
-                {
-                    DBG("In loading, primul note on event este la: " + juce::String(i) + " pentru: " + tr.displayName + " si " + juce::String(event->message.getNoteNumber()) + " " + juce::String(event->message.getTimeStamp())+" smecherie:" + juce::String(c));
-                    break;
-                }
-
-            }
 
             if (foundPercussion(sequence))
                 tr.type = TrackType::Percussion;
@@ -320,73 +309,109 @@ void TrackIOHelper::convertTicksToSeconds(juce::MidiFile& midiFile, double bpm)
 
 void TrackIOHelper::applyChangesToASequence(juce::MidiMessageSequence& sequence, const std::unordered_map<int, MidiChangeInfo>& changesMap)
 {
+    sequence.updateMatchedPairs();
+
     for (const auto& [row, changeInfo] : changesMap)
     {
         if (row < 0 || row >= sequence.getNumEvents())
             continue;
 
-        auto* eventHolder = sequence.getEventPointer(row);
-        if (eventHolder == nullptr)
+        auto* onEvent = sequence.getEventPointer(row);
+        if (!onEvent)
             continue;
 
-        auto& msg = eventHolder->message;
+        auto& msgOn = onEvent->message;
 
-        if (msg.isNoteOnOrOff())
-        {
-            int channel = msg.getChannel();
-            bool isNoteOn = msg.isNoteOn();
-            juce::MidiMessage newMsg;
-            if (isNoteOn)
-                newMsg = juce::MidiMessage::noteOn(channel, changeInfo.newNumber, (juce::uint8)changeInfo.newVelocity);
-            else
-                newMsg = juce::MidiMessage::noteOff(channel, changeInfo.newNumber);
+        if (!msgOn.isNoteOn())
+            continue;
 
+        auto* offEvent = onEvent->noteOffObject;
+        if (!offEvent)
+            continue;
 
-            newMsg.setTimeStamp(changeInfo.newTimeStamp);
+        auto& msgOff = offEvent->message;
 
-            eventHolder->message = newMsg;
-        }
+        double onTime = msgOn.getTimeStamp();
+        double offTime = msgOff.getTimeStamp();
+        double duration = offTime - onTime;
+        if (duration < 0)
+            duration = 0.0;
 
+        int channel = msgOn.getChannel();
+
+        juce::MidiMessage newOn = juce::MidiMessage::noteOn(
+            channel,
+            changeInfo.newNumber,
+            (juce::uint8)changeInfo.newVelocity
+        );
+        newOn.setTimeStamp(changeInfo.newTimeStamp);
+
+        juce::MidiMessage newOff = juce::MidiMessage::noteOff(
+            channel,
+            changeInfo.newNumber
+        );
+        newOff.setTimeStamp(changeInfo.newTimeStamp + duration);
+
+        msgOn = newOn;
+        msgOff = newOff;
     }
+
+    sequence.sort();
+    sequence.updateMatchedPairs();
 }
 
-void TrackIOHelper::applyChangesToASequence(std::vector<juce::MidiMessage*>& events, const std::unordered_map<int, MidiChangeInfo>& changesMap)
+void TrackIOHelper::applyChangesToASequence(std::vector<NotePair>& pairs, const std::unordered_map<int, MidiChangeInfo>& changesMap)
 {
     for (const auto& [row, changeInfo] : changesMap)
     {
-        if (row < 0 || row >= events.size())
+        if (row < 0 || row >= pairs.size())
             continue;
 
-        auto* msg = events[row];
-        if (msg == nullptr)
+        auto& pair = pairs[row];
+        auto* msgOn = pair.noteOn;
+        auto* msgOff = pair.noteOff;
+
+        if (!msgOn || !msgOff)
             continue;
 
-        if (msg->isNoteOnOrOff())
-        {
-            int channel = msg->getChannel();
-            bool isNoteOn = msg->isNoteOn();
-            juce::MidiMessage newMsg;
+        int channel = msgOn->getChannel();
 
-            if (isNoteOn)
-                newMsg = juce::MidiMessage::noteOn(channel, changeInfo.newNumber, (juce::uint8)changeInfo.newVelocity);
-            else
-                newMsg = juce::MidiMessage::noteOff(channel, changeInfo.newNumber);
+        double oldOn = msgOn->getTimeStamp();
+        double oldOff = msgOff->getTimeStamp();
+        double duration = oldOff - oldOn;
+        if (duration < 0)
+            duration = 0; 
 
-            newMsg.setTimeStamp(changeInfo.newTimeStamp);
+        juce::MidiMessage newOn = juce::MidiMessage::noteOn(
+            channel, changeInfo.newNumber, (juce::uint8)changeInfo.newVelocity
+        );
+        newOn.setTimeStamp(changeInfo.newTimeStamp);
 
-            *msg = newMsg;
-        }
+        juce::MidiMessage newOff = juce::MidiMessage::noteOff(
+            channel, changeInfo.newNumber
+        );
+        newOff.setTimeStamp(changeInfo.newTimeStamp + duration);
+
+        *msgOn = newOn;
+        *msgOff = newOff;
     }
 }
 
-void TrackIOHelper::extractNoteOnEvents(juce::MidiMessageSequence& sequence, std::vector<juce::MidiMessage*>& noteOnVector)
+void TrackIOHelper::extractNotePairEvents(juce::MidiMessageSequence& sequence, std::vector<NotePair>& notesVector)
 {
     for (int i = 0; i < sequence.getNumEvents(); i++)
     {
         auto* event = sequence.getEventPointer(i);
-        if (event != nullptr && event->message.isNoteOn())
+        if (!event)
+            continue;
+
+        if (event->message.isNoteOn())
         {
-            noteOnVector.push_back(&event->message);
+            auto* off = event->noteOffObject;
+            if (off)
+            {
+                notesVector.push_back({ &event->message,&off->message });
+            }
         }
     }
 }
