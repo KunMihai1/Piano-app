@@ -554,7 +554,7 @@ public:
      * @param userBPM The new user-defined tempo.
      * @param whenLoad Whether this was triggered during loading.
      */
-    void applyBPMchangeBeforePlayback(double userBPM, bool whenLoad = false);
+    void applyBPMchangeBeforePlayback(double userBPM, bool whenLoad = false, bool applyStyleChanges=false);
 
     /**
      * @brief Applies BPM scaling to a specific track only.

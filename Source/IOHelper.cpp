@@ -160,6 +160,8 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
 
         convertTicksToSeconds(midiFile, originalBpm);
 
+        int ok = 0;
+
         for (auto& trackItem : *trackArray)
         {
             auto* trackObj = trackItem.getDynamicObject();
@@ -187,6 +189,17 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
             tr.sequence.updateMatchedPairs();
             tr.originalBPM = originalBpm;
             tr.folderName = folderName;
+            int c = 0;
+            for (int i = 0; i < tr.sequence.getNumEvents(); i++)
+            {
+                const auto* event = tr.sequence.getEventPointer(i);
+                if (event != nullptr && event->message.isNoteOn())
+                {
+                    DBG("In loading, primul note on event este la: " + juce::String(i) + " pentru: " + tr.displayName + " si " + juce::String(event->message.getNoteNumber()) + " " + juce::String(event->message.getTimeStamp())+" smecherie:" + juce::String(c));
+                    break;
+                }
+
+            }
 
             if (foundPercussion(sequence))
                 tr.type = TrackType::Percussion;
@@ -237,7 +250,7 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
                 }
             }
 
-            groupedTracks[folderName].push_back(tr);
+            groupedTracks[folderName].push_back(tr); 
         }
     }
 }
@@ -334,6 +347,47 @@ void TrackIOHelper::applyChangesToASequence(juce::MidiMessageSequence& sequence,
             eventHolder->message = newMsg;
         }
 
+    }
+}
+
+void TrackIOHelper::applyChangesToASequence(std::vector<juce::MidiMessage*>& events, const std::unordered_map<int, MidiChangeInfo>& changesMap)
+{
+    for (const auto& [row, changeInfo] : changesMap)
+    {
+        if (row < 0 || row >= events.size())
+            continue;
+
+        auto* msg = events[row];
+        if (msg == nullptr)
+            continue;
+
+        if (msg->isNoteOnOrOff())
+        {
+            int channel = msg->getChannel();
+            bool isNoteOn = msg->isNoteOn();
+            juce::MidiMessage newMsg;
+
+            if (isNoteOn)
+                newMsg = juce::MidiMessage::noteOn(channel, changeInfo.newNumber, (juce::uint8)changeInfo.newVelocity);
+            else
+                newMsg = juce::MidiMessage::noteOff(channel, changeInfo.newNumber);
+
+            newMsg.setTimeStamp(changeInfo.newTimeStamp);
+
+            *msg = newMsg;
+        }
+    }
+}
+
+void TrackIOHelper::extractNoteOnEvents(juce::MidiMessageSequence& sequence, std::vector<juce::MidiMessage*>& noteOnVector)
+{
+    for (int i = 0; i < sequence.getNumEvents(); i++)
+    {
+        auto* event = sequence.getEventPointer(i);
+        if (event != nullptr && event->message.isNoteOn())
+        {
+            noteOnVector.push_back(&event->message);
+        }
     }
 }
 

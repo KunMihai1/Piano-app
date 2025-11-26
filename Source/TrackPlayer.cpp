@@ -48,6 +48,7 @@ void MultipleTrackPlayer::setTracks(const std::vector<TrackEntry>& newTracks)
             }
         }
 
+        //apply small startup delay, not in the same for so it's safer glitch wise because of pairs note on-note off
         if (filteredSeq.getNumEvents() > 0)
         {
             filteredSeq.updateMatchedPairs();

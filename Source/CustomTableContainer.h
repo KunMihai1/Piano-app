@@ -105,7 +105,7 @@ public:
      * @param info Change information.
      * @param modifyVelocity If true, only modify the velocity.
      */
-    void applyChangeToSequence(int index, const MidiChangeInfo& info, bool modifyVelocity=false);
+    void applyChangeToSequence(int originalIndex, const MidiChangeInfo& info, bool modifyVelocity=false);
 
     /**
      * @brief Refresh table and reapply changes after a modification is confirmed.
@@ -193,7 +193,7 @@ public:
      * @param modifyVelocity If true, only modify velocity.
      * @param originalIndex Index of the MIDI event in the original sequence.
      */
-    void newPropertyHelperFunction(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected, bool modifyVelocity, int originalIndex);
+    void newPropertyHelperFunction(const std::function<void(MidiChangeInfo&)>& newProperty, const juce::SparseSet<int>* selected, bool modifyVelocity, int originalIndex, int noteOnIndex);
 
     /**
      * @brief Show a confirmation dialog for modifying or changing properties.

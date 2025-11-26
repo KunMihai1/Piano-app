@@ -12,13 +12,20 @@
 
 MidiNotesTableModel::MidiNotesTableModel(const juce::MidiMessageSequence& seq, int ch, std::unordered_map<int, MidiChangeInfo>& map): channel{ch}, changesMap{&map}
 {
+    int ok = 0;
     for (int i = 0; i < seq.getNumEvents(); ++i)
     {
         const auto* event = seq.getEventPointer(i);
         if (event != nullptr && event->message.isNoteOn())
         {
-            noteOnEvents.push_back({ event, i });
-            originalIndexToRowMap[i] = noteOnEvents.size()-1;
+            if (ok == 0)
+            {
+                ok = 1;
+                DBG("Inauntru la table model cand am deschis: " + juce::String(i) + " si " + juce::String(event->message.getNoteNumber()) + " " + juce::String(event->message.getTimeStamp()) + " smecherie:" + juce::String(noteOnEvents.size()));
+            }
+            int indexInNoteOn = noteOnEvents.size();
+            noteOnEvents.push_back({ event, i, indexInNoteOn });
+            //originalIndexToRowMap[i] = noteOnEvents.size()-1;
         }
     }
 }
@@ -326,27 +333,29 @@ bool MidiNotesTableModel::areMidiMessagesEqual(const juce::MidiMessage& a, const
 void MidiNotesTableModel::refreshVectorFromSequence(const juce::MidiMessageSequence& seq)
 {
     noteOnEvents.clear();
-    originalIndexToRowMap.clear();
+    //originalIndexToRowMap.clear();
     for (int i = 0; i < seq.getNumEvents(); i++)
     {
         const auto* event = seq.getEventPointer(i);
         if (event != nullptr && event->message.isNoteOn())
         {
-            noteOnEvents.push_back({ event, i });
-            originalIndexToRowMap[i] = static_cast<int>(noteOnEvents.size()) - 1;
+            noteOnEvents.push_back({ event, i, static_cast<int>(noteOnEvents.size())});
+            //originalIndexToRowMap[i] = static_cast<int>(noteOnEvents.size()) - 1;
         }
     }
-}
-
-int MidiNotesTableModel::getRowFromOriginalIndex(int originalIndex)
-{
-    return originalIndexToRowMap[originalIndex];
 }
 
 int MidiNotesTableModel::getOriginalIndexFromRow(int row)
 {
     if (row >= 0 && row < noteOnEvents.size())
         return noteOnEvents[row].originalIndex;
+    return -1;
+}
+
+int MidiNotesTableModel::getChangesMapIndexFromRow(int row)
+{
+    if (row >= 0 && row < noteOnEvents.size())
+        return noteOnEvents[row].indexForChangesMap;
     return -1;
 }
 

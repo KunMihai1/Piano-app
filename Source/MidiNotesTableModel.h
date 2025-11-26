@@ -35,6 +35,7 @@ public:
     struct EventWithIndex {
         const juce::MidiMessageSequence::MidiEventHolder* event; /**< pointer to the MIDI event */
         int originalIndex; /**< index in the original MidiMessageSequence */
+        int indexForChangesMap;
     };
 
     /** Callbacks for notifying UI or external components of changes */
@@ -84,11 +85,10 @@ public:
     /** @brief Refreshes the internal vector of note-on events from a sequence */
     void refreshVectorFromSequence(const juce::MidiMessageSequence& seq);
 
-    /** @brief Returns the table row corresponding to the original sequence index */
-    int getRowFromOriginalIndex(int originalIndex);
-
     /** @brief Returns the original sequence index corresponding to a table row */
     int getOriginalIndexFromRow(int row);
+
+    int getChangesMapIndexFromRow(int row);
 
     /** @brief Returns the timestamp of the first note-on event */
     double getFirstNoteOnTimeStamps();
@@ -110,7 +110,7 @@ public:
 
 private:
     int highlightedRow = -1; /**< Currently highlighted row during playback */
-    std::unordered_map<int, int> originalIndexToRowMap; /**< Maps original sequence index to table row */
+    //std::unordered_map<int, int> originalIndexToRowMap; /**< Maps original sequence index to table row */
     std::vector<EventWithIndex> noteOnEvents; /**< Filtered note-on events */
     int channel; /**< MIDI channel being displayed */
     std::unordered_map<int, MidiChangeInfo>* changesMap = nullptr; /**< Map of user modifications */
