@@ -33,6 +33,7 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="u2nDST" name="StyleSection.h" compile="0" resource="0" file="Source/StyleSection.h"/>
       <FILE id="ZSMmrT" name="addDeviceWindow.cpp" compile="1" resource="0"
             file="Source/addDeviceWindow.cpp"/>
       <FILE id="vh8BuR" name="addDeviceWindow.h" compile="0" resource="0"

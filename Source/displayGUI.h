@@ -20,6 +20,7 @@
 #include "CustomBeatBar.h"
 #include "IOHelper.h"
 #include "TrackPlayerListener.h"
+#include "StyleSection.h"
 
 /**
  * @class TrackListComponent
@@ -401,6 +402,7 @@ class CurrentStyleComponent : public juce::Component,
                               private juce::ComboBox::Listener
 {
 public:
+
     //==============================================================================
 
     std::function<bool(const juce::String& name)> tabExsitsCallback;
@@ -594,6 +596,7 @@ private:
     std::unique_ptr<MultipleTrackPlayer> trackPlayer = nullptr; ///< Handles multi-track playback.
     std::unordered_map<juce::Uuid, TrackEntry*>& mapUuidToTrackEntry; ///< Global map of all track entries.
     Track* lastSelectedTrack = nullptr;                     ///< Last track selected by the user.
+    std::weak_ptr<std::vector<StyleSection>> sections;
 
     juce::Slider tempoSlider;                               ///< Slider for controlling BPM.
     int oldTempo = 120.0;                                   ///< Previously stored tempo.
@@ -1016,6 +1019,8 @@ private:
     std::shared_ptr<std::deque<TrackEntry>> availableTracksFromFolder; ///< Tracks loaded from folder
     std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracks; ///< Tracks grouped by folder
     std::shared_ptr<std::vector<juce::String>> groupedTrackKeys; ///< Keys for grouped tracks
+
+    std::unordered_map<juce::String, std::vector<StyleSection>> sectionsPerStyle;
 
     std::weak_ptr<juce::MidiOutput> outputDevice; ///< MIDI output device
 
