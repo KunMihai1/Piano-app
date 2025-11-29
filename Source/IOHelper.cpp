@@ -438,7 +438,6 @@ void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBack
     auto* rootObj = rootVar.getDynamicObject();
 
     juce::String key = settings.VID + "_" + settings.PID;
-    DBG("Key is: " + key);
 
     auto keyboardObj = new juce::DynamicObject();
 
@@ -497,4 +496,86 @@ PlayBackSettings PlaybackSettingsIOHelper::loadFromFile(const juce::File& file, 
     settings.PID = PID;
 
     return settings;
+}
+
+void SectionIOHelper::saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::vector<StyleSection>>& map)
+{
+    auto* rootObj = new juce::DynamicObject();
+    juce::var rootVar(rootObj);
+
+    for (const auto& [styleID, sections] : map)
+    {
+        juce::Array<juce::var> sectionsArray;
+        for (const auto& section : sections)
+        {
+            auto* sectionObj = new juce::DynamicObject();
+            juce::var sectionVar(sectionObj);
+
+            sectionObj->setProperty("id", section.id);
+            sectionObj->setProperty("name", section.name);
+            sectionObj->setProperty("startTimeSeconds", section.startTimeSeconds);
+            sectionObj->setProperty("endTimeSeconds", section.endTimeSeconds);
+            sectionObj->setProperty("startBar", section.startBar);
+            sectionObj->setProperty("endBar", section.endBar);
+
+            sectionsArray.add(sectionVar);
+        }
+        rootObj->setProperty(styleID, sectionsArray);
+    }
+
+    juce::String jsonString = juce::JSON::toString(rootVar);
+    file.replaceWithText(jsonString);
+}
+
+void SectionIOHelper::loadFromFile(const juce::File& file, std::unordered_map<juce::String, std::vector<StyleSection>>& map)
+{
+    map.clear();
+
+    if (!file.existsAsFile())
+        return;
+
+    juce::String jsonString = file.loadFileAsString();
+    juce::var jsonVar = juce::JSON::parse(jsonString);
+
+    if (!jsonVar.isObject())
+        return;
+
+    auto* rootObj = jsonVar.getDynamicObject();
+    if (!rootObj)
+        return;
+
+    for (auto& stylePair : rootObj->getProperties())
+    {
+        juce::String styleID = stylePair.name.toString();
+        juce::var sectionsVar = stylePair.value;
+
+        if (!sectionsVar.isArray())
+            return;
+
+        juce::Array<juce::var>* sectionsArray = sectionsVar.getArray();
+        if (!sectionsArray)
+            return;
+
+        std::vector<StyleSection> sectionsVector;
+
+        for (auto& sectionsVar : *sectionsArray)
+        {
+            auto* sectionObj = sectionsVar.getDynamicObject();
+            if (!sectionObj)
+                continue;
+
+            StyleSection section;
+            
+            section.id = sectionObj->getProperty("id").toString();
+            section.name = sectionObj->getProperty("name").toString();
+            section.startTimeSeconds = (double)sectionObj->getProperty("startTimeSeconds");
+            section.endTimeSeconds = (double)sectionObj->getProperty("endTimeSeconds");
+            section.startBar = (int)sectionObj->getProperty("startBar");
+            section.endBar = (int)sectionObj->getProperty("endBar");
+
+            sectionsVector.push_back(section);
+        }
+
+        map[styleID] = std::move(sectionsVector);
+    }
 }

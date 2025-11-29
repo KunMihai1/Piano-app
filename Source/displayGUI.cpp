@@ -19,6 +19,7 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
     groupedTrackKeys = std::make_shared<std::vector<juce::String>>();
 
     tabComp = std::make_unique<MyTabbedComponent>(juce::TabbedButtonBar::TabsAtLeft);
+    
 
     addAndMakeVisible(tabComp.get());
 
@@ -36,6 +37,17 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
         juce::String jsonString = juce::JSON::toString(emptyArray);
 
         jsonFile.replaceWithText(jsonString);
+    }
+
+    auto jsonFileSections = IOHelper::getFile("mySections.json");
+
+    if (!jsonFileSections.exists())
+    {
+        auto* emptyObj = new juce::DynamicObject();
+        juce::var jsonVar(emptyObj);
+
+        juce::String jsonString = juce::JSON::toString(jsonVar);
+        jsonFileSections.replaceWithText(jsonString);
     }
 
     TrackIOHelper::loadFromFile(jsonFile, *groupedTracks, *groupedTrackKeys);
@@ -1530,8 +1542,6 @@ void CurrentStyleComponent::setDeviceOutputCurrentStyle(std::weak_ptr<juce::Midi
 
 void CurrentStyleComponent::applyChangesForOneTrack(TrackEntry& track)
 {
-    //track.sequence = track.originalSequenceTicks;
-    //track.sequence.updateMatchedPairs();
 
     auto it = track.styleChangesMap.find(styleID);
     if (it != track.styleChangesMap.end())

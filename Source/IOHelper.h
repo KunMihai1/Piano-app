@@ -12,6 +12,7 @@
 
 #include <JuceHeader.h>
 #include "TrackEntry.h"
+#include "StyleSection.h"
 #include "PlayBackSettingsCustomComponent.h"
 
 /**
@@ -127,4 +128,15 @@ public:
     static PlayBackSettings loadFromFile(const juce::File& file, const juce::String& VID, const juce::String& PID);
 
 private:
+};
+
+class SectionIOHelper
+{
+public:
+    static void saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::vector<StyleSection>>& map);
+    
+    static void loadFromFile(const juce::File& file, std::unordered_map<juce::String, std::vector<StyleSection>>& map);
+
+private:
+
 };
