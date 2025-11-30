@@ -23,6 +23,7 @@
 #include "MidiRecordPlayer.h"
 #include "displayGUI.h"
 #include "addDeviceWindow.h"
+#include "SectionsComponent.h"
 
 /**
  * @class SmoothRotarySlider
@@ -190,6 +191,8 @@ private:
     void toggleHandInstrumentToggle();
     void toggleUpdateKeysButton();
     void toggleDevicesCBUpdate();
+    void toggleSections();
+
 
     // Initialization functions
     void settingsInit();
@@ -211,6 +214,8 @@ private:
     void toggleHandButtonsInit();
     void updateKeysButtonInit();
     void devicesCBUpdateInit();
+    void sectionsInit();
+   
 
     // Button click callbacks
     void settingsButtonOnClick();
@@ -265,7 +270,9 @@ private:
     juce::TextButton saveRecordingButton{ "Save recording" };
     juce::TextButton playRecordingFileButton{ "Play recording file" };
     juce::ToggleButton leftHandInstrumentToggle, rightHandInstrumentToggle;
-    
+    std::unique_ptr<StyleSectionComponent> introsEndings, variationsFills;
+
+
     std::unordered_map<juce::String, juce::String> updateDevicesMap;
 
     juce::TextButton updateNumberOfKeysDevice{"Update number of keys"};
@@ -291,6 +298,8 @@ private:
     std::unique_ptr<juce::FileChooser> fileChooser;
     std::unique_ptr<Display> display = nullptr;
     std::unique_ptr<AddDeviceWindow> addDeviceWindow=nullptr;
+
+
 
     //==========================================================================
     // Panels

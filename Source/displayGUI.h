@@ -578,6 +578,8 @@ public:
      */
     void comboBoxChangeIndex(int Index);
 
+    bool getIsPlaying();
+
 private:
     //==============================================================================
     /** @brief Handles mouse clicks for selecting tracks. */
