@@ -20,7 +20,10 @@
  */
 class BeatBar: public juce::Component
 {
+
 public:
+    std::function<bool()> isPlayingCheck;
+
     /**
      * @brief Constructs a BeatBar with default time signature 4/4.
      */

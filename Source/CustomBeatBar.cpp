@@ -36,8 +36,20 @@ void BeatBar::paint(juce::Graphics& g)
     {
         juce::Rectangle<float> beatRect(area.getX() + i * subBeatWidth, area.getY(), subBeatWidth, height);
 
-        g.setColour(i == currentSubdivision ? juce::Colours::yellow.withAlpha(0.8f)
-            : juce::Colours::dimgrey);
+        bool isCurrent = (i == currentSubdivision);
+
+        if (isCurrent)
+        {
+            if (i == 0 && isPlayingCheck && isPlayingCheck())
+                g.setColour(juce::Colours::red.withAlpha(0.85f));
+            else
+                g.setColour(juce::Colours::yellow.withAlpha(0.85f));
+        }
+        else
+        {
+            g.setColour(juce::Colours::dimgrey); 
+        }
+
         g.fillRoundedRectangle(beatRect, cornerSize);
 
         g.setColour(juce::Colours::blanchedalmond.withAlpha(0.3f));

@@ -33,6 +33,14 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="w5pNZR" name="SectionsComponent.cpp" compile="1" resource="0"
+            file="Source/SectionsComponent.cpp"/>
+      <FILE id="cdnTwl" name="SectionsComponent.h" compile="0" resource="0"
+            file="Source/SectionsComponent.h"/>
+      <FILE id="WsgI1I" name="SectionGroupComponent.cpp" compile="1" resource="0"
+            file="Source/SectionGroupComponent.cpp"/>
+      <FILE id="pWsxuG" name="SectionGroupComponent.h" compile="0" resource="0"
+            file="Source/SectionGroupComponent.h"/>
       <FILE id="u2nDST" name="StyleSection.h" compile="0" resource="0" file="Source/StyleSection.h"/>
       <FILE id="ZSMmrT" name="addDeviceWindow.cpp" compile="1" resource="0"
             file="Source/addDeviceWindow.cpp"/>

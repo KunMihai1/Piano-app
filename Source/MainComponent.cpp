@@ -156,6 +156,22 @@ void MainComponent::resized()
         keyboard.setAlwaysOnTop(true);
         keyboard.setOpaque(true);
     }   
+
+    if (introsEndings)
+    {
+        int width = display->getX() - playRecordingFileButton.getX() - playRecordingFileButton.getWidth() - 10;
+        int height = playRecordingFileButton.getHeight() + 20;
+        introsEndings->setBounds(playRecordingFileButton.getX() + playRecordingFileButton.getWidth() + 10, playRecordingFileButton.getY(), width, height);
+    }
+
+    if (variationsFills)
+    {
+        int varFillsX = playRecordingFileButton.getX();
+        int varFillsY = introsEndings->getY() + introsEndings->getHeight()-7;
+        int width = display->getX() - rightHandInstrumentToggle.getX() - rightHandInstrumentToggle.getWidth() - 10;
+        int height = display->getHeight() - (introsEndings->getY() + introsEndings->getHeight());
+        variationsFills->setBounds(varFillsX, varFillsY, width, height+10);
+    }
 }
 
 void MainComponent::changeListenerCallback(juce::ChangeBroadcaster* source)
@@ -392,6 +408,7 @@ void MainComponent::toggleHPanel()
     toggleDisplay();
     toggleParticleToggle();
     toggleHandInstrumentToggle();
+    toggleSections();
 }
 
 void MainComponent::toggleHomeButton()
@@ -488,6 +505,17 @@ void MainComponent::toggleDevicesCBUpdate()
     if (devicesCBUpdate.isVisible())
         devicesCBUpdate.setVisible(false);
     else devicesCBUpdate.setVisible(true);
+}
+
+void MainComponent::toggleSections()
+{
+    if (introsEndings->isVisible())
+        introsEndings->setVisible(false);
+    else introsEndings->setVisible(true);
+
+    if (variationsFills->isVisible())
+        variationsFills->setVisible(false);
+    else variationsFills->setVisible(true);
 }
 
 void MainComponent::toggleForPlaying()
@@ -814,6 +842,7 @@ void MainComponent::headerPanelInit()
     toggleButtonInit();
     toggleHandButtonsInit();
     knobsInit();
+    sectionsInit();
 }
 
 void MainComponent::homeButtonInit()
@@ -869,6 +898,23 @@ void MainComponent::devicesCBUpdateInit()
     devicesCBUpdate.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     settingsPanel.addAndMakeVisible(devicesCBUpdate);
     devicesCBUpdate.setVisible(false);
+}
+
+void MainComponent::sectionsInit()
+{
+    introsEndings = std::make_unique<StyleSectionComponent>(std::vector<juce::String>{"Intros", "Endings"},
+        std::vector<std::vector<juce::String>>{ {"Intro 1", "Intro 2", "Intro 3"}, { "Ending 1", "Ending 2", "Ending 3"}});
+
+    variationsFills = std::make_unique<StyleSectionComponent>(std::vector<juce::String>{"Variations", "Fills"},
+        std::vector<std::vector<juce::String>>{ {"Var A", "Var B", "Var C", "Var D"}, {"Fill A", "Fill B", "Fill C", "Fill D"}});
+
+    
+    headerPanel.addAndMakeVisible(introsEndings.get());
+    introsEndings->setVisible(false);
+
+    headerPanel.addAndMakeVisible(variationsFills.get());
+    variationsFills->setVisible(false);
+
 }
 
 void MainComponent::settingsButtonOnClick()

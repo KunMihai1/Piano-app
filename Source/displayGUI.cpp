@@ -1416,7 +1416,13 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
 
     stopPlayingTracks.onClick = [this]
     {
+        isPlaying = false;
         stopPlaying();
+    };
+
+    customBeatBar.isPlayingCheck = [this]()
+    {
+        return isPlaying;
     };
 
     for (int i = 0; i < 8; i++)
@@ -1877,6 +1883,11 @@ void CurrentStyleComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChang
 void CurrentStyleComponent::comboBoxChangeIndex(int Index)
 {
     playSettingsTracks.setSelectedItemIndex(Index);
+}
+
+bool CurrentStyleComponent::getIsPlaying()
+{
+    return isPlaying;
 }
 
 void CurrentStyleComponent::setTempo(double newTempo)
