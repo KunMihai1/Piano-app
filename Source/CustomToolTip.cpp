@@ -10,7 +10,7 @@
 
 #include "CustomToolTip.h"
 
-TrackNameToolTip::TrackNameToolTip(const juce::String& text)
+CustomToolTip::CustomToolTip(const juce::String& text)
 {
     label.setFont(14.0f);
     label.setText(text, juce::dontSendNotification);
@@ -27,13 +27,18 @@ TrackNameToolTip::TrackNameToolTip(const juce::String& text)
     setSize(textWidth + padding * 2, textHeight + padding);
 }
 
-void TrackNameToolTip::paint(juce::Graphics& g)
+void CustomToolTip::paint(juce::Graphics& g)
 {
     g.setColour(juce::Colours::black.withAlpha(0.8f));
     g.fillRoundedRectangle(getLocalBounds().toFloat(), 5.0f);
 }
 
-void TrackNameToolTip::resized()
+void CustomToolTip::setNewText(const juce::String& newText)
+{
+    label.setText(newText, juce::dontSendNotification);
+}
+
+void CustomToolTip::resized()
 {
     label.setBounds(getLocalBounds().reduced(10, 5));
 }

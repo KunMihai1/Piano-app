@@ -374,7 +374,7 @@ private:
     juce::Label nameLabel;                   ///< Displays the track’s name.
     juce::TextButton instrumentChooserButton;///< Opens instrument selection popup.
     juce::StringArray instrumentlist;        ///< List of all MIDI instrument names.
-    std::unique_ptr<TrackNameToolTip> toolTipWindow = nullptr; ///< Tooltip window for displaying track name.
+    std::unique_ptr<CustomToolTip> toolTipWindow = nullptr; ///< Tooltip window for displaying track name.
 };
 
 
