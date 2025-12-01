@@ -14,7 +14,10 @@ StyleSectionComponent::StyleSectionComponent(const std::vector<juce::String>& na
 {
     for (int i = 0; i < names.size(); i++)
     {
-        auto group = std::make_unique<SectionGroupComponent>(names[i], groupNames[i]);
+        bool toggleNeeded = false;
+        if (names[i].equalsIgnoreCase("fills"))
+            toggleNeeded = true;
+        auto group = std::make_unique<SectionGroupComponent>(names[i], groupNames[i],toggleNeeded);
         addAndMakeVisible(group.get());
         sectionGroups.add(std::move(group));
     }

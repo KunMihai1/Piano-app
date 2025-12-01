@@ -2172,7 +2172,7 @@ void Track::mouseEnter(const juce::MouseEvent& ev)
 {
     if (ev.eventComponent == &nameLabel && toolTipWindow == nullptr)
     {
-        toolTipWindow = std::make_unique<TrackNameToolTip>(nameLabel.getText());
+        toolTipWindow = std::make_unique<CustomToolTip>(nameLabel.getText());
         toolTipWindow->setSize(150, 24);
 
         auto labelBounds = nameLabel.getScreenBounds();

@@ -775,6 +775,9 @@ void MainComponent::toggleButtonInit()
         noteLayer->setSpawnParticleState(particleToggle.getToggleState());
     };
 
+    particleToggle.setColour(juce::ToggleButton::tickColourId, juce::Colours::green);
+    particleToggle.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colours::grey);
+
     particleToggle.setToggleState(false,juce::dontSendNotification);
 
     headerPanel.addAndMakeVisible(particleToggle);
@@ -864,6 +867,9 @@ void MainComponent::toggleHandButtonsInit()
     leftHandInstrumentToggle.setButtonText("Left hand");
     leftHandInstrumentToggle.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
+    leftHandInstrumentToggle.setColour(juce::ToggleButton::tickColourId, juce::Colours::green);
+    leftHandInstrumentToggle.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colours::grey);
+
     leftHandInstrumentToggle.setToggleState(false,juce::dontSendNotification);
     headerPanel.addAndMakeVisible(leftHandInstrumentToggle);
     leftHandInstrumentToggle.setVisible(false);
@@ -871,6 +877,9 @@ void MainComponent::toggleHandButtonsInit()
 
     rightHandInstrumentToggle.setButtonText("Right hand");
     rightHandInstrumentToggle.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    rightHandInstrumentToggle.setColour(juce::ToggleButton::tickColourId, juce::Colours::green);
+    rightHandInstrumentToggle.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colours::grey);
 
     rightHandInstrumentToggle.setToggleState(false, juce::dontSendNotification);
     headerPanel.addAndMakeVisible(rightHandInstrumentToggle);
