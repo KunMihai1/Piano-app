@@ -49,8 +49,8 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
         addAndMakeVisible(toggleButton.get());
 
         toggleToolTip = std::make_unique<CustomToolTip>("Enable Auto Fill");
-        toggleToolTip->setVisible(false);
         addAndMakeVisible(toggleToolTip.get());
+        toggleToolTip->setVisible(false);
 
         toggleButton->addMouseListener(this, false);
         
