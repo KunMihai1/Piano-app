@@ -27,10 +27,15 @@ public:
 
     std::vector<std::unique_ptr<juce::TextButton>>& getButtons();
 
+    juce::String getGroupName();
+
+    std::unordered_map<juce::String, bool>& getActivationMap();
+
 private:
     juce::Label titleLabel;
     std::vector<std::unique_ptr<juce::TextButton>> buttons;
     std::unique_ptr<juce::ToggleButton> toggleButton;
     std::unique_ptr<CustomToolTip> toggleToolTip;
+    std::unordered_map<juce::String, bool> activationMap;
 
 };
