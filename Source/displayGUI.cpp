@@ -17,6 +17,7 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
     availableTracksFromFolder = std::make_shared<std::deque<TrackEntry>>();
     groupedTracks = std::make_shared<std::unordered_map<juce::String, std::deque<TrackEntry>>>();
     groupedTrackKeys = std::make_shared<std::vector<juce::String>>();
+    sectionsPerStyleMap = std::make_shared<std::unordered_map<juce::String, std::vector<StyleSection>>>();
 
     tabComp = std::make_unique<MyTabbedComponent>(juce::TabbedButtonBar::TabsAtLeft);
     
@@ -50,13 +51,15 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
         jsonFileSections.replaceWithText(jsonString);
     }
 
+
+    SectionIOHelper::loadFromFile(jsonFileSections, *sectionsPerStyleMap);
+
     TrackIOHelper::loadFromFile(jsonFile, *groupedTracks, *groupedTrackKeys);
     
 
     mapUuidToTrack = buildTrackUuidMap();
 
     std::vector<juce::String> stylesNames = getAllStylesFromJson();
-    DBG("Size of names is:" + juce::String(stylesNames.size()));
 
     auto list = std::make_unique<StylesListComponent>(stylesNames,
         [this](const juce::String& name) {
@@ -177,7 +180,9 @@ void Display::showCurrentStyleTab(const juce::String& name)
 {
     if (!created)
     {
-        currentStyleComponent = std::make_unique<CurrentStyleComponent>(name, mapUuidToTrack, outputDevice);
+        std::weak_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> weakSectionsMap = sectionsPerStyleMap;
+
+        currentStyleComponent = std::make_unique<CurrentStyleComponent>(name, mapUuidToTrack, outputDevice,weakSectionsMap);
         currentStyleComponent->onRequestTrackSelectionFromTrack = [this](std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> trackChosenCallback)
         {
             showListOfTracksToSelectFrom(trackChosenCallback);
@@ -268,8 +273,11 @@ void Display::showCurrentStyleTab(const juce::String& name)
     }
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 
+    if (sectionsPerStyleMap->empty())
+        initializeSectionsForStyle((*sectionsPerStyleMap)[name]);
+
     double bpmToUse = currentStyleComponent->getTempo();
-    DBG("BPM TO USE:" + juce::String(bpmToUse));
+
     currentStyleComponent->applyBPMchangeBeforePlayback(bpmToUse);
     currentStyleComponent->applyChangesForAllTracksCurrentStyle();
 }
@@ -372,7 +380,6 @@ void Display::startingPlayer()
 
 void Display::updateUIbeforeAnyLoadingCase()
 {
-    DBG("sUNT IN CAZUL ASTA");
     //if (this->mapNameToTrack.empty())
     //    mapNameToTrack = trackListComp->buildTrackNameMap();
 }
@@ -394,7 +401,6 @@ void Display::set_VID_PID(const juce::String& VID, const juce::String& PID)
 {
     this->settings.VID = VID;
     this->settings.PID = PID;
-    DBG("In setter:" + this->settings.VID + " " + this->settings.PID);
 }
 
 juce::String Display::getVID()
@@ -495,6 +501,45 @@ bool Display::existsTab(const juce::String& name)
             return true;
     }
     return false;
+}
+
+void Display::initializeSectionsForStyle(std::vector<StyleSection>& sections)
+{
+    sections.clear();
+
+    double startTime = 4.0;
+    double duration = 10.0;
+
+    std::vector<std::vector<juce::String>> names = {
+        { "Intro 1", "Intro 2", "Intro 3" },
+        { "Var 1", "Var 2", "Var 3", "Var 4" },
+        { "Fill 1", "Fill 2", "Fill 3", "Fill 4" },
+        { "Ending 1", "Ending 2", "Ending 3" },
+        { "Break" }
+    };
+
+    std::vector<juce::String> categories = { "Intro", "Variation", "Fill", "Ending", "Break" };
+
+    int c= 0;
+
+    for (int i = 0; i < names.size(); i++)
+    {
+        for (int j = 0; j < names[i].size(); j++)
+        {
+            StyleSection s;
+            s.id = categories[i].toLowerCase() + "_" + juce::String(j + 1);
+            s.name = names[i][j];
+            s.startTimeSeconds = startTime + c * duration;
+            s.endTimeSeconds = s.startTimeSeconds + duration;
+            s.startBar = -1;
+            s.endBar = -1;
+
+            sections.push_back(std::move(s));
+            c++;
+        }
+    }
+
+
 }
 
 void Display::callingListeners()
@@ -1294,14 +1339,12 @@ void StylesListComponent::addStyleLocally(const juce::String& newName)
 
 void StylesListComponent::rebuildStyleNames()
 {
-    DBG("rebuildStyleNames called, stylesNames size before clear: " + juce::String(stylesNames.size()));
     stylesNames.clear();
     for (auto& style : allStyles)
     {
         juce::String name = style->getNameLabel();
         stylesNames.push_back(name);
     }
-    DBG("rebuildStyleNames done, stylesNames size after rebuild: " + juce::String(stylesNames.size()));
 }
 
 
@@ -1380,7 +1423,8 @@ void CurrentStyleComponent::startPlaying()
 
 }
 
-CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice) : name(name), mapUuidToTrackEntry(map), outputDevice(outputDevice)
+CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice,
+    std::weak_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> styleSMap) : name(name), mapUuidToTrackEntry(map), outputDevice(outputDevice), styleSectionsMap{styleSMap}
 {
     addMouseListener(this, true);
     nameOfStyle.setText(name, juce::dontSendNotification);
@@ -1515,7 +1559,6 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
             trackPlayer->setCurrentBPM(currentTempo);
         applyBPMchangeBeforePlayback(currentTempo);
 
-        DBG("Activated!");
         if (anyTrackChanged)
             anyTrackChanged();
     };
@@ -1805,8 +1848,6 @@ void CurrentStyleComponent::applyBPMchangeForOne(double userBPM, const juce::Uui
     juce::MidiMessageSequence scaledSequence;
 
     double trackOriginalBPM = (tr->originalBPM > 0.0) ? tr->originalBPM : 120.0;
-
-    DBG("BPMS: " + juce::String(userBPM) + " " + juce::String(trackOriginalBPM));
 
     for (int i = 0; i < tr->originalSequenceTicks.getNumEvents(); ++i)
     {
@@ -2440,7 +2481,6 @@ void Track::mouseDown(const juce::MouseEvent& event)
                 onRequestTrackSelection([this](const juce::String& selectedTrack, const juce::Uuid& uuid, const juce::String& type)
                     {
                         setNameLabel(selectedTrack);
-                        DBG("Track selection uuid:" + uuid.toString());
                         setUUID(uuid);
                         setTypeOfTrack(type);
                         if (type.trim() == "percussion")
