@@ -21,6 +21,7 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
         auto btn = std::make_unique<juce::TextButton>(name);
         btn->setButtonText(name);
         btn->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+        activationMap[name] = false;
 
         addAndMakeVisible(*btn);
         buttons.push_back(std::move(btn));
@@ -130,4 +131,14 @@ SectionGroupComponent::~SectionGroupComponent()
 std::vector<std::unique_ptr<juce::TextButton>>& SectionGroupComponent::getButtons()
 {
     return buttons;
+}
+
+juce::String SectionGroupComponent::getGroupName()
+{
+    return titleLabel.getText();
+}
+
+std::unordered_map<juce::String, bool>& SectionGroupComponent::getActivationMap()
+{
+    return this->activationMap;
 }

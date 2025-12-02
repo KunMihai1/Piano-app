@@ -273,8 +273,11 @@ void Display::showCurrentStyleTab(const juce::String& name)
     }
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 
-    if (sectionsPerStyleMap->empty())
+    if ((*sectionsPerStyleMap)[name].empty())
+    {
         initializeSectionsForStyle((*sectionsPerStyleMap)[name]);
+        SectionIOHelper::saveToFile(IOHelper::getFile("mySections.json"), *sectionsPerStyleMap);
+    }
 
     double bpmToUse = currentStyleComponent->getTempo();
 
@@ -538,8 +541,6 @@ void Display::initializeSectionsForStyle(std::vector<StyleSection>& sections)
             c++;
         }
     }
-
-
 }
 
 void Display::callingListeners()

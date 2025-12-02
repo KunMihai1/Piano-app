@@ -911,11 +911,40 @@ void MainComponent::devicesCBUpdateInit()
 
 void MainComponent::sectionsInit()
 {
+    std::unordered_map<juce::String, std::function<void()>> callbacksIntroEnding = {
+        {"Intro 1", [this]() { handleIntro("Intro 1");  }},
+        {"Intro 2", [this]() { handleIntro("Intro 2");  }},
+        {"Intro 3", [this]() { handleIntro("Intro 3");  }},
+
+        {"Ending 1", [this]() { handleEnding("Ending 1"); }},
+        {"Ending 2", [this]() { handleEnding("Ending 2");  }},
+        {"Ending 3", [this]() { handleEnding("Ending 3");  }}
+
+    };
+
+
     introsEndings = std::make_unique<StyleSectionComponent>(std::vector<juce::String>{"Intros", "Endings"},
-        std::vector<std::vector<juce::String>>{ {"Intro 1", "Intro 2", "Intro 3"}, { "Ending 1", "Ending 2", "Ending 3"}});
+        std::vector<std::vector<juce::String>>{ {"Intro 1", "Intro 2", "Intro 3"}, { "Ending 1", "Ending 2", "Ending 3"}},callbacksIntroEnding);
+
+
+
+    std::unordered_map<juce::String, std::function<void()>> callbacksVarFillBreak = {
+        {"Var 1", [this]() { handleVar("Var 1");  }},
+        {"Var 2", [this]() { handleVar("Var 2");  }},
+        {"Var 3", [this]() { handleVar("Var 3");  }},
+        {"Var 4", [this]() { handleVar("Var 4");  }},
+
+        {"Fill 1", [this]() { handleFill("Fill 1");  }},
+        {"Fill 2", [this]() { handleFill("Fill 2");  }},
+        {"Fill 3", [this]() { handleFill("Fill 3");  }},
+        {"Fill 4", [this]() { handleFill("Fill 4");  }},
+
+        {"Break", [this]() { handleBreak("Break");  }}
+
+    };
 
     variationsFills = std::make_unique<StyleSectionComponent>(std::vector<juce::String>{"Variations", "Fills"},
-        std::vector<std::vector<juce::String>>{ {"Var 1", "Var 2", "Var 3", "Var 4"}, {"Fill 1", "Fill 2", "Fill 3", "Fill 4"}});
+        std::vector<std::vector<juce::String>>{ {"Var 1", "Var 2", "Var 3", "Var 4"}, {"Fill 1", "Fill 2", "Fill 3", "Fill 4"}}, callbacksVarFillBreak);
 
     
     headerPanel.addAndMakeVisible(introsEndings.get());
@@ -1436,6 +1465,85 @@ void MainComponent::playRecordingFromFile(double tempo)
             fileChooser.reset();
         });
 }
+
+void MainComponent::handleIntro(const juce::String& name)
+{
+    if (name == "Intro 1")
+    {
+
+    }
+    else if (name == "Intro 2")
+    {
+
+    }
+    else if (name == "Intro 3")
+    {
+
+    }
+}
+
+void MainComponent::handleEnding(const juce::String& name)
+{
+    if (name == "Ending 1")
+    {
+
+    }
+    else if (name == "Ending 2")
+    {
+
+    }
+    else if (name == "Ending 3")
+    {
+
+    }
+}
+
+void MainComponent::handleVar(const juce::String& name)
+{
+    if (name == "Var 1")
+    {
+
+    }
+    else if (name == "Var 2")
+    {
+
+    }
+    else if (name == "Var 3")
+    {
+
+    }
+    else if (name == "Var 4")
+    {
+
+    }
+}
+
+void MainComponent::handleFill(const juce::String& name)
+{
+    if (name == "Fill 1")
+    {
+
+    }
+    else if (name == "Fill 2")
+    {
+
+    }
+    else if (name == "Fill 3")
+    {
+
+    }
+    else if (name == "Fill 4")
+    {
+
+    }
+}
+
+void MainComponent::handleBreak(const juce::String& name)
+{
+
+}
+
+
 
 SmoothRotarySlider::SmoothRotarySlider()
 {

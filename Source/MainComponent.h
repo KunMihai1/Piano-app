@@ -234,6 +234,16 @@ private:
     void saveRecordingToFile(double tempo = 120.0);
     void playRecordingFromFile(double tempo = 120.0);
 
+    void handleIntro(const juce::String& name);
+
+    void handleEnding(const juce::String& name);
+
+    void handleVar(const juce::String& name);
+
+    void handleFill(const juce::String& name);
+
+    void handleBreak(const juce::String& name);
+
     //==========================================================================
     // Member variables
     juce::ApplicationProperties appProperties; ///< Application properties manager

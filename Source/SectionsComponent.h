@@ -16,12 +16,16 @@
 class StyleSectionComponent: public juce::Component
 {
 public:
-    StyleSectionComponent(const std::vector<juce::String>& names, const std::vector<std::vector<juce::String>>& groupNames);
+    StyleSectionComponent(const std::vector<juce::String>& names, const std::vector<std::vector<juce::String>>& groupNames,
+        const std::unordered_map<juce::String, std::function<void()>>& buttonCallbacks);
 
     void resized() override;
 
+    void applyChangeColour(juce::TextButton& button, bool activated = false);
+
 private:
     juce::OwnedArray<SectionGroupComponent> sectionGroups;
+    const std::unordered_map<juce::String, std::function<void()>>& callbacks;
 
     void assignCallBacks();
 };
