@@ -915,7 +915,7 @@ void MainComponent::sectionsInit()
         std::vector<std::vector<juce::String>>{ {"Intro 1", "Intro 2", "Intro 3"}, { "Ending 1", "Ending 2", "Ending 3"}});
 
     variationsFills = std::make_unique<StyleSectionComponent>(std::vector<juce::String>{"Variations", "Fills"},
-        std::vector<std::vector<juce::String>>{ {"Var A", "Var B", "Var C", "Var D"}, {"Fill A", "Fill B", "Fill C", "Fill D"}});
+        std::vector<std::vector<juce::String>>{ {"Var 1", "Var 2", "Var 3", "Var 4"}, {"Fill 1", "Fill 2", "Fill 3", "Fill 4"}});
 
     
     headerPanel.addAndMakeVisible(introsEndings.get());

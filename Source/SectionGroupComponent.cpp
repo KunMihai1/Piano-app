@@ -55,6 +55,15 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
         toggleButton->addMouseListener(this, false);
         
     }
+
+    if (title.equalsIgnoreCase("variations"))
+    {
+        auto btn = std::make_unique<juce::TextButton>("Break");
+        btn->setButtonText("Break");
+        btn->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+        addAndMakeVisible(*btn);
+        buttons.push_back(std::move(btn));
+    }
 }
 
 void SectionGroupComponent::resized()
@@ -71,7 +80,7 @@ void SectionGroupComponent::resized()
         return;
     
     int toDivideWith = count;
-    if (toggleButton)
+    if (titleLabel.getText().equalsIgnoreCase("fills"))
         toDivideWith++;
 
     auto row = area;
@@ -82,7 +91,7 @@ void SectionGroupComponent::resized()
         buttons[i]->setBounds(row.removeFromLeft(width));
     }
 
-    if (toggleButton)
+    if (titleLabel.getText().equalsIgnoreCase("fills"))
         toggleButton->setBounds(row.removeFromLeft(width));
 
 }

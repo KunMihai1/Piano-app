@@ -433,7 +433,8 @@ public:
      */
     CurrentStyleComponent(const juce::String& name,
                           std::unordered_map<juce::Uuid, TrackEntry*>& map,
-                          std::weak_ptr<juce::MidiOutput> outputDevice);
+                          std::weak_ptr<juce::MidiOutput> outputDevice,
+                          std::weak_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> styleSectionsMap);
 
     /** @brief Destructor. Cleans up listeners and internal references. */
     ~CurrentStyleComponent() override;
@@ -609,6 +610,8 @@ private:
 
     std::unique_ptr<Track> copiedTrack = nullptr;           ///< Track object used for copy/paste operations.
     BeatBar customBeatBar;                                  ///< Visual component displaying beat progression.
+
+    std::weak_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> styleSectionsMap;
 };
 
 
@@ -1004,6 +1007,8 @@ public:
     /** @brief Checks if a certain tab exists in the tabbed component*/
     bool existsTab(const juce::String& name);
 
+    void initializeSectionsForStyle(std::vector<StyleSection>& sections);
+
 private:
     //==============================================================================
     juce::HashMap<juce::String, std::unique_ptr<juce::DynamicObject>> styleDataCache; ///< Cached style data
@@ -1022,7 +1027,7 @@ private:
     std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracks; ///< Tracks grouped by folder
     std::shared_ptr<std::vector<juce::String>> groupedTrackKeys; ///< Keys for grouped tracks
 
-    std::unordered_map<juce::String, std::vector<StyleSection>> sectionsPerStyle;
+    std::shared_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> sectionsPerStyleMap;
 
     std::weak_ptr<juce::MidiOutput> outputDevice; ///< MIDI output device
 
