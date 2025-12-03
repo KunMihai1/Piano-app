@@ -947,6 +947,16 @@ void MainComponent::sectionsInit()
         std::vector<std::vector<juce::String>>{ {"Var 1", "Var 2", "Var 3", "Var 4"}, {"Fill 1", "Fill 2", "Fill 3", "Fill 4"}}, callbacksVarFillBreak);
 
     
+    introsEndings->undoLastClickedForOtherGroupSections = [this]()
+    {
+        variationsFills->deactivateLastClicked();
+    };
+
+    variationsFills->undoLastClickedForOtherGroupSections = [this]()
+    {
+        introsEndings->deactivateLastClicked();
+    };
+
     headerPanel.addAndMakeVisible(introsEndings.get());
     introsEndings->setVisible(false);
 

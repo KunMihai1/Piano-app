@@ -51,6 +51,29 @@ void StyleSectionComponent::applyChangeColour(juce::TextButton& button, bool act
     button.repaint();
 }
 
+juce::TextButton* StyleSectionComponent::getLastUsedButton()
+{
+    return lastClickedButton;
+}
+
+void StyleSectionComponent::deactivateLastClicked()
+{
+    if (lastClickedButton && lastActivationMap)
+    {
+        auto btnText = lastClickedButton->getButtonText();
+
+        bool oldState = false;
+        auto it = lastActivationMap->find(btnText);
+        if (it != lastActivationMap->end())
+            oldState = it->second;
+
+        applyChangeColour(*lastClickedButton, oldState);
+        (*lastActivationMap)[btnText] = !oldState;
+        lastClickedButton = nullptr;
+        lastActivationMap = nullptr;
+    }
+}
+
 void StyleSectionComponent::assignCallBacks()
 {
     for (auto* group : sectionGroups)
@@ -68,14 +91,43 @@ void StyleSectionComponent::assignCallBacks()
                 auto& activationMap = group->getActivationMap();
                 button->onClick = [callbackCopy, buttonText, this, btnPtr, &activationMap]()
                 {
-                    callbackCopy();
+                    if (undoLastClickedForOtherGroupSections)
+                        undoLastClickedForOtherGroupSections();
+                    if (lastClickedButton && lastActivationMap && lastClickedButton!=btnPtr)
+                    {
+                        bool activatedStateLast = false;
+                        auto itLast = lastActivationMap->find(lastClickedButton->getButtonText());
+                        if (itLast != lastActivationMap->end())
+                        {
+                            activatedStateLast = itLast->second;
+                            applyChangeColour(*lastClickedButton, activatedStateLast);
+                            (*lastActivationMap)[lastClickedButton->getButtonText()] = !activatedStateLast;
+                        }
+                    }
+                    
 
                     bool activatedState = false;
                     auto itAct = activationMap.find(btnPtr->getButtonText());
                     if (itAct != activationMap.end())
                         activatedState = itAct->second;
+
+                    bool newState = !activatedState;
+                    
                     applyChangeColour(*btnPtr, activatedState);
-                    activationMap[buttonText] = !activatedState;
+
+                    activationMap[buttonText] = newState;
+                    
+                    if (newState)
+                    {
+                        lastClickedButton = btnPtr;
+                        lastActivationMap = &activationMap;
+                    }
+                    else {
+                        lastClickedButton = nullptr;
+                        lastActivationMap = nullptr;
+                    }
+
+                    callbackCopy();
                 };
             }
         }
