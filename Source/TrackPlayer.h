@@ -15,6 +15,7 @@
 #include "TrackListener.h"
 #include "TrackPlayerListener.h"
 #include "SubjectInterface.h"
+#include "StyleSection.h"
 
 /**
  * @class MultipleTrackPlayer
@@ -115,6 +116,10 @@ public:
     /** @brief Sets the time signature numerator. */
     void setTimeSignatureNumerator(int newNumerator);
 
+    void setLastSectionUsed(const StyleSection& s);
+
+    void resetLastSectionUsed();
+
 private:
     /** @brief High-resolution timer callback for playback events. */
     void hiResTimerCallback() override;
@@ -132,4 +137,7 @@ private:
     double lastKnownSequenceTime = 0.0;                        /**< Last known time in the sequence */
     int timeSignatureDenominator = 4;                           /**< Time signature denominator */
     int timeSignatureNumerator = 4;                             /**< Time signature numerator */
+
+    std::optional<StyleSection> lastStyleSectionUsed;
+    bool sectionApplied=false;
 };

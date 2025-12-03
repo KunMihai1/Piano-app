@@ -17,7 +17,7 @@ Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : 
     availableTracksFromFolder = std::make_shared<std::deque<TrackEntry>>();
     groupedTracks = std::make_shared<std::unordered_map<juce::String, std::deque<TrackEntry>>>();
     groupedTrackKeys = std::make_shared<std::vector<juce::String>>();
-    sectionsPerStyleMap = std::make_shared<std::unordered_map<juce::String, std::vector<StyleSection>>>();
+    sectionsPerStyleMap = std::make_shared<std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>>();
 
     tabComp = std::make_unique<MyTabbedComponent>(juce::TabbedButtonBar::TabsAtLeft);
     
@@ -180,7 +180,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
 {
     if (!created)
     {
-        std::weak_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> weakSectionsMap = sectionsPerStyleMap;
+        std::weak_ptr<std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>> weakSectionsMap = sectionsPerStyleMap;
 
         currentStyleComponent = std::make_unique<CurrentStyleComponent>(name, mapUuidToTrack, outputDevice,weakSectionsMap);
         currentStyleComponent->onRequestTrackSelectionFromTrack = [this](std::function<void(const juce::String&, const juce::Uuid& uuid, const juce::String& type)> trackChosenCallback)
@@ -508,7 +508,7 @@ bool Display::existsTab(const juce::String& name)
     return false;
 }
 
-void Display::initializeSectionsForStyle(std::vector<StyleSection>& sections)
+void Display::initializeSectionsForStyle(std::unordered_map<juce::String,StyleSection>& sections)
 {
     sections.clear();
 
@@ -539,7 +539,7 @@ void Display::initializeSectionsForStyle(std::vector<StyleSection>& sections)
             s.startBar = -1;
             s.endBar = -1;
 
-            sections.push_back(std::move(s));
+            sections[s.name] = s;
             c++;
         }
     }
@@ -550,14 +550,17 @@ void Display::handleIntroDisplay(const juce::String& name)
     if (currentStyleComponent)
     {
         juce::String styleID = currentStyleComponent->getStyleID();
-        currentStyleComponent->handleIntroCurrentStyle(name);
+        currentStyleComponent->handleIntroCurrentStyle(name,(* sectionsPerStyleMap)[styleID]);
     }
 }
 
 void Display::handleEndingDisplay(const juce::String& name)
 {
     if (currentStyleComponent)
-        currentStyleComponent->handleEndingCurrentStyle(name);
+    {
+        juce::String styleID = currentStyleComponent->getStyleID();
+        currentStyleComponent->handleEndingCurrentStyle(name, (*sectionsPerStyleMap)[styleID]);
+    }
 }
 
 void Display::handleVarDisplay(const juce::String& name)
@@ -565,7 +568,7 @@ void Display::handleVarDisplay(const juce::String& name)
     if (currentStyleComponent)
     {
         juce::String styleID = currentStyleComponent->getStyleID();
-        currentStyleComponent->handleVarCurrentStyle(name);
+        currentStyleComponent->handleVarCurrentStyle(name, (*sectionsPerStyleMap)[styleID]);
     }
 }
 
@@ -574,7 +577,7 @@ void Display::handleFillDisplay(const juce::String& name)
     if (currentStyleComponent)
     {
         juce::String styleID = currentStyleComponent->getStyleID();
-        currentStyleComponent->handleFillCurrentStyle(name);
+        currentStyleComponent->handleFillCurrentStyle(name, (*sectionsPerStyleMap)[styleID]);
     }
 }
 
@@ -583,8 +586,7 @@ void Display::handleBreakDisplay(const juce::String& name)
     if (currentStyleComponent)
     {
         juce::String styleID = currentStyleComponent->getStyleID();
-        currentStyleComponent->handleBreakCurrentStyle(name);
-
+        currentStyleComponent->handleBreakCurrentStyle(name, (*sectionsPerStyleMap)[styleID]);
     }
 }
 
@@ -1470,7 +1472,7 @@ void CurrentStyleComponent::startPlaying()
 }
 
 CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice,
-    std::weak_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> styleSMap) : name(name), mapUuidToTrackEntry(map), outputDevice(outputDevice), styleSectionsMap{styleSMap}
+    std::weak_ptr<std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>> styleSMap) : name(name), mapUuidToTrackEntry(map), outputDevice(outputDevice), styleSectionsMap{styleSMap}
 {
     addMouseListener(this, true);
     nameOfStyle.setText(name, juce::dontSendNotification);
@@ -1977,24 +1979,34 @@ bool CurrentStyleComponent::getIsPlaying()
     return isPlaying;
 }
 
-void CurrentStyleComponent::handleIntroCurrentStyle(const juce::String& name)
+void CurrentStyleComponent::handleIntroCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (trackPlayer)
+        trackPlayer->setLastSectionUsed(section.at(name));
 }
 
-void CurrentStyleComponent::handleEndingCurrentStyle(const juce::String& name)
+void CurrentStyleComponent::handleEndingCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (trackPlayer)
+        trackPlayer->setLastSectionUsed(section.at(name));
 }
 
-void CurrentStyleComponent::handleVarCurrentStyle(const juce::String& name)
+void CurrentStyleComponent::handleVarCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (trackPlayer)
+        trackPlayer->setLastSectionUsed(section.at(name));
 }
 
-void CurrentStyleComponent::handleFillCurrentStyle(const juce::String& name)
+void CurrentStyleComponent::handleFillCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (trackPlayer)
+        trackPlayer->setLastSectionUsed(section.at(name));
 }
 
-void CurrentStyleComponent::handleBreakCurrentStyle(const juce::String& name)
+void CurrentStyleComponent::handleBreakCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (trackPlayer)
+        trackPlayer->setLastSectionUsed(section.at(name));
 }
 
 void CurrentStyleComponent::setTempo(double newTempo)

@@ -434,7 +434,7 @@ public:
     CurrentStyleComponent(const juce::String& name,
                           std::unordered_map<juce::Uuid, TrackEntry*>& map,
                           std::weak_ptr<juce::MidiOutput> outputDevice,
-                          std::weak_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> styleSectionsMap);
+                          std::weak_ptr<std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>> styleSectionsMap);
 
     /** @brief Destructor. Cleans up listeners and internal references. */
     ~CurrentStyleComponent() override;
@@ -583,15 +583,15 @@ public:
 
     bool getIsPlaying();
 
-    void handleIntroCurrentStyle(const juce::String& name);
+    void handleIntroCurrentStyle(const juce::String& name, const std::unordered_map<juce::String,StyleSection>& section);
 
-    void handleEndingCurrentStyle(const juce::String& name);
+    void handleEndingCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section);
 
-    void handleVarCurrentStyle(const juce::String& name);
+    void handleVarCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section);
+    
+    void handleFillCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section);
 
-    void handleFillCurrentStyle(const juce::String& name);
-
-    void handleBreakCurrentStyle(const juce::String& name);
+    void handleBreakCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section);
 
 private:
     //==============================================================================
@@ -623,7 +623,7 @@ private:
     std::unique_ptr<Track> copiedTrack = nullptr;           ///< Track object used for copy/paste operations.
     BeatBar customBeatBar;                                  ///< Visual component displaying beat progression.
 
-    std::weak_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> styleSectionsMap;
+    std::weak_ptr<std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>> styleSectionsMap;
 };
 
 
@@ -1019,7 +1019,7 @@ public:
     /** @brief Checks if a certain tab exists in the tabbed component*/
     bool existsTab(const juce::String& name);
 
-    void initializeSectionsForStyle(std::vector<StyleSection>& sections);
+    void initializeSectionsForStyle(std::unordered_map<juce::String, StyleSection>& sections);
 
     void handleIntroDisplay(const juce::String& name);
 
@@ -1049,7 +1049,7 @@ private:
     std::shared_ptr<std::unordered_map<juce::String, std::deque<TrackEntry>>> groupedTracks; ///< Tracks grouped by folder
     std::shared_ptr<std::vector<juce::String>> groupedTrackKeys; ///< Keys for grouped tracks
 
-    std::shared_ptr<std::unordered_map<juce::String, std::vector<StyleSection>>> sectionsPerStyleMap;
+    std::shared_ptr<std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>> sectionsPerStyleMap;
 
     std::weak_ptr<juce::MidiOutput> outputDevice; ///< MIDI output device
 
