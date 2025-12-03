@@ -273,9 +273,11 @@ void Display::showCurrentStyleTab(const juce::String& name)
     }
     tabComp->setCurrentTabIndex(tabComp->getNumTabs() - 1);
 
-    if ((*sectionsPerStyleMap)[name].empty())
+    juce::String styleID = currentStyleComponent->getStyleID();
+
+    if ((*sectionsPerStyleMap)[styleID].empty())
     {
-        initializeSectionsForStyle((*sectionsPerStyleMap)[name]);
+        initializeSectionsForStyle((*sectionsPerStyleMap)[styleID]);
         SectionIOHelper::saveToFile(IOHelper::getFile("mySections.json"), *sectionsPerStyleMap);
     }
 
@@ -540,6 +542,49 @@ void Display::initializeSectionsForStyle(std::vector<StyleSection>& sections)
             sections.push_back(std::move(s));
             c++;
         }
+    }
+}
+
+void Display::handleIntroDisplay(const juce::String& name)
+{
+    if (currentStyleComponent)
+    {
+        juce::String styleID = currentStyleComponent->getStyleID();
+        currentStyleComponent->handleIntroCurrentStyle(name);
+    }
+}
+
+void Display::handleEndingDisplay(const juce::String& name)
+{
+    if (currentStyleComponent)
+        currentStyleComponent->handleEndingCurrentStyle(name);
+}
+
+void Display::handleVarDisplay(const juce::String& name)
+{
+    if (currentStyleComponent)
+    {
+        juce::String styleID = currentStyleComponent->getStyleID();
+        currentStyleComponent->handleVarCurrentStyle(name);
+    }
+}
+
+void Display::handleFillDisplay(const juce::String& name)
+{
+    if (currentStyleComponent)
+    {
+        juce::String styleID = currentStyleComponent->getStyleID();
+        currentStyleComponent->handleFillCurrentStyle(name);
+    }
+}
+
+void Display::handleBreakDisplay(const juce::String& name)
+{
+    if (currentStyleComponent)
+    {
+        juce::String styleID = currentStyleComponent->getStyleID();
+        currentStyleComponent->handleBreakCurrentStyle(name);
+
     }
 }
 
@@ -1932,6 +1977,26 @@ bool CurrentStyleComponent::getIsPlaying()
     return isPlaying;
 }
 
+void CurrentStyleComponent::handleIntroCurrentStyle(const juce::String& name)
+{
+}
+
+void CurrentStyleComponent::handleEndingCurrentStyle(const juce::String& name)
+{
+}
+
+void CurrentStyleComponent::handleVarCurrentStyle(const juce::String& name)
+{
+}
+
+void CurrentStyleComponent::handleFillCurrentStyle(const juce::String& name)
+{
+}
+
+void CurrentStyleComponent::handleBreakCurrentStyle(const juce::String& name)
+{
+}
+
 void CurrentStyleComponent::setTempo(double newTempo)
 {
     oldTempo = currentTempo;
@@ -2020,6 +2085,11 @@ CurrentStyleComponent::~CurrentStyleComponent()
 juce::String CurrentStyleComponent::getName()
 {
     return name;
+}
+
+juce::String CurrentStyleComponent::getStyleID()
+{
+    return this->styleID;
 }
 
 void CurrentStyleComponent::triggerStopClick()

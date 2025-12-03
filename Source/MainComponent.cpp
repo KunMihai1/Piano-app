@@ -1478,18 +1478,8 @@ void MainComponent::playRecordingFromFile(double tempo)
 
 void MainComponent::handleIntro(const juce::String& name)
 {
-    if (name == "Intro 1")
-    {
-
-    }
-    else if (name == "Intro 2")
-    {
-
-    }
-    else if (name == "Intro 3")
-    {
-
-    }
+    if (display)
+        display->handleIntroDisplay(name);
 }
 
 void MainComponent::handleEnding(const juce::String& name)

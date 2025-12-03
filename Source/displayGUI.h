@@ -462,6 +462,8 @@ public:
     /** @brief Returns the current style’s name. */
     juce::String getName();
 
+    juce::String getStyleID();
+
     /**
      * @brief Serializes the current style to a JUCE DynamicObject.
      * @return Pointer to a dynamically allocated object representing this style.
@@ -580,6 +582,16 @@ public:
     void comboBoxChangeIndex(int Index);
 
     bool getIsPlaying();
+
+    void handleIntroCurrentStyle(const juce::String& name);
+
+    void handleEndingCurrentStyle(const juce::String& name);
+
+    void handleVarCurrentStyle(const juce::String& name);
+
+    void handleFillCurrentStyle(const juce::String& name);
+
+    void handleBreakCurrentStyle(const juce::String& name);
 
 private:
     //==============================================================================
@@ -1008,6 +1020,16 @@ public:
     bool existsTab(const juce::String& name);
 
     void initializeSectionsForStyle(std::vector<StyleSection>& sections);
+
+    void handleIntroDisplay(const juce::String& name);
+
+    void handleEndingDisplay(const juce::String& name);
+
+    void handleVarDisplay(const juce::String& name);
+
+    void handleFillDisplay(const juce::String& name);
+
+    void handleBreakDisplay(const juce::String& name);
 
 private:
     //==============================================================================
