@@ -232,6 +232,17 @@ void MultipleTrackPlayer::setTimeSignatureNumerator(int newNumerator)
     this->timeSignatureNumerator = newNumerator;
 }
 
+void MultipleTrackPlayer::setLastSectionUsed(const StyleSection& s)
+{
+    this->lastStyleSectionUsed = s;
+    sectionApplied = false;
+}
+
+void MultipleTrackPlayer::resetLastSectionUsed()
+{
+    this->lastStyleSectionUsed.reset();
+}
+
 void MultipleTrackPlayer::hiResTimerCallback()
 {
     if (auto midiOut = outputDevice.lock())
@@ -239,6 +250,13 @@ void MultipleTrackPlayer::hiResTimerCallback()
         double now = juce::Time::getHighResolutionTicks() /
             static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
         double elapsed = now - startTime;  // seconds elapsed since start
+
+        //need to add more complex logic and handling cases
+        if (lastStyleSectionUsed.has_value())
+        {
+            elapsed = lastStyleSectionUsed->startTimeSeconds-startTime;
+        }
+
         currentElapsedTime = elapsed;
 
         double rawBeatsElapsed = elapsed * (currentBPM / 60.0);

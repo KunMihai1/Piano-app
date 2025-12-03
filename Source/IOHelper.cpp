@@ -498,7 +498,7 @@ PlayBackSettings PlaybackSettingsIOHelper::loadFromFile(const juce::File& file, 
     return settings;
 }
 
-void SectionIOHelper::saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::vector<StyleSection>>& map)
+void SectionIOHelper::saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>& map)
 {
     auto* rootObj = new juce::DynamicObject();
     juce::var rootVar(rootObj);
@@ -511,12 +511,12 @@ void SectionIOHelper::saveToFile(const juce::File& file, const std::unordered_ma
             auto* sectionObj = new juce::DynamicObject();
             juce::var sectionVar(sectionObj);
 
-            sectionObj->setProperty("id", section.id);
-            sectionObj->setProperty("name", section.name);
-            sectionObj->setProperty("startTimeSeconds", section.startTimeSeconds);
-            sectionObj->setProperty("endTimeSeconds", section.endTimeSeconds);
-            sectionObj->setProperty("startBar", section.startBar);
-            sectionObj->setProperty("endBar", section.endBar);
+            sectionObj->setProperty("id", section.second.id);
+            sectionObj->setProperty("name", section.second.name);
+            sectionObj->setProperty("startTimeSeconds", section.second.startTimeSeconds);
+            sectionObj->setProperty("endTimeSeconds", section.second.endTimeSeconds);
+            sectionObj->setProperty("startBar", section.second.startBar);
+            sectionObj->setProperty("endBar", section.second.endBar);
 
             sectionsArray.add(sectionVar);
         }
@@ -527,7 +527,7 @@ void SectionIOHelper::saveToFile(const juce::File& file, const std::unordered_ma
     file.replaceWithText(jsonString);
 }
 
-void SectionIOHelper::loadFromFile(const juce::File& file, std::unordered_map<juce::String, std::vector<StyleSection>>& map)
+void SectionIOHelper::loadFromFile(const juce::File& file, std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>& map)
 {
     map.clear();
 
@@ -556,7 +556,7 @@ void SectionIOHelper::loadFromFile(const juce::File& file, std::unordered_map<ju
         if (!sectionsArray)
             return;
 
-        std::vector<StyleSection> sectionsVector;
+        std::unordered_map<juce::String,StyleSection> sectionsMap;
 
         for (auto& sectionsVar : *sectionsArray)
         {
@@ -573,9 +573,9 @@ void SectionIOHelper::loadFromFile(const juce::File& file, std::unordered_map<ju
             section.startBar = (int)sectionObj->getProperty("startBar");
             section.endBar = (int)sectionObj->getProperty("endBar");
 
-            sectionsVector.push_back(section);
+            sectionsMap[section.name] = section;
         }
 
-        map[styleID] = std::move(sectionsVector);
+        map[styleID] = std::move(sectionsMap);
     }
 }

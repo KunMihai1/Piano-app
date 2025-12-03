@@ -133,9 +133,9 @@ private:
 class SectionIOHelper
 {
 public:
-    static void saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::vector<StyleSection>>& map);
+    static void saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>& map);
     
-    static void loadFromFile(const juce::File& file, std::unordered_map<juce::String, std::vector<StyleSection>>& map);
+    static void loadFromFile(const juce::File& file, std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>& map);
 
 private:
 
