@@ -300,16 +300,18 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
             mapUuidToTrack[track.getUniqueID()] = &track;
             
             if (currentStyleComponent)
-                currentStyleComponent->applyBPMchangeForOne(currentStyleComponent->getTempo(), track.getUniqueID());
-
-            //if (mapNameToTrack.empty())
-              //  mapNameToTrack = buildTrackNameMap();
+            {
+                //currentStyleComponent->applyBPMchangeForOne(currentStyleComponent->getTempo(), track.getUniqueID());
+                currentStyleComponent->applyBPMchangeBeforePlayback(currentStyleComponent->getTempo(),false,true,false);
+                //currentStyleComponent->applyChangesForOneTrack(track);
+            }
 
             if (trackListComp)
                 trackListComp->removeListener(this);
             int in = tabComp->getNumTabs() - 2;
             if (in >= 0)
             {
+                DBG("save happens");
                 updateStyleInJson(currentStyleComponent->getName());
                 tabComp->setCurrentTabIndex(in);
             }
@@ -1783,7 +1785,7 @@ void CurrentStyleComponent::syncPercussionTracksVolumeChange(double newVolume)
     }
 }
 
-void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool whenLoading, bool applyStyleChanges)
+void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool whenLoading, bool applyStyleChanges, bool shouldSave)
 {
     if (userBPM <= 0.0)
         userBPM = 120.0;
@@ -1853,12 +1855,14 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool wh
         tr->sequence = scaledSequence;
     }
 
-    if (anyTrackChanged)
+    if (anyTrackChanged && shouldSave)
         anyTrackChanged();
 }
 
+//if this function is used, there's an issue with the sync of the whole tracks
 void CurrentStyleComponent::applyBPMchangeForOne(double userBPM, const juce::Uuid& uuid)
 {
+
     if (userBPM <= 0.0)
         userBPM = 120.0;
 
@@ -1867,50 +1871,45 @@ void CurrentStyleComponent::applyBPMchangeForOne(double userBPM, const juce::Uui
     if (trackPlayer)
         trackPlayer->setCurrentBPM(currentTempo);
 
-    int channelCounter = 0;
-    int targetChannel = 10;  
+    auto it = mapUuidToTrackEntry.find(uuid);
+    if (it == mapUuidToTrackEntry.end() || it->second == nullptr)
+        return;
 
+    auto& tr = it->second;
+
+
+    int channelCounter = 0;
+    int targetChannel = (tr->type == TrackType::Percussion) ? 10 : 2;
     for (const auto& trackPtr : allTracks)
     {
-        auto& tr = mapUuidToTrackEntry[trackPtr->getUsedID()];
-        if (tr == nullptr)
-            continue;
-
         if (trackPtr->getUsedID() == uuid)
-        {
-            targetChannel = (tr->type == TrackType::Percussion) ? 10 : (channelCounter + 2);
             break;
-        }
 
-        if (tr->type != TrackType::Percussion)
+        auto& other = mapUuidToTrackEntry[trackPtr->getUsedID()];
+        if (other && other->type != TrackType::Percussion)
             ++channelCounter;
     }
+    if (tr->type != TrackType::Percussion)
+        targetChannel = channelCounter + 2;
 
-    auto& tr = mapUuidToTrackEntry[uuid];
-    if (tr == nullptr)
-    {
-        DBG("Track not found in mapUuidToTrackEntry for uuid: " + uuid.toString());
-        return;
-    }
+    double originalBPM = (tr->originalBPM > 0.0) ? tr->originalBPM : 120.0;
+    double ratio = originalBPM / userBPM;
 
     juce::MidiMessageSequence scaledSequence;
-
-    double trackOriginalBPM = (tr->originalBPM > 0.0) ? tr->originalBPM : 120.0;
 
     for (int i = 0; i < tr->originalSequenceTicks.getNumEvents(); ++i)
     {
         const auto& event = tr->originalSequenceTicks.getEventPointer(i)->message;
-
-        double scaledTime = event.getTimeStamp() * (trackOriginalBPM / userBPM);
+        double scaledTime = event.getTimeStamp() * ratio;
 
         juce::MidiMessage newMsg = event;
         newMsg.setTimeStamp(scaledTime);
         newMsg.setChannel(targetChannel);
-
         scaledSequence.addEvent(newMsg);
     }
 
     scaledSequence.sort();
+    scaledSequence.updateMatchedPairs();
 
     double firstNoteOnTime = 0.01;
     for (int i = 0; i < scaledSequence.getNumEvents(); ++i)
@@ -1926,16 +1925,16 @@ void CurrentStyleComponent::applyBPMchangeForOne(double userBPM, const juce::Uui
     if (tr->volumeAssociated != -1)
     {
         scaledSequence.addEvent(
-            juce::MidiMessage::controllerEvent(targetChannel, 7, (int)tr->volumeAssociated).withTimeStamp(firstNoteOnTime - 0.004));
+            juce::MidiMessage::controllerEvent(targetChannel, 7, (int)tr->volumeAssociated)
+            .withTimeStamp(firstNoteOnTime - 0.004));
     }
 
     if (targetChannel != 10 && tr->instrumentAssociated != -1)
     {
         scaledSequence.addEvent(
-            juce::MidiMessage::programChange(targetChannel, tr->instrumentAssociated).withTimeStamp(firstNoteOnTime - 0.002));
+            juce::MidiMessage::programChange(targetChannel, tr->instrumentAssociated)
+            .withTimeStamp(firstNoteOnTime - 0.002));
     }
-
-    scaledSequence.updateMatchedPairs();
 
     tr->sequence = scaledSequence;
 }
