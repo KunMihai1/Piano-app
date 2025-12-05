@@ -249,13 +249,9 @@ void MultipleTrackPlayer::hiResTimerCallback()
     {
         double now = juce::Time::getHighResolutionTicks() /
             static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
-        double elapsed = now - startTime;  // seconds elapsed since start
+        double elapsed= now - startTime;  // seconds elapsed since start
 
         //need to add more complex logic and handling cases
-        if (lastStyleSectionUsed.has_value())
-        {
-            elapsed = lastStyleSectionUsed->startTimeSeconds-startTime;
-        }
 
         currentElapsedTime = elapsed;
 

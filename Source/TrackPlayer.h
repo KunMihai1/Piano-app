@@ -140,4 +140,5 @@ private:
 
     std::optional<StyleSection> lastStyleSectionUsed;
     bool sectionApplied=false;
+    double elapsedOffsetSeconds;
 };

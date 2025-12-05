@@ -559,7 +559,7 @@ public:
      * @param userBPM The new user-defined tempo.
      * @param whenLoad Whether this was triggered during loading.
      */
-    void applyBPMchangeBeforePlayback(double userBPM, bool whenLoad = false, bool applyStyleChanges=false);
+    void applyBPMchangeBeforePlayback(double userBPM, bool whenLoad = false, bool applyStyleChanges=false, bool shouldSave=true);
 
     /**
      * @brief Applies BPM scaling to a specific track only.
@@ -567,6 +567,8 @@ public:
      * @param uuid UUID of the target track.
      */
     void applyBPMchangeForOne(double userBPM, const juce::Uuid& uuid);
+
+    
 
     //==============================================================================
     /**
