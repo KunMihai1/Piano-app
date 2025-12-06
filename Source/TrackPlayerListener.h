@@ -32,6 +32,16 @@ public:
      */
     virtual void updateCurrentRowBasedOnTime(double currentTime) = 0;
 
+
+
     /** Virtual destructor for safe cleanup in derived classes. */
     virtual ~TrackPlayerListener() = default;
+};
+
+
+class TrackPlayerListenerModifyStateObjects {
+public:
+    virtual void updateObjects() = 0;
+
+    virtual ~TrackPlayerListenerModifyStateObjects() = default;
 };

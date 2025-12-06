@@ -219,7 +219,6 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
 
     label->onClick = [this, rowNumber]()
     {
-        DBG("Label clicked: row " + juce::String(rowNumber));
         if (onRequestSelectRow)
             onRequestSelectRow(rowNumber);
     };
@@ -429,7 +428,6 @@ int MidiNotesTableModel::getRowFromTime(double currentTime)
 
 void MidiNotesTableModel::updateCurrentRowBasedOnTime(double currentTime)
 {
-    DBG("time:" + juce::String(currentTime));
     int toHighlitRow = getRowFromTime(currentTime);
 
     if (highlightedRow != toHighlitRow)

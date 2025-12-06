@@ -30,7 +30,7 @@
  *
  * Inherits from juce::HighResolutionTimer, TrackListener, and Subject for TrackPlayerListener.
  */
-class MultipleTrackPlayer: private juce::HighResolutionTimer, public TrackListener, public Subject<TrackPlayerListener>
+class MultipleTrackPlayer: private juce::HighResolutionTimer, public TrackListener
 {
 public:
     /**
@@ -47,6 +47,7 @@ public:
      * Provides elapsed time in beats.
      */
     std::function<void(double)> onElapsedUpdate;
+    std::function<void()> onStopTriggerClickFromPlayer;
 
     /**
      * @brief Constructor.
@@ -74,7 +75,7 @@ public:
     void setCurrentBPM(int newBPM);
 
     /** @brief Stops playback and all MIDI notes. */
-    void stop();
+    void stop(bool shouldModify=true);
 
     /** @brief Starts playback from the beginning or current elapsed time. */
     void start();
@@ -120,6 +121,14 @@ public:
 
     void resetLastSectionUsed();
 
+    void addSubjectTrackPlayerListener(TrackPlayerListener* l);
+    void addSubjectTrackPlayerModifyListener(TrackPlayerListenerModifyStateObjects* l);
+
+    void removeSubjectTrackPlayerListener(TrackPlayerListener* l);
+    void removeSubjectTrackPlayerModifyListener(TrackPlayerListenerModifyStateObjects* l);
+
+
+
 private:
     /** @brief High-resolution timer callback for playback events. */
     void hiResTimerCallback() override;
@@ -138,7 +147,9 @@ private:
     int timeSignatureDenominator = 4;                           /**< Time signature denominator */
     int timeSignatureNumerator = 4;                             /**< Time signature numerator */
 
+    Subject<TrackPlayerListener> trackPlayerSubjects;
+    Subject<TrackPlayerListenerModifyStateObjects> trackPlayerModifyObjectsSubjects;
+
     std::optional<StyleSection> lastStyleSectionUsed;
     bool sectionApplied=false;
-    double elapsedOffsetSeconds;
 };

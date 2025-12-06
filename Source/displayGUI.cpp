@@ -1428,7 +1428,7 @@ void CurrentStyleComponent::startPlaying()
     
     playSettingsTracks.setSelectedId(selectedID);
 
-    stopPlaying();
+    stopPlaying(false);
 
     std::vector<TrackEntry> selectedTracks;
 
@@ -1517,6 +1517,15 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     customBeatBar.isPlayingCheck = [this]()
     {
         return isPlaying;
+    };
+
+    trackPlayer->onStopTriggerClickFromPlayer = [this]()
+    {
+        juce::MessageManager::callAsync([this]()
+            {
+                isPlaying = false;
+                customBeatBar.repaint();
+            });
     };
 
     for (int i = 0; i < 8; i++)
@@ -1614,12 +1623,14 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     };
 
     addAndMakeVisible(tempoSlider);
+
+    trackPlayer->addSubjectTrackPlayerModifyListener(this);
 }
 
-void CurrentStyleComponent::stopPlaying()
+void CurrentStyleComponent::stopPlaying(bool shouldModify)
 {
     if (trackPlayer)
-        trackPlayer->stop();
+        trackPlayer->stop(shouldModify);
 }
 
 double CurrentStyleComponent::getTempo()
@@ -1730,12 +1741,16 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
     static juce::MidiMessageSequence emptySequence;
     static std::unordered_map<int, MidiChangeInfo> emptyMap;
 
+
     auto container = std::make_unique<TableContainer>(
         sequence ? *sequence : emptySequence,
         displayName,
         channel,
-        changeMap ? *changeMap : emptyMap
+        changeMap ? *changeMap : emptyMap,
+        isPlaying
         );
+
+    trackPlayer->addSubjectTrackPlayerModifyListener(container.get());
 
     container->setSize(350, 340);
 
@@ -1745,15 +1760,17 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
             updateTrackFile();
     };
 
-    if (container)
+    container->addModelAsListenerToTrackPlayer(trackPlayer.get());
+    container->removeModelFromListener = [this](TrackPlayerListener* listener)
     {
-        container->addModelAsListener(trackPlayer.get());
-        container->removeModelFromListener = [this](TrackPlayerListener* listener)
-        {
-            if (trackPlayer)
-                trackPlayer->removeListener(listener);
-        };
-    }
+        if (trackPlayer)
+            trackPlayer->removeSubjectTrackPlayerListener(listener);
+    };
+    
+    container->removeContainerFromListeners = [this, container=container.get()]()
+    {
+        trackPlayer->removeSubjectTrackPlayerModifyListener(container);
+    };
 
     juce::CallOutBox::launchAsynchronously(
         std::move(container),
@@ -2082,12 +2099,19 @@ void CurrentStyleComponent::updateName(const juce::String& newName)
     nameOfStyle.setTooltip(name);
 }
 
+void CurrentStyleComponent::updateObjects()
+{
+    tempoSlider.setEnabled(!tempoSlider.isEnabled());
+}
+
 CurrentStyleComponent::~CurrentStyleComponent()
 {
     if (trackPlayer)
     {
         for (auto& track : allTracks)
             track->removeListener(trackPlayer.get());
+
+        trackPlayer->removeSubjectTrackPlayerModifyListener(this);
     }
     if (&playSettingsTracks)
         playSettingsTracks.removeListener(this);

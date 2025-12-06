@@ -12,7 +12,7 @@
 
 
 
-TableContainer::TableContainer(juce::MidiMessageSequence& seq, const juce::String& displayName, int channel, std::unordered_map<int, MidiChangeInfo>& map): changesMap{map}, originalSequence{seq}
+TableContainer::TableContainer(juce::MidiMessageSequence& seq, const juce::String& displayName, int channel, std::unordered_map<int, MidiChangeInfo>& map, bool shouldDisable): changesMap{map}, originalSequence{seq}
 {
     juce::String displayN = "Notes - " + displayName;
     model = std::make_unique<MidiNotesTableModel>(seq, channel, map);
@@ -133,6 +133,8 @@ TableContainer::TableContainer(juce::MidiMessageSequence& seq, const juce::Strin
 
     changeToOriginalMultipleButton = std::make_unique<juce::TextButton>("Change");
     changeToOriginalMultipleButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    if (shouldDisable)
+        changeToOriginalMultipleButton->setEnabled(false);
 
     changeToOriginalMultipleButton->onClick = [this]()
     {
@@ -177,6 +179,9 @@ TableContainer::TableContainer(juce::MidiMessageSequence& seq, const juce::Strin
 
     modifyMultipleButton = std::make_unique<juce::TextButton>("Apply");
     modifyMultipleButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    
+    if (shouldDisable)
+        modifyMultipleButton->setEnabled(false);
 
     modifyMultipleButton->onClick = [this]()
     {
@@ -256,12 +261,28 @@ void TableContainer::resized()
     disclaimerLabel->setBounds(disclaimerArea);
 }
 
+void TableContainer::updateObjects()
+{
+    if (changeToOriginalMultipleButton)
+    {
+        changeToOriginalMultipleButton->setEnabled(!changeToOriginalMultipleButton->isEnabled());
+    }
+
+    if (modifyMultipleButton)
+    {
+        modifyMultipleButton->setEnabled(!modifyMultipleButton->isEnabled());
+    }   
+}
+
 TableContainer::~TableContainer()
 {
     table->setModel(nullptr);
 
     if (model && removeModelFromListener)
         removeModelFromListener(model.get());
+
+    if (removeContainerFromListeners)
+        removeContainerFromListeners();
 }
 
 void TableContainer::onlyNotes()
@@ -761,7 +782,6 @@ void TableContainer::showModifyChangeDialog(
                        double timeStampCurrentNoteOn = model->getCurrentNoteOnTimeStamp(currentRow);
                        double timeStampNextNoteOn = model->getNextNoteOnTimeStamp(currentRow);
 
-                       DBG("Time stamps:" + juce::String(timeStampPreviousNoteOn) + " " + juce::String(timeStampCurrentNoteOn) + " " + juce::String(timeStampNextNoteOn));
 
                        if (timeStampPreviousNoteOn == -1)
                            return;
@@ -804,7 +824,6 @@ void TableContainer::showModifyChangeDialog(
                            {
                                if (result == 0) return;
                                onValidResults(result);
-                               DBG("We got to confirmed");
                                onConfirmed();
                            }),
                        true);
@@ -836,8 +855,8 @@ void TableContainer::showModifyChangeDialog(
     }
 }
 
-void TableContainer::addModelAsListener(Subject<TrackPlayerListener>* subject)
+void TableContainer::addModelAsListenerToTrackPlayer(MultipleTrackPlayer* player)
 {
-    if (subject)
-        subject->addListener(model.get());
+    if (player)
+        player->addSubjectTrackPlayerListener(model.get());
 }

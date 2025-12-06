@@ -76,10 +76,10 @@ void MultipleTrackPlayer::setCurrentBPM(int newBPM)
     this->currentBPM = newBPM;
 }
 
-void MultipleTrackPlayer::stop()
+void MultipleTrackPlayer::stop(bool shouldModify)
 {
-
     stopTimer();
+
     this->lastKnownSequenceTime = 0.0;
     if (onElapsedUpdate)
     {
@@ -93,6 +93,13 @@ void MultipleTrackPlayer::stop()
         for (int channel = 1; channel <= 16; ++channel)
             sharedPtrDev->sendMessageNow(juce::MidiMessage::allNotesOff(channel));
     }
+
+    if (shouldModify)
+    {
+        trackPlayerModifyObjectsSubjects.notifyChangeStatesOfObjects();
+        if (onStopTriggerClickFromPlayer)
+            onStopTriggerClickFromPlayer();
+    }
 }
 
 void MultipleTrackPlayer::start()
@@ -101,11 +108,12 @@ void MultipleTrackPlayer::start()
     startTime = static_cast<double>(juce::Time::getHighResolutionTicks()) / static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
     lastKnownSequenceTime = 0.0;
     currentElapsedTime = 0.0;
-    DBG("Playback started at time: " << startTime);
 
     for (auto& track : tracks)
         track.nextEventIndex = 0;
 
+
+    trackPlayerModifyObjectsSubjects.notifyChangeStatesOfObjects();
     startTimer(10);
 }
 
@@ -243,6 +251,27 @@ void MultipleTrackPlayer::resetLastSectionUsed()
     this->lastStyleSectionUsed.reset();
 }
 
+void MultipleTrackPlayer::addSubjectTrackPlayerListener(TrackPlayerListener* l)
+{
+    trackPlayerSubjects.addListener(l);
+}
+
+void MultipleTrackPlayer::addSubjectTrackPlayerModifyListener(TrackPlayerListenerModifyStateObjects* l)
+{
+    trackPlayerModifyObjectsSubjects.addListener(l);
+}
+
+void MultipleTrackPlayer::removeSubjectTrackPlayerListener(TrackPlayerListener* l)
+{
+    trackPlayerSubjects.removeListener(l);
+}
+
+void MultipleTrackPlayer::removeSubjectTrackPlayerModifyListener(TrackPlayerListenerModifyStateObjects* l)
+{
+    trackPlayerModifyObjectsSubjects.removeListener(l);
+}
+
+
 void MultipleTrackPlayer::hiResTimerCallback()
 {
     if (auto midiOut = outputDevice.lock())
@@ -263,7 +292,7 @@ void MultipleTrackPlayer::hiResTimerCallback()
         juce::MessageManager::callAsync([this,beatsElapsed,elapsed]
             {
                 onElapsedUpdate(beatsElapsed);
-                notifyMidPlay(elapsed);
+                trackPlayerSubjects.notifyMidPlay(elapsed);
             });
 
 
