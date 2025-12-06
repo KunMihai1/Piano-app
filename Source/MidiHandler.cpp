@@ -561,7 +561,6 @@ int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String
 	{
 		if (onAddCallBack)
 		{
-			DBG("onAddCallBack triggered!");
 			onAddCallBack(vid, pid, [this, vid, pid](const juce::String& name, int keys)
 				{
 					dataBase.addDeviceJson(vid, pid, name, keys);

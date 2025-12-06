@@ -15,12 +15,14 @@
 #include "ValidatorUI.h"
 #include <variant>
 #include "SubjectInterface.h"
+#include "TrackPlayerListener.h"
+#include "TrackPlayer.h"
 
 /**
  * @class TableContainer
  * @brief A component that displays a table of MIDI notes and allows editing of note properties.
  */
-class TableContainer: public juce::Component
+class TableContainer: public juce::Component, public TrackPlayerListenerModifyStateObjects
 {
 public:
     /// Callback for updating the file when changes occur.
@@ -29,6 +31,8 @@ public:
     /// Callback for removing the model from a listener.
     std::function<void(TrackPlayerListener* listener)> removeModelFromListener;
 
+    std::function<void()> removeContainerFromListeners;
+
     /**
      * @brief Constructor.
      * @param seq MIDI message sequence to display and modify.
@@ -36,7 +40,7 @@ public:
      * @param channel MIDI channel for filtering notes.
      * @param map Map of MIDI changes to track modifications.
      */
-    TableContainer(juce::MidiMessageSequence& seq, const juce::String& displayName, int channel, std::unordered_map<int, MidiChangeInfo>& map);
+    TableContainer(juce::MidiMessageSequence& seq, const juce::String& displayName, int channel, std::unordered_map<int, MidiChangeInfo>& map, bool shouldDisable=false);
 
     /**
      * @brief Destructor.
@@ -47,6 +51,8 @@ public:
      * @brief Called when the component is resized.
      */
     void resized() override;
+
+    void updateObjects() override;
 
     /**
      * @brief Reset all note numbers to their original values.
@@ -213,7 +219,7 @@ public:
      * @brief Add the table model as a listener to a subject.
      * @param subject Subject to add the model as listener to (optional).
      */
-    void addModelAsListener(Subject<TrackPlayerListener>* subject=nullptr);
+    void addModelAsListenerToTrackPlayer(MultipleTrackPlayer* player);
 
 private:
     std::unique_ptr<juce::TableListBox> table;        ///< Table displaying MIDI notes

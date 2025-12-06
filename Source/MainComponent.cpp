@@ -144,7 +144,6 @@ void MainComponent::resized()
 
     //volumeKnob.setBounds(getWidth() / 2, 0, 70, 50);
 
-    DBG(juce::String(getWidth()) + "ASAA");
     display->setBounds((headerPanel.getWidth()-400)/2, 0, 400, 100);
 
     if (noteLayer)
@@ -1035,10 +1034,8 @@ void MainComponent::playButtonOnClick()
             this->display->set_VID_PID("", "");
         else this->display->set_VID_PID(VID, PID);
 
-        DBG("VID AND PID in main comp" + VID + " " + PID);
         this->display->readSettingsFromJSON();
 
-        DBG("vid and pid in main comp after reading from json" + this->display->getVID() + " " + this->display->getPID());
         currentBackground = playBackground;
         repaint();
         toggleHPanel();
@@ -1050,7 +1047,6 @@ void MainComponent::playButtonOnClick()
         if (!keyboardInitialized)
         {
             keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
-            DBG("HERE ARE" + juce::String(midiHandler.getProgramNumberLeftHand()) + juce::String(midiHandler.getProgramNumberRightHand() ));
             midiHandler.setProgramNumber(midiHandler.getProgramNumberLeftHand(), "left");
             midiHandler.setProgramNumber(midiHandler.getProgramNumberRightHand(), "right");
 

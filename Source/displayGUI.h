@@ -399,7 +399,8 @@ private:
  */
 class CurrentStyleComponent : public juce::Component,
                               private juce::MouseListener,
-                              private juce::ComboBox::Listener
+                              private juce::ComboBox::Listener,
+                              public TrackPlayerListenerModifyStateObjects
 {
 public:
 
@@ -459,6 +460,8 @@ public:
      */
     void updateName(const juce::String& newName);
 
+    void updateObjects() override;
+
     /** @brief Returns the current style’s name. */
     juce::String getName();
 
@@ -481,7 +484,7 @@ public:
     void startPlaying();
 
     /** @brief Stops playback of all tracks. */
-    void stopPlaying();
+    void stopPlaying(bool shouldModify=true);
 
     /** @brief Returns the current playback tempo (BPM). */
     double getTempo();

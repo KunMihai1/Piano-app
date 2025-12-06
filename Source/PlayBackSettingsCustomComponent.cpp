@@ -16,10 +16,7 @@ PlayBackSettingsComponent::PlayBackSettingsComponent(int lowestNote, int highest
     auto settingsFile = IOHelper::getFile("playbackSettings.json");
     if (!settingsFile.existsAsFile())
         settingsFile.create();
-        
-    DBG("Constructor: " + settingsGiven.VID + settingsGiven.PID);
-    DBG("Constructor: " + settings.VID + settings.PID);
-
+      
 
     this->lowestNote = lowestNote;
     this->highestNote = highestNote;

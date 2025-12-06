@@ -89,6 +89,17 @@ public:
             });
     }
 
+    void notifyChangeStatesOfObjects()
+    {
+        juce::MessageManager::callAsync([=]()
+            {
+                listeners.call([=](ListenerType& listener)
+                    {
+                        listener.updateObjects();
+                    });
+            });
+    }
+
 private:
     juce::ListenerList<ListenerType> listeners; /**< Internal list of listeners */
 };
