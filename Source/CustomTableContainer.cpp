@@ -770,18 +770,20 @@ void TableContainer::showModifyChangeDialog(
                    {
                        if (!Validator::isValidMidiDoubleString(userValue))
                        {
-                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify time stamps", "Invalid value");
+                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify time stamps", "Invalid input value");
                            return;
                        }
 
                        double doubleValue = userValue.getDoubleValue();
 
                        int currentRow = table->getSelectedRows()[0];
+                       DBG("current row is: " + juce::String(currentRow));
 
                        double timeStampPreviousNoteOn=model->getPreviousNoteOnTimeStamp(currentRow);
                        double timeStampCurrentNoteOn = model->getCurrentNoteOnTimeStamp(currentRow);
                        double timeStampNextNoteOn = model->getNextNoteOnTimeStamp(currentRow);
 
+                       DBG("prev: " + juce::String(timeStampPreviousNoteOn) + " current: " + juce::String(timeStampCurrentNoteOn) + " next: " + juce::String(timeStampNextNoteOn));
 
                        if (timeStampPreviousNoteOn == -1)
                            return;
@@ -797,7 +799,7 @@ void TableContainer::showModifyChangeDialog(
                    {
                        if (!Validator::isValidMidiIntegerString(userValue))
                        {
-                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify time stamps", "Invalid value");
+                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify velocities", "Invalid input value");
                            return;
                        }
 
@@ -805,7 +807,7 @@ void TableContainer::showModifyChangeDialog(
 
                        if (!Validator::isValidMidiIntValue(intValue))
                        {
-                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify time stamps", "Invalid value");
+                           juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Modify velocities", "Invalid value");
                            return;
                        }
 

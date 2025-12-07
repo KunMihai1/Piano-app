@@ -366,7 +366,7 @@ double MidiNotesTableModel::getPreviousNoteOnTimeStamp(int currentIndex)
         return -1;
 
     if (currentIndex == 0)
-        return getFirstNoteOnTimeStamps();
+        return 0.0;
 
     else return noteOnEvents[currentIndex - 1].event->message.getTimeStamp();
 }
