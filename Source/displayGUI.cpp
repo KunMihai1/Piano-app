@@ -302,8 +302,7 @@ void Display::showListOfTracksToSelectFrom(std::function<void(const juce::String
             if (currentStyleComponent)
             {
                 //currentStyleComponent->applyBPMchangeForOne(currentStyleComponent->getTempo(), track.getUniqueID());
-                currentStyleComponent->applyBPMchangeBeforePlayback(currentStyleComponent->getTempo(),false,true,false);
-                //currentStyleComponent->applyChangesForOneTrack(track);
+                currentStyleComponent->applyBPMchangeBeforePlayback(currentStyleComponent->getTempo(),true);
             }
 
             if (trackListComp)
@@ -1616,7 +1615,8 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
 
         if (trackPlayer)
             trackPlayer->setCurrentBPM(currentTempo);
-        applyBPMchangeBeforePlayback(currentTempo);
+
+        applyBPMchangeBeforePlayback(currentTempo,true);
 
         if (anyTrackChanged)
             anyTrackChanged();
@@ -1672,7 +1672,6 @@ void CurrentStyleComponent::applyChangesForAllTracksCurrentStyle()
         if (track)
             applyChangesForOneTrack(*track);
     }
-
 }
 
 void CurrentStyleComponent::removingTrack(const juce::Uuid& uuid)
@@ -1802,7 +1801,7 @@ void CurrentStyleComponent::syncPercussionTracksVolumeChange(double newVolume)
     }
 }
 
-void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool whenLoading, bool applyStyleChanges, bool shouldSave)
+void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool applyStyleChanges)
 {
     if (userBPM <= 0.0)
         userBPM = 120.0;
@@ -1844,10 +1843,19 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool wh
         scaledSequence.sort();
         scaledSequence.updateMatchedPairs();
 
-        double firstNoteOnTime = 0.01;
-        for (int i = 0; i < scaledSequence.getNumEvents(); ++i)
+
+        tr->sequence = scaledSequence;
+        if (applyStyleChanges)
         {
-            const auto& msg = scaledSequence.getEventPointer(i)->message;
+            applyChangesForOneTrack(*tr);
+        }
+
+        auto& toApply = tr->sequence;
+
+        double firstNoteOnTime = 0.01;
+        for (int i = 0; i < toApply.getNumEvents(); ++i)
+        {
+            const auto& msg = toApply.getEventPointer(i)->message;
             if (msg.isNoteOn())
             {
                 firstNoteOnTime = std::max(0.01, msg.getTimeStamp() - 0.005);
@@ -1857,23 +1865,18 @@ void CurrentStyleComponent::applyBPMchangeBeforePlayback(double userBPM, bool wh
 
         if (tr->volumeAssociated != -1)
         {
-            scaledSequence.addEvent(
+            toApply.addEvent(
                 juce::MidiMessage::controllerEvent(targetChannel, 7, (int)tr->volumeAssociated)
                 .withTimeStamp(firstNoteOnTime - 0.004));
         }
 
         if (targetChannel != 10 && tr->instrumentAssociated != -1)
         {
-            scaledSequence.addEvent(
+            toApply.addEvent(
                 juce::MidiMessage::programChange(targetChannel, tr->instrumentAssociated)
                 .withTimeStamp(firstNoteOnTime - 0.002));
         }
-
-        tr->sequence = scaledSequence;
     }
-
-    if (anyTrackChanged && shouldSave)
-        anyTrackChanged();
 }
 
 //if this function is used, there's an issue with the sync of the whole tracks

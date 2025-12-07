@@ -334,6 +334,10 @@ void TrackIOHelper::applyChangesToASequence(juce::MidiMessageSequence& sequence,
         double onTime = msgOn.getTimeStamp();
         double offTime = msgOff.getTimeStamp();
         double duration = offTime - onTime;
+
+        double delta = changeInfo.oldTimeStamp - changeInfo.newTimeStamp;
+        double newTimeOn = onTime- delta;
+
         if (duration < 0)
             duration = 0.0;
 
@@ -344,13 +348,13 @@ void TrackIOHelper::applyChangesToASequence(juce::MidiMessageSequence& sequence,
             changeInfo.newNumber,
             (juce::uint8)changeInfo.newVelocity
         );
-        newOn.setTimeStamp(changeInfo.newTimeStamp);
+        newOn.setTimeStamp(newTimeOn);
 
         juce::MidiMessage newOff = juce::MidiMessage::noteOff(
             channel,
             changeInfo.newNumber
         );
-        newOff.setTimeStamp(changeInfo.newTimeStamp + duration);
+        newOff.setTimeStamp(newTimeOn + duration);
 
         msgOn = newOn;
         msgOff = newOff;
@@ -379,18 +383,22 @@ void TrackIOHelper::applyChangesToASequence(std::vector<NotePair>& pairs, const 
         double oldOn = msgOn->getTimeStamp();
         double oldOff = msgOff->getTimeStamp();
         double duration = oldOff - oldOn;
+
+        double delta = changeInfo.oldTimeStamp - changeInfo.newTimeStamp;
+        double newTimeOn = oldOn - delta;
+
         if (duration < 0)
             duration = 0; 
 
         juce::MidiMessage newOn = juce::MidiMessage::noteOn(
             channel, changeInfo.newNumber, (juce::uint8)changeInfo.newVelocity
         );
-        newOn.setTimeStamp(changeInfo.newTimeStamp);
+        newOn.setTimeStamp(newTimeOn);
 
         juce::MidiMessage newOff = juce::MidiMessage::noteOff(
             channel, changeInfo.newNumber
         );
-        newOff.setTimeStamp(changeInfo.newTimeStamp + duration);
+        newOff.setTimeStamp(newTimeOn + duration);
 
         *msgOn = newOn;
         *msgOff = newOff;
