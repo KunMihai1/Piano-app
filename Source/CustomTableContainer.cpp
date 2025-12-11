@@ -308,7 +308,7 @@ void TableContainer::onlyTimeStamps()
     resetPropertyAndApply([](MidiChangeInfo& info)
         {
             info.newTimeStamp = info.oldTimeStamp;
-        });
+        },nullptr,false);
 }
 
 void TableContainer::onlyTimeStampsSelected(const juce::SparseSet<int>& allSelected)
@@ -317,7 +317,7 @@ void TableContainer::onlyTimeStampsSelected(const juce::SparseSet<int>& allSelec
         {
             info.newTimeStamp = info.oldTimeStamp;
         },
-        &allSelected);
+        &allSelected,false);
 }
 
 void TableContainer::onlyVelocities()
@@ -353,7 +353,7 @@ void TableContainer::allProperties()
         info.newTimeStamp = info.oldTimeStamp;
         info.newVelocity = info.oldVelocity;
 
-        applyChangeToSequence(originalIndex, info);
+        applyChangeFromSequence(originalIndex, info,false);
     }
     changesMap.clear();
 }
@@ -376,11 +376,22 @@ bool TableContainer::validForErase(MidiChangeInfo& info)
     return false;
 }
 
-void TableContainer::applyChangeToSequence(int originalIndex, const MidiChangeInfo& info, bool modifyVelocity)
+void TableContainer::applyChangeFromSequence(int originalIndex, const MidiChangeInfo& info, bool modifyVelocity, bool shouldApplyChanges)
 {
     auto* e = originalSequence.getEventPointer(originalIndex);
     if (e == nullptr)
         return;
+
+    double ratio;
+    double fromChange=0;
+    if (shouldApplyChanges) //this is not a good condition
+    {
+        fromChange = info.oldTimeStamp - info.newTimeStamp;
+        ratio = info.newBPMchange / getCurrentBPMstyle();
+    }
+    else ratio = info.oldBPMchange / getCurrentBPMstyle();
+    
+
 
     if (e->message.isNoteOn())
     {
@@ -396,7 +407,19 @@ void TableContainer::applyChangeToSequence(int originalIndex, const MidiChangeIn
             info.newNumber,
             (juce::uint8)juce::jlimit(0, 127, info.newVelocity)
         );
-        newMsg.setTimeStamp(info.newTimeStamp);
+
+        DBG("from change is:" + juce::String(fromChange));
+        DBG("OLD timestamp IS:" + juce::String(info.oldTimeStamp));
+        DBG("NEW timestamp IS: " + juce::String(info.newTimeStamp));
+        DBG("current bpm is: " + juce::String(getCurrentBPMstyle()));
+        DBG("bpm when change is: " + juce::String(info.newBPMchange));
+        DBG("ratio is: " + juce::String(ratio));
+        if (shouldApplyChanges)
+        {
+            newMsg.setTimeStamp(info.oldTimeStamp * ratio - fromChange);
+        }
+        else newMsg.setTimeStamp(info.newTimeStamp*ratio);
+
         e->message = newMsg;
 
         if (!modifyVelocity && e->noteOffObject != nullptr)
@@ -409,8 +432,14 @@ void TableContainer::applyChangeToSequence(int originalIndex, const MidiChangeIn
             
 
             double offTime = info.newTimeStamp + duration;
+                
+            if (shouldApplyChanges)
+            {
+                offTime = info.oldTimeStamp+duration;
+                offMsg.setTimeStamp(offTime * ratio - fromChange);
+            }
+            else offMsg.setTimeStamp(offTime*ratio);
 
-            offMsg.setTimeStamp(offTime);
             noteOffEvent->message = offMsg;
         }
     }
@@ -613,7 +642,7 @@ void TableContainer::resetPropertyAndApply(const std::function<void(MidiChangeIn
                 {
                     auto& info = it->second;
                     resetProperty(info);
-                    applyChangeToSequence(originalIndex, info, modifyVelocity);
+                    applyChangeFromSequence(originalIndex, info, modifyVelocity);
 
                     if (validForErase(info))
                         changesMap.erase(it);
@@ -631,7 +660,7 @@ void TableContainer::resetPropertyAndApply(const std::function<void(MidiChangeIn
             int originalIndex = model->getOriginalIndexFromRow(key);
 
             resetProperty(info);
-            applyChangeToSequence(originalIndex, info, modifyVelocity);
+            applyChangeFromSequence(originalIndex, info, modifyVelocity);
 
             if (validForErase(info))
                 it = changesMap.erase(it);
@@ -676,36 +705,18 @@ void TableContainer::newPropertyHelperFunction(const std::function<void(MidiChan
 
     auto oldMsg = e->message;
 
-    /*
-    auto it = changesMap.find(originalIndex);
-    MidiChangeInfo& info = (it != changesMap.end())
-        ? it->second
-        : changesMap[originalIndex];
-
-    if (it == changesMap.end())
-    {
-        info.oldNumber = oldMsg.getNoteNumber();
-        info.oldTimeStamp = oldMsg.getTimeStamp();
-        info.oldVelocity = oldMsg.getVelocity();
-
-        info.newNumber = oldMsg.getNoteNumber();
-        info.newTimeStamp = oldMsg.getTimeStamp();
-        info.newVelocity = oldMsg.getVelocity();
-    }
-    */
-
-    //only one look up variant, intersting
-
-
     auto [it, inserted] = changesMap.try_emplace(noteOnIndex);
     MidiChangeInfo& info = it->second;
 
     if (inserted)
     {
+        
         info.oldNumber = oldMsg.getNoteNumber();
         info.oldTimeStamp = oldMsg.getTimeStamp();
         info.oldVelocity = oldMsg.getVelocity();
+        info.oldBPMchange = getCurrentBPMstyle();
 
+        info.newBPMchange = getCurrentBPMstyle();
         info.newNumber = oldMsg.getNoteNumber();
         info.newTimeStamp = oldMsg.getTimeStamp();
         info.newVelocity = oldMsg.getVelocity();
@@ -714,9 +725,11 @@ void TableContainer::newPropertyHelperFunction(const std::function<void(MidiChan
     newProperty(info);
 
     if (modifyVelocity)
-        applyChangeToSequence(originalIndex, info, true);
+        applyChangeFromSequence(originalIndex, info, true,true);
     else
-        applyChangeToSequence(originalIndex, info);
+        applyChangeFromSequence(originalIndex, info,false,true);
+
+    info.newBPMchange = getCurrentBPMstyle();
 
     if (validForErase(info))
         changesMap.erase(noteOnIndex);
