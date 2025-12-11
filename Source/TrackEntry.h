@@ -31,6 +31,9 @@ enum class TrackType { Melodic, Percussion };
  */
 struct MidiChangeInfo
 {
+    double oldBPMchange=-120.0;
+    double newBPMchange = -120.0;
+
     int oldNumber = -1;       /**< Original MIDI note number */
     double oldTimeStamp = 0.0; /**< Original time stamp (seconds) */
     int oldVelocity = -1;     /**< Original velocity */

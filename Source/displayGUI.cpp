@@ -1721,6 +1721,7 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
     juce::MidiMessageSequence* sequence = nullptr;
     std::unordered_map<int, MidiChangeInfo>* changeMap = nullptr;
     juce::String displayName = "<Unnamed>";
+    double originalBPMfromFile = 120.0;
 
     auto it = mapUuidToTrackEntry.find(uuid);
     if (it != mapUuidToTrackEntry.end())
@@ -1730,6 +1731,7 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
         {
             sequence = &track->sequence;
             changeMap = &track->styleChangesMap[styleID];
+            originalBPMfromFile = track->originalBPM;
 
             if (track->displayName.isNotEmpty())
                 displayName = track->displayName;
@@ -1769,6 +1771,11 @@ void CurrentStyleComponent::showingTheInformationNotesFromTrack(const juce::Uuid
     container->removeContainerFromListeners = [this, container=container.get()]()
     {
         trackPlayer->removeSubjectTrackPlayerModifyListener(container);
+    };
+
+    container->getCurrentBPMstyle = [this]()
+    {
+        return this->currentTempo;
     };
 
     juce::CallOutBox::launchAsynchronously(

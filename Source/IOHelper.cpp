@@ -68,10 +68,12 @@ void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<
                         auto* changeObj = new juce::DynamicObject();
                         juce::var changeVar(changeObj);
 
+                        changeObj->setProperty("oldBPMchange", change.oldBPMchange);
                         changeObj->setProperty("oldNumber", change.oldNumber);
                         changeObj->setProperty("oldTimeStamp", change.oldTimeStamp);
                         changeObj->setProperty("oldVelocity", change.oldVelocity);
 
+                        changeObj->setProperty("newBPMchange", change.newBPMchange);
                         changeObj->setProperty("newNumber", change.newNumber);
                         changeObj->setProperty("newTimeStamp", change.newTimeStamp);
                         changeObj->setProperty("newVelocity", change.newVelocity);
@@ -224,6 +226,9 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
 
 
                         MidiChangeInfo changeInfo;
+                        changeInfo.oldBPMchange = (double)changeObj->getProperty("oldBPMchange");
+                        changeInfo.newBPMchange = (double)changeObj->getProperty("newBPMchange");
+
                         changeInfo.oldNumber = (int)changeObj->getProperty("oldNumber");
                         changeInfo.oldTimeStamp = (double)changeObj->getProperty("oldTimeStamp");
                         changeInfo.oldVelocity = (int)changeObj->getProperty("oldVelocity");

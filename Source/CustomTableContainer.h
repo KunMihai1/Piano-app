@@ -33,6 +33,8 @@ public:
 
     std::function<void()> removeContainerFromListeners;
 
+    std::function<double()> getCurrentBPMstyle;
+
     /**
      * @brief Constructor.
      * @param seq MIDI message sequence to display and modify.
@@ -111,7 +113,7 @@ public:
      * @param info Change information.
      * @param modifyVelocity If true, only modify the velocity.
      */
-    void applyChangeToSequence(int originalIndex, const MidiChangeInfo& info, bool modifyVelocity=false);
+    void applyChangeFromSequence(int originalIndex, const MidiChangeInfo& info, bool modifyVelocity=false, bool shouldApplyChanges=false);
 
     /**
      * @brief Refresh table and reapply changes after a modification is confirmed.

@@ -144,12 +144,21 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
 
         if (columnId == 1)
         {
-            int newNoteNumber = getMidiNoteNumberFromName(label->getText());
+            juce::String input = label->getText().trim();
+            juce::String normalizedInput = input.toUpperCase();
+
+            int newNoteNumber = getMidiNoteNumberFromName(normalizedInput);
             if (newNoteNumber == -1)
             {
                 label->setText(juce::MidiMessage::getMidiNoteName(oldMsg.getNoteNumber(), true, true, 4), juce::dontSendNotification);
                 return;
             }
+
+            label->setText(
+                juce::MidiMessage::getMidiNoteName(newNoteNumber, true, true, 4),
+                juce::dontSendNotification
+            );
+
             newMsg = juce::MidiMessage::noteOn(oldMsg.getChannel(), newNoteNumber, (juce::uint8)oldMsg.getVelocity());
             newMsg.setTimeStamp(oldMsg.getTimeStamp());
 
