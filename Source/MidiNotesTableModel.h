@@ -43,6 +43,8 @@ public:
     std::function<void(int row)> onRequestSelectRow;
     std::function<void()> refreshData;
     std::function<void(int row)> onMidPlayRepaint;
+    std::function<double()> getCurrentBpm;
+    std::function<bool(MidiChangeInfo& info)> validForErase;
 
     /**
      * @brief Constructor.

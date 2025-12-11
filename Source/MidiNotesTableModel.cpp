@@ -75,7 +75,7 @@ void MidiNotesTableModel::paintRowBackground(juce::Graphics& g, int rowNumber, i
 
 void MidiNotesTableModel::paintCell(juce::Graphics& g, int rowNumber, int columnId, int width, int height, bool isSelected)
 {
-    if (columnId == 4)
+    if (columnId == 4 || columnId==3 || columnId==2)
     {
         if (rowNumber < 0 || rowNumber >= noteOnEvents.size()) return;
         auto* event = noteOnEvents[rowNumber].event;
@@ -91,7 +91,7 @@ void MidiNotesTableModel::paintCell(juce::Graphics& g, int rowNumber, int column
             switch (columnId)
             {
             case 1: text = juce::MidiMessage::getMidiNoteName(msg.getNoteNumber(), true, true, 4); break;
-            case 2: text = juce::String(msg.getTimeStamp(), 6); break;
+            case 2: text = juce::String(msg.getTimeStamp()); break;
             case 3: text = juce::String(msg.getVelocity()); break;
             case 4: text = juce::String(channel); break;
             default: break;
@@ -109,8 +109,9 @@ void MidiNotesTableModel::paintCell(juce::Graphics& g, int rowNumber, int column
 
 juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int columnId, bool isRowSelected, juce::Component* existingComponentToUpdate)
 {
-    if (columnId == 4)
+    if (columnId == 4 || columnId==3 || columnId==2)
         return nullptr;
+
 
     if (rowNumber < 0 || rowNumber >= noteOnEvents.size())
         return nullptr;
@@ -120,6 +121,7 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
         return nullptr;
 
     int originalIndex = noteOnEvents[rowNumber].originalIndex;
+    int changeMapIndex = noteOnEvents[rowNumber].indexForChangesMap;
 
     //auto* label = dynamic_cast<juce::Label*> (existingComponentToUpdate);
 
@@ -133,7 +135,7 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
         label->setEditable(false, true, false);
     }
 
-    label->onEditorHide = [this, rowNumber, columnId, label, originalIndex]()
+    label->onEditorHide = [this, rowNumber, columnId, label, originalIndex,changeMapIndex]()
     {
         auto* e = noteOnEvents[rowNumber].event;
         if (e == nullptr)
@@ -173,6 +175,7 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
                 noteOffEvent->message = offMsg;
             }
         }
+        /*
         else if (columnId == 2)
         {
             double newTime = label->getText().getDoubleValue();
@@ -207,18 +210,23 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
 
             newMsg.setTimeStamp(oldMsg.getTimeStamp());
         }
+        */
 
-        if (changesMap->find(originalIndex) != changesMap->end())
+        if (changesMap->find(changeMapIndex) != changesMap->end())
         {
-            auto& current = (*changesMap)[originalIndex];
+            auto& current = (*changesMap)[changeMapIndex];
             handleMapExistingCase(newMsg, current);
         }
         else
         {
             MidiChangeInfo current;
             handleMapNonExistingCase(oldMsg, newMsg, current);
-            (*changesMap)[originalIndex] = current;
+            (*changesMap)[changeMapIndex] = current;
         }
+
+        auto& current = (*changesMap)[changeMapIndex];
+        if (validForErase(current))
+            changesMap->erase(changeMapIndex);
 
         const_cast<juce::MidiMessageSequence::MidiEventHolder*>(e)->message = newMsg;
 
@@ -240,6 +248,7 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
             auto noteName = juce::MidiMessage::getMidiNoteName(message.getNoteNumber(), true, true, 4);
             label->setText(noteName, juce::dontSendNotification);
         }
+        
         else if (columnId == 2)
         {
             auto noteTime = juce::String(message.getTimeStamp());
@@ -250,6 +259,7 @@ juce::Component* MidiNotesTableModel::refreshComponentForCell(int rowNumber, int
             auto noteVelocity = juce::String(message.getVelocity());
             label->setText(noteVelocity, juce::dontSendNotification);
         }
+        
     }
     label->setColour(juce::Label::textColourId,juce::Colours::darkgrey);
 
@@ -308,10 +318,12 @@ void MidiNotesTableModel::handleMapNonExistingCase(juce::MidiMessage& oldMessage
     information.oldNumber = oldMessage.getNoteNumber();
     information.oldTimeStamp = oldMessage.getTimeStamp();
     information.oldVelocity = oldMessage.getVelocity();
+    information.oldBPMchange = getCurrentBpm();
 
     information.newNumber = newMessage.getNoteNumber();
     information.newTimeStamp = newMessage.getTimeStamp();
     information.newVelocity = newMessage.getVelocity();
+    information.newBPMchange = getCurrentBpm();
 }
 
 void MidiNotesTableModel::handleMapExistingCase(juce::MidiMessage& newMessage, MidiChangeInfo& information)
