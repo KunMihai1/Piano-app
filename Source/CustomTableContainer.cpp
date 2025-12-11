@@ -120,6 +120,16 @@ TableContainer::TableContainer(juce::MidiMessageSequence& seq, const juce::Strin
         else table->deselectAllRows();
     };
 
+    model->getCurrentBpm = [this]()
+    {
+        return getCurrentBPMstyle();
+    };
+
+    model->validForErase = [this](MidiChangeInfo& info)
+    {
+        return validForErase(info);
+    };
+
     table->setModel(model.get());
 
     table->setMultipleSelectionEnabled(true);
@@ -408,12 +418,6 @@ void TableContainer::applyChangeFromSequence(int originalIndex, const MidiChange
             (juce::uint8)juce::jlimit(0, 127, info.newVelocity)
         );
 
-        DBG("from change is:" + juce::String(fromChange));
-        DBG("OLD timestamp IS:" + juce::String(info.oldTimeStamp));
-        DBG("NEW timestamp IS: " + juce::String(info.newTimeStamp));
-        DBG("current bpm is: " + juce::String(getCurrentBPMstyle()));
-        DBG("bpm when change is: " + juce::String(info.newBPMchange));
-        DBG("ratio is: " + juce::String(ratio));
         if (shouldApplyChanges)
         {
             newMsg.setTimeStamp(info.oldTimeStamp * ratio - fromChange);
