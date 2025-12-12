@@ -72,6 +72,13 @@ public:
     /** @brief Enables or disables spawning of particles */
     void setSpawnParticleState(bool state);
 
+    std::pair<const char*, const char*> basicParticlesShader();
+
+    std::pair<const char*, const char*> dustShader();
+
+    std::pair<const char*, const char*> getShaderChoice(int choice = 1);
+
+
 private:
     /** @brief Updates all active particles' positions and life */
     void updateParticles();
@@ -120,4 +127,5 @@ private:
 
     bool isActive;                             /**< Whether the layer is active */
     bool spawnParticleState = false;           /**< Whether particle spawning is enabled */
+    int choice = 1;
 };
