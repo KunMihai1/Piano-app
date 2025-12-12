@@ -417,12 +417,25 @@ void TableContainer::applyChangeFromSequence(int originalIndex, const MidiChange
             info.newNumber,
             (juce::uint8)juce::jlimit(0, 127, info.newVelocity)
         );
+        bool shouldClamp = false;
+
+        double timeToApplyOn = 0.0;
 
         if (shouldApplyChanges)
         {
-            newMsg.setTimeStamp(info.oldTimeStamp * ratio - fromChange);
+            timeToApplyOn = info.oldTimeStamp * ratio - fromChange;
         }
-        else newMsg.setTimeStamp(info.newTimeStamp*ratio);
+        else timeToApplyOn = info.newTimeStamp * ratio;
+
+        /*
+        if (timeToApplyOn < 0)
+        {
+            timeToApplyOn = 0.0;
+            shouldClamp = true;
+        }
+        */
+
+        newMsg.setTimeStamp(timeToApplyOn);
 
         e->message = newMsg;
 
@@ -437,12 +450,18 @@ void TableContainer::applyChangeFromSequence(int originalIndex, const MidiChange
 
             double offTime = info.newTimeStamp + duration;
                 
+            double timetoApplyOff=0.0;
             if (shouldApplyChanges)
             {
-                offTime = info.oldTimeStamp+duration;
-                offMsg.setTimeStamp(offTime * ratio - fromChange);
+                offTime = info.oldTimeStamp + duration;
+                timetoApplyOff = offTime * ratio - fromChange;
             }
-            else offMsg.setTimeStamp(offTime*ratio);
+            else timetoApplyOff = offTime * ratio; 
+
+            //if (shouldClamp)
+            //    timetoApplyOff = duration; 
+
+            offMsg.setTimeStamp(timetoApplyOff);
 
             noteOffEvent->message = offMsg;
         }

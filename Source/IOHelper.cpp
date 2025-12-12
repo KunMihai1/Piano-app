@@ -162,8 +162,6 @@ void TrackIOHelper::loadFromFile(const juce::File& fileParam, std::unordered_map
 
         convertTicksToSeconds(midiFile, originalBpm);
 
-        int ok = 0;
-
         for (auto& trackItem : *trackArray)
         {
             auto* trackObj = trackItem.getDynamicObject();
@@ -391,6 +389,7 @@ void TrackIOHelper::applyChangesToASequence(std::vector<NotePair>& pairs, const 
 
         double delta = changeInfo.oldTimeStamp - changeInfo.newTimeStamp;
         double newTimeOn = oldOn - delta;
+        bool shouldClamp = newTimeOn < 0;
 
         if (duration < 0)
             duration = 0; 
@@ -398,12 +397,17 @@ void TrackIOHelper::applyChangesToASequence(std::vector<NotePair>& pairs, const 
         juce::MidiMessage newOn = juce::MidiMessage::noteOn(
             channel, changeInfo.newNumber, (juce::uint8)changeInfo.newVelocity
         );
-        newOn.setTimeStamp(newTimeOn);
+        if (shouldClamp)
+            newOn.setTimeStamp(0.0);
+        else newOn.setTimeStamp(newTimeOn);
 
         juce::MidiMessage newOff = juce::MidiMessage::noteOff(
             channel, changeInfo.newNumber
         );
-        newOff.setTimeStamp(newTimeOn + duration);
+        if (shouldClamp)
+            newOff.setTimeStamp(duration);
+        else newOff.setTimeStamp(newTimeOn + duration);
+        
 
         *msgOn = newOn;
         *msgOff = newOff;

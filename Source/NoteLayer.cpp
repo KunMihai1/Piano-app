@@ -103,52 +103,15 @@ void NoteLayer::noteOffReceived(int midiNote)
 
 void NoteLayer::newOpenGLContextCreated()
 {
-    const char* vertexSource = R"VERT(
-        attribute vec2 position;
-    attribute float pointSize;
-    attribute vec4 colour;
-    varying vec4 vColour;
-
-    void main()
-    {
-        gl_PointSize = pointSize;
-        gl_Position = vec4(position, 0.0, 1.0);
-        vColour = colour;
-    }
-    )VERT";
-
-    const char* fragmentSource = R"FRAG(
-#ifdef GL_ES
-precision mediump float;
-#endif
-
-varying vec4 vColour;
-varying vec2 vTexCoord;
-uniform float uTime;
-
-void main()
-{
-    // Normalize texture coordinates to range [0.0, 1.0]
-    vec2 uv = vTexCoord;
-
-    // Calculate distance from the center
-    float dist = length(uv - vec2(0.5));
-
-    // Apply smoothstep for soft radial falloff
-    float alpha = smoothstep(0.4, 0.6, dist);
-    //float alpha = smoothstep(0.5, 0.0, dist);
-
-    // Introduce a time-based color shift using sine wave modulation
-    vec3 color = vColour.rgb * (0.5 + 0.5 * sin(uTime + dist * 10.0));
-
-    // Output the final color with alpha transparency
-    gl_FragColor = vec4(color, alpha);
-}
-)FRAG";
+    std::pair<const char*, const char*> p = getShaderChoice(choice);
+    const char* vertexSource = p.first;
+    const char* fragmentSource = p.second;
 
     shader = std::make_unique<juce::OpenGLShaderProgram>(openGLContext);
     if (!shader->addVertexShader(vertexSource) || !shader->addFragmentShader(fragmentSource) || !shader->link())
     {
+        DBG("Shader failed to compile or link:");
+        DBG(shader->getLastError());
         jassertfalse;
         shader.reset();
         return;
@@ -183,6 +146,12 @@ void NoteLayer::renderOpenGL()
     {
         shader->use();
 
+        if (choice == 2)
+        {
+            float t = (float)juce::Time::getMillisecondCounterHiRes() * 0.001f;
+            shader->setUniform("uTime", t);
+        }
+
         struct Vertex {
             float x, y;
             float size;
@@ -202,7 +171,7 @@ void NoteLayer::renderOpenGL()
         }
 
         openGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, particleVBO);
-        openGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex)* verts.size(), verts.data(), GL_DYNAMIC_DRAW);
+        openGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(Vertex)* verts.size()), verts.data(), GL_DYNAMIC_DRAW);
 
         if (positionAttr != nullptr)
         {
@@ -221,8 +190,10 @@ void NoteLayer::renderOpenGL()
             openGLContext.extensions.glEnableVertexAttribArray(colourAttr->attributeID);
         }
 
+        glEnable(GL_PROGRAM_POINT_SIZE);
         glEnable(GL_BLEND);
-        glBlendFunc(GL_SRC_ALPHA, GL_ONE); // additive blend
+        //glBlendFunc(GL_SRC_ALPHA, GL_ONE); // additive blend
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
         glDrawArrays(GL_POINTS, 0, (GLsizei)verts.size());
 
@@ -276,6 +247,122 @@ void NoteLayer::setColourParticle(juce::Colour& colour)
 void NoteLayer::setSpawnParticleState(bool state)
 {
     this->spawnParticleState = state;
+}
+
+std::pair<const char*, const char*> NoteLayer::basicParticlesShader()
+{
+    const char* basicVertex = R"VERT(
+    attribute vec2 position;
+    attribute float pointSize;
+    attribute vec4 colour;
+    varying vec4 vColour;
+
+    void main()
+    {
+        gl_PointSize = pointSize;
+        gl_Position = vec4(position, 0.0, 1.0);
+        vColour = colour;
+    }
+    )VERT";
+
+    const char* basicFragment = R"FRAG(
+    #ifdef GL_ES
+    precision mediump float;
+    #endif
+
+    varying vec4 vColour;
+    varying vec2 vTexCoord;
+    uniform float uTime;
+
+    void main()
+    {
+        // Normalize texture coordinates to range [0.0, 1.0]
+        vec2 uv = vTexCoord;
+
+        // Calculate distance from the center
+        float dist = length(uv - vec2(0.5));
+
+        // Apply smoothstep for soft radial falloff
+        float alpha = smoothstep(0.4, 0.6, dist);
+        //float alpha = smoothstep(0.5, 0.0, dist);
+
+        // Introduce a time-based color shift using sine wave modulation
+        vec3 color = vColour.rgb * (0.5 + 0.5 * sin(uTime + dist * 10.0));
+
+        // Output the final color with alpha transparency
+        gl_FragColor = vec4(color, alpha);
+    }
+    )FRAG";
+
+    return std::pair<const char*, const char*>(basicVertex,basicFragment);
+}
+
+std::pair<const char*, const char*> NoteLayer::dustShader()
+{
+    const char* dustVertex = R"VERT(
+    attribute vec2 position;
+    attribute float pointSize;
+    attribute vec4 colour;
+
+    varying vec4 vColour;
+
+    void main()
+    {
+        gl_PointSize = pointSize;
+        gl_Position = vec4(position, 0.0, 1.0);
+        vColour = colour;
+    }
+    )VERT";
+
+    const char* dustFragment = R"FRAG(
+    #ifdef GL_ES
+    precision mediump float;
+    #endif
+
+    varying vec4 vColour;
+    uniform float uTime;
+
+    float rand(vec2 co){
+        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
+    }
+
+    void main()
+    {
+        vec2 uv = gl_PointCoord.xy;
+
+        // Optional drift
+        uv += vec2(sin(uTime*0.5), cos(uTime*0.3))*0.05;
+
+        float dist = distance(uv, vec2(0.5));
+
+        // Soft radial falloff for smoke
+        float alpha = exp(-dist*6.0);
+
+        // Subtle noise
+        float noise = rand(uv*5.0 + uTime*0.3);
+        alpha *= 0.5 + 0.5*noise;
+
+        // Color modulation
+        vec3 color = vColour.rgb * (0.8 + 0.2*noise);
+
+        // Output final color
+        gl_FragColor = vec4(color, 1.0);
+    }
+    )FRAG";
+
+    return std::pair<const char*, const char*>(dustVertex, dustFragment);
+}
+
+std::pair<const char*, const char*> NoteLayer::getShaderChoice(int choice)
+{
+    switch (choice)
+    {
+    case 1: return basicParticlesShader();
+    case 2: return dustShader();
+    default:
+        return {nullptr,nullptr};
+    }
+    return std::pair<const char*, const char*>();
 }
 
 void NoteLayer::updateParticles()
