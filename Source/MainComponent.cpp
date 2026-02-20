@@ -131,6 +131,7 @@ void MainComponent::resized()
     colourSelectorButton.setBounds(90, 10, 100, 30);
     instrumentSelectorButton.setBounds(195, 10, 100, 30);
     particleToggle.setBounds(colourSelectorButton.getX(), colourSelectorButton.getY() +colourSelectorButton.getHeight(), 100, 25);
+    noteNumbersAnnotation.setBounds(particleToggle.getX(), particleToggle.getBottom(), 100, 25);
 
     leftHandInstrumentToggle.setBounds(instrumentSelectorButton.getX(), instrumentSelectorButton.getY() + instrumentSelectorButton.getHeight(), 100, 25);
     rightHandInstrumentToggle.setBounds(instrumentSelectorButton.getX(), leftHandInstrumentToggle.getY() + leftHandInstrumentToggle.getHeight(), 100, 25);
@@ -407,6 +408,7 @@ void MainComponent::toggleHPanel()
     toggleDisplay();
     toggleParticleToggle();
     toggleHandInstrumentToggle();
+    toggleAnnotation();
     toggleSections();
 }
 
@@ -515,6 +517,13 @@ void MainComponent::toggleSections()
     if (variationsFills->isVisible())
         variationsFills->setVisible(false);
     else variationsFills->setVisible(true);
+}
+
+void MainComponent::toggleAnnotation()
+{
+    if (noteNumbersAnnotation.isVisible())
+        noteNumbersAnnotation.setVisible(false);
+    else noteNumbersAnnotation.setVisible(true);
 }
 
 void MainComponent::toggleForPlaying()
@@ -844,6 +853,7 @@ void MainComponent::headerPanelInit()
     toggleButtonInit();
     toggleHandButtonsInit();
     knobsInit();
+    annotationInit();
     sectionsInit();
 }
 
@@ -962,6 +972,29 @@ void MainComponent::sectionsInit()
     headerPanel.addAndMakeVisible(variationsFills.get());
     variationsFills->setVisible(false);
 
+}
+
+void MainComponent::annotationInit()
+{
+    noteNumbersAnnotation.setButtonText("Note annotation");
+    noteNumbersAnnotation.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    noteNumbersAnnotation.setColour(juce::ToggleButton::tickColourId, juce::Colours::green);
+    noteNumbersAnnotation.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colours::grey);
+
+    noteNumbersAnnotation.setToggleState(false, juce::dontSendNotification);
+    headerPanel.addAndMakeVisible(noteNumbersAnnotation);
+
+    noteNumbersAnnotation.onClick = [this]()
+    {
+        if (noteNumbersAnnotation.getToggleState() == true)
+            keyboard.setAnnotationState(true);
+        else keyboard.setAnnotationState(false);
+
+        keyboard.repaint();
+    };
+
+    noteNumbersAnnotation.setVisible(false);
 }
 
 void MainComponent::settingsButtonOnClick()

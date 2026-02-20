@@ -192,6 +192,7 @@ private:
     void toggleUpdateKeysButton();
     void toggleDevicesCBUpdate();
     void toggleSections();
+    void toggleAnnotation();
 
 
     // Initialization functions
@@ -215,6 +216,7 @@ private:
     void updateKeysButtonInit();
     void devicesCBUpdateInit();
     void sectionsInit();
+    void annotationInit();
    
 
     // Button click callbacks
@@ -280,6 +282,7 @@ private:
     juce::TextButton saveRecordingButton{ "Save recording" };
     juce::TextButton playRecordingFileButton{ "Play recording file" };
     juce::ToggleButton leftHandInstrumentToggle, rightHandInstrumentToggle;
+    juce::ToggleButton noteNumbersAnnotation;
     std::unique_ptr<StyleSectionComponent> introsEndings, variationsFills;
 
 
