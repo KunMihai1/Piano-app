@@ -25,6 +25,8 @@
 class KeyboardUI : public juce::Component, public MidiHandlerListener
 {
 public:
+
+
     /**
      * @brief Constructor
      * @param midiHandler Reference to MidiHandler for receiving events
@@ -39,6 +41,8 @@ public:
      * @param g Graphics context
      */
     void paint(juce::Graphics& g) override;
+
+    void resized() override;
 
     /**
      * @brief Sets the minimum and maximum MIDI notes to display
@@ -74,6 +78,9 @@ public:
      */
     void setIsDrawn(bool state);
 
+    void setAnnotationState(bool newState);
+
+
 private:
     friend class NoteLayer;
 
@@ -82,6 +89,9 @@ private:
      * @param g Graphics context
      */
     void paintKeyboard(juce::Graphics& g);
+
+    void paintKeyboardB(juce::Graphics& g);
+
 
     /** @brief True if the keyboard has been drawn */
     bool isDrawn = false;
@@ -98,4 +108,5 @@ private:
 
     int min_draw = 0; ///< Minimum visible MIDI note
     int max_draw = 127; ///< Maximum visible MIDI note
+    bool annotationState=false;
 };

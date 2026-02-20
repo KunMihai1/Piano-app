@@ -24,9 +24,104 @@ KeyboardUI::~KeyboardUI()
 void KeyboardUI::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colours::black);
-    paintKeyboard(g);
+    paintKeyboardB(g);
 }
 
+void KeyboardUI::resized()
+{
+    const float totalWhiteKeys = 52.0f;
+    float rawWidth = static_cast<float>(getWidth()) / totalWhiteKeys;
+    float whiteKeyWidth = rawWidth; 
+    float keyHeight = static_cast<float>(getHeight());
+
+    juce::Array<float> whiteKeyPositions; 
+    int noteAccount = 0;
+    int refresh = 0;
+
+
+    for (int i = 0; i < 2; i++)
+    {
+        float x = (i == 0) ? 0.0f : whiteKeyPositions[i - 1] + whiteKeyWidth;
+        whiteKeyPositions.add(x);
+
+        keys[21 + noteAccount].bounds = juce::Rectangle<int>(static_cast<int>(x), 0,
+            static_cast<int>(whiteKeyWidth), static_cast<int>(keyHeight));
+        keys[21 + noteAccount].type = "white";
+        keys[21 + noteAccount].isActive = false;
+
+        if ((noteAccount == 2 && refresh == 1))
+        {
+            noteAccount--;
+            refresh = 0;
+        }
+        else refresh++;
+
+        noteAccount += 2;
+    }
+
+
+    float blackKeyWidth = whiteKeyWidth * 0.6f;
+    float blackKeyHeight = keyHeight * 0.6f;
+    float firstBlackKeyX = whiteKeyPositions[0] + whiteKeyWidth - blackKeyWidth * 0.5f;
+
+    keys[22].bounds = juce::Rectangle<int>(static_cast<int>(firstBlackKeyX), 0,
+        static_cast<int>(blackKeyWidth), static_cast<int>(blackKeyHeight));
+    keys[22].type = "black";
+    keys[22].isActive = false;
+
+    for (int i = 2; i < totalWhiteKeys; i++)
+    {
+        float x = whiteKeyPositions[i - 1] + whiteKeyWidth;
+        whiteKeyPositions.add(x);
+
+        keys[21 + noteAccount].bounds = juce::Rectangle<int>(static_cast<int>(x), 0,
+            static_cast<int>(whiteKeyWidth), static_cast<int>(keyHeight));
+        keys[21 + noteAccount].type = "white";
+        keys[21 + noteAccount].isActive = false;
+
+        if ((noteAccount == 7 && refresh == 2) || (refresh == 3) || (refresh == 2 && noteAccount % 2 == 1))
+        {
+            noteAccount--;
+            refresh = 0;
+        }
+        else refresh++;
+
+        noteAccount += 2;
+    }
+
+
+    const float blackOffsets[5] = { 0.7f, 1.7f, 3.2f, 4.2f, 5.2f };
+    int octaveCount = totalWhiteKeys / 7;
+    noteAccount = 4;
+    refresh = 0;
+
+    for (int octave = 0; octave < octaveCount; octave++)
+    {
+        int octaveStartIndex = 2 + octave * 7;
+        for (int j = 0; j < 5; j++)
+        {
+            int whiteIndex = octaveStartIndex + static_cast<int>(blackOffsets[j]);
+            if (whiteIndex < whiteKeyPositions.size() - 1)
+            {
+                float x = whiteKeyPositions[whiteIndex] + whiteKeyWidth - (blackKeyWidth * 0.5f);
+                keys[21 + noteAccount].bounds = juce::Rectangle<int>(static_cast<int>(x), 0,
+                    static_cast<int>(blackKeyWidth),
+                    static_cast<int>(blackKeyHeight));
+                keys[21 + noteAccount].type = "black";
+                keys[21 + noteAccount].isActive = false;
+            }
+
+            if ((refresh == 1 && noteAccount % 2 == 0) || (refresh == 3) || (refresh == 2 && noteAccount % 2 == 1))
+            {
+                noteAccount++;
+                refresh = 0;
+            }
+            else refresh++;
+
+            noteAccount += 2;
+        }
+    }
+}
 
 
 void KeyboardUI::set_min_and_max(const int min, const int max)
@@ -77,6 +172,11 @@ void KeyboardUI::noteOffReceived(int midiNote)
 void KeyboardUI::setIsDrawn(bool state)
 {
     this->isDrawn = state;
+}
+
+void KeyboardUI::setAnnotationState(bool newState)
+{
+    this->annotationState = newState;
 }
 
 void KeyboardUI::paintKeyboard(juce::Graphics& g)
@@ -329,9 +429,99 @@ void KeyboardUI::paintKeyboard(juce::Graphics& g)
                     //g.fillRect(MidiNote.bounds.withHeight(MidiNote.bounds.getHeight() * 0.2f));
                 }
             }
+
+            if (MidiNote.type == "white")
+            {
+                juce::String noteName = MapHelper::intToStringNote(key);
+                g.setColour(juce::Colours::black.withAlpha(0.8f));
+                float fontSize = MidiNote.bounds.getHeight() * 0.12f;
+                g.setFont(fontSize);
+
+                juce::Rectangle<int> textArea =
+                    MidiNote.bounds.withTop(
+                    MidiNote.bounds.getBottom() - static_cast<int>(fontSize * 1.6f)
+                    );
+
+
+                g.drawFittedText(
+                    noteName,
+                    textArea,
+                    juce::Justification::centred,
+                    1);
+            }
+
             //g.fillRect(MidiNote.bounds);
             g.setColour(juce::Colours::black);
             g.drawRect(MidiNote.bounds);
         }
+    }
+}
+
+void KeyboardUI::paintKeyboardB(juce::Graphics& g)
+{
+    for (const auto& [key, MidiNote] : keys)
+    {
+        
+        if (MidiNote.isActive)
+        {
+            juce::ColourGradient greenGradient(
+                juce::Colours::green.brighter(0.5f), 0, 0,
+                juce::Colours::green.darker(0.5f), 0, MidiNote.bounds.getHeight(), false);
+            g.setGradientFill(greenGradient);
+            g.fillRect(MidiNote.bounds);
+        }
+        else
+        {
+            if (MidiNote.type == "white")
+            {
+                if (key < min_draw || key > max_draw)
+                    g.setColour(juce::Colours::white.withAlpha(0.5f));
+                else
+                    g.setColour(juce::Colours::white);
+
+                g.fillRect(MidiNote.bounds);
+            }
+            else 
+            {
+                juce::ColourGradient blackGradient;
+                if (key < min_draw || key > max_draw)
+                {
+                    blackGradient = juce::ColourGradient(
+                        juce::Colours::black.withAlpha(1.0f).brighter(0.5f), 0, 0,
+                        juce::Colours::black.withAlpha(1.0f).darker(0.5f), 0,
+                        MidiNote.bounds.getHeight(), false);
+                }
+                else
+                {
+                    blackGradient = juce::ColourGradient(
+                        juce::Colours::black.brighter(0.5f), 0, 0,
+                        juce::Colours::black.darker(0.5f), 0,
+                        MidiNote.bounds.getHeight(), false);
+                }
+
+                g.setGradientFill(blackGradient);
+                g.fillRect(MidiNote.bounds);
+            }
+        }
+
+        if (annotationState && MidiNote.type == "white")
+        {
+            juce::String noteName = MapHelper::intToStringNote(key);
+            g.setColour(juce::Colours::black.withAlpha(0.8f));
+
+            float fontSize = MidiNote.bounds.getHeight() * 0.12f;
+            g.setFont(fontSize);
+
+            juce::Rectangle<int> textArea =
+                MidiNote.bounds.withTop(
+                    MidiNote.bounds.getBottom() - static_cast<int>(fontSize * 1.6f)
+                );
+
+            g.drawFittedText(noteName, textArea, juce::Justification::centred, 1);
+        }
+
+        
+        g.setColour(juce::Colours::black);
+        g.drawRect(MidiNote.bounds);
     }
 }
