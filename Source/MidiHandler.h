@@ -121,25 +121,25 @@ public:
 	 * @brief Sets the volume of the instrument
 	 * @param vValue Volume value 
 	 */
-	void setVolume(const float vValue);
+	void setVolume(const float vValue, int channel=1);
 
 	/**
 	 * @brief Gets the current volume of the instrument
 	 * @return current volume value
 	 */
-	float getVolume() const;
+	float getVolume(int channel) const;
 
 	/**
 	 * @brief Sets the reverb amount of the instrument
 	 * @param rValue Reverb value (typically 0.0 - 1.0)
 	 */
-	void setReverb(const float rValue) ;
+	void setReverb(const float rValue, int channel=1) ;
 
 	/**
 	 * @brief Gets the current reverb amount of the instrument
 	 * @return current reverb value
 	 */
-	float getReverb() const;
+	float getReverb(int channel) const;
 
 	/**
 	 * @brief Gets the minimum MIDI note allowed
@@ -166,10 +166,10 @@ public:
 	void set_maxNote(int maxNoteReceived);
 
 	/** @brief Updates the instrument with the current volume setting */
-	void changeVolumeInstrument();
+	void changeVolumeInstrument(int channel=1);
 
 	/** @brief Updates the instrument with the current reverb setting */
-	void changeReverbInstrument();
+	void changeReverbInstrument(int channel=1);
 
 	/**
 	 * @brief Gets the MIDI device identifier string
@@ -221,8 +221,12 @@ private:
 	bool deviceCheckedForUpdateAtLeastOnce = false;
 	juce::String identifier;
 
-	float reverb{ 0.0f };
-	float volume{ 0.0f };
+	float reverbFirst{ 0.0f };
+	float volumeFirst{ 0.0f };
+
+	float reverbSecond{ 0.0f };
+	float volumeSecond{ 0.0f };
+
 	int minNote, maxNote;
 };
 

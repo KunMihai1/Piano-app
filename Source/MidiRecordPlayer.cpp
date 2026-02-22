@@ -184,9 +184,20 @@ void MidiRecordPlayer::setInitialProgram(int value)
     initialProgram = value;
 }
 
-void MidiRecordPlayer::setReverb(int value)
+void MidiRecordPlayer::setReverb(int value, int channel)
 {
-    reverb = value;
+    if (channel == 1)
+        reverbFirst = value;
+    else if (channel == 16)
+        reverbSecond = value;
+}
+
+void MidiRecordPlayer::setVolume(int value, int channel)
+{
+    if (channel == 1)
+        volumeFirst = value;
+    else if (channel == 16)
+        volumeSecond = value;
 }
 
 bool MidiRecordPlayer::getIsRecording()

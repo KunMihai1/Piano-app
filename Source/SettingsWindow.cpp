@@ -11,16 +11,30 @@ MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesLis
     setVisible(true);
     setContentOwned(&settingsPanel, false);
 
+    addKeyListener(this);
     setBounds_components();
     allInit();
     toggleSettingsAll();
     populateCBIN();
     populateCBOUT();
+    populateCBinstruments();
 }
 
 MIDIWindow::~MIDIWindow()
 {
     stopTimer();
+    removeKeyListener(this);
+}
+
+
+bool MIDIWindow::keyPressed(const juce::KeyPress& key, juce::Component* comp)
+{
+    if (key == juce::KeyPress::escapeKey)
+    {
+        closeButtonPressed();
+        return true;          
+    }
+    return false;
 }
 
 void MIDIWindow::volumeSliderSetValue(double value)
@@ -38,9 +52,10 @@ void MIDIWindow::visibilityChanged()
     if (isVisible())
     {
         populateCBIN();  //selected id is set to 1 implicitly
-        populateCBOUT(); //selected id i set to 1 implicitly
+        populateCBOUT(); //selected id is set to 1 implicitly
         restoreCBoxes();
         startTimer(750);
+        grabKeyboardFocus();
     }
     else stopTimer();
 
@@ -48,7 +63,11 @@ void MIDIWindow::visibilityChanged()
 
 void MIDIWindow::closeButtonPressed()
 {
+
     setVisible(false);
+
+    if (onWindowClosed)
+        onWindowClosed();
 }
 
 void MIDIWindow::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
@@ -70,6 +89,13 @@ void MIDIWindow::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
             this->MIDIDevice.setDeviceOUT(index);
             lastIndexOUT = index + 1;
         }
+    }
+    else if (comboBoxThatHasChanged == &this->currentInstrumentSettingsCB)
+    {
+        int channel = getCorrectChannel(currentInstrumentSettingsCB.getText());
+        
+        volumeSliderSetValue(MIDIDevice.getVolume(channel));
+        reverbSliderSetValue(MIDIDevice.getReverb(channel));
     }
 }
 
@@ -95,6 +121,16 @@ void MIDIWindow::timerCallback()
     }
 
 
+}
+
+int MIDIWindow::getCorrectChannel(juce::String& text)
+{
+    if (text.equalsIgnoreCase("First instrument"))
+        return 1;
+    else if (text.equalsIgnoreCase("Second instrument"))
+        return 16;
+
+    return 1;
 }
 
 void MIDIWindow::toggleSettingsSliders()
@@ -142,6 +178,10 @@ void MIDIWindow::toggleSettingsCB()
         this->comboBoxDevicesOUT.setVisible(true);
         this->midiDevicesLabelOUT.setVisible(true);
     }
+
+    if (this->currentInstrumentSettingsCB.isVisible())
+        this->currentInstrumentSettingsCB.setVisible(false);
+    else this->currentInstrumentSettingsCB.setVisible(true);
 }
 
 void MIDIWindow::toggleSettingsAll()
@@ -153,17 +193,21 @@ void MIDIWindow::toggleSettingsAll()
 
 void MIDIWindow::setBounds_components()
 {
-    reverbSlider.setBounds(10, 20, 200, 30);
-    reverbLabel.setBounds(220, 25, 100, 20);
+    int spacing = 20;
 
-    volumeSlider.setBounds(10, 50, 200, 30);
-    volumeLabel.setBounds(220, 55, 100, 20);
+    currentInstrumentSettingsCB.setBounds(10, 20, 150, 50);
 
-    comboBoxDevicesIN.setBounds(90, 100, 300, 50);
-    midiDevicesLabelIN.setBounds(10, 115, 90, 20);
+    reverbSlider.setBounds(10, currentInstrumentSettingsCB.getBottom()+spacing/2, 200, 30);
+    reverbLabel.setBounds(reverbSlider.getRight()+spacing, reverbSlider.getY()+spacing/2, 100, 20);
 
-    comboBoxDevicesOUT.setBounds(90, 160, 300, 50);
-    midiDevicesLabelOUT.setBounds(10, 175, 100, 20);
+    volumeSlider.setBounds(10, reverbSlider.getBottom()+spacing/2, 200, 30);
+    volumeLabel.setBounds(volumeSlider.getRight()+spacing, volumeSlider.getY() + spacing/2, 100, 20);
+
+    comboBoxDevicesIN.setBounds(90, volumeSlider.getBottom()+spacing/2, 300, 50);
+    midiDevicesLabelIN.setBounds(10, comboBoxDevicesIN.getY()+spacing/2, 90, 20);
+
+    comboBoxDevicesOUT.setBounds(90, comboBoxDevicesIN.getBottom()+spacing/2, 300, 50);
+    midiDevicesLabelOUT.setBounds(10, comboBoxDevicesOUT.getY()+spacing/2, 100, 20);
 
 
 }
@@ -199,22 +243,49 @@ void MIDIWindow::slidersInit()
     settingsPanel.addAndMakeVisible(volumeLabel);
     volumeLabel.setVisible(false);
 
+    reverbSlider.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    volumeSlider.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
     this->volumeSlider.onValueChange = [this] {
+
+        int channel = getCorrectChannel(currentInstrumentSettingsCB.getText());
+
         if (propertyFile)
         {
-            propertyFile->setValue("midiVolume", volumeSlider.getValue());
+            if (channel==1)
+                propertyFile->setValue("midiVolumeFirst", volumeSlider.getValue());
+            else propertyFile->setValue("midiVolumeSecond", volumeSlider.getValue());
+
             propertyFile->saveIfNeeded();
         }
-        MIDIDevice.setVolume(volumeSlider.getValue());
+        MIDIDevice.setVolume(volumeSlider.getValue(),channel);
+
+        
+
+        if (isMidiDeviceOpen && isMidiDeviceOpen())
+        {
+            MIDIDevice.changeVolumeInstrument(channel);
+        }
     };
 
     this->reverbSlider.onValueChange = [this] {
+        int channel = getCorrectChannel(currentInstrumentSettingsCB.getText());
+
         if (propertyFile)
         {
-            propertyFile->setValue("midiReverb", reverbSlider.getValue());
+            if(channel==1)
+                propertyFile->setValue("midiReverbFirst", reverbSlider.getValue());
+            else if(channel==16)
+                propertyFile->setValue("midiReverbSecond", reverbSlider.getValue());
+
             propertyFile->saveIfNeeded();
         }
-        MIDIDevice.setReverb(reverbSlider.getValue());
+        MIDIDevice.setReverb(reverbSlider.getValue(),channel);
+
+        if (isMidiDeviceOpen && isMidiDeviceOpen())
+        {
+            MIDIDevice.changeReverbInstrument(channel);
+        }
     };
 }
 
@@ -235,6 +306,18 @@ void MIDIWindow::devicesCBinit()
     midiDevicesLabelOUT.setText("MIDI OUT", juce::dontSendNotification);
     settingsPanel.addAndMakeVisible(this->midiDevicesLabelOUT);
     midiDevicesLabelOUT.setVisible(false);
+
+    comboBoxDevicesIN.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    comboBoxDevicesOUT.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+}
+
+void MIDIWindow::instrumentsCBinit()
+{
+    currentInstrumentSettingsCB.addListener(this);
+    settingsPanel.addAndMakeVisible(this->currentInstrumentSettingsCB);
+    currentInstrumentSettingsCB.setVisible(false);
+
+    currentInstrumentSettingsCB.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 }
 
 void MIDIWindow::allInit()
@@ -242,6 +325,8 @@ void MIDIWindow::allInit()
     panelInit();
     slidersInit();
     devicesCBinit();
+
+    instrumentsCBinit();
 }
 
 void MIDIWindow::populateCBIN()
@@ -267,6 +352,16 @@ void MIDIWindow::populateCBOUT()
     }
     comboBoxDevicesOUT.setSelectedId(1);
 
+}
+
+void MIDIWindow::populateCBinstruments()
+{
+    this->currentInstrumentSettingsCB.clear();
+
+    this->currentInstrumentSettingsCB.addItem("First instrument", 1);
+    this->currentInstrumentSettingsCB.addItem("Second instrument", 2);
+
+    this->currentInstrumentSettingsCB.setSelectedId(1);
 }
 
 void MIDIWindow::restoreCBoxes()

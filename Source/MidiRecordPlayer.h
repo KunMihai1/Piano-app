@@ -80,7 +80,9 @@ public:
     void setInitialProgram(int value);
 
     /** @brief Sets reverb level */
-    void setReverb(int value);
+    void setReverb(int value, int channel=1);
+
+    void setVolume(int value, int channel = 1);
 
     /** @brief Returns true if currently recording */
     bool getIsRecording();
@@ -111,7 +113,12 @@ public:
 
 private:
     int initialProgram = 0;                      /**< Initial program number */
-    int reverb = 50;                             /**< Reverb level */
+    float reverbFirst = 50.0f;                             /**< Reverb level */
+    float reverbSecond = 50.0f;
+
+    float volumeFirst = 100.0f;
+    float volumeSecond = 100.0f;
+
     bool programChanged = false;                 /**< Whether program changed since recording */
     bool isRecording = false;                    /**< Recording state flag */
     bool isPlaying = false;                      /**< Playback state flag */

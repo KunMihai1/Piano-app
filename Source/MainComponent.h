@@ -24,6 +24,7 @@
 #include "displayGUI.h"
 #include "addDeviceWindow.h"
 #include "SectionsComponent.h"
+#include "OverlayComponent.h"
 
 /**
  * @class SmoothRotarySlider
@@ -118,7 +119,8 @@ class MainComponent : public juce::Component,
     public juce::ChangeListener,
     public juce::KeyListener,
     public juce::Timer,
-    public juce::ComboBox::Listener
+    public juce::ComboBox::Listener,
+    public juce::FocusChangeListener
 {
 public:
     /** @brief Constructor initializes UI and MIDI */
@@ -129,6 +131,10 @@ public:
 
     /** @brief Paints the main window */
     void paint(juce::Graphics& g) override;
+
+    void focusGained(juce::Component::FocusChangeType) override;
+
+    void globalFocusChanged(juce::Component* focusedComponent) override;
 
     /** @brief Handles component resizing */
     void resized() override;
@@ -168,9 +174,6 @@ private:
     /** @brief Loads settings from disk */
     void loadSettings();
 
-    /** @brief Called when component gains focus */
-    void focusGained(FocusChangeType) override;
-
     // UI toggles
     void toggleSettingsPanel();
     void toggleSettingsButton();
@@ -193,6 +196,7 @@ private:
     void toggleDevicesCBUpdate();
     void toggleSections();
     void toggleAnnotation();
+    void toggleChordHelperButton();
 
 
     // Initialization functions
@@ -217,6 +221,7 @@ private:
     void devicesCBUpdateInit();
     void sectionsInit();
     void annotationInit();
+    void chordHelperButtonInit();
    
 
     // Button click callbacks
@@ -271,6 +276,8 @@ private:
 
     int last=-1, lastOfLast=-1;
 
+    bool midiWindowShouldBeVisible = false;
+    bool overlayShouldBeVisible = false;
     // UI buttons and toggles
     juce::TextButton settingsButton{ "Settings" };
     juce::TextButton midiButton{ "MIDI Settings" };
@@ -283,6 +290,7 @@ private:
     juce::TextButton playRecordingFileButton{ "Play recording file" };
     juce::ToggleButton leftHandInstrumentToggle, rightHandInstrumentToggle;
     juce::ToggleButton noteNumbersAnnotation;
+    juce::TextButton chordHelperButton{ "Chord helper" };
     std::unique_ptr<StyleSectionComponent> introsEndings, variationsFills;
 
 
@@ -311,6 +319,7 @@ private:
     std::unique_ptr<juce::FileChooser> fileChooser;
     std::unique_ptr<Display> display = nullptr;
     std::unique_ptr<AddDeviceWindow> addDeviceWindow=nullptr;
+    std::unique_ptr<OverlayComponent> overlayWindow=nullptr;
 
 
 
