@@ -26,9 +26,15 @@
  */
 class MIDIWindow : public juce::DocumentWindow,
                    private juce::ComboBox::Listener,
-                   private juce::Timer
+                   private juce::Timer,
+                   public juce::KeyListener
 {
 public:
+
+    std::function<bool()> isMidiDeviceOpen;
+
+    std::function<void()> onWindowClosed;
+
     /**
      * @brief Constructor.
      * @param mdevice Reference to the MIDI device object.
@@ -43,6 +49,9 @@ public:
 
     /** @brief Destructor stops the update timer and cleans up. */
     ~MIDIWindow() override;
+
+    bool keyPressed(const juce::KeyPress& key, juce::Component*) override;
+
 
     /** @brief Sets the volume slider to a specific value. */
     void volumeSliderSetValue(double value);
@@ -63,6 +72,9 @@ public:
     void timerCallback() override;
 
 private:
+
+    int getCorrectChannel(juce::String& text);
+
     /** @brief Toggles visibility of sliders (volume/reverb). */
     void toggleSettingsSliders();
 
@@ -87,6 +99,8 @@ private:
     /** @brief Initializes device ComboBoxes. */
     void devicesCBinit();
 
+    void instrumentsCBinit();
+
     /** @brief Calls all initialization functions. */
     void allInit();
 
@@ -95,6 +109,8 @@ private:
 
     /** @brief Populates the output device ComboBox. */
     void populateCBOUT();
+
+    void populateCBinstruments();
 
     /** @brief Restores ComboBox selections from previously saved indices. */
     void restoreCBoxes();
@@ -107,11 +123,13 @@ private:
 
     juce::Component settingsPanel;            /**< Panel containing all settings components */
 
+    
     juce::Slider volumeSlider;                /**< Slider for adjusting MIDI volume */
     juce::Slider reverbSlider;                /**< Slider for adjusting MIDI reverb */
     juce::Label volumeLabel;                  /**< Label for the volume slider */
     juce::Label reverbLabel;                  /**< Label for the reverb slider */
 
+    juce::ComboBox currentInstrumentSettingsCB;
     juce::ComboBox comboBoxDevicesIN;         /**< ComboBox for selecting MIDI input devices */
     juce::ComboBox comboBoxDevicesOUT;        /**< ComboBox for selecting MIDI output devices */
     juce::Label midiDevicesLabelIN;           /**< Label for input devices */

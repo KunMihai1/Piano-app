@@ -46,6 +46,14 @@ MainComponent::MainComponent()
         }
     };
 
+    juce::Desktop::getInstance().addFocusChangeListener(this);
+
+    juce::MessageManager::callAsync([this]()
+        {
+            if (isVisible())
+                grabKeyboardFocus();
+        });
+
     loadSettings();
     startTimer(1000);
 
@@ -104,6 +112,37 @@ void MainComponent::paint(juce::Graphics& g)
             g.drawImage(currentBackground, juce::Rectangle<float>(x, y, newWidth, newHeight));
         g.setFont(juce::FontOptions(16.0f));
         g.setColour(juce::Colours::white);
+    }
+}
+
+void MainComponent::focusGained(juce::Component::FocusChangeType)
+{
+
+    if (noteLayer)
+    {
+        noteLayer->toFront(false);
+    }
+}
+
+void MainComponent::globalFocusChanged(juce::Component* focusedComponent)
+{
+    bool appIsActive = juce::Process::isForegroundProcess();
+
+    if (!appIsActive)
+    {
+        if (overlayWindow)
+            overlayWindow->setVisible(false);
+
+        if (midiWindow)
+            midiWindow->setVisible(false);
+    }
+    else
+    {
+        if (overlayWindow)
+            overlayWindow->setVisible(overlayShouldBeVisible);
+
+        if (midiWindow)
+            midiWindow->setVisible(midiWindowShouldBeVisible);
     }
 }
 
@@ -186,6 +225,108 @@ void MainComponent::changeListenerCallback(juce::ChangeBroadcaster* source)
 
 bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
 {
+
+    if (key == juce::KeyPress::escapeKey)
+    {
+
+        if (!overlayWindow)
+        {
+            overlayWindow = std::make_unique<OverlayComponent>();
+            auto topLevel = getTopLevelComponent();
+            juce::Rectangle<int> screenBounds = topLevel->getScreenBounds();
+
+            overlayWindow->setBounds(screenBounds);
+            overlayWindow->setAlwaysOnTop(true);
+            overlayWindow->setOpaque(false);
+
+            overlayShouldBeVisible = true;
+            overlayWindow->setVisible(true);
+
+
+            overlayWindow->addToDesktop(
+                juce::ComponentPeer::windowIsTemporary
+                | juce::ComponentPeer::windowHasDropShadow,
+                nullptr);
+
+            overlayWindow->toFront(true);
+
+
+            overlayWindow->onRequestClose = [this]()
+            {
+                if (overlayWindow)
+                {
+                    overlayShouldBeVisible = false;
+                    overlayWindow->removeFromDesktop();
+                    overlayWindow.reset();
+                }
+            };
+
+            overlayWindow->setWindowFlag = [this]()
+            {
+                overlayShouldBeVisible = false;
+            };
+
+            overlayWindow->bringSeparateWindowFront = [this]()
+            {
+                if (midiWindow)
+                {
+                    midiWindow->toFront(true);
+                    midiWindow->grabKeyboardFocus();
+                }
+            };
+
+            overlayWindow->onSettingsClick = [this]()
+            {
+
+                midiWindowShouldBeVisible = true;
+
+                if (!midiWindow)
+                {
+                    midiWindow = std::make_unique<MIDIWindow>(
+                        this->MIDIDevice, devicesIN, devicesOUT, propertiesFile);
+
+
+                    midiWindow->setAlwaysOnTop(true);
+                    midiWindow->toFront(true);
+
+                    midiWindow->setVisible(true);
+
+                    midiWindow->onWindowClosed = [this]()
+                    {
+                        midiWindowShouldBeVisible = false;
+                        midiWindow.reset();
+                    };
+
+                    midiWindow->isMidiDeviceOpen = [this]()
+                    {
+                        return !playButton.isVisible();
+                    };
+
+                    loadSettings();
+                }
+                else
+                {
+                    midiWindow->setVisible(true);
+                    midiWindow->toFront(true);
+                }
+            };
+
+            overlayWindow->grabKeyboardFocus();
+        }
+        else
+        {
+
+            if (overlayWindow->onRequestClose)
+                overlayWindow->onRequestClose();
+            else
+            {
+                overlayShouldBeVisible = false;
+                overlayWindow->removeFromDesktop();
+                overlayWindow.reset();
+            }
+        }
+    }
+
     if (!this->keyListener.getIsKeyboardInput())
         return false;
 
@@ -206,7 +347,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
             this->noteLayer->resetStateActiveNotes();
             this->keyListener.resetState();
             this->keyboard.setIsDrawn(false);
-            this->keyboard.repaint();
+            this->keyboard.resetStateActiveNotes();
             this->display->set_min_max(startNote - 12, finishNote - 12);
             this->display->setNewSettingsHelperFunction(-12);
         }
@@ -224,7 +365,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
             this->noteLayer->resetStateActiveNotes();
             this->keyListener.resetState();
             this->keyboard.setIsDrawn(false);
-            this->keyboard.repaint();
+            this->keyboard.resetStateActiveNotes();
             this->display->set_min_max(startNote + 12, finishNote + 12);
             this->display->setNewSettingsHelperFunction(12);
         }
@@ -331,27 +472,27 @@ void MainComponent::loadSettings()
 {
     if (propertiesFile)
     {
-        double savedVolume = propertiesFile->getDoubleValue("midiVolume", 100.0);
-        double savedReverb = propertiesFile->getDoubleValue("midiReverb", 100.0);
+        double savedVolumeFirst = propertiesFile->getDoubleValue("midiVolumeFirst", 100.0);
+        double savedReverbFirst = propertiesFile->getDoubleValue("midiReverbFirst", 100.0);
+
+        double savedVolumeSecond = propertiesFile->getDoubleValue("midiVolumeSecond", 100.0);
+        double savedReverbSecond = propertiesFile->getDoubleValue("midiReverbSecond", 100.0);
+
         int leftHandInstrumentNumber = propertiesFile->getIntValue("leftInstrumentNumber", 0);
         int rightHandInstrumentNumber = propertiesFile->getIntValue("rightInstrumentNumber", 0);
         if (midiWindow)
         {
-            this->midiWindow->volumeSliderSetValue(savedVolume);
-            this->midiWindow->reverbSliderSetValue(savedReverb);
+            this->midiWindow->volumeSliderSetValue(savedVolumeFirst);
+            this->midiWindow->reverbSliderSetValue(savedReverbFirst);
         }
-        this->MIDIDevice.setVolume(savedVolume);
-        this->MIDIDevice.setReverb(savedReverb);
+        this->MIDIDevice.setVolume(savedVolumeFirst,1);
+        this->MIDIDevice.setReverb(savedReverbFirst,1);
+        this->MIDIDevice.setVolume(savedVolumeSecond, 16);
+        this->MIDIDevice.setReverb(savedReverbSecond, 16);
+
+
         this->midiHandler.setProgramNumber(leftHandInstrumentNumber, "left");
         this->midiHandler.setProgramNumber(rightHandInstrumentNumber, "right");
-    }
-}
-
-void MainComponent::focusGained(FocusChangeType)
-{
-    if (noteLayer)
-    {
-        noteLayer->toFront(false);
     }
 }
 
@@ -524,6 +665,13 @@ void MainComponent::toggleAnnotation()
     if (noteNumbersAnnotation.isVisible())
         noteNumbersAnnotation.setVisible(false);
     else noteNumbersAnnotation.setVisible(true);
+}
+
+void MainComponent::toggleChordHelperButton()
+{
+    if (chordHelperButton.isVisible())
+        chordHelperButton.setVisible(false);
+    else chordHelperButton.setVisible(true);
 }
 
 void MainComponent::toggleForPlaying()
@@ -1072,9 +1220,19 @@ void MainComponent::playButtonOnClick()
         currentBackground = playBackground;
         repaint();
         toggleHPanel();
-        MIDIDevice.changeVolumeInstrument();
-        MIDIDevice.changeReverbInstrument();
-        recordPlayer.setReverb(MIDIDevice.getReverb());
+
+        MIDIDevice.changeVolumeInstrument(1);
+        MIDIDevice.changeReverbInstrument(1);
+        MIDIDevice.changeReverbInstrument(16);
+        MIDIDevice.changeVolumeInstrument(16);
+
+
+        recordPlayer.setReverb(MIDIDevice.getReverb(1),1);
+        recordPlayer.setReverb(MIDIDevice.getReverb(16), 16);
+
+        recordPlayer.setVolume(MIDIDevice.getVolume(1), 1);
+        recordPlayer.setVolume(MIDIDevice.getVolume(16), 16);
+
         display->setDeviceOutput(MIDIDevice.getDeviceOUT());
 
         if (!keyboardInitialized)

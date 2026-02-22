@@ -151,6 +151,14 @@ void KeyboardUI::resetStateActiveNotes()
     repaint();
 }
 
+void KeyboardUI::resetStateActiveNotesNoExplicitRepaint()
+{
+    for (auto& keyPair : keys)
+    {
+        keyPair.second.isActive = false;
+    }
+}
+
 void KeyboardUI::noteOnReceived(int midiNote)
 {
     juce::MessageManager::callAsync([this, midiNote]

@@ -33,6 +33,10 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="olzhBP" name="OverlayComponent.cpp" compile="1" resource="0"
+            file="Source/OverlayComponent.cpp"/>
+      <FILE id="Fbo82v" name="OverlayComponent.h" compile="0" resource="0"
+            file="Source/OverlayComponent.h"/>
       <FILE id="w5pNZR" name="SectionsComponent.cpp" compile="1" resource="0"
             file="Source/SectionsComponent.cpp"/>
       <FILE id="cdnTwl" name="SectionsComponent.h" compile="0" resource="0"

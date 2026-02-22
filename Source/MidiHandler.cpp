@@ -2,7 +2,7 @@
 #include "InstrumentHandler.h"
 #include "MidiDevicesDB.h"
 
-MidiDevice::MidiDevice() : reverb{ 50.0f }, volume{ 50.0f }, currentDeviceIDin{ 0 }, currentDeviceIDout{ 0 }, identifier{ "" }, minNote{ 0 }, maxNote{ 127 } {
+MidiDevice::MidiDevice() : reverbFirst{ 50.0f }, volumeFirst{ 50.0f }, reverbSecond{ 50.0f }, volumeSecond{ 50.0f }, currentDeviceIDin { 0 }, currentDeviceIDout{ 0 }, identifier{ "" }, minNote{ 0 }, maxNote{ 127 } {
 	this->currentDevicesIN.push_back("PC Keyboard");
 }
 
@@ -283,24 +283,36 @@ std::weak_ptr<juce::MidiOutput> MidiDevice::getDeviceOUT() const
 	return this->currentDeviceUSEDout;
 }
 
-void MidiDevice::setVolume(const float vValue) 
+void MidiDevice::setVolume(const float vValue, int channel) 
 {
-	this->volume = vValue;
+	if (channel == 1)
+		this->volumeFirst = vValue;
+	else if (channel == 16)
+		this->volumeSecond = vValue;
 }
 
-float MidiDevice::getVolume() const
+float MidiDevice::getVolume(int channel) const
 {
-	return this->volume;
+	if (channel == 1)
+		return this->volumeFirst;
+	else if (channel == 16)
+		return this->volumeSecond;
 }
 
-void MidiDevice::setReverb(const float rValue) 
+void MidiDevice::setReverb(const float rValue, int channel) 
 {
-	this->reverb = rValue;
+	if (channel == 1)
+		this->reverbFirst = rValue;
+	else if (channel == 16)
+		this->reverbSecond = rValue;
 }
 
-float MidiDevice::getReverb() const
+float MidiDevice::getReverb(int channel) const
 {
-	return this->reverb;
+	if (channel == 1)
+		return this->reverbFirst;
+	else if (channel == 16)
+		return this->reverbSecond;
 }
 
 int MidiDevice::get_minNote() const
@@ -313,28 +325,49 @@ int MidiDevice::get_maxNote() const
 	return this->maxNote;
 }
 
-void MidiDevice::changeVolumeInstrument()
+void MidiDevice::changeVolumeInstrument(int channel)
 {
-	float volume1 = this->getVolume();
+	float volume1 = this->getVolume(channel);
 	float normalizedVolume = juce::jlimit(0.0f, 1.0f, volume1 / 100.0f);
 	juce::uint8 midiValue = static_cast<juce::uint8>(juce::jlimit(0, 127, int(normalizedVolume * 127.0f)));
 
-	juce::MidiMessage volumeMessage = juce::MidiMessage::controllerEvent(1, 7, midiValue);
-	juce::MidiMessage volumeMessage2 = juce::MidiMessage::controllerEvent(16, 7, midiValue); //can add distinct volumes for left/right hand
+	if (channel == 1)
+	{
+		juce::MidiMessage volumeMessage = juce::MidiMessage::controllerEvent(1, 7, midiValue);
+		this->currentDeviceUSEDout->sendMessageNow(volumeMessage);
+	}
+	else if (channel == 16)
+	{
+		juce::MidiMessage volumeMessage2 = juce::MidiMessage::controllerEvent(16, 7, midiValue);
+		this->currentDeviceUSEDout->sendMessageNow(volumeMessage2);
+	}
+
+	
+	
 	//DBG("Changed to:" + juce::String(midiValue));
-	this->currentDeviceUSEDout->sendMessageNow(volumeMessage);
-	this->currentDeviceUSEDout->sendMessageNow(volumeMessage2);
+
+	
+	
 }
 
-void MidiDevice::changeReverbInstrument()
+void MidiDevice::changeReverbInstrument(int channel)
 {
-	float reverb1 = this->getReverb();
+	float reverb1 = this->getReverb(channel);
 	float normalizedReverb = juce::jlimit(0.0f, 1.0f, reverb1 / 100.0f);
 	juce::uint8 midiValue= static_cast<juce::uint8>(juce::jlimit(0, 127, int(normalizedReverb * 127.0f)));
-	juce::MidiMessage reverbMessage = juce::MidiMessage::controllerEvent(1, 91, midiValue);
-	juce::MidiMessage reverbMessage2 = juce::MidiMessage::controllerEvent(16, 91, midiValue); //can add distinct reverbs for left/right hand
-	this->currentDeviceUSEDout->sendMessageNow(reverbMessage);
-	this->currentDeviceUSEDout->sendMessageNow(reverbMessage2);
+
+	if (channel == 1)
+	{
+		juce::MidiMessage reverbMessage = juce::MidiMessage::controllerEvent(1, 91, midiValue);
+		this->currentDeviceUSEDout->sendMessageNow(reverbMessage);
+	}
+	else if (channel == 16)
+	{
+		juce::MidiMessage reverbMessage2 = juce::MidiMessage::controllerEvent(16, 91, midiValue);
+		this->currentDeviceUSEDout->sendMessageNow(reverbMessage2);
+	}
+	
+	
 
 }
 
@@ -365,7 +398,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 
 		float velocity = message.getFloatVelocity();
 
-		float volume = this->midiDevice.getVolume();
+		float volume = this->midiDevice.getVolume(message.getChannel());
 		//DBG("VOLUME="+ juce::String(volume));
 		float scaledVelocity = juce::jlimit(0.0f, 1.0f, velocity * volume);
 
@@ -598,7 +631,7 @@ void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair
 			int ccNumber = cc.first;
 			int ccValue = cc.second;
 			if (ccNumber == 91 && ccValue == -1)
-				ccValue = midiDevice.getReverb();
+				ccValue = midiDevice.getReverb(channel);
 
 			juce::MidiMessage msg = juce::MidiMessage::controllerEvent(channel, ccNumber, ccValue);
 			midiOut->sendMessageNow(msg);

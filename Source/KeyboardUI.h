@@ -60,6 +60,8 @@ public:
     /** @brief Resets all notes to inactive state */
     void resetStateActiveNotes();
 
+    void resetStateActiveNotesNoExplicitRepaint();
+
     /**
      * @brief Receives note-on events from MidiHandler
      * @param midiNote MIDI note number
