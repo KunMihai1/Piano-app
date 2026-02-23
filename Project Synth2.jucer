@@ -4,6 +4,7 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="vwDzJM" name="Project Synth2">
     <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
+      <FILE id="uEg9R8" name="C_MAJ_ROOT.png" compile="0" resource="1" file="../../C_MAJ_ROOT.png"/>
       <FILE id="Sji6TV" name="Knob.png" compile="0" resource="1" file="Photos/Knob.png"/>
       <FILE id="n7QYCK" name="playButton.svg" compile="0" resource="1" file="Photos/playButton.svg"/>
       <FILE id="njeogV" name="recordPlayback.svg" compile="0" resource="1"
@@ -33,6 +34,9 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="C9tx49" name="chordBrowser.cpp" compile="1" resource="0"
+            file="Source/chordBrowser.cpp"/>
+      <FILE id="QbNjqy" name="chordBrowser.h" compile="0" resource="0" file="Source/chordBrowser.h"/>
       <FILE id="olzhBP" name="OverlayComponent.cpp" compile="1" resource="0"
             file="Source/OverlayComponent.cpp"/>
       <FILE id="Fbo82v" name="OverlayComponent.h" compile="0" resource="0"

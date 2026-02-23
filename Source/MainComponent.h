@@ -25,6 +25,8 @@
 #include "addDeviceWindow.h"
 #include "SectionsComponent.h"
 #include "OverlayComponent.h"
+#include "chordBrowser.h"
+#include <cstdlib>
 
 /**
  * @class SmoothRotarySlider
@@ -160,6 +162,7 @@ public:
 
 private:
 
+
     int initialWidth = 0;  ///< Initial window width
     int initialHeight = 0; ///< Initial window height
 
@@ -171,8 +174,11 @@ private:
     /** @brief Initializes save file for the user */
     void initalizeSaveFileForUser();
 
+
     /** @brief Loads settings from disk */
     void loadSettings();
+
+    void buildChordLibrary();
 
     // UI toggles
     void toggleSettingsPanel();
@@ -321,7 +327,7 @@ private:
     std::unique_ptr<AddDeviceWindow> addDeviceWindow=nullptr;
     std::unique_ptr<OverlayComponent> overlayWindow=nullptr;
 
-
+    std::vector<Chord> myChordLibrary;
 
     //==========================================================================
     // Panels
