@@ -504,41 +504,56 @@ void MainComponent::loadSettings()
 
 void MainComponent::playChordOnClick(const Chord& c)
 {
-    auto notes = getNotesForChord(c);
+    auto notes = ChordHelper::getNotesForChord(c);
 
     for (auto note : notes)
     {
 
-        juce::MidiMessage noteOn = juce::MidiMessage::noteOn(1, note, (juce::uint8)100);
+        juce::MidiMessage noteOn = juce::MidiMessage::noteOn(13, note, (juce::uint8)100); //Channels: 14,15 taken by record player  || 1,16 user playing || 2->7 and 10 tracks (some can be reused but it's 100% safe like this if we don't run out of channels
         midiHandler.handleIncomingMidiMessage(nullptr, noteOn);
 
 
         juce::Timer::callAfterDelay(500, [this, note]() {
-            juce::MidiMessage noteOff = juce::MidiMessage::noteOff(1, note);
+            juce::MidiMessage noteOff = juce::MidiMessage::noteOff(13, note);
             midiHandler.handleIncomingMidiMessage(nullptr, noteOff);
             });
     }
-}
-
-std::vector<int> MainComponent::getNotesForChord(const Chord& c)
-{
-    if (c.name.equalsIgnoreCase("c major"))
-        return { 60, 64, 67 };
 }
 
 void MainComponent::buildChordLibrary()
 {
     myChordLibrary.clear();
 
-    
-    Chord cMajor;
-    cMajor.name = "C Major";
-    
-    cMajor.imgRoot = juce::ImageFileFormat::loadFrom(BinaryData::C_MAJ_ROOT_png, BinaryData::C_MAJ_ROOT_pngSize);
-    cMajor.imgInv1 = juce::ImageFileFormat::loadFrom(BinaryData::C_MAJ_INV1_PNG, BinaryData::C_MAJ_INV1_PNGSize);
-    cMajor.imgInv2 = juce::ImageFileFormat::loadFrom(BinaryData::C_MAJ_INV2_PNG, BinaryData::C_MAJ_INV2_PNGSize);
+    std::vector<juce::String> roots =
+    {
+        "C","C#","D","D#","E",
+        "F","F#","G","G#","A","A#","B"
+    };
 
-    myChordLibrary.push_back(cMajor);
+    std::vector<juce::String> types =
+    {
+        "Major",
+        "Minor",
+        "7",
+        "Aug",
+        "Dim"
+    };
+
+    for (const auto& root : roots)
+    {
+        for (const auto& type : types)
+        {
+            Chord chord;
+
+            if (type == "7")
+                chord.name = root + "7";
+            else
+                chord.name = root + " " + type;
+
+            myChordLibrary.push_back(chord);
+        }
+    }
+
 }
 
 void MainComponent::toggleSettingsPanel()

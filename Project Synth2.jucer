@@ -4,9 +4,129 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="vwDzJM" name="Project Synth2">
     <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
-      <FILE id="h1HLTN" name="C_MAJ_INV2.PNG" compile="0" resource="1" file="Photos/chords/C_MAJ_INV2.PNG"/>
-      <FILE id="OnhPHW" name="C_MAJ_INV1.PNG" compile="0" resource="1" file="Photos/chords/C_MAJ_INV1.PNG"/>
-      <FILE id="NepaaV" name="C_MAJ_ROOT.png" compile="0" resource="1" file="Photos/chords/C_MAJ_ROOT.png"/>
+      <FILE id="zU28vw" name="A_SHARP_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/A_SHARP_MINOR_INV1.png"/>
+      <FILE id="ZhbJRT" name="A_SHARP_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/A_SHARP_MINOR_INV2.png"/>
+      <FILE id="rwM2ai" name="A_SHARP_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/A_SHARP_MINOR_ROOT.png"/>
+      <FILE id="vLvuxi" name="C_SHARP_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/C_SHARP_MINOR_INV1.png"/>
+      <FILE id="kmsopS" name="C_SHARP_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/C_SHARP_MINOR_INV2.png"/>
+      <FILE id="aS6NuV" name="C_SHARP_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/C_SHARP_MINOR_ROOT.png"/>
+      <FILE id="ladU3Y" name="D_SHARP_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/D_SHARP_MINOR_INV1.png"/>
+      <FILE id="QbKdrP" name="D_SHARP_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/D_SHARP_MINOR_INV2.png"/>
+      <FILE id="UgvZtt" name="D_SHARP_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/D_SHARP_MINOR_ROOT.png"/>
+      <FILE id="bDncLg" name="F_SHARP_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/F_SHARP_MINOR_INV1.png"/>
+      <FILE id="NWl5OF" name="F_SHARP_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/F_SHARP_MINOR_INV2.png"/>
+      <FILE id="NnkwrO" name="F_SHARP_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/F_SHARP_MINOR_ROOT.png"/>
+      <FILE id="Bgd7WL" name="G_SHARP_MIN_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/G_SHARP_MIN_ROOT.png"/>
+      <FILE id="PGy7sK" name="G_SHARP_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/G_SHARP_MINOR_INV1.png"/>
+      <FILE id="jOgv2l" name="G_SHARP_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor sharp chords/G_SHARP_MINOR_INV2.png"/>
+      <FILE id="GcwgXN" name="A_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/A_MINOR_INV1.png"/>
+      <FILE id="fsUlHz" name="A_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/A_MINOR_INV2.png"/>
+      <FILE id="XxMoi5" name="A_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/A_MINOR_ROOT.png"/>
+      <FILE id="bbGdFJ" name="B_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/B_MINOR_INV1.png"/>
+      <FILE id="e9x9Jz" name="B_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/B_MINOR_INV2.png"/>
+      <FILE id="YGrJlG" name="B_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/B_MINOR_ROOT.png"/>
+      <FILE id="e1jDWL" name="C_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/C_MINOR_INV1.png"/>
+      <FILE id="BbpWqp" name="C_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/C_MINOR_INV2.png"/>
+      <FILE id="z1aMHS" name="C_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/C_MINOR_ROOT.png"/>
+      <FILE id="nmC8yH" name="D_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/D_MINOR_INV1.png"/>
+      <FILE id="P7Zvsj" name="D_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/D_MINOR_INV2.png"/>
+      <FILE id="CZpXZ0" name="D_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/D_MINOR_ROOT.png"/>
+      <FILE id="JU6pGY" name="E_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/E_MINOR_INV1.png"/>
+      <FILE id="a2OWce" name="E_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/E_MINOR_INV2.png"/>
+      <FILE id="QcJOGw" name="E_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/E_MINOR_ROOT.png"/>
+      <FILE id="nchxMs" name="F_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/F_MINOR_INV1.png"/>
+      <FILE id="l1YAh1" name="F_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/F_MINOR_INV2.png"/>
+      <FILE id="dgCai8" name="F_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/F_MINOR_ROOT.png"/>
+      <FILE id="wC7ybV" name="G_MINOR_INV1.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/G_MINOR_INV1.png"/>
+      <FILE id="tyhtZk" name="G_MINOR_INV2.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/G_MINOR_INV2.png"/>
+      <FILE id="rQsQ8C" name="G_MINOR_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL minor normal chords/G_MINOR_ROOT.png"/>
+      <FILE id="FPvmBL" name="A_SHARP_MAJ_INV1.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/A_SHARP_MAJ_INV1.png"/>
+      <FILE id="BWlW3Q" name="A_SHARP_MAJ_INV2.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/A_SHARP_MAJ_INV2.png"/>
+      <FILE id="iKbTjt" name="A_SHARP_MAJ_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/A_SHARP_MAJ_ROOT.png"/>
+      <FILE id="NJLcsF" name="C_SHARP_MAJ_INV1.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/C_SHARP_MAJ_INV1.png"/>
+      <FILE id="NRNa0a" name="C_SHARP_MAJ_INV2.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/C_SHARP_MAJ_INV2.png"/>
+      <FILE id="gtnSU0" name="C_SHARP_MAJ_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/C_SHARP_MAJ_ROOT.png"/>
+      <FILE id="LHBRVk" name="D_SHARP_MAJ_INV1.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/D_SHARP_MAJ_INV1.png"/>
+      <FILE id="sv3YRL" name="D_SHARP_MAJ_INV2.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/D_SHARP_MAJ_INV2.png"/>
+      <FILE id="c4vOrq" name="D_SHARP_MAJ_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/D_SHARP_MAJ_ROOT.png"/>
+      <FILE id="IeGqz0" name="F_SHARP_MAJ_INV1.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/F_SHARP_MAJ_INV1.png"/>
+      <FILE id="fJWptF" name="F_SHARP_MAJ_INV2.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/F_SHARP_MAJ_INV2.png"/>
+      <FILE id="EHirRK" name="F_SHARP_MAJ_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/F_SHARP_MAJ_ROOT.png"/>
+      <FILE id="c5rLRO" name="G_SHARP_MAJ_INV1.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/G_SHARP_MAJ_INV1.png"/>
+      <FILE id="YzPDTc" name="G_SHARP_MAJ_INV2.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/G_SHARP_MAJ_INV2.png"/>
+      <FILE id="MnpWdI" name="G_SHARP_MAJ_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL major sharp chords/G_SHARP_MAJ_ROOT.png"/>
+      <FILE id="sGOauL" name="A_MAJ_INV1.png" compile="0" resource="1" file="Photos/ALL major normal chords/A_MAJ_INV1.png"/>
+      <FILE id="HF3oZK" name="A_MAJ_INV2.png" compile="0" resource="1" file="Photos/ALL major normal chords/A_MAJ_INV2.png"/>
+      <FILE id="JkvJpO" name="A_MAJ_ROOT.png" compile="0" resource="1" file="Photos/ALL major normal chords/A_MAJ_ROOT.png"/>
+      <FILE id="gWThrB" name="B_MAJ_INV1.png" compile="0" resource="1" file="Photos/ALL major normal chords/B_MAJ_INV1.png"/>
+      <FILE id="aAEgAu" name="B_MAJ_INV2.png" compile="0" resource="1" file="Photos/ALL major normal chords/B_MAJ_INV2.png"/>
+      <FILE id="bQOQq2" name="B_MAJ_ROOT.png" compile="0" resource="1" file="Photos/ALL major normal chords/B_MAJ_ROOT.png"/>
+      <FILE id="HRABXX" name="C_MAJ_INV1.png" compile="0" resource="1" file="Photos/ALL major normal chords/C_MAJ_INV1.png"/>
+      <FILE id="FNQyh8" name="C_MAJ_INV2.png" compile="0" resource="1" file="Photos/ALL major normal chords/C_MAJ_INV2.png"/>
+      <FILE id="ZQ5Gz0" name="C_MAJ_ROOT.png" compile="0" resource="1" file="Photos/ALL major normal chords/C_MAJ_ROOT.png"/>
+      <FILE id="E1YeJC" name="D_MAJ_INV1.png" compile="0" resource="1" file="Photos/ALL major normal chords/D_MAJ_INV1.png"/>
+      <FILE id="mARsr4" name="D_MAJ_INV2.png" compile="0" resource="1" file="Photos/ALL major normal chords/D_MAJ_INV2.png"/>
+      <FILE id="foNyRM" name="D_MAJ_ROOT.png" compile="0" resource="1" file="Photos/ALL major normal chords/D_MAJ_ROOT.png"/>
+      <FILE id="qFjUz4" name="E_MAJ_INV1.png" compile="0" resource="1" file="Photos/ALL major normal chords/E_MAJ_INV1.png"/>
+      <FILE id="G7v5GO" name="E_MAJ_INV2.png" compile="0" resource="1" file="Photos/ALL major normal chords/E_MAJ_INV2.png"/>
+      <FILE id="tQacZB" name="E_MAJ_ROOT.png" compile="0" resource="1" file="Photos/ALL major normal chords/E_MAJ_ROOT.png"/>
+      <FILE id="Pxidsk" name="F_MAJ_INV1.png" compile="0" resource="1" file="Photos/ALL major normal chords/F_MAJ_INV1.png"/>
+      <FILE id="nDXUB8" name="F_MAJ_INV2.png" compile="0" resource="1" file="Photos/ALL major normal chords/F_MAJ_INV2.png"/>
+      <FILE id="U8ADeM" name="F_MAJ_ROOT.png" compile="0" resource="1" file="Photos/ALL major normal chords/F_MAJ_ROOT.png"/>
+      <FILE id="ZeYsTu" name="G_MAJ_INV1.png" compile="0" resource="1" file="Photos/ALL major normal chords/G_MAJ_INV1.png"/>
+      <FILE id="xJkQhv" name="G_MAJ_INV2.png" compile="0" resource="1" file="Photos/ALL major normal chords/G_MAJ_INV2.png"/>
+      <FILE id="TUzO6i" name="G_MAJ_ROOT.png" compile="0" resource="1" file="Photos/ALL major normal chords/G_MAJ_ROOT.png"/>
       <FILE id="Sji6TV" name="Knob.png" compile="0" resource="1" file="Photos/Knob.png"/>
       <FILE id="n7QYCK" name="playButton.svg" compile="0" resource="1" file="Photos/playButton.svg"/>
       <FILE id="njeogV" name="recordPlayback.svg" compile="0" resource="1"

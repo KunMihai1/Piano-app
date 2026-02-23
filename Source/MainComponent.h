@@ -178,8 +178,6 @@ private:
     /** @brief Loads settings from disk */
     void loadSettings();
 
-    std::vector<int> getNotesForChord(const Chord& c);
-
     void playChordOnClick(const Chord& c);
 
     void buildChordLibrary();
