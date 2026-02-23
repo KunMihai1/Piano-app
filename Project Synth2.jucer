@@ -4,7 +4,9 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="vwDzJM" name="Project Synth2">
     <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
-      <FILE id="uEg9R8" name="C_MAJ_ROOT.png" compile="0" resource="1" file="../../C_MAJ_ROOT.png"/>
+      <FILE id="h1HLTN" name="C_MAJ_INV2.PNG" compile="0" resource="1" file="Photos/chords/C_MAJ_INV2.PNG"/>
+      <FILE id="OnhPHW" name="C_MAJ_INV1.PNG" compile="0" resource="1" file="Photos/chords/C_MAJ_INV1.PNG"/>
+      <FILE id="NepaaV" name="C_MAJ_ROOT.png" compile="0" resource="1" file="Photos/chords/C_MAJ_ROOT.png"/>
       <FILE id="Sji6TV" name="Knob.png" compile="0" resource="1" file="Photos/Knob.png"/>
       <FILE id="n7QYCK" name="playButton.svg" compile="0" resource="1" file="Photos/playButton.svg"/>
       <FILE id="njeogV" name="recordPlayback.svg" compile="0" resource="1"

@@ -502,6 +502,29 @@ void MainComponent::loadSettings()
     }
 }
 
+void MainComponent::playChordOnClick(const Chord& c)
+{
+    auto notes = getNotesForChord(c);
+
+    for (auto note : notes)
+    {
+
+        juce::MidiMessage noteOn = juce::MidiMessage::noteOn(1, note, (juce::uint8)100);
+        midiHandler.handleIncomingMidiMessage(nullptr, noteOn);
+
+
+        juce::Timer::callAfterDelay(500, [this, note]() {
+            juce::MidiMessage noteOff = juce::MidiMessage::noteOff(1, note);
+            midiHandler.handleIncomingMidiMessage(nullptr, noteOff);
+            });
+    }
+}
+
+std::vector<int> MainComponent::getNotesForChord(const Chord& c)
+{
+    if (c.name.equalsIgnoreCase("c major"))
+        return { 60, 64, 67 };
+}
 
 void MainComponent::buildChordLibrary()
 {
@@ -512,8 +535,8 @@ void MainComponent::buildChordLibrary()
     cMajor.name = "C Major";
     
     cMajor.imgRoot = juce::ImageFileFormat::loadFrom(BinaryData::C_MAJ_ROOT_png, BinaryData::C_MAJ_ROOT_pngSize);
-    cMajor.imgInv1 = juce::ImageFileFormat::loadFrom(BinaryData::AcousticGrandPiano_png, BinaryData::AcousticGrandPiano_pngSize);
-    cMajor.imgInv2 = juce::ImageFileFormat::loadFrom(BinaryData::ElectricBass2_png, BinaryData::ElectricBass2_pngSize);
+    cMajor.imgInv1 = juce::ImageFileFormat::loadFrom(BinaryData::C_MAJ_INV1_PNG, BinaryData::C_MAJ_INV1_PNGSize);
+    cMajor.imgInv2 = juce::ImageFileFormat::loadFrom(BinaryData::C_MAJ_INV2_PNG, BinaryData::C_MAJ_INV2_PNGSize);
 
     myChordLibrary.push_back(cMajor);
 }
@@ -1182,7 +1205,7 @@ void MainComponent::chordHelperButtonInit()
 
         chordBrowser->onChordChosen = [this](const Chord& c)
         {
-
+            playChordOnClick(c);
         };
 
         juce::CallOutBox::launchAsynchronously(std::move(chordBrowser), chordHelperButton.getScreenBounds(), nullptr);
