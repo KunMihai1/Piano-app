@@ -11,6 +11,15 @@
 #pragma once
 #include <JuceHeader.h>
 
+
+struct Chord
+{
+    juce::String name;
+    juce::Image imgRoot, imgInv1, imgInv2;
+
+    bool imagesLoaded = false;
+};
+
 /**
  * @class MapHelper
  * @brief Utility class for converting between MIDI note numbers and string representations.
@@ -32,4 +41,12 @@ public:
     static int stringToIntNote(juce::String noteString);
 
 private:
+};
+
+class ChordHelper
+{
+public:
+    static std::vector<int> getNotesForChord(const Chord& c);
+
+    static void loadChordNeeded(Chord& c);
 };

@@ -13,12 +13,7 @@
 #include "JuceHeader.h"
 #include <functional>
 #include <vector>
-
-struct Chord
-{
-    juce::String name;
-    juce::Image imgRoot, imgInv1, imgInv2;
-};
+#include "HelperFunctions.h"
 
 //==============================================================================
 // ChordPreview: shows Root, 1st inv, 2nd inv images
@@ -29,7 +24,7 @@ public:
     ~ChordPreview() override = default;
 
     void resized() override;
-    void showChordImages(const Chord& chord);
+    void showChordImages(Chord& chord);
     void clearImages();
 
 private:
@@ -45,9 +40,9 @@ private:
 class ChordRowComponent : public juce::Component
 {
 public:
-    ChordRowComponent(const Chord& chord,
-        std::function<void(const Chord& c)> onClick,
-        std::function<void(const Chord& c)> onHoverEnter,
+    ChordRowComponent(Chord& chord,
+        std::function<void(Chord& c)> onClick,
+        std::function<void(Chord& c)> onHoverEnter,
         std::function<void()> onHoverExit);
 
     ~ChordRowComponent() override;
@@ -59,8 +54,8 @@ public:
 
 private:
     Chord chordData;
-    std::function<void(const Chord& c)> onClick;
-    std::function<void(const Chord& c)> onHoverEnter;
+    std::function<void(Chord& c)> onClick;
+    std::function<void(Chord& c)> onHoverEnter;
     std::function<void()> onHoverExit;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ChordRowComponent)
@@ -100,7 +95,7 @@ private:
     juce::String filterText;
 
     void rebuildFilteredList();
-    void showPreviewForChord(const Chord& chord);
+    void showPreviewForChord(Chord& chord);
     void clearPreview();
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(ChordBrowserComponent)

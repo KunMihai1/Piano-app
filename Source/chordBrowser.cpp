@@ -58,16 +58,20 @@ void ChordPreview::resized()
     }
 }
 
-void ChordPreview::showChordImages(const Chord& chord)
+void ChordPreview::showChordImages(Chord& chord)
 {
-    const juce::Image images[] = { chord.imgRoot, chord.imgInv1, chord.imgInv2 };
+    ChordHelper::loadChordNeeded(chord);
+
+    const juce::Image images[] = { chord.imgRoot,chord.imgInv1,chord.imgInv2 };
 
     for (int i = 0; i < imageComponents.size(); ++i)
     {
         if (!images[i].isNull())
-            imageComponents[i]->setImage(images[i]);
-        else
-            imageComponents[i]->setImage(juce::Image()); 
+        {
+            ChordHelper::loadChordNeeded(chord);
+        }
+
+        imageComponents[i]->setImage(images[i]);
     }
 }
 
@@ -78,7 +82,7 @@ void ChordPreview::clearImages()
 }
 
 
-ChordRowComponent::ChordRowComponent(const Chord& chord, std::function<void(const Chord& c)> onClick, std::function<void(const Chord& c)> onHoverEnter, std::function<void()> onHoverExit)
+ChordRowComponent::ChordRowComponent(Chord& chord, std::function<void(Chord& c)> onClick, std::function<void(Chord& c)> onHoverEnter, std::function<void()> onHoverExit)
     :chordData{chord}, onClick{onClick}, onHoverEnter{onHoverEnter}, onHoverExit{onHoverExit}
 {
     setInterceptsMouseClicks(true, true);
@@ -164,7 +168,7 @@ juce::Component* ChordBrowserComponent::refreshComponentForRow(
 
         return nullptr;
     }
-    const Chord& c = allChords[filteredIndices[(size_t)rowNumber]];
+    Chord& c = allChords[filteredIndices[(size_t)rowNumber]];
 
     
     auto* row = dynamic_cast<ChordRowComponent*>(existingComponentToUpdate);
@@ -178,8 +182,8 @@ juce::Component* ChordBrowserComponent::refreshComponentForRow(
         
 
         row = new ChordRowComponent(c,
-            [this](const Chord& chosen) { if (onChordChosen) onChordChosen(chosen); },
-            [this](const Chord& hovered) { showPreviewForChord(hovered); },
+            [this](Chord& chosen) { if (onChordChosen) onChordChosen(chosen); },
+            [this](Chord& hovered) { showPreviewForChord(hovered); },
             [this]() { clearPreview(); });
     }
     else
@@ -245,7 +249,7 @@ void ChordBrowserComponent::rebuildFilteredList()
     listBox.updateContent();
 }
 
-void ChordBrowserComponent::showPreviewForChord(const Chord& chord)
+void ChordBrowserComponent::showPreviewForChord(Chord& chord)
 {
     preview.showChordImages(chord);
 
