@@ -12,6 +12,8 @@ MainComponent::MainComponent()
     playBackground = juce::ImageFileFormat::loadFrom(BinaryData::playingBackground_png, BinaryData::playingBackground_pngSize);
     currentBackground = cachedImageMainWindow;
 
+    buildChordLibrary();
+
     displayInit();
 
     setBounds(0, 0, juce::Desktop::getInstance().getDisplays().getPrimaryDisplay()->totalArea.getWidth(),
@@ -179,8 +181,12 @@ void MainComponent::resized()
     stopRecording.setBounds(startPlayback.getX()-30-10, 10, 30, 30);
     startRecording.setBounds(stopRecording.getX()-30-10, 10, 30, 30);
 
+    chordHelperButton.setBounds(getLocalBounds().getRight()-205, startRecording.getBottom()+5, 200, 50);
+
     saveRecordingButton.setBounds(startRecording.getX()-140-10, 10, 140, 30);
     playRecordingFileButton.setBounds(305, 10, 100, 30);
+
+
 
     //volumeKnob.setBounds(getWidth() / 2, 0, 70, 50);
 
@@ -496,6 +502,22 @@ void MainComponent::loadSettings()
     }
 }
 
+
+void MainComponent::buildChordLibrary()
+{
+    myChordLibrary.clear();
+
+    
+    Chord cMajor;
+    cMajor.name = "C Major";
+    
+    cMajor.imgRoot = juce::ImageFileFormat::loadFrom(BinaryData::C_MAJ_ROOT_png, BinaryData::C_MAJ_ROOT_pngSize);
+    cMajor.imgInv1 = juce::ImageFileFormat::loadFrom(BinaryData::AcousticGrandPiano_png, BinaryData::AcousticGrandPiano_pngSize);
+    cMajor.imgInv2 = juce::ImageFileFormat::loadFrom(BinaryData::ElectricBass2_png, BinaryData::ElectricBass2_pngSize);
+
+    myChordLibrary.push_back(cMajor);
+}
+
 void MainComponent::toggleSettingsPanel()
 {
     if (settingsPanel.isVisible()) {
@@ -551,6 +573,7 @@ void MainComponent::toggleHPanel()
     toggleHandInstrumentToggle();
     toggleAnnotation();
     toggleSections();
+    toggleChordHelperButton();
 }
 
 void MainComponent::toggleHomeButton()
@@ -1003,6 +1026,7 @@ void MainComponent::headerPanelInit()
     knobsInit();
     annotationInit();
     sectionsInit();
+    chordHelperButtonInit();
 }
 
 void MainComponent::homeButtonInit()
@@ -1143,6 +1167,29 @@ void MainComponent::annotationInit()
     };
 
     noteNumbersAnnotation.setVisible(false);
+}
+
+void MainComponent::chordHelperButtonInit()
+{
+    chordHelperButton.setButtonText("Chord helper");
+    chordHelperButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    chordHelperButton.onClick = [this]()
+    {
+        std::vector<Chord> lib=myChordLibrary;
+
+        auto chordBrowser = std::make_unique<ChordBrowserComponent>(lib);
+
+        chordBrowser->onChordChosen = [this](const Chord& c)
+        {
+
+        };
+
+        juce::CallOutBox::launchAsynchronously(std::move(chordBrowser), chordHelperButton.getScreenBounds(), nullptr);
+    };
+
+    headerPanel.addAndMakeVisible(chordHelperButton);
+    chordHelperButton.setVisible(false);
 }
 
 void MainComponent::settingsButtonOnClick()
