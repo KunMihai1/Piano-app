@@ -28,6 +28,7 @@ ChordPreview::ChordPreview()
         labelsArray.add(lbl);
 
         auto* imageComp = new juce::ImageComponent();
+        imageComp->setMouseCursor(juce::MouseCursor::PointingHandCursor);
         imageComp->setOpaque(true);
         imageComp->setInterceptsMouseClicks(false, false);
         container->addAndMakeVisible(imageComp);
@@ -80,17 +81,12 @@ void ChordPreview::clearImages()
 ChordRowComponent::ChordRowComponent(const Chord& chord, std::function<void(const Chord& c)> onClick, std::function<void(const Chord& c)> onHoverEnter, std::function<void()> onHoverExit)
     :chordData{chord}, onClick{onClick}, onHoverEnter{onHoverEnter}, onHoverExit{onHoverExit}
 {
-    DBG("ChordRowComponent() this="
-        + juce::String::toHexString((juce::uint64)(uintptr_t)this)
-        + " name=" + chord.name);
     setInterceptsMouseClicks(true, true);
+    setMouseCursor(juce::MouseCursor::PointingHandCursor);
 }
 
 ChordRowComponent::~ChordRowComponent()
 {
-    DBG("~ChordRowComponent() this="
-        + juce::String::toHexString((juce::uint64)(uintptr_t)this)
-        + " name=" + chordData.name);
 }
 
 void ChordRowComponent::updateChordData(const Chord& c)

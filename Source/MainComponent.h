@@ -178,6 +178,10 @@ private:
     /** @brief Loads settings from disk */
     void loadSettings();
 
+    std::vector<int> getNotesForChord(const Chord& c);
+
+    void playChordOnClick(const Chord& c);
+
     void buildChordLibrary();
 
     // UI toggles
@@ -328,6 +332,7 @@ private:
     std::unique_ptr<OverlayComponent> overlayWindow=nullptr;
 
     std::vector<Chord> myChordLibrary;
+    std::vector<int> currentlyPlayingNotes;
 
     //==========================================================================
     // Panels
