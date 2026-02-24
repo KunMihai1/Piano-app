@@ -535,8 +535,8 @@ void MainComponent::buildChordLibrary()
         "Major",
         "Minor",
         "7",
-        "Aug",
-        "Dim"
+        "Augmented",
+        "Diminished"
     };
 
     for (const auto& root : roots)

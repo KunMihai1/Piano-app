@@ -4,6 +4,108 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="vwDzJM" name="Project Synth2">
     <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
+      <FILE id="YHzWqY" name="G_SHARP_AUG_INV2.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/G_SHARP_AUG_INV2.png"/>
+      <FILE id="yP6c0P" name="A_SHARP_DIM_INV1.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/A_SHARP_DIM_INV1.png"/>
+      <FILE id="gFme1f" name="A_SHARP_DIM_INV2.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/A_SHARP_DIM_INV2.png"/>
+      <FILE id="HZ5m5l" name="A_SHARP_DIM_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/A_SHARP_DIM_ROOT.png"/>
+      <FILE id="nF3CWQ" name="C_SHARP_DIM_INV1.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/C_SHARP_DIM_INV1.png"/>
+      <FILE id="kGBLBi" name="C_SHARP_DIM_INV2.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/C_SHARP_DIM_INV2.png"/>
+      <FILE id="AUjlQl" name="C_SHARP_DIM_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/C_SHARP_DIM_ROOT.png"/>
+      <FILE id="zECwrz" name="D_SHARP_DIM_INV1.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/D_SHARP_DIM_INV1.png"/>
+      <FILE id="j4icyV" name="D_SHARP_DIM_INV2.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/D_SHARP_DIM_INV2.png"/>
+      <FILE id="NhhrSv" name="D_SHARP_DIM_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/D_SHARP_DIM_ROOT.png"/>
+      <FILE id="aaaxdJ" name="F_SHARP_DIM_INV1.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/F_SHARP_DIM_INV1.png"/>
+      <FILE id="fwcKPu" name="F_SHARP_DIM_INV2.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/F_SHARP_DIM_INV2.png"/>
+      <FILE id="nSUnQR" name="F_SHARP_DIM_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/F_SHARP_DIM_ROOT.png"/>
+      <FILE id="gyhL4D" name="G_SHARP_DIM_INV1.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/G_SHARP_DIM_INV1.png"/>
+      <FILE id="qBJ0uH" name="G_SHARP_DIM_INV2.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/G_SHARP_DIM_INV2.png"/>
+      <FILE id="JDHwjT" name="G_SHARP_DIM_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL dim sharp chords/G_SHARP_DIM_ROOT.png"/>
+      <FILE id="PMbOT5" name="A_DIM_INV1.png" compile="0" resource="1" file="Photos/ALL dim normal chords/A_DIM_INV1.png"/>
+      <FILE id="SrMbzf" name="A_DIM_INV2.png" compile="0" resource="1" file="Photos/ALL dim normal chords/A_DIM_INV2.png"/>
+      <FILE id="ncLtGi" name="A_DIM_ROOT.png" compile="0" resource="1" file="Photos/ALL dim normal chords/A_DIM_ROOT.png"/>
+      <FILE id="pIx5Vr" name="B_DIM_INV1.png" compile="0" resource="1" file="Photos/ALL dim normal chords/B_DIM_INV1.png"/>
+      <FILE id="jmeu8X" name="B_DIM_INV2.png" compile="0" resource="1" file="Photos/ALL dim normal chords/B_DIM_INV2.png"/>
+      <FILE id="iqPMMY" name="B_DIM_ROOT.png" compile="0" resource="1" file="Photos/ALL dim normal chords/B_DIM_ROOT.png"/>
+      <FILE id="xrdX7K" name="C_DIM_INV1.png" compile="0" resource="1" file="Photos/ALL dim normal chords/C_DIM_INV1.png"/>
+      <FILE id="PwgvC8" name="C_DIM_INV2.png" compile="0" resource="1" file="Photos/ALL dim normal chords/C_DIM_INV2.png"/>
+      <FILE id="d9xryF" name="C_DIM_ROOT.png" compile="0" resource="1" file="Photos/ALL dim normal chords/C_DIM_ROOT.png"/>
+      <FILE id="XKMRUD" name="D_DIM_INV1.png" compile="0" resource="1" file="Photos/ALL dim normal chords/D_DIM_INV1.png"/>
+      <FILE id="Pndvuf" name="D_DIM_INV2.png" compile="0" resource="1" file="Photos/ALL dim normal chords/D_DIM_INV2.png"/>
+      <FILE id="y1uYIp" name="D_DIM_ROOT.png" compile="0" resource="1" file="Photos/ALL dim normal chords/D_DIM_ROOT.png"/>
+      <FILE id="il09UN" name="E_DIM_INV1.png" compile="0" resource="1" file="Photos/ALL dim normal chords/E_DIM_INV1.png"/>
+      <FILE id="CuXmxi" name="E_DIM_INV2.png" compile="0" resource="1" file="Photos/ALL dim normal chords/E_DIM_INV2.png"/>
+      <FILE id="poSz65" name="E_DIM_ROOT.png" compile="0" resource="1" file="Photos/ALL dim normal chords/E_DIM_ROOT.png"/>
+      <FILE id="gopi6A" name="F_DIM_INV1.png" compile="0" resource="1" file="Photos/ALL dim normal chords/F_DIM_INV1.png"/>
+      <FILE id="udCePH" name="F_DIM_INV2.png" compile="0" resource="1" file="Photos/ALL dim normal chords/F_DIM_INV2.png"/>
+      <FILE id="iTHnUz" name="F_DIM_ROOT.png" compile="0" resource="1" file="Photos/ALL dim normal chords/F_DIM_ROOT.png"/>
+      <FILE id="dJHkjn" name="G_DIM_INV1.png" compile="0" resource="1" file="Photos/ALL dim normal chords/G_DIM_INV1.png"/>
+      <FILE id="aZBSL0" name="G_DIM_INV2.png" compile="0" resource="1" file="Photos/ALL dim normal chords/G_DIM_INV2.png"/>
+      <FILE id="dnD2rb" name="G_DIM_ROOT.png" compile="0" resource="1" file="Photos/ALL dim normal chords/G_DIM_ROOT.png"/>
+      <FILE id="iaVliN" name="A_SHARP_AUG_INV1.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/A_SHARP_AUG_INV1.png"/>
+      <FILE id="QlBzmE" name="A_SHARP_AUG_INV2.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/A_SHARP_AUG_INV2.png"/>
+      <FILE id="k9snOG" name="A_SHARP_AUG_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/A_SHARP_AUG_ROOT.png"/>
+      <FILE id="vYaNp1" name="C_SHARP_AUG_INV1.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/C_SHARP_AUG_INV1.png"/>
+      <FILE id="uxaWZw" name="C_SHARP_AUG_INV2.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/C_SHARP_AUG_INV2.png"/>
+      <FILE id="hkfHW5" name="C_SHARP_AUG_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/C_SHARP_AUG_ROOT.png"/>
+      <FILE id="LsKETM" name="D_SHARP_AUG_INV1.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/D_SHARP_AUG_INV1.png"/>
+      <FILE id="aIXei5" name="D_SHARP_AUG_INV2.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/D_SHARP_AUG_INV2.png"/>
+      <FILE id="zNWyJv" name="D_SHARP_AUG_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/D_SHARP_AUG_ROOT.png"/>
+      <FILE id="Gdwi7h" name="F_SHARP_AUG_INV1.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/F_SHARP_AUG_INV1.png"/>
+      <FILE id="bQhLlv" name="F_SHARP_AUG_INV2.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/F_SHARP_AUG_INV2.png"/>
+      <FILE id="h4b90o" name="F_SHARP_AUG_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/F_SHARP_AUG_ROOT.png"/>
+      <FILE id="N8Y4fa" name="G_SHARP_AUG_INV1.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/G_SHARP_AUG_INV1.png"/>
+      <FILE id="PIZ4Bw" name="G_SHARP_AUG_ROOT.png" compile="0" resource="1"
+            file="Photos/ALL aug sharp chords/G_SHARP_AUG_ROOT.png"/>
+      <FILE id="xBxHF1" name="A_AUG_INV1.png" compile="0" resource="1" file="Photos/ALL aug normal chords/A_AUG_INV1.png"/>
+      <FILE id="Ps4VMq" name="A_AUG_INV2.png" compile="0" resource="1" file="Photos/ALL aug normal chords/A_AUG_INV2.png"/>
+      <FILE id="r4u7Ia" name="A_AUG_ROOT.png" compile="0" resource="1" file="Photos/ALL aug normal chords/A_AUG_ROOT.png"/>
+      <FILE id="t3RzLY" name="B_AUG_INV1.png" compile="0" resource="1" file="Photos/ALL aug normal chords/B_AUG_INV1.png"/>
+      <FILE id="x3cNPd" name="B_AUG_INV2.png" compile="0" resource="1" file="Photos/ALL aug normal chords/B_AUG_INV2.png"/>
+      <FILE id="yU9yx4" name="B_AUG_ROOT.png" compile="0" resource="1" file="Photos/ALL aug normal chords/B_AUG_ROOT.png"/>
+      <FILE id="eZSCeu" name="C_AUG_INV1.png" compile="0" resource="1" file="Photos/ALL aug normal chords/C_AUG_INV1.png"/>
+      <FILE id="MntOZ6" name="C_AUG_INV2.png" compile="0" resource="1" file="Photos/ALL aug normal chords/C_AUG_INV2.png"/>
+      <FILE id="BgepVy" name="C_AUG_ROOT.png" compile="0" resource="1" file="Photos/ALL aug normal chords/C_AUG_ROOT.png"/>
+      <FILE id="I4vy7s" name="D_AUG_INV1.png" compile="0" resource="1" file="Photos/ALL aug normal chords/D_AUG_INV1.png"/>
+      <FILE id="w8fmXi" name="D_AUG_INV2.png" compile="0" resource="1" file="Photos/ALL aug normal chords/D_AUG_INV2.png"/>
+      <FILE id="oMUMNt" name="D_AUG_ROOT.png" compile="0" resource="1" file="Photos/ALL aug normal chords/D_AUG_ROOT.png"/>
+      <FILE id="toca42" name="E_AUG_INV1.png" compile="0" resource="1" file="Photos/ALL aug normal chords/E_AUG_INV1.png"/>
+      <FILE id="ksJqDz" name="E_AUG_INV2.png" compile="0" resource="1" file="Photos/ALL aug normal chords/E_AUG_INV2.png"/>
+      <FILE id="MoVpqb" name="E_AUG_ROOT.png" compile="0" resource="1" file="Photos/ALL aug normal chords/E_AUG_ROOT.png"/>
+      <FILE id="UJhSrl" name="F_AUG_INV1.png" compile="0" resource="1" file="Photos/ALL aug normal chords/F_AUG_INV1.png"/>
+      <FILE id="n3zdHF" name="F_AUG_INV2.png" compile="0" resource="1" file="Photos/ALL aug normal chords/F_AUG_INV2.png"/>
+      <FILE id="LRJyDX" name="F_AUG_ROOT.png" compile="0" resource="1" file="Photos/ALL aug normal chords/F_AUG_ROOT.png"/>
+      <FILE id="NmsBIJ" name="G_AUG_INV1.png" compile="0" resource="1" file="Photos/ALL aug normal chords/G_AUG_INV1.png"/>
+      <FILE id="tIyyvf" name="G_AUG_INV2.png" compile="0" resource="1" file="Photos/ALL aug normal chords/G_AUG_INV2.png"/>
+      <FILE id="HrmntB" name="G_AUG_ROOT.png" compile="0" resource="1" file="Photos/ALL aug normal chords/G_AUG_ROOT.png"/>
       <FILE id="zU28vw" name="A_SHARP_MINOR_INV1.png" compile="0" resource="1"
             file="Photos/ALL minor sharp chords/A_SHARP_MINOR_INV1.png"/>
       <FILE id="ZhbJRT" name="A_SHARP_MINOR_INV2.png" compile="0" resource="1"
