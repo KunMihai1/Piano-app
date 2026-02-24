@@ -107,10 +107,10 @@ std::vector<int> ChordHelper::getNotesForChord(const Chord& c)
     else if (type.equalsIgnoreCase("7"))
         intervals = { 0, 4, 7, 10 };
 
-    else if (type.equalsIgnoreCase("Aug"))
+    else if (type.equalsIgnoreCase("Augmented"))
         intervals = { 0, 4, 8 };
 
-    else if (type.equalsIgnoreCase("Dim"))
+    else if (type.equalsIgnoreCase("Diminished"))
         intervals = { 0, 3, 6 };
 
     std::vector<int> notes;
@@ -271,6 +271,152 @@ void ChordHelper::loadChordNeeded(Chord& c)
         c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::A_SHARP_MINOR_INV1_png, BinaryData::A_SHARP_MINOR_INV1_pngSize);
         c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::A_SHARP_MINOR_INV2_png, BinaryData::A_SHARP_MINOR_INV2_pngSize);
     }
+
+
+    // ----- C ----- DIM / AUG
+    else if (name == "C DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::C_DIM_ROOT_png, BinaryData::C_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::C_DIM_INV1_png, BinaryData::C_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::C_DIM_INV2_png, BinaryData::C_DIM_INV2_pngSize);
+    }
+    else if (name == "C AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::C_AUG_ROOT_png, BinaryData::C_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::C_AUG_INV1_png, BinaryData::C_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::C_AUG_INV2_png, BinaryData::C_AUG_INV2_pngSize);
+    }
+
+    // ----- D ----- DIM / AUG
+    else if (name == "D DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::D_DIM_ROOT_png, BinaryData::D_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::D_DIM_INV1_png, BinaryData::D_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::D_DIM_INV2_png, BinaryData::D_DIM_INV2_pngSize);
+    }
+    else if (name == "D AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::D_AUG_ROOT_png, BinaryData::D_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::D_AUG_INV1_png, BinaryData::D_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::D_AUG_INV2_png, BinaryData::D_AUG_INV2_pngSize);
+    }
+
+    // ----- E ----- DIM / AUG
+    else if (name == "E DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::E_DIM_ROOT_png, BinaryData::E_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::E_DIM_INV1_png, BinaryData::E_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::E_DIM_INV2_png, BinaryData::E_DIM_INV2_pngSize);
+    }
+    else if (name == "E AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::E_AUG_ROOT_png, BinaryData::E_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::E_AUG_INV1_png, BinaryData::E_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::E_AUG_INV2_png, BinaryData::E_AUG_INV2_pngSize);
+    }
+
+    // ----- F ----- DIM / AUG
+    else if (name == "F DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::F_DIM_ROOT_png, BinaryData::F_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::F_DIM_INV1_png, BinaryData::F_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::F_DIM_INV2_png, BinaryData::F_DIM_INV2_pngSize);
+    }
+    else if (name == "F AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::F_AUG_ROOT_png, BinaryData::F_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::F_AUG_INV1_png, BinaryData::F_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::F_AUG_INV2_png, BinaryData::F_AUG_INV2_pngSize);
+    }
+
+    // ----- G ----- DIM / AUG
+    else if (name == "G DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::G_DIM_ROOT_png, BinaryData::G_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::G_DIM_INV1_png, BinaryData::G_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::G_DIM_INV2_png, BinaryData::G_DIM_INV2_pngSize);
+    }
+    else if (name == "G AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::G_AUG_ROOT_png, BinaryData::G_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::G_AUG_INV1_png, BinaryData::G_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::G_AUG_INV2_png, BinaryData::G_AUG_INV2_pngSize);
+    }
+
+    // ----- A ----- DIM / AUG
+    else if (name == "A DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::A_DIM_ROOT_png, BinaryData::A_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::A_DIM_INV1_png, BinaryData::A_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::A_DIM_INV2_png, BinaryData::A_DIM_INV2_pngSize);
+    }
+    else if (name == "A AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::A_AUG_ROOT_png, BinaryData::A_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::A_AUG_INV1_png, BinaryData::A_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::A_AUG_INV2_png, BinaryData::A_AUG_INV2_pngSize);
+    }
+
+    // ----- B ----- DIM / AUG
+    else if (name == "B DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::B_DIM_ROOT_png, BinaryData::B_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::B_DIM_INV1_png, BinaryData::B_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::B_DIM_INV2_png, BinaryData::B_DIM_INV2_pngSize);
+    }
+    else if (name == "B AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::B_AUG_ROOT_png, BinaryData::B_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::B_AUG_INV1_png, BinaryData::B_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::B_AUG_INV2_png, BinaryData::B_AUG_INV2_pngSize);
+    }
+
+    // ----- C# ----- DIM / AUG
+    else if (name == "C# DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::C_SHARP_DIM_ROOT_png, BinaryData::C_SHARP_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::C_SHARP_DIM_INV1_png, BinaryData::C_SHARP_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::C_SHARP_DIM_INV2_png, BinaryData::C_SHARP_DIM_INV2_pngSize);
+    }
+    else if (name == "C# AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::C_SHARP_AUG_ROOT_png, BinaryData::C_SHARP_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::C_SHARP_AUG_INV1_png, BinaryData::C_SHARP_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::C_SHARP_AUG_INV2_png, BinaryData::C_SHARP_AUG_INV2_pngSize);
+    }
+
+    // ----- D# ----- DIM / AUG
+    else if (name == "D# DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::D_SHARP_DIM_ROOT_png, BinaryData::D_SHARP_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::D_SHARP_DIM_INV1_png, BinaryData::D_SHARP_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::D_SHARP_DIM_INV2_png, BinaryData::D_SHARP_DIM_INV2_pngSize);
+    }
+    else if (name == "D# AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::D_SHARP_AUG_ROOT_png, BinaryData::D_SHARP_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::D_SHARP_AUG_INV1_png, BinaryData::D_SHARP_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::D_SHARP_AUG_INV2_png, BinaryData::D_SHARP_AUG_INV2_pngSize);
+    }
+
+    // ----- F# ----- DIM / AUG
+    else if (name == "F# DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::F_SHARP_DIM_ROOT_png, BinaryData::F_SHARP_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::F_SHARP_DIM_INV1_png, BinaryData::F_SHARP_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::F_SHARP_DIM_INV2_png, BinaryData::F_SHARP_DIM_INV2_pngSize);
+    }
+    else if (name == "F# AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::F_SHARP_AUG_ROOT_png, BinaryData::F_SHARP_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::F_SHARP_AUG_INV1_png, BinaryData::F_SHARP_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::F_SHARP_AUG_INV2_png, BinaryData::F_SHARP_AUG_INV2_pngSize);
+    }
+
+    // ----- G# ----- DIM / AUG
+    else if (name == "G# DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::G_SHARP_DIM_ROOT_png, BinaryData::G_SHARP_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::G_SHARP_DIM_INV1_png, BinaryData::G_SHARP_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::G_SHARP_DIM_INV2_png, BinaryData::G_SHARP_DIM_INV2_pngSize);
+    }
+    else if (name == "G# AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::G_SHARP_AUG_ROOT_png, BinaryData::G_SHARP_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::G_SHARP_AUG_INV1_png, BinaryData::G_SHARP_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::G_SHARP_AUG_INV2_png, BinaryData::G_SHARP_AUG_INV2_pngSize);
+    }
+
+    // ----- A# ----- DIM / AUG
+    else if (name == "A# DIMINISHED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::A_SHARP_DIM_ROOT_png, BinaryData::A_SHARP_DIM_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::A_SHARP_DIM_INV1_png, BinaryData::A_SHARP_DIM_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::A_SHARP_DIM_INV2_png, BinaryData::A_SHARP_DIM_INV2_pngSize);
+    }
+    else if (name == "A# AUGMENTED") {
+    c.imgRoot = juce::ImageCache::getFromMemory(BinaryData::A_SHARP_AUG_ROOT_png, BinaryData::A_SHARP_AUG_ROOT_pngSize);
+    c.imgInv1 = juce::ImageCache::getFromMemory(BinaryData::A_SHARP_AUG_INV1_png, BinaryData::A_SHARP_AUG_INV1_pngSize);
+    c.imgInv2 = juce::ImageCache::getFromMemory(BinaryData::A_SHARP_AUG_INV2_png, BinaryData::A_SHARP_AUG_INV2_pngSize);
+    }
+
 
     c.imagesLoaded = true;
 }
