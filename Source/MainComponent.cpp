@@ -21,6 +21,8 @@ MainComponent::MainComponent()
     this->addKeyListener(&this->keyListener);
     addKeyListener(this);
 
+    loginWindowInitialize();
+
     midiHandler.addListener(&recordPlayer);
     midiHandler.addListener(&keyboard);
     
@@ -472,6 +474,23 @@ void MainComponent::initalizeSaveFileForUser()
 
     appProperties.setStorageParameters(options);
     propertiesFile = appProperties.getUserSettings();
+}
+
+void MainComponent::loginWindowInitialize()
+{
+    playButton.setVisible(false);
+    loginWindow = std::make_unique<LoginComponent>();
+    addAndMakeVisible(loginWindow.get());
+
+    auto parentBounds = getLocalBounds();
+    int panelWidth = 400;
+    int panelHeight = 300;
+
+    int x = (parentBounds.getWidth() - panelWidth) / 2;
+    int y = (parentBounds.getHeight() - panelHeight) / 2;
+
+    loginWindow->setBounds(x, y, panelWidth, panelHeight);
+
 }
 
 void MainComponent::loadSettings()

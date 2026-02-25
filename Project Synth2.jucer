@@ -258,6 +258,10 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="mkAugQ" name="LoginComponent.cpp" compile="1" resource="0"
+            file="Source/LoginComponent.cpp"/>
+      <FILE id="zwA8tf" name="LoginComponent.h" compile="0" resource="0"
+            file="Source/LoginComponent.h"/>
       <FILE id="C9tx49" name="chordBrowser.cpp" compile="1" resource="0"
             file="Source/chordBrowser.cpp"/>
       <FILE id="QbNjqy" name="chordBrowser.h" compile="0" resource="0" file="Source/chordBrowser.h"/>
