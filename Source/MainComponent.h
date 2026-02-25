@@ -27,6 +27,7 @@
 #include "OverlayComponent.h"
 #include "chordBrowser.h"
 #include <cstdlib>
+#include "LoginComponent.h"
 
 /**
  * @class SmoothRotarySlider
@@ -173,6 +174,10 @@ private:
 
     /** @brief Initializes save file for the user */
     void initalizeSaveFileForUser();
+
+    std::unique_ptr<LoginComponent> loginWindow=nullptr;
+
+    void loginWindowInitialize();
 
 
     /** @brief Loads settings from disk */
