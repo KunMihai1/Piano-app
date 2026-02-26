@@ -484,12 +484,19 @@ void MainComponent::loginWindowInitialize()
 
     auto parentBounds = getLocalBounds();
     int panelWidth = 400;
-    int panelHeight = 300;
+    int panelHeight = 400;
 
     int x = (parentBounds.getWidth() - panelWidth) / 2;
     int y = (parentBounds.getHeight() - panelHeight) / 2;
 
     loginWindow->setBounds(x, y, panelWidth, panelHeight);
+
+    loginWindow->onSuccessfullLogin = [this]()
+    {
+        loginWindow->setVisible(false);
+        loginWindow.reset();
+        playButton.setVisible(true);
+    };
 
 }
 
