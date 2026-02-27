@@ -4,6 +4,10 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="vwDzJM" name="Project Synth2">
     <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
+      <FILE id="WUBbJr" name="PasswordInvisible.png" compile="0" resource="1"
+            file="Photos/PasswordInvisible.png"/>
+      <FILE id="JDRBfJ" name="PasswordVisible.png" compile="0" resource="1"
+            file="Photos/PasswordVisible.png"/>
       <FILE id="YHzWqY" name="G_SHARP_AUG_INV2.png" compile="0" resource="1"
             file="Photos/ALL aug sharp chords/G_SHARP_AUG_INV2.png"/>
       <FILE id="yP6c0P" name="A_SHARP_DIM_INV1.png" compile="0" resource="1"
