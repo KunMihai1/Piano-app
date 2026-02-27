@@ -82,9 +82,8 @@ LoginComponent::LoginComponent()
     passwordLabel->setText("Password:", juce::dontSendNotification);
     addAndMakeVisible(passwordLabel.get());
 
-    passwordTE = std::make_unique<PasswordTextEditor>();
-    passwordTE->setMultiLine(false);
-    addAndMakeVisible(passwordTE.get());
+    passwordField = std::make_unique<PasswordField>();
+    addAndMakeVisible(passwordField.get());
 
 
     UsernameLabel = std::make_unique<juce::Label>();
@@ -144,7 +143,13 @@ LoginComponent::LoginComponent()
 
 void LoginComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::darkgrey);
+    g.fillAll(juce::Colours::grey);
+
+    g.setColour(juce::Colours::black);
+
+    int borderThickness = 3;
+
+    g.drawRect(getLocalBounds(), borderThickness);
 }
 
 
@@ -169,7 +174,7 @@ void LoginComponent::resized()
     emailTE->setBounds(area.removeFromTop(rowHeight));
 
     passwordLabel->setBounds(area.removeFromTop(rowHeight).removeFromLeft(120));
-    passwordTE->setBounds(area.removeFromTop(rowHeight));
+    passwordField->setBounds(area.removeFromTop(rowHeight));
 
     UsernameLabel->setBounds(area.removeFromTop(rowHeight).removeFromLeft(150));
     UsernameTE->setBounds(area.removeFromTop(rowHeight));
@@ -210,7 +215,7 @@ LoginComponent::~LoginComponent()
 void LoginComponent::handleLogin()
 {
     auto email = emailTE->getText().trim();
-    auto pass = passwordTE->getText().trim();
+    auto pass = passwordField->getTextEditor().getText().trim();
 
     if (email.isEmpty() || pass.isEmpty())
     {
@@ -295,7 +300,7 @@ void LoginComponent::handleLogin()
                         );
 
                         safeThis->emailTE->clear();
-                        safeThis->passwordTE->clear();
+                        safeThis->passwordField->getTextEditor().clear();
 
                         if (safeThis->onSuccessfullLogin)
                             safeThis->onSuccessfullLogin();
@@ -350,7 +355,7 @@ void LoginComponent::handleForgotPassword()
 void LoginComponent::handleDoneSignup()
 {
     auto email = emailTE->getText().trim();
-    auto pass = passwordTE->getText().trim();
+    auto pass = passwordField->getTextEditor().getText().trim();
     auto username = UsernameTE->getText().trim();
 
     if (email.isEmpty() || pass.isEmpty() || username.isEmpty())
@@ -450,7 +455,7 @@ void LoginComponent::handleDoneSignup()
                     safeThis->signupTB->setVisible(true);
 
                     safeThis->emailTE->clear();
-                    safeThis->passwordTE->clear();
+                    safeThis->passwordField->getTextEditor().clear();
                     safeThis->UsernameTE->clear();
                 });
 
@@ -467,7 +472,7 @@ void LoginComponent::toLoginVisbility()
 {
     UsernameTE->clear();
     emailTE->clear();
-    passwordTE->clear();
+    passwordField->getTextEditor().clear();
 
     UsernameLabel->setVisible(false);
     UsernameTE->setVisible(false);
@@ -482,7 +487,7 @@ void LoginComponent::toSignupVisibility()
 {
     UsernameTE->clear();
     emailTE->clear();
-    passwordTE->clear();
+    passwordField->getTextEditor().clear();
 
     UsernameLabel->setVisible(true);
     UsernameTE->setVisible(true);
@@ -493,36 +498,44 @@ void LoginComponent::toSignupVisibility()
     signupTB->setVisible(false);
 }
 
-PasswordTextEditor::PasswordTextEditor()
+PasswordField::PasswordField()
 {
-    setPasswordCharacter('*');
+    passwordTE.setMultiLine(false);
+    passwordTE.setPasswordCharacter('*');
+    passwordTE.setCaretVisible(true);
+    passwordTE.setTextToShowWhenEmpty("Enter password...", juce::Colours::grey);
+    addAndMakeVisible(passwordTE);
+
+    
+    eyeButton = std::make_unique<juce::DrawableButton>("eye", juce::DrawableButton::ImageFitted);
 
     eyeVisibleDrawable = juce::Drawable::createFromImageData(BinaryData::PasswordVisible_png, BinaryData::PasswordVisible_pngSize);
     eyeInvisibleDrawable = juce::Drawable::createFromImageData(BinaryData::PasswordInvisible_png, BinaryData::PasswordInvisible_pngSize);
 
-
-    eyeButton = std::make_unique<juce::DrawableButton>("eye", juce::DrawableButton::ImageFitted);
-
-
     eyeButton->setImages(eyeInvisibleDrawable.get());
 
-    eyeButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
-
     eyeButton->onClick = [this]()
-    {
-        visible = !visible;
-        setPasswordCharacter(visible ? '\0' : '*');
-        eyeButton->setImages(visible ? eyeVisibleDrawable.get() : eyeInvisibleDrawable.get());
-    };
+        {
+            visible = !visible;
+            passwordTE.setPasswordCharacter(visible ? 0 : '*'); 
+            eyeButton->setImages(visible ? eyeVisibleDrawable.get() : eyeInvisibleDrawable.get());
+        };
+
+    eyeButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     addAndMakeVisible(eyeButton.get());
 }
 
-
-void PasswordTextEditor::resized()
+void PasswordField::resized()
 {
-    auto r = getLocalBounds().reduced(2);
+    auto area = getLocalBounds();
+    int buttonSize = area.getHeight();
 
-    auto buttonArea = r.removeFromRight(30);
-    eyeButton->setBounds(buttonArea);
+    passwordTE.setBounds(area.removeFromLeft(area.getWidth() - buttonSize - 20));
+    eyeButton->setBounds(area.reduced(2));
+}
+
+juce::TextEditor& PasswordField::getTextEditor()
+{
+    return passwordTE;
 }
