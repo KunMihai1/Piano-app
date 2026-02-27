@@ -15,6 +15,8 @@
 class SupabaseClient
 {
 public:
+    SupabaseClient();
+
     SupabaseClient(const juce::String& projectUrl, const juce::String& anonKey);
 
     juce::String login(const juce::String& email, const juce::String& password);
