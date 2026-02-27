@@ -52,6 +52,7 @@ It was a great experience for getting hands-on with how music software actually 
 - Enhance visual feedback: velocity, timing, key animations
 - Integrate and improve MIDI controller support
 - Apply BPM changes dynamically during playback, efficiently
+- Unit testing for everything
 
 ## Skills I Gained
 
