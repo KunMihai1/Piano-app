@@ -82,9 +82,8 @@ LoginComponent::LoginComponent()
     passwordLabel->setText("Password:", juce::dontSendNotification);
     addAndMakeVisible(passwordLabel.get());
 
-    passwordTE = std::make_unique<juce::TextEditor>();
+    passwordTE = std::make_unique<PasswordTextEditor>();
     passwordTE->setMultiLine(false);
-    //passwordTE->setPasswordCharacter('*');
     addAndMakeVisible(passwordTE.get());
 
 
@@ -147,6 +146,7 @@ void LoginComponent::paint(juce::Graphics& g)
 {
     g.fillAll(juce::Colours::darkgrey);
 }
+
 
 void LoginComponent::resized()
 {
@@ -230,8 +230,7 @@ void LoginComponent::handleLogin()
 
             auto response = client.login(email, pass);
 
-            // Log full server response for debugging
-            DBG("Supabase login response: " + response);
+           
 
             juce::MessageManager::callAsync([response, safeThis]()
                 {
@@ -242,18 +241,18 @@ void LoginComponent::handleLogin()
 
                     if (!parsed.isObject())
                     {
-                        // Network failure or invalid JSON
+                        
                         juce::AlertWindow::showMessageBoxAsync(
                             juce::AlertWindow::WarningIcon,
                             "Login Failed",
-                            "Server returned invalid response:\n" + response
+                            "Network failure or invalid JSON"
                         );
                         return;
                     }
 
                     auto* obj = parsed.getDynamicObject();
 
-                    // Handle Supabase error messages
+                    
                     if (obj->hasProperty("error") || obj->hasProperty("error_description") || obj->hasProperty("msg"))
                     {
                         juce::String errorMessage;
@@ -274,7 +273,7 @@ void LoginComponent::handleLogin()
                     }
 
                     
-                    // Check if email is unverified
+                    
                     if (obj->hasProperty("confirmation_required") && obj->getProperty("confirmation_required").toString() == "true")
                     {
                         juce::AlertWindow::showMessageBoxAsync(
@@ -286,7 +285,7 @@ void LoginComponent::handleLogin()
                     }
                     
 
-                    // Success
+                    
                     if (obj->hasProperty("access_token"))
                     {
                         juce::AlertWindow::showMessageBoxAsync(
@@ -303,7 +302,7 @@ void LoginComponent::handleLogin()
                     }
                     else
                     {
-                        // Fallback for unexpected issues
+                        
                         juce::AlertWindow::showMessageBoxAsync(
                             juce::AlertWindow::WarningIcon,
                             "Login Failed",
@@ -374,7 +373,6 @@ void LoginComponent::handleDoneSignup()
             auto response = client.signup(email, pass, username);
 
             
-            DBG("Supabase signup response: " + response);
 
             juce::MessageManager::callAsync([response, safeThis]()
                 {
@@ -493,4 +491,38 @@ void LoginComponent::toSignupVisibility()
     forgotPassTB->setVisible(false);
     loginTB->setVisible(false);
     signupTB->setVisible(false);
+}
+
+PasswordTextEditor::PasswordTextEditor()
+{
+    setPasswordCharacter('*');
+
+    eyeVisibleDrawable = juce::Drawable::createFromImageData(BinaryData::PasswordVisible_png, BinaryData::PasswordVisible_pngSize);
+    eyeInvisibleDrawable = juce::Drawable::createFromImageData(BinaryData::PasswordInvisible_png, BinaryData::PasswordInvisible_pngSize);
+
+
+    eyeButton = std::make_unique<juce::DrawableButton>("eye", juce::DrawableButton::ImageFitted);
+
+
+    eyeButton->setImages(eyeInvisibleDrawable.get());
+
+    eyeButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+
+    eyeButton->onClick = [this]()
+    {
+        visible = !visible;
+        setPasswordCharacter(visible ? '\0' : '*');
+        eyeButton->setImages(visible ? eyeVisibleDrawable.get() : eyeInvisibleDrawable.get());
+    };
+
+    addAndMakeVisible(eyeButton.get());
+}
+
+
+void PasswordTextEditor::resized()
+{
+    auto r = getLocalBounds().reduced(2);
+
+    auto buttonArea = r.removeFromRight(30);
+    eyeButton->setBounds(buttonArea);
 }
