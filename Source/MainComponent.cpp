@@ -493,9 +493,10 @@ void MainComponent::loginWindowInitialize()
 
     loginWindow->onSuccessfullLogin = [this]()
     {
+        playButton.setVisible(true);
         loginWindow->setVisible(false);
         loginWindow.reset();
-        playButton.setVisible(true);
+        
     };
 
 }
@@ -782,6 +783,9 @@ void MainComponent::toggleForPlaying()
 void MainComponent::settingsInit()
 {
     addAndMakeVisible(settingsButton);
+    
+    settingsButton.setVisible(false); //making settings button invisible for now
+
     settingsButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     settingsButton.onClick = [this] {  
         settingsButtonOnClick();
@@ -1282,7 +1286,7 @@ void MainComponent::homeButtonOnClick()
     toggleHPanel();
 
     togglePlayButton();
-    toggleSettingsButton();
+    //toggleSettingsButton(); don't need this button for now
     keyboard.setVisible(false);
     this->noteLayer->setVisible(false);
     this->noteLayer->resetState();

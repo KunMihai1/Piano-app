@@ -16,28 +16,30 @@ SupabaseClient::SupabaseClient(const juce::String& projectUrl, const juce::Strin
 
 }
 
+SupabaseClient:: SupabaseClient()
+{
+
+}
+
 juce::String SupabaseClient::login(const juce::String& email,
     const juce::String& password)
 {
-    juce::String body = R"({"email":")" + email + R"(","password":")" + password + R"(","grant_type":"password"})";
-
-    url = url.withPOSTData(body);
-
+    juce::String body = R"({"email":")" + email +
+        R"(","password":")" + password + R"("})";
+    // Call the Edge Function proxy instead of Supabase directly
+    auto postUrl = juce::URL("https://ecmlftmkoqszdwjugqtn.supabase.co/functions/v1/auth-proxy?grant_type=password")
+        .withPOSTData(body);
     juce::String extraHeaders;
-    extraHeaders << "apikey: " << apiKey << "\r\n";
     extraHeaders << "Content-Type: application/json\r\n";
-
-    auto stream = url.createInputStream(
-        juce::URL::InputStreamOptions()
-        .withConnectionTimeoutMs(5000)
+    int statusCode = 0;
+    auto stream = postUrl.createInputStream(
+        juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
         .withExtraHeaders(extraHeaders)
+        .withConnectionTimeoutMs(5000)
+        .withStatusCode(&statusCode)
     );
-
-    if (!stream)
-        return "{\"error\":\"connection failed\"}";
-
+    if (!stream) return "{\"error\":\"connection failed\"}";
     auto response = stream->readEntireStreamAsString();
-    DBG("Login response: " + response);
     return response;
 }
    
@@ -47,27 +49,20 @@ juce::String SupabaseClient::signup(const juce::String& email,
     const juce::String& password,
     const juce::String& username)
 {
-    
     juce::String body = R"({"email":")" + email +
         R"(","password":")" + password +
         R"(","data":{"name":")" + username + R"("}})";
-
-    auto postUrl = juce::URL(baseUrl + "/auth/v1/signup")
+    auto postUrl = juce::URL("https://ecmlftmkoqszdwjugqtn.supabase.co/functions/v1/auth-proxy?action=signup")
         .withPOSTData(body);
-
     juce::String extraHeaders;
-    extraHeaders << "apikey: " << apiKey << "\r\n";
     extraHeaders << "Content-Type: application/json\r\n";
-
     auto stream = postUrl.createInputStream(
-        juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inPostData)
+        juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
         .withConnectionTimeoutMs(5000)
         .withExtraHeaders(extraHeaders)
     );
-
     if (!stream)
         return "{\"error\":\"connection failed\"}";
-
     return stream->readEntireStreamAsString();
 }
 
@@ -89,7 +84,7 @@ LoginComponent::LoginComponent()
 
     passwordTE = std::make_unique<juce::TextEditor>();
     passwordTE->setMultiLine(false);
-    passwordTE->setPasswordCharacter('*');
+    //passwordTE->setPasswordCharacter('*');
     addAndMakeVisible(passwordTE.get());
 
 
@@ -231,7 +226,7 @@ void LoginComponent::handleLogin()
 
     std::thread([email, pass, safeThis]()
         {
-            
+            SupabaseClient client{};
 
             auto response = client.login(email, pass);
 
@@ -278,7 +273,7 @@ void LoginComponent::handleLogin()
                         return;
                     }
 
-                    /*
+                    
                     // Check if email is unverified
                     if (obj->hasProperty("confirmation_required") && obj->getProperty("confirmation_required").toString() == "true")
                     {
@@ -289,7 +284,7 @@ void LoginComponent::handleLogin()
                         );
                         return;
                     }
-                    */
+                    
 
                     // Success
                     if (obj->hasProperty("access_token"))
@@ -374,6 +369,7 @@ void LoginComponent::handleDoneSignup()
     std::thread([email, pass, username, safeThis]()
         {
             
+            SupabaseClient client{};
 
             auto response = client.signup(email, pass, username);
 
@@ -403,12 +399,10 @@ void LoginComponent::handleDoneSignup()
                     if (obj->hasProperty("error") || obj->hasProperty("error_description"))
                     {
                         juce::String errorMessage = "Signup failed.";
-
                         if (obj->hasProperty("error_description"))
                             errorMessage = obj->getProperty("error_description").toString();
                         else if (obj->hasProperty("error"))
                             errorMessage = obj->getProperty("error").toString();
-
                         juce::AlertWindow::showMessageBoxAsync(
                             juce::AlertWindow::WarningIcon,
                             "Sign Up Failed",
@@ -418,7 +412,9 @@ void LoginComponent::handleDoneSignup()
                     }
 
                     
-                    if (!obj->hasProperty("user"))
+                    bool isSession = obj->hasProperty("access_token");
+                    bool isUser = obj->hasProperty("id");
+                    if (!isSession && !isUser)
                     {
                         juce::AlertWindow::showMessageBoxAsync(
                             juce::AlertWindow::WarningIcon,
@@ -429,8 +425,7 @@ void LoginComponent::handleDoneSignup()
                     }
 
                     
-                    auto userObj = obj->getProperty("user").getDynamicObject();
-                    if (userObj->hasProperty("confirmation_sent_at"))
+                    if (isUser && obj->hasProperty("confirmation_sent_at"))
                     {
                         juce::AlertWindow::showMessageBoxAsync(
                             juce::AlertWindow::InfoIcon,
