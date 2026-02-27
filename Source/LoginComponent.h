@@ -12,19 +12,21 @@
 
 #include "JuceHeader.h"
 
-class PasswordTextEditor : public juce::TextEditor
+class PasswordField : public juce::Component
 {
 public:
-    PasswordTextEditor();
+
+    PasswordField();
 
     void resized() override;
 
+    juce::TextEditor& getTextEditor();
+
 private:
-    bool visible = false;
-    juce::Rectangle<int> iconArea;
+    juce::TextEditor passwordTE;
     std::unique_ptr<juce::DrawableButton> eyeButton;
-    std::unique_ptr<juce::Drawable> eyeVisibleDrawable;
-    std::unique_ptr<juce::Drawable> eyeInvisibleDrawable;
+    std::unique_ptr<juce::Drawable> eyeVisibleDrawable, eyeInvisibleDrawable;
+    bool visible = false;
 };
 
 class SupabaseClient
@@ -71,6 +73,6 @@ private:
 
     std::unique_ptr<juce::Label> emailLabel, passwordLabel, UsernameLabel;
     std::unique_ptr<juce::TextEditor> emailTE, UsernameTE;
-    std::unique_ptr<PasswordTextEditor> passwordTE;
+    std::unique_ptr<PasswordField> passwordField;
     std::unique_ptr<juce::TextButton> loginTB, signupTB, forgotPassTB,doneTB,backTB;
 };
