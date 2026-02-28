@@ -186,6 +186,33 @@ int MidiDevicesDataBase::getNrKeysPidVid(const juce::String& vid, const juce::St
 	return static_cast<int>(deviceObj->getProperty("keys"));
 }
 
+juce::String MidiDevicesDataBase::getDeviceName(const juce::String& vid, const juce::String& pid)
+{
+	if (!jsonData.isObject())
+		return "";
+
+	auto* rootObject = jsonData.getDynamicObject();
+	if (!rootObject)
+		return "";
+
+	juce::String key = vid + pid;
+	if (key.isEmpty())
+		return "";
+
+	if (!rootObject->hasProperty(key))
+		return "";
+
+	auto deviceVar = rootObject->getProperty(key);
+	if (!deviceVar.isObject())
+		return "";
+
+	auto* deviceObj = deviceVar.getDynamicObject();
+	if (!deviceObj)
+		return "";
+	
+	return juce::String(deviceObj->getProperty("name"));
+}
+
 juce::File MidiDevicesDataBase::getAppDataFolder()
 {
 	juce::File appDataFolder = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)

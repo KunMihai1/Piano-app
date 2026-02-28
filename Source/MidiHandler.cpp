@@ -179,6 +179,21 @@ juce::String MidiDevice::extractVID(const juce::String& identifierReceived)
 	return juce::String();
 }
 
+void MidiDevice::setVID(const juce::String& VID)
+{
+	this->VID = VID;
+}
+
+void MidiDevice::setPID(const juce::String& PID)
+{
+	this->PID = PID;
+}
+
+void MidiDevice::setDeviceName(const juce::String& name)
+{
+	this->name = name;
+}
+
 int MidiDevice::getNrInputActualDevices()
 {
 	return juce::MidiInput::getAvailableDevices().size();

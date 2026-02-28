@@ -267,7 +267,7 @@ private:
 
     void handleBreak(const juce::String& name);
 
-    void incrementPlaytime();
+    void incrementPlaytime(int secToIncreaseWith);
 
     //==========================================================================
     // Member variables
@@ -344,7 +344,6 @@ private:
 
     std::unique_ptr<PlaytimeTracker> playtimeTracker;
     std::shared_ptr<SupabaseClient> client;
-    int secToIncreaseWith = 60;
 
     //==========================================================================
     // Panels

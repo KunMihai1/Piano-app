@@ -49,6 +49,8 @@ public:
      */
     int getNrKeysPidVid(const juce::String& vid, const juce::String& pid);
 
+    juce::String getDeviceName(const juce::String& vid, const juce::String& pid);
+
     /**
      * @brief Returns the application data folder for this application
      * @return File representing the app data folder

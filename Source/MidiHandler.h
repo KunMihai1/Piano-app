@@ -191,6 +191,12 @@ public:
 	 */
 	juce::String extractVID(const juce::String& indentifierReceived);
 
+	void setVID(const juce::String& VID);
+	
+	void setPID(const juce::String& PID);
+
+	void setDeviceName(const juce::String& name);
+
 	int getNrInputActualDevices();
 
 private:
@@ -228,6 +234,8 @@ private:
 	float volumeSecond{ 0.0f };
 
 	int minNote, maxNote;
+
+	juce::String VID, PID, name;
 };
 
 class MidiHandler :public juce::MidiInputCallback, public DisplayListener 
@@ -347,6 +355,8 @@ public:
 
 	bool deviceExistsBridgeFunction(const juce::String VID, const juce::String& PID);
 
+	void setPlayableRange(int nrKeys);
+
 private:
 	//void sendCCifChanged(int ccNumber, int value, int& lastSentValue);
 
@@ -358,11 +368,6 @@ private:
 	 */
 	void applyInstrumentPreset(int programNumber, std::vector<std::pair<int, int>> ccValues, const juce::String& choice="");
 
-	/**
-	 * @brief Sets the number of playable keys for the instrument
-	 * @param nrKeys Number of keys to allow
-	 */
-	void setPlayableRange(int nrKeys);
 	juce::ListenerList<MidiHandlerListener> listeners;
 
 	MidiDevice& midiDevice;

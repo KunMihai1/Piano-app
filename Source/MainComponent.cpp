@@ -495,15 +495,14 @@ void MainComponent::loginWindowInitialize()
 
     loginWindow->onSuccessfullLogin = [this]()
     {
-        playtimeTracker = std::make_unique<PlaytimeTracker>([this]()
+        playtimeTracker = std::make_unique<PlaytimeTracker>([this](int secondToIncreaseWith)
             {
                 auto clientPtr = client; 
-                auto seconds = secToIncreaseWith;
 
-                std::thread([clientPtr,seconds]() {
-                    clientPtr->incrementPlaytime(seconds);
+                std::thread([clientPtr,secondToIncreaseWith]() {
+                    clientPtr->incrementPlaytime(secondToIncreaseWith);
                     }).detach();
-            });
+            },300);
 
         playButton.setVisible(true);
         loginWindow->setVisible(false);
@@ -1341,6 +1340,7 @@ void MainComponent::playButtonOnClick()
 
         juce::String PID = MIDIDevice.extractPID(MIDIDevice.get_identifier());
         juce::String VID = MIDIDevice.extractVID(MIDIDevice.get_identifier());
+
         if (VID.length() < 4 || PID.length() < 4)
             this->display->set_VID_PID("", "");
         else this->display->set_VID_PID(VID, PID);
@@ -1860,7 +1860,7 @@ void MainComponent::handleBreak(const juce::String& name)
 
 }
 
-void MainComponent::incrementPlaytime()
+void MainComponent::incrementPlaytime(int secToIncreaseWith)
 {
     client->incrementPlaytime(secToIncreaseWith);
 }
