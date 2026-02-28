@@ -28,6 +28,8 @@
 #include "chordBrowser.h"
 #include <cstdlib>
 #include "LoginComponent.h"
+#include "PlaytimeTracker.h"
+
 
 /**
  * @class SmoothRotarySlider
@@ -164,6 +166,7 @@ public:
 private:
 
 
+
     int initialWidth = 0;  ///< Initial window width
     int initialHeight = 0; ///< Initial window height
 
@@ -264,6 +267,8 @@ private:
 
     void handleBreak(const juce::String& name);
 
+    void incrementPlaytime();
+
     //==========================================================================
     // Member variables
     juce::ApplicationProperties appProperties; ///< Application properties manager
@@ -336,6 +341,10 @@ private:
 
     std::vector<Chord> myChordLibrary;
     std::vector<int> currentlyPlayingNotes;
+
+    std::unique_ptr<PlaytimeTracker> playtimeTracker;
+    std::shared_ptr<SupabaseClient> client;
+    int secToIncreaseWith = 60;
 
     //==========================================================================
     // Panels

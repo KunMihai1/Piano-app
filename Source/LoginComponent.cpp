@@ -10,63 +10,8 @@
 
 #include "LoginComponent.h"
 
-SupabaseClient::SupabaseClient(const juce::String& projectUrl, const juce::String& anonKey)
-    :baseUrl(projectUrl), apiKey(anonKey)
-{
 
-}
-
-SupabaseClient:: SupabaseClient()
-{
-
-}
-
-juce::String SupabaseClient::login(const juce::String& email,
-    const juce::String& password)
-{
-    juce::String body = R"({"email":")" + email +
-        R"(","password":")" + password + R"("})";
-    // Call the Edge Function proxy instead of Supabase directly
-    auto postUrl = juce::URL("https://ecmlftmkoqszdwjugqtn.supabase.co/functions/v1/auth-proxy?grant_type=password")
-        .withPOSTData(body);
-    juce::String extraHeaders;
-    extraHeaders << "Content-Type: application/json\r\n";
-    int statusCode = 0;
-    auto stream = postUrl.createInputStream(
-        juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
-        .withExtraHeaders(extraHeaders)
-        .withConnectionTimeoutMs(5000)
-        .withStatusCode(&statusCode)
-    );
-    if (!stream) return "{\"error\":\"connection failed\"}";
-    auto response = stream->readEntireStreamAsString();
-    return response;
-}
-   
-
-
-juce::String SupabaseClient::signup(const juce::String& email,
-    const juce::String& password,
-    const juce::String& username)
-{
-    juce::String body = R"({"email":")" + email +
-        R"(","password":")" + password +
-        R"(","data":{"name":")" + username + R"("}})";
-    auto postUrl = juce::URL("https://ecmlftmkoqszdwjugqtn.supabase.co/functions/v1/auth-proxy?action=signup")
-        .withPOSTData(body);
-    juce::String extraHeaders;
-    extraHeaders << "Content-Type: application/json\r\n";
-    auto stream = postUrl.createInputStream(
-        juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
-        .withConnectionTimeoutMs(5000)
-        .withExtraHeaders(extraHeaders)
-    );
-    if (!stream)
-        return "{\"error\":\"connection failed\"}";
-    return stream->readEntireStreamAsString();
-}
-
-LoginComponent::LoginComponent()
+LoginComponent::LoginComponent(std::shared_ptr<SupabaseClient> newClient): client{newClient}
 {
     emailLabel = std::make_unique<juce::Label>();
     emailLabel->setText("Email:", juce::dontSendNotification);
@@ -228,16 +173,16 @@ void LoginComponent::handleLogin()
     }
 
     juce::Component::SafePointer<LoginComponent> safeThis(this);
+    auto clientPtr = client;
 
-    std::thread([email, pass, safeThis]()
+    std::thread([email, pass, safeThis, clientPtr]()
         {
-            SupabaseClient client{};
 
-            auto response = client.login(email, pass);
+            auto response = clientPtr->login(email, pass);
 
            
 
-            juce::MessageManager::callAsync([response, safeThis]()
+            juce::MessageManager::callAsync([response, safeThis, clientPtr]()
                 {
                     if (safeThis == nullptr)
                         return;
@@ -279,6 +224,7 @@ void LoginComponent::handleLogin()
 
                     
                     
+                    
                     if (obj->hasProperty("confirmation_required") && obj->getProperty("confirmation_required").toString() == "true")
                     {
                         juce::AlertWindow::showMessageBoxAsync(
@@ -290,14 +236,27 @@ void LoginComponent::handleLogin()
                     }
                     
 
-                    
+                    if (obj->hasProperty("user"))
+                    {
+                        auto userObj = obj->getProperty("user").getDynamicObject();
+                        if (userObj != nullptr)
+                        {
+                            clientPtr->setUserId(userObj->getProperty("id").toString());
+                        }
+                    }
+
                     if (obj->hasProperty("access_token"))
                     {
+
+                        clientPtr->setAccessToken(obj->getProperty("access_token").toString());
+
                         juce::AlertWindow::showMessageBoxAsync(
                             juce::AlertWindow::InfoIcon,
                             "Login Success",
                             "You are now logged in!"
                         );
+
+                        
 
                         safeThis->emailTE->clear();
                         safeThis->passwordField->getTextEditor().clear();
@@ -369,13 +328,12 @@ void LoginComponent::handleDoneSignup()
     }
 
     juce::Component::SafePointer<LoginComponent> safeThis(this);
+    auto clientPtr = client;
 
-    std::thread([email, pass, username, safeThis]()
+    std::thread([email, pass, username, safeThis, clientPtr]()
         {
-            
-            SupabaseClient client{};
 
-            auto response = client.signup(email, pass, username);
+            auto response = clientPtr->signup(email, pass, username);
 
             
 

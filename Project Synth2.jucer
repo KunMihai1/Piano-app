@@ -262,6 +262,14 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="oLjKCa" name="SupabaseClient.cpp" compile="1" resource="0"
+            file="Source/SupabaseClient.cpp"/>
+      <FILE id="Ia73LG" name="SupabaseClient.h" compile="0" resource="0"
+            file="Source/SupabaseClient.h"/>
+      <FILE id="GK2TpN" name="PlaytimeTracker.cpp" compile="1" resource="0"
+            file="Source/PlaytimeTracker.cpp"/>
+      <FILE id="N6kpnC" name="PlaytimeTracker.h" compile="0" resource="0"
+            file="Source/PlaytimeTracker.h"/>
       <FILE id="mkAugQ" name="LoginComponent.cpp" compile="1" resource="0"
             file="Source/LoginComponent.cpp"/>
       <FILE id="zwA8tf" name="LoginComponent.h" compile="0" resource="0"
