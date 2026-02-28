@@ -11,6 +11,7 @@
 #pragma once
 
 #include "JuceHeader.h"
+#include "SupabaseClient.h"
 
 class PasswordField : public juce::Component
 {
@@ -29,29 +30,13 @@ private:
     bool visible = false;
 };
 
-class SupabaseClient
-{
-public:
-    SupabaseClient();
-
-    SupabaseClient(const juce::String& projectUrl, const juce::String& anonKey);
-
-    juce::String login(const juce::String& email, const juce::String& password);
-
-    juce::String signup(const juce::String& email, const juce::String& password, const juce::String& username);
-
-private:
-    juce::String baseUrl;
-    juce::String apiKey;
-};
-
 class LoginComponent : public juce::Component
 {
 public:
     
     std::function<void()> onSuccessfullLogin;
 
-    LoginComponent();
+    LoginComponent(std::shared_ptr<SupabaseClient> client);
 
     void paint(juce::Graphics& g) override;
 
@@ -75,4 +60,5 @@ private:
     std::unique_ptr<juce::TextEditor> emailTE, UsernameTE;
     std::unique_ptr<PasswordField> passwordField;
     std::unique_ptr<juce::TextButton> loginTB, signupTB, forgotPassTB,doneTB,backTB;
+    std::shared_ptr<SupabaseClient> client;
 };

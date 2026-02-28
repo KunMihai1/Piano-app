@@ -21,6 +21,8 @@ MainComponent::MainComponent()
     this->addKeyListener(&this->keyListener);
     addKeyListener(this);
 
+    client = std::make_shared<SupabaseClient>();
+
     loginWindowInitialize();
 
     midiHandler.addListener(&recordPlayer);
@@ -479,7 +481,7 @@ void MainComponent::initalizeSaveFileForUser()
 void MainComponent::loginWindowInitialize()
 {
     playButton.setVisible(false);
-    loginWindow = std::make_unique<LoginComponent>();
+    loginWindow = std::make_unique<LoginComponent>(client);
     addAndMakeVisible(loginWindow.get());
 
     auto parentBounds = getLocalBounds();
@@ -493,9 +495,22 @@ void MainComponent::loginWindowInitialize()
 
     loginWindow->onSuccessfullLogin = [this]()
     {
+        playtimeTracker = std::make_unique<PlaytimeTracker>([this]()
+            {
+                auto clientPtr = client; 
+                auto seconds = secToIncreaseWith;
+
+                std::thread([clientPtr,seconds]() {
+                    clientPtr->incrementPlaytime(seconds);
+                    }).detach();
+            });
+
         playButton.setVisible(true);
         loginWindow->setVisible(false);
-        loginWindow.reset();
+       
+        juce::MessageManager::callAsync([this]() {
+            loginWindow.reset();
+            });
         
     };
 
@@ -1845,6 +1860,10 @@ void MainComponent::handleBreak(const juce::String& name)
 
 }
 
+void MainComponent::incrementPlaytime()
+{
+    client->incrementPlaytime(secToIncreaseWith);
+}
 
 
 SmoothRotarySlider::SmoothRotarySlider()
