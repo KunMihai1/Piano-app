@@ -10,13 +10,29 @@
 
 #include "PlaytimeTracker.h"
 
-PlaytimeTracker::PlaytimeTracker(std::function<void()> onMinuteElapsed): callbackFunction{onMinuteElapsed}
+PlaytimeTracker::PlaytimeTracker(std::function<void(int sec)> onTimeElapsed, int batchIntervalSec=300): callbackFunction{onTimeElapsed}, batchIntervalSeconds{batchIntervalSec}
 {
-    startTimer(60000);
+    lastTickTime = juce::Time::getCurrentTime();
+    startTimer(startTimerInSec*1000);
+    
+}
+
+int PlaytimeTracker::getAccumlatedSeconds()
+{
+    return accumulatedSeconds;
 }
 
 void PlaytimeTracker::timerCallback()
 {
-    if (callbackFunction)
-        callbackFunction();
+    auto now = juce::Time::getCurrentTime();
+    int deltaSec = static_cast<int>((now.toMilliseconds() - lastTickTime.toMilliseconds()) / 1000);
+    lastTickTime = now;
+
+    accumulatedSeconds += deltaSec;
+
+    if (callbackFunction && accumulatedSeconds>=300)
+    {
+        callbackFunction(accumulatedSeconds);
+        accumulatedSeconds = 0;
+    }
 }

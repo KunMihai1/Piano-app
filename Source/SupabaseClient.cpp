@@ -106,3 +106,45 @@ void SupabaseClient::setAccessToken(const juce::String& newAccessToken)
     std::lock_guard<std::mutex> lock(mutex);
     this->accessToken = newAccessToken;
 }
+
+juce::String SupabaseClient::addOrUpdateDevice(const juce::String& PID, const juce::String& VID)
+{
+    juce::String id, token;
+    {
+        std::lock_guard<std::mutex> lock(mutex); // protects userId/accessToken
+        id = userId;
+        token = accessToken;
+    }
+
+    
+    juce::String body = R"({"user_id":")" + id +
+        R"(","vendor_id":")" + VID +
+        R"(","product_id":")" + PID + "\"}";
+
+    
+    auto postUrl = juce::URL("https://ecmlftmkoqszdwjugqtn.supabase.co/functions/v1/insert-or-update-device-api")
+        .withPOSTData(body);
+
+    
+    juce::String extraHeaders;
+    extraHeaders << "Content-Type: application/json\r\n";
+    extraHeaders << "Authorization: Bearer " + token + "\r\n";
+
+    int statusCode = 0;
+
+    
+    auto stream = postUrl.createInputStream(
+        juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
+        .withExtraHeaders(extraHeaders)
+        .withConnectionTimeoutMs(5000)
+        .withStatusCode(&statusCode)
+    );
+
+    if (!stream)
+        return "{\"error\":\"connection failed\"}";
+
+    
+    auto response = stream->readEntireStreamAsString();
+
+    return response;
+}

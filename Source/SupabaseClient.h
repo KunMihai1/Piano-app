@@ -29,6 +29,8 @@ public:
 
     void setAccessToken(const juce::String& newAccessToken);
 
+    juce::String addOrUpdateDevice(const juce::String& PID, const juce::String& VID);
+
 private:
     std::mutex mutex;
     juce::String userId;

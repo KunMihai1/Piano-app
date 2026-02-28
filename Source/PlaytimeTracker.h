@@ -15,11 +15,20 @@
 class PlaytimeTracker : private juce::Timer
 {
 public:
-    PlaytimeTracker(std::function<void()> onMinuteElapsed);
+    PlaytimeTracker(std::function<void(int sec)> onTimeElapsed, int batchInterval);
 
+    int getAccumlatedSeconds();
 
 private:
     void timerCallback() override;
 
-    std::function<void()> callbackFunction;
+    int accumulatedSeconds = 0;
+
+    int startTimerInSec = 60;
+
+    int batchIntervalSeconds = 0;
+
+    juce::Time lastTickTime;
+
+    std::function<void(int sec)> callbackFunction;
 };
