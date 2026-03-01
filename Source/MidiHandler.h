@@ -197,7 +197,15 @@ public:
 
 	void setDeviceName(const juce::String& name);
 
+	juce::String getVID();
+
+	juce::String getPID();
+
+	juce::String getName();
+
 	int getNrInputActualDevices();
+
+	int getNrKeysAfterInitialized();
 
 private:
 	friend class MidiHandler;
@@ -265,7 +273,7 @@ public:
 	 * @param isKeyboardInput Optional flag indicating if the input is from a keyboard (default false)
 	 * @return integer representing the number of playable keys or range
 	 */
-	int handlePlayableRange(const juce::String& vid, const juce:: String& pid, bool isKeyboardInput=false);
+	int handlePlayableRange(const juce::String& vid, const juce:: String& pid, int nrKeys, bool isKeyboardInput=false);
 
 	/**
 	 * @brief Adds a listener to receive MIDI events
@@ -351,9 +359,6 @@ public:
 	 */
 	void setCorrectChannelBasedOnHand(int note);
 
-	void updateDeviceInDBBridgeFunction(const juce::String& VID, const juce::String& PID, const juce::String name, int numKeys);
-
-	bool deviceExistsBridgeFunction(const juce::String VID, const juce::String& PID);
 
 	void setPlayableRange(int nrKeys);
 
@@ -371,7 +376,6 @@ private:
 	juce::ListenerList<MidiHandlerListener> listeners;
 
 	MidiDevice& midiDevice;
-	MidiDevicesDataBase dataBase;
 	InstrumentHandler instrumentHandler{};
 
 	bool receivedValidNote = false;

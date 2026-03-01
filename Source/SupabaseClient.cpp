@@ -107,7 +107,7 @@ void SupabaseClient::setAccessToken(const juce::String& newAccessToken)
     this->accessToken = newAccessToken;
 }
 
-juce::String SupabaseClient::addOrUpdateDevice(const juce::String& PID, const juce::String& VID)
+juce::String SupabaseClient::addOrUpdateDevice(const juce::String& VID, const juce::String& PID, const juce::String& deviceName, int nrKeys)
 {
     juce::String id, token;
     {
@@ -119,7 +119,9 @@ juce::String SupabaseClient::addOrUpdateDevice(const juce::String& PID, const ju
     
     juce::String body = R"({"user_id":")" + id +
         R"(","vendor_id":")" + VID +
-        R"(","product_id":")" + PID + "\"}";
+        R"(","product_id":")" + PID +
+        R"(","device_name":")" + deviceName +
+        R"(","nr_keys":)" + juce::String(nrKeys) + "}";
 
     
     auto postUrl = juce::URL("https://ecmlftmkoqszdwjugqtn.supabase.co/functions/v1/insert-or-update-device-api")

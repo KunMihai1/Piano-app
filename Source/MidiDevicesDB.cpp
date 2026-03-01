@@ -78,27 +78,35 @@ void MidiDevicesDataBase::loadJsonFile()
 
 void MidiDevicesDataBase::saveJsonFile()
 {
+	DBG("se scrie in json");
 	juce::File jsonFile = getJsonFile();
 	jsonFile.replaceWithText(juce::JSON::toString(jsonData));
 }
 
 void MidiDevicesDataBase::addDeviceJson(const juce::String& vid, const juce::String& pid, const juce::String& name, int numKeys)
 {
+	DBG("am ajuns in add device j");
 	if (!jsonData.isObject())
 	{
+		DBG("nu e un obiect");
 		jsonData = juce::var(new juce::DynamicObject());
 	}
 
 	juce::DynamicObject* rootObject = jsonData.getDynamicObject();
 
 	if (!rootObject)
+	{
+		DBG("nu e un root object");
 		return;
+	}
 
+	DBG("inainte de key");
 	juce::String key = vid + pid;
 
 	if (key.isEmpty())
 		return;
 
+	DBG("inainte de verificare proprietate key");
 	if (rootObject->hasProperty(key))
 		return;
 
@@ -108,6 +116,7 @@ void MidiDevicesDataBase::addDeviceJson(const juce::String& vid, const juce::Str
 
 	rootObject->setProperty(key, juce::var(newDevice));
 
+	
 	saveJsonFile();
 }
 
@@ -210,7 +219,7 @@ juce::String MidiDevicesDataBase::getDeviceName(const juce::String& vid, const j
 	if (!deviceObj)
 		return "";
 	
-	return juce::String(deviceObj->getProperty("name"));
+	return deviceObj->getProperty("name").toString();
 }
 
 juce::File MidiDevicesDataBase::getAppDataFolder()

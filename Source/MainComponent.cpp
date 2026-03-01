@@ -446,7 +446,7 @@ void MainComponent::populateUpdateComboBoxDevices()
         juce::String identifier = dev.second;
         juce::String PID = MIDIDevice.extractPID(identifier);
         juce::String VID = MIDIDevice.extractVID(identifier);
-        if (midiHandler.deviceExistsBridgeFunction(VID, PID)==-1)
+        if (dataBase.deviceExists(VID, PID)==-1)
             continue;
 
         if (i == 1)
@@ -1315,22 +1315,33 @@ void MainComponent::playButtonOnClick()
 {
     MIDIDevice.getAvailableDevicesMidiIN(devicesIN);
     MIDIDevice.getAvailableDevicesMidiOUT(devicesOUT);
+
     if (openingDevicesForPlay()) {
         if (!this->keyListener.getIsKeyboardInput())
         {
             midiHandler.onAddCallBack = [this](const juce::String& vid, const juce::String& pid, std::function<void(const juce::String&, int)> resultCallback)
             {
                 addDeviceWindow = std::make_unique<AddDeviceWindow>(vid, pid);
-                addDeviceWindow->onAddDevice = [resultCallback](const juce::String& name, int keys)
+                addDeviceWindow->onAddDevice = [this,vid,pid,resultCallback](const juce::String& name, int keys)
                 {
                     resultCallback(name, keys);
+                    dataBase.addDeviceJson(vid, pid, name, keys);
                 };
                 addDeviceWindow->setVisible(true);
             };
         }
-        if (midiHandler.handlePlayableRange(MIDIDevice.extractVID(MIDIDevice.get_identifier()), MIDIDevice.extractPID(MIDIDevice.get_identifier())
-            ,this->keyListener.getIsKeyboardInput()) < 0)
+
+        juce::String PID = MIDIDevice.extractPID(MIDIDevice.get_identifier());
+        juce::String VID = MIDIDevice.extractVID(MIDIDevice.get_identifier());
+        juce::String name = dataBase.getDeviceName(VID, PID);
+        int nrKeys = dataBase.getNrKeysPidVid(VID, PID);
+
+        if (midiHandler.handlePlayableRange(VID, PID, dataBase.getNrKeysPidVid(VID, PID), this->keyListener.getIsKeyboardInput()) < 0)
+        {
+            this->MIDIDevice.deviceCloseIN();
+            this->MIDIDevice.deviceCloseOUT();
             return;
+        }
 
 
 
@@ -1338,8 +1349,13 @@ void MainComponent::playButtonOnClick()
         if(midiWindow)
             this->midiWindow->setVisible(false);
 
-        juce::String PID = MIDIDevice.extractPID(MIDIDevice.get_identifier());
-        juce::String VID = MIDIDevice.extractVID(MIDIDevice.get_identifier());
+
+        
+        
+
+        MIDIDevice.setPID(PID);
+        MIDIDevice.setVID(VID);
+        MIDIDevice.setDeviceName(name);
 
         if (VID.length() < 4 || PID.length() < 4)
             this->display->set_VID_PID("", "");
@@ -1398,6 +1414,19 @@ void MainComponent::playButtonOnClick()
         keyboard.setIsDrawn(false);
         keyboard.repaint();
         toggleForPlaying();
+
+        if (!this->keyListener.getIsKeyboardInput())
+        {
+            
+            juce::String vid = MIDIDevice.getVID();
+            juce::String pid = MIDIDevice.getPID();
+            juce::String name = MIDIDevice.getName();
+            int nrKeys = MIDIDevice.getNrKeysAfterInitialized();
+            std::thread([this, vid, pid, name, nrKeys]()
+                {
+                    client->addOrUpdateDevice(vid, pid, name, nrKeys);
+                }).detach();
+        }
     }
 }
 
@@ -1454,7 +1483,7 @@ void MainComponent::updateKeysButtonOnClick()
                     return;
                 }
 
-                midiHandler.updateDeviceInDBBridgeFunction(VID, PID, "", numKeys);
+                dataBase.updateDeviceJson(VID, PID, "", numKeys);
 
                 juce::AlertWindow::showMessageBoxAsync(
                     juce::AlertWindow::InfoIcon,
@@ -1671,6 +1700,7 @@ bool MainComponent::openingDevicesForPlay()
         result = this->MIDIDevice.deviceOpenIN(indexIN, &midiHandler);
         if (!result)
         {
+
             juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open input device.", "OK");
             return false;
         }
@@ -1679,6 +1709,7 @@ bool MainComponent::openingDevicesForPlay()
     result = this->MIDIDevice.deviceOpenOUT(indexOUT);
     if (!result)
     {
+        this->MIDIDevice.deviceCloseIN();  
         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open output device.", "OK");
         return false;
     }
