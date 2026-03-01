@@ -58,6 +58,7 @@ AddDeviceWindow::AddDeviceWindow(const juce::String& vid, const juce::String& pi
     };
 
     setSize(300, 200);
+    centreWithSize(300, 200);
 
 }
 

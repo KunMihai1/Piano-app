@@ -29,7 +29,7 @@ public:
 
     void setAccessToken(const juce::String& newAccessToken);
 
-    juce::String addOrUpdateDevice(const juce::String& PID, const juce::String& VID);
+    juce::String addOrUpdateDevice(const juce::String& VID, const juce::String& PID, const juce::String& deviceName, int nrKeys);
 
 private:
     std::mutex mutex;

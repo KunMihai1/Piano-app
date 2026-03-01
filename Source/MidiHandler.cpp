@@ -194,12 +194,30 @@ void MidiDevice::setDeviceName(const juce::String& name)
 	this->name = name;
 }
 
+juce::String MidiDevice::getVID()
+{
+	return this->VID;
+}
+
+juce::String MidiDevice::getPID()
+{
+	return this->PID;
+}
+
+juce::String MidiDevice::getName()
+{
+	return this->name;
+}
+
 int MidiDevice::getNrInputActualDevices()
 {
 	return juce::MidiInput::getAvailableDevices().size();
 }
 
-
+int MidiDevice::getNrKeysAfterInitialized()
+{
+	return maxNote - minNote+1;
+}
 
 bool MidiDevice::deviceOpenIN(int DeviceIndex, juce::MidiInputCallback* CallBack)
 {
@@ -208,6 +226,14 @@ bool MidiDevice::deviceOpenIN(int DeviceIndex, juce::MidiInputCallback* CallBack
 		this->isdeviceOpenIN = false;
 		return false;
 	}
+
+	if (currentDeviceUSEDin != nullptr)
+	{
+		currentDeviceUSEDin->stop();
+		currentDeviceUSEDin.reset();  
+		juce::Thread::sleep(50);      
+	}
+
 	juce::String identifierReceived = getDeviceIdentifierBasedOnIndex(DeviceIndex);
 	auto uniqueIn = juce::MidiInput::openDevice(identifierReceived, CallBack);
 	currentDeviceUSEDin = std::shared_ptr<juce::MidiInput>(std::move(uniqueIn));
@@ -391,7 +417,7 @@ const juce::String& MidiDevice::get_identifier() const
 	return this->identifier;
 }
 
-MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device }, dataBase{} {
+MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device } {
 }
 
 MidiHandler::~MidiHandler()
@@ -524,7 +550,7 @@ void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
 	}
 	listeners.call(&MidiHandlerListener::noteOffReceived,note);
 	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(channel, note));
-}
+} 
 
 void MidiHandler::allOffKeyboard()
 {
@@ -591,19 +617,9 @@ void MidiHandler::setCorrectChannelBasedOnHand(int note)
 	else this->channel = 1;
 }
 
-void MidiHandler::updateDeviceInDBBridgeFunction(const juce::String& VID, const juce::String& PID, const juce::String name, int numKeys)
+int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid, int nrKeys, bool isKeyboardInput)
 {
-	this->dataBase.updateDeviceJson(VID, PID, name, numKeys);
-}
-
-bool MidiHandler::deviceExistsBridgeFunction(const juce::String VID, const juce::String& PID)
-{
-	return this->dataBase.deviceExists(VID, PID);
-}
-
-int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid, bool isKeyboardInput)
-{
-	int nrKeys = dataBase.getNrKeysPidVid(vid, pid);
+	
 	int isK = isKeyboardInput;
 	if (nrKeys<0 && !isKeyboardInput)
 	{
@@ -611,7 +627,6 @@ int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String
 		{
 			onAddCallBack(vid, pid, [this, vid, pid](const juce::String& name, int keys)
 				{
-					dataBase.addDeviceJson(vid, pid, name, keys);
 					setPlayableRange(keys);
 				});
 		}

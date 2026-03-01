@@ -287,6 +287,7 @@ private:
     MidiDevice MIDIDevice{};       ///< MIDI device instance
     MidiHandler midiHandler{ MIDIDevice }; ///< MIDI event handler
     KeyboardListener keyListener{ midiHandler }; ///< Keyboard listener
+    MidiDevicesDataBase dataBase{};
     MidiRecordPlayer recordPlayer{}; ///< MIDI recording/playback
 
     std::vector<std::string> devicesIN;  ///< List of input devices
