@@ -34,6 +34,8 @@ This is a synth/arranger app I built using JUCE. The idea was to make something 
 - **Language:** C++
 - **Audio:** Low-latency, real-time processing
 - **UI:** JUCE components for cross-platform desktop apps
+- **Backend / API:** Supabase Edge Functions (HTTPS API)
+- **Database:** PostgreSQL (managed via Supabase)
 
 ## What I Learned
 
