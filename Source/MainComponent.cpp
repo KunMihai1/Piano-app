@@ -495,12 +495,14 @@ void MainComponent::loginWindowInitialize()
 
     loginWindow->onSuccessfullLogin = [this]()
     {
-        playtimeTracker = std::make_unique<PlaytimeTracker>([this](int secondToIncreaseWith)
+        playtimeTracker = std::make_unique<PlaytimeTracker>([this](int secondsToIncreaseWith)
             {
                 auto clientPtr = client; 
+                auto VID = MIDIDevice.getVID();
+                auto PID = MIDIDevice.getPID();
 
-                std::thread([clientPtr,secondToIncreaseWith]() {
-                    clientPtr->incrementPlaytime(secondToIncreaseWith);
+                std::thread([clientPtr,VID,PID,secondsToIncreaseWith]() {
+                    clientPtr->incrementPlaytime(secondsToIncreaseWith,VID,PID);
                     }).detach();
             },300);
 
@@ -1890,12 +1892,6 @@ void MainComponent::handleBreak(const juce::String& name)
 {
 
 }
-
-void MainComponent::incrementPlaytime(int secToIncreaseWith)
-{
-    client->incrementPlaytime(secToIncreaseWith);
-}
-
 
 SmoothRotarySlider::SmoothRotarySlider()
 {

@@ -267,8 +267,6 @@ private:
 
     void handleBreak(const juce::String& name);
 
-    void incrementPlaytime(int secToIncreaseWith);
-
     //==========================================================================
     // Member variables
     juce::ApplicationProperties appProperties; ///< Application properties manager
