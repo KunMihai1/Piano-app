@@ -13,6 +13,7 @@
 PlaytimeTracker::PlaytimeTracker(std::function<void(int sec)> onTimeElapsed, int batchIntervalSec=300): callbackFunction{onTimeElapsed}, batchIntervalSeconds{batchIntervalSec}
 {
     lastTickTime = juce::Time::getCurrentTime();
+    
     startTimer(startTimerInSec*1000);
     
 }

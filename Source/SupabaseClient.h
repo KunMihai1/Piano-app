@@ -21,7 +21,7 @@ public:
 
     juce::String signup(const juce::String& email, const juce::String& password, const juce::String& username);
 
-    juce::String incrementPlaytime(int seconds);
+    juce::String incrementPlaytime(int seconds, const juce::String& VID="", const juce::String& PID = "");
 
     juce::String addCurrency(int amount);
 

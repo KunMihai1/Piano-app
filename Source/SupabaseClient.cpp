@@ -21,7 +21,7 @@ juce::String SupabaseClient::login(const juce::String& email,
 {
     juce::String body = R"({"email":")" + email +
         R"(","password":")" + password + R"("})";
-    // Call the Edge Function proxy instead of Supabase directly
+    
     auto postUrl = juce::URL("https://ecmlftmkoqszdwjugqtn.supabase.co/functions/v1/auth-proxy?grant_type=password")
         .withPOSTData(body);
     juce::String extraHeaders;
@@ -61,7 +61,7 @@ juce::String SupabaseClient::signup(const juce::String& email,
     return stream->readEntireStreamAsString();
 }
 
-juce::String SupabaseClient::incrementPlaytime(int seconds)
+juce::String SupabaseClient::incrementPlaytime(int seconds, const juce::String& VID, const juce::String& PID)
 {
     juce::String id, token;
     {
@@ -70,7 +70,12 @@ juce::String SupabaseClient::incrementPlaytime(int seconds)
         token = accessToken;
     }
 
-    juce::String body = R"({"user_id":")" + id + R"(","seconds":)" + juce::String(seconds) + "}";
+    DBG("VID AND PID ARE: " + VID + " " + PID);
+
+    juce::String body = R"({"user_id":")" + id + R"(","pid":")" + PID
+        + R"(","vid":")" + VID
+        + R"(","seconds":)" + juce::String(seconds) + "}";
+
     auto postUrl = juce::URL("https://ecmlftmkoqszdwjugqtn.supabase.co/functions/v1/increment-playtime-api")
         .withPOSTData(body);
     juce::String extraHeaders;

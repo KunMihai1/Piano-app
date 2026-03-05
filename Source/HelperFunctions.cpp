@@ -110,7 +110,7 @@ std::vector<int> ChordHelper::getNotesForChord(const Chord& c)
     else if (type.equalsIgnoreCase("Augmented"))
         intervals = { 0, 4, 8 };
 
-    else if (type.equalsIgnoreCase("Diminished "))
+    else if (type.equalsIgnoreCase("Diminished"))
         intervals = { 0, 3, 6 };
 
     std::vector<int> notes;
