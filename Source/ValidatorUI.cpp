@@ -21,6 +21,9 @@ bool Validator::isValidMidiIntValue(int value)
 
 bool Validator::isValidMidiDoubleValue(double value)
 {
+    if (std::isnan(value) || std::isinf(value))
+        return false;
+
     return true;
 }
 

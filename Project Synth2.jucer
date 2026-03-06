@@ -3,6 +3,20 @@
 <JUCERPROJECT id="UGzfVC" name="Project Synth2" projectType="guiapp" useAppConfig="0"
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="vwDzJM" name="Project Synth2">
+    <GROUP id="{0080393B-1406-4B96-0572-E3585FB0DAEC}" name="Tests">
+      <FILE id="km3oiF" name="test_helper_functions.cpp" compile="1" resource="0"
+            file="tests/test_helper_functions.cpp"/>
+      <FILE id="rh3SYs" name="test_io_helper.cpp" compile="1" resource="0"
+            file="tests/test_io_helper.cpp"/>
+      <FILE id="uAIaFP" name="test_key_listener.cpp" compile="1" resource="0"
+            file="tests/test_key_listener.cpp"/>
+      <FILE id="TXGKPC" name="test_midi_device.cpp" compile="1" resource="0"
+            file="tests/test_midi_device.cpp"/>
+      <FILE id="Ct4wz7" name="test_midi_handler.cpp" compile="1" resource="0"
+            file="tests/test_midi_handler.cpp"/>
+      <FILE id="gNfg2Z" name="test_validator_ui.cpp" compile="1" resource="0"
+            file="tests/test_validator_ui.cpp"/>
+    </GROUP>
     <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
       <FILE id="WUBbJr" name="PasswordInvisible.png" compile="0" resource="1"
             file="Photos/PasswordInvisible.png"/>
@@ -420,8 +434,8 @@
   <EXPORTFORMATS>
     <VS2022 targetFolder="Builds/VisualStudio2022">
       <CONFIGURATIONS>
-        <CONFIGURATION isDebug="1" name="Debug" targetName="Project Synth2"/>
-        <CONFIGURATION isDebug="0" name="Release" targetName="Project Synth2"/>
+        <CONFIGURATION isDebug="1" name="Debug" targetName="Project Synth2" headerPath="../../Source"/>
+        <CONFIGURATION isDebug="0" name="Release" targetName="Project Synth2" headerPath="../../Source"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_analytics" path="../../JUCE/JUCE/modules"/>
