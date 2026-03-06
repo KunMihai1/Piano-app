@@ -23,7 +23,37 @@ public:
     //==============================================================================
     void initialise(const juce::String& commandLine) override
     {
+        /*
         // This method is where you should put your application's initialisation code..
+        int pass = 0;
+        int fail = 0;
+        int total = 0;
+
+        if (commandLine.contains("--run-tests"))
+        {
+            juce::UnitTestRunner runner;
+            runner.runAllTests();
+            
+            for (int i = 0; i < runner.getNumResults(); ++i)
+            {
+                auto* result = runner.getResult(i);
+                pass += result->passes;
+                fail += result->failures;
+                DBG("Test: " + result->unitTestName
+                    + " - Passes: " + juce::String(result->passes)
+                    + " Failures: " + juce::String(result->failures));
+            }
+            
+            total = pass + fail;
+            
+            if (total > 0)
+                DBG("The pass percentage is:" + juce::String(static_cast<double>((100 * pass) / total)) + "%");
+            else DBG("the pass percentage is: 100% since there are no tests");
+            quit();  
+            return;
+            
+        }
+        */
 
         mainWindow.reset(new MainWindow(getApplicationName()));
     }

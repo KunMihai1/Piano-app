@@ -91,13 +91,16 @@ public:
      */
     void setFinishNoteKeyboardInput(int value);
 
-private:
     /**
      * @brief Maps a computer key to a MIDI note number.
      * @param key The key pressed.
      * @return MIDI note number, or -1 if the key is not mapped.
      */
     int mapKeyMidi(const juce::KeyPress& key);
+
+private:
+    
+    
 
     // Member variables
     MidiHandler& midiHandler;                  /**< Reference to the MIDI handler */

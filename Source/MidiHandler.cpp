@@ -338,6 +338,8 @@ float MidiDevice::getVolume(int channel) const
 		return this->volumeFirst;
 	else if (channel == 16)
 		return this->volumeSecond;
+
+	return 50.0;
 }
 
 void MidiDevice::setReverb(const float rValue, int channel) 
@@ -354,6 +356,8 @@ float MidiDevice::getReverb(int channel) const
 		return this->reverbFirst;
 	else if (channel == 16)
 		return this->reverbSecond;
+
+	return 50.0;
 }
 
 int MidiDevice::get_minNote() const
