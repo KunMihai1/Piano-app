@@ -560,6 +560,8 @@ void MidiHandler::allOffKeyboard()
 {
 	for (int i = 0; i < 128; i++)
 	{
+		if (midiDevice.currentDeviceUSEDout == nullptr) return;
+
 		midiDevice.currentDeviceUSEDout->sendMessageNow(juce::MidiMessage::noteOff(1, i));
 		midiDevice.currentDeviceUSEDout->sendMessageNow(juce::MidiMessage::noteOff(16, i));
 	}
