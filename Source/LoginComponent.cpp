@@ -187,7 +187,9 @@ void LoginComponent::handleLogin()
                     if (safeThis == nullptr)
                         return;
 
-                    auto parsed = juce::JSON::parse(response);
+                    auto body = response.body;
+
+                    auto parsed = juce::JSON::parse(body);
 
                     if (!parsed.isObject())
                     {
@@ -270,7 +272,7 @@ void LoginComponent::handleLogin()
                         juce::AlertWindow::showMessageBoxAsync(
                             juce::AlertWindow::WarningIcon,
                             "Login Failed",
-                            "Unknown error occurred:\n" + response
+                            "Unknown error occurred:\n" + body
                         );
                     }
                 });
@@ -342,14 +344,16 @@ void LoginComponent::handleDoneSignup()
                     if (safeThis == nullptr)
                         return;
 
-                    auto parsed = juce::JSON::parse(response);
+                    auto body = response.body;
+
+                    auto parsed = juce::JSON::parse(body);
 
                     if (!parsed.isObject())
                     {
                         juce::AlertWindow::showMessageBoxAsync(
                             juce::AlertWindow::WarningIcon,
                             "Sign Up Failed",
-                            "Invalid server response:\n" + response
+                            "Invalid server response:\n" + body
                         );
                         return;
                     }
@@ -380,7 +384,7 @@ void LoginComponent::handleDoneSignup()
                         juce::AlertWindow::showMessageBoxAsync(
                             juce::AlertWindow::WarningIcon,
                             "Sign Up Failed",
-                            "User was not created.\nServer response:\n" + response
+                            "User was not created.\nServer response:\n" + body
                         );
                         return;
                     }

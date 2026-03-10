@@ -37,9 +37,11 @@ public:
                 runner.runTestsInCategory("Unit");
             else if (commandLine.contains("--integration-tests"))
                 runner.runTestsInCategory("Integration");
+            else if (commandLine.contains("--integration-api-tests"))
+                runner.runTestsInCategory("Integration-api");
             else
                 runner.runAllTests();
-            
+
             for (int i = 0; i < runner.getNumResults(); ++i)
             {
                 auto* result = runner.getResult(i);

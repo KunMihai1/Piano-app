@@ -16,9 +16,11 @@ SupabaseClient::SupabaseClient()
 
 }
 
-juce::String SupabaseClient::login(const juce::String& email,
+HttpResult SupabaseClient::login(const juce::String& email,
     const juce::String& password)
 {
+    HttpResult result;
+
     juce::String body = R"({"email":")" + email +
         R"(","password":")" + password + R"("})";
     
@@ -26,42 +28,52 @@ juce::String SupabaseClient::login(const juce::String& email,
         .withPOSTData(body);
     juce::String extraHeaders;
     extraHeaders << "Content-Type: application/json\r\n";
-    int statusCode = 0;
     auto stream = postUrl.createInputStream(
         juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
         .withExtraHeaders(extraHeaders)
         .withConnectionTimeoutMs(5000)
-        .withStatusCode(&statusCode)
+        .withStatusCode(&result.statusCode)
     );
-    if (!stream) return "{\"error\":\"connection failed\"}";
-    auto response = stream->readEntireStreamAsString();
-    return response;
+    if (!stream)
+    {
+        result.body = R"({"error":"connection failed"})";
+        return result;
+    };
+    result.body= stream->readEntireStreamAsString();
+    return result;
 }
 
 
 
-juce::String SupabaseClient::signup(const juce::String& email,
+HttpResult SupabaseClient::signup(const juce::String& email,
     const juce::String& password,
     const juce::String& username)
 {
+    HttpResult result;
+
     juce::String body = R"({"email":")" + email +
         R"(","password":")" + password +
         R"(","data":{"name":")" + username + R"("}})";
     auto postUrl = juce::URL("https://ecmlftmkoqszdwjugqtn.supabase.co/functions/v1/auth-proxy?action=signup")
         .withPOSTData(body);
     juce::String extraHeaders;
+    int statusCode = 0;
     extraHeaders << "Content-Type: application/json\r\n";
     auto stream = postUrl.createInputStream(
         juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
         .withConnectionTimeoutMs(5000)
         .withExtraHeaders(extraHeaders)
+        .withStatusCode(&result.statusCode)
     );
     if (!stream)
-        return "{\"error\":\"connection failed\"}";
-    return stream->readEntireStreamAsString();
+    {
+        result.body = R"({"error":"connection failed"})";
+        return result;
+    };
+    return result;
 }
 
-juce::String SupabaseClient::incrementPlaytime(int seconds, const juce::String& VID, const juce::String& PID)
+HttpResult SupabaseClient::incrementPlaytime(int seconds, const juce::String& VID, const juce::String& PID)
 {
     juce::String id, token;
     {
@@ -70,7 +82,7 @@ juce::String SupabaseClient::incrementPlaytime(int seconds, const juce::String& 
         token = accessToken;
     }
 
-    DBG("VID AND PID ARE: " + VID + " " + PID);
+    HttpResult result;
 
     juce::String body = R"({"user_id":")" + id + R"(","pid":")" + PID
         + R"(","vid":")" + VID
@@ -86,18 +98,22 @@ juce::String SupabaseClient::incrementPlaytime(int seconds, const juce::String& 
         juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
         .withExtraHeaders(extraHeaders)
         .withConnectionTimeoutMs(5000)
-        .withStatusCode(&statusCode)
+        .withStatusCode(&result.statusCode)
     );
     if (!stream)
-        return "{\"error\":\"connection failed\"}";
-    auto response = stream->readEntireStreamAsString();
+    {
+        result.body = R"({"error":"connection failed"})";
+        return result;
+    };
+    result.body = stream->readEntireStreamAsString();
     
-    return response;
+    return result;
 }
 
-juce::String SupabaseClient::addCurrency(int amount)
+HttpResult SupabaseClient::addCurrency(int amount)
 {
-    return "";
+    HttpResult result;
+    return result;
 }
 
 void SupabaseClient::setUserId(const juce::String& newId)
@@ -112,7 +128,7 @@ void SupabaseClient::setAccessToken(const juce::String& newAccessToken)
     this->accessToken = newAccessToken;
 }
 
-juce::String SupabaseClient::addOrUpdateDevice(const juce::String& VID, const juce::String& PID, const juce::String& deviceName, int nrKeys)
+HttpResult SupabaseClient::addOrUpdateDevice(const juce::String& VID, const juce::String& PID, const juce::String& deviceName, int nrKeys)
 {
     juce::String id, token;
     {
@@ -121,7 +137,8 @@ juce::String SupabaseClient::addOrUpdateDevice(const juce::String& VID, const ju
         token = accessToken;
     }
 
-    
+    HttpResult result;
+
     juce::String body = R"({"user_id":")" + id +
         R"(","vendor_id":")" + VID +
         R"(","product_id":")" + PID +
@@ -144,14 +161,17 @@ juce::String SupabaseClient::addOrUpdateDevice(const juce::String& VID, const ju
         juce::URL::InputStreamOptions(juce::URL::ParameterHandling::inAddress)
         .withExtraHeaders(extraHeaders)
         .withConnectionTimeoutMs(5000)
-        .withStatusCode(&statusCode)
+        .withStatusCode(&result.statusCode)
     );
 
     if (!stream)
-        return "{\"error\":\"connection failed\"}";
+    {
+        result.body = R"({"error":"connection failed"})";
+        return result;
+    };
 
     
-    auto response = stream->readEntireStreamAsString();
+    result.body = stream->readEntireStreamAsString();
 
-    return response;
+    return result;
 }
