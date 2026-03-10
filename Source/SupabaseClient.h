@@ -12,24 +12,29 @@
 
 #include "JuceHeader.h"
 
+struct HttpResult {
+    int statusCode = 0;
+    juce::String body;
+};
+
 class SupabaseClient
 {
 public:
     SupabaseClient();
 
-    juce::String login(const juce::String& email, const juce::String& password);
+    HttpResult login(const juce::String& email, const juce::String& password);
 
-    juce::String signup(const juce::String& email, const juce::String& password, const juce::String& username);
+    HttpResult signup(const juce::String& email, const juce::String& password, const juce::String& username);
 
-    juce::String incrementPlaytime(int seconds, const juce::String& VID="", const juce::String& PID = "");
+    HttpResult incrementPlaytime(int seconds, const juce::String& VID="", const juce::String& PID = "");
 
-    juce::String addCurrency(int amount);
+    HttpResult addCurrency(int amount);
 
     void setUserId(const juce::String& newId);
 
     void setAccessToken(const juce::String& newAccessToken);
 
-    juce::String addOrUpdateDevice(const juce::String& VID, const juce::String& PID, const juce::String& deviceName, int nrKeys);
+    HttpResult addOrUpdateDevice(const juce::String& VID, const juce::String& PID, const juce::String& deviceName, int nrKeys);
 
 private:
     std::mutex mutex;

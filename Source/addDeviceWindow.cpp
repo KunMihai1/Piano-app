@@ -10,7 +10,7 @@
 
 #include "addDeviceWindow.h"
 
-AddDeviceWindow::AddDeviceWindow(const juce::String& vid, const juce::String& pid)
+AddDeviceWindow::AddDeviceWindow(const juce::String& vid, const juce::String& pid, int testing)
     : DialogWindow("Add MIDI Device", juce::Colours::darkgrey, true),
     vidString{ vid }, pidString{ pid }
 {
@@ -31,29 +31,37 @@ AddDeviceWindow::AddDeviceWindow(const juce::String& vid, const juce::String& pi
     content->addAndMakeVisible(addButton.get());
     addButton->setBounds(20, 100, 100, 24);
 
-    addButton->onClick = [this, vid, pid]()
+    addButton->onClick = [this, vid, pid,testing]()
     {
+        DBG("on click called here");
         juce::String name = nameEditor->getText();
         int keys = keysEditor->getText().getIntValue();
         if (!name.isEmpty() && keys > 0)
         {
             if (onAddDevice)
                 onAddDevice(name, keys);
-            juce::AlertWindow::showMessageBoxAsync(
-                juce::AlertWindow::InfoIcon,
-                "Successfull adding",
-                "Your device named: " + name + " with: " + juce::String(keys) + " keys has been added sucesffuly!"
-            );
+            if (!testing)
+            {
+                juce::AlertWindow::showMessageBoxAsync(
+                    juce::AlertWindow::InfoIcon,
+                    "Successfull adding",
+                    "Your device named: " + name + " with: " + juce::String(keys) + " keys has been added sucesffuly!"
+                );
+            }
+            
 
             closeButtonPressed();
         }
         else
         {
-            juce::AlertWindow::showMessageBoxAsync(
-                juce::AlertWindow::WarningIcon,
-                "Invalid Input",
-                "Please enter a valid device name and number of keys."
-            );
+            if (!testing)
+            {
+                juce::AlertWindow::showMessageBoxAsync(
+                    juce::AlertWindow::WarningIcon,
+                    "Invalid Input",
+                    "Please enter a valid device name and number of keys."
+                );
+            }
         }
     };
 
@@ -65,4 +73,19 @@ AddDeviceWindow::AddDeviceWindow(const juce::String& vid, const juce::String& pi
 void AddDeviceWindow::closeButtonPressed()
 {
     setVisible(false);
+}
+
+juce::TextButton& AddDeviceWindow::getAddButton() {
+    
+    return *(this->addButton);
+}
+
+juce::TextEditor& AddDeviceWindow::getNameEditor()
+{
+    return *(this->nameEditor);
+}
+
+juce::TextEditor& AddDeviceWindow::getKeysEditor()
+{
+    return *(this->keysEditor);
 }

@@ -16,9 +16,15 @@ class AddDeviceWindow: public juce::DialogWindow
 public:
     std::function<void(const juce::String& name, int keys)> onAddDevice;
 
-    AddDeviceWindow(const juce::String& vid, const juce::String& pid);
+    AddDeviceWindow(const juce::String& vid, const juce::String& pid, int testing=0);
 
     void closeButtonPressed() override;
+
+    juce::TextButton& getAddButton();
+
+    juce::TextEditor& getNameEditor();
+
+    juce::TextEditor& getKeysEditor();
 
 private:
     std::unique_ptr<juce::TextEditor> nameEditor=nullptr;
