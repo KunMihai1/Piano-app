@@ -4,18 +4,26 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="vwDzJM" name="Project Synth2">
     <GROUP id="{0080393B-1406-4B96-0572-E3585FB0DAEC}" name="Tests">
-      <FILE id="km3oiF" name="test_helper_functions.cpp" compile="1" resource="0"
-            file="tests/test_helper_functions.cpp"/>
-      <FILE id="rh3SYs" name="test_io_helper.cpp" compile="1" resource="0"
-            file="tests/test_io_helper.cpp"/>
-      <FILE id="uAIaFP" name="test_key_listener.cpp" compile="1" resource="0"
-            file="tests/test_key_listener.cpp"/>
-      <FILE id="TXGKPC" name="test_midi_device.cpp" compile="1" resource="0"
-            file="tests/test_midi_device.cpp"/>
-      <FILE id="Ct4wz7" name="test_midi_handler.cpp" compile="1" resource="0"
-            file="tests/test_midi_handler.cpp"/>
-      <FILE id="gNfg2Z" name="test_validator_ui.cpp" compile="1" resource="0"
-            file="tests/test_validator_ui.cpp"/>
+      <GROUP id="{A1B2C3D4-1111-2222-3333-444455556666}" name="Unit">
+        <FILE id="km3oiF" name="test_helper_functions.cpp" compile="1" resource="0"
+              file="tests/unit/test_helper_functions.cpp"/>
+        <FILE id="rh3SYs" name="test_io_helper.cpp" compile="1" resource="0"
+              file="tests/unit/test_io_helper.cpp"/>
+        <FILE id="uAIaFP" name="test_key_listener.cpp" compile="1" resource="0"
+              file="tests/unit/test_key_listener.cpp"/>
+        <FILE id="TXGKPC" name="test_midi_device.cpp" compile="1" resource="0"
+              file="tests/unit/test_midi_device.cpp"/>
+        <FILE id="Ct4wz7" name="test_midi_handler.cpp" compile="1" resource="0"
+              file="tests/unit/test_midi_handler.cpp"/>
+        <FILE id="gNfg2Z" name="test_validator_ui.cpp" compile="1" resource="0"
+              file="tests/unit/test_validator_ui.cpp"/>
+      </GROUP>
+      <GROUP id="{B2C3D4E5-5555-6666-7777-888899990000}" name="Integration">
+        <FILE id="HwMdDv" name="test_midi_device_hw.cpp" compile="1" resource="0"
+              file="tests/integration/test_midi_device_hw.cpp"/>
+        <FILE id="HwMdHn" name="test_midi_handler_hw.cpp" compile="1" resource="0"
+              file="tests/integration/test_midi_handler_hw.cpp"/>
+      </GROUP>
     </GROUP>
     <GROUP id="{7DA60EC7-6A29-1AFF-72FE-496A802E06A4}" name="Resources">
       <FILE id="WUBbJr" name="PasswordInvisible.png" compile="0" resource="1"

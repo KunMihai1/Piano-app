@@ -5,7 +5,7 @@
 class ValidatorTest : public juce::UnitTest
 {
 public:
-    ValidatorTest() : juce::UnitTest("Validator") {}
+    ValidatorTest() : juce::UnitTest("Validator", "Unit") {}
 
     void runTest() override
     {

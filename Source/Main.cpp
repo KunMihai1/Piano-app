@@ -23,7 +23,7 @@ public:
     //==============================================================================
     void initialise(const juce::String& commandLine) override
     {
-        /*
+        
         // This method is where you should put your application's initialisation code..
         int pass = 0;
         int fail = 0;
@@ -32,7 +32,13 @@ public:
         if (commandLine.contains("--run-tests"))
         {
             juce::UnitTestRunner runner;
-            runner.runAllTests();
+
+            if (commandLine.contains("--unit-tests"))
+                runner.runTestsInCategory("Unit");
+            else if (commandLine.contains("--integration-tests"))
+                runner.runTestsInCategory("Integration");
+            else
+                runner.runAllTests();
             
             for (int i = 0; i < runner.getNumResults(); ++i)
             {
@@ -53,7 +59,7 @@ public:
             return;
             
         }
-        */
+        
 
         mainWindow.reset(new MainWindow(getApplicationName()));
     }

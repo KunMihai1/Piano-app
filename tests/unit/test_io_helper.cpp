@@ -6,7 +6,7 @@
 class TrackIOHelperTest : public juce::UnitTest
 {
 public:
-    TrackIOHelperTest() : juce::UnitTest("TrackIOHelper") {}
+    TrackIOHelperTest() : juce::UnitTest("TrackIOHelper", "Unit") {}
 
     void runTest() override
     {
@@ -51,6 +51,7 @@ public:
         }
 
         
+
 
 
         beginTest("getOriginalBpmFromFile - returns 120 for empty MIDI file");
@@ -561,7 +562,7 @@ static TrackIOHelperTest trackIOHelperTest;
 class PlaybackSettingsIOHelperTest : public juce::UnitTest
 {
 public:
-    PlaybackSettingsIOHelperTest() : juce::UnitTest("PlaybackSettingsIOHelper") {}
+    PlaybackSettingsIOHelperTest() : juce::UnitTest("PlaybackSettingsIOHelper", "Unit") {}
 
     void runTest() override
     {
@@ -658,7 +659,7 @@ static PlaybackSettingsIOHelperTest playbackSettingsIOHelperTest;
 class SectionIOHelperTest : public juce::UnitTest
 {
 public:
-    SectionIOHelperTest() : juce::UnitTest("SectionIOHelper") {}
+    SectionIOHelperTest() : juce::UnitTest("SectionIOHelper", "Unit") {}
 
     void runTest() override
     {

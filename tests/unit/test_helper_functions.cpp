@@ -3,7 +3,7 @@
 class MapHelperTest : public juce::UnitTest
 {
 public:
-    MapHelperTest() : juce::UnitTest("MapHelper") {}
+    MapHelperTest() : juce::UnitTest("MapHelper", "Unit") {}
     void runTest() override
     {
         beginTest("intToStringNote - valid notes");
@@ -40,7 +40,7 @@ public:
 class ChordHelperTest : public juce::UnitTest
 {
 public:
-    ChordHelperTest() : juce::UnitTest("ChordHelper") {}
+    ChordHelperTest() : juce::UnitTest("ChordHelper", "Unit") {}
 
     void runTest() override
     {
