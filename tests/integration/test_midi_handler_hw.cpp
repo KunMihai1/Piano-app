@@ -17,6 +17,7 @@ public:
     void runTest() override
     {
         MidiDevice device;
+        InstrumentHandler instrumentHandler;
 
         std::vector<std::string> outDevices;
         device.getAvailableDevicesMidiOUT(outDevices);
@@ -258,7 +259,7 @@ public:
 
         beginTest("setProgramNumber [device] - applyInstrumentPreset notifies listener with programChange");
         {
-            MidiHandler handler(device);
+            MidiHandler handler(device, &instrumentHandler);
             class PresetListener : public MidiHandlerListener
             {
             public:
@@ -292,7 +293,7 @@ public:
 
         beginTest("setProgramNumber [device] - right hand uses channel 16");
         {
-            MidiHandler handler(device);
+            MidiHandler handler(device, &instrumentHandler);
             class PresetListener : public MidiHandlerListener
             {
             public:
@@ -322,7 +323,7 @@ public:
 
         beginTest("setProgramNumber [device] - left hand uses channel 1");
         {
-            MidiHandler handler(device);
+            MidiHandler handler(device, &instrumentHandler);
             class PresetListener : public MidiHandlerListener
             {
             public:
@@ -352,7 +353,7 @@ public:
 
         beginTest("setProgramNumber [device] - applyInstrumentPreset sends CC messages to listener");
         {
-            MidiHandler handler(device);
+            MidiHandler handler(device, &instrumentHandler);
             class CCListener : public MidiHandlerListener
             {
             public:

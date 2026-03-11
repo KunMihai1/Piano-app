@@ -10,6 +10,7 @@
 
 #pragma once
 #include <JuceHeader.h>
+#include "FileSystemInterface.h"
 
 /**
  * @class MidiDevicesDataBase
@@ -23,6 +24,8 @@ class MidiDevicesDataBase {
 public:
     /** @brief Constructor. Ensures JSON exists and loads it. */
     MidiDevicesDataBase();
+
+    MidiDevicesDataBase(IFileSystem& fs);
 
     /** @brief Destructor */
     ~MidiDevicesDataBase();
@@ -57,6 +60,17 @@ public:
      */
     juce::File getAppDataFolder();
 
+
+
+protected:
+    juce::var jsonData; ///< Holds the parsed JSON data in memory
+
+    /** @brief Loads the JSON file into memory. */
+    virtual void loadJsonFile();
+
+    /** @brief Saves the in-memory JSON back to file. */
+    virtual void saveJsonFile();
+
 private:
     /** @brief Populates the database with a set of initial devices. */
     void populateInitialDevices();
@@ -64,14 +78,11 @@ private:
     /** @brief Ensures the JSON file exists, creating it if necessary. */
     void jsonEnsureExistance();
 
-    /** @brief Loads the JSON file into memory. */
-    void loadJsonFile();
-
-    /** @brief Saves the in-memory JSON back to file. */
-    void saveJsonFile();
 
     /** @brief Returns the file object for the JSON file. */
     juce::File getJsonFile();
 
-    juce::var jsonData; ///< Holds the parsed JSON data in memory
+    IFileSystem* fileSystem = nullptr;
+
+    
 };

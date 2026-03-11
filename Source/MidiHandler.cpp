@@ -421,7 +421,8 @@ const juce::String& MidiDevice::get_identifier() const
 	return this->identifier;
 }
 
-MidiHandler::MidiHandler(MidiDevice& device) : midiDevice{ device } {
+MidiHandler::MidiHandler(MidiDevice& device, InstrumentHandler* instrumentH) : midiDevice{ device }, instrumentHandler{instrumentH}
+{
 }
 
 MidiHandler::~MidiHandler()
@@ -575,10 +576,13 @@ void MidiHandler::setProgramNumber(int toSetNumber, const juce::String& choice) 
 
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
-		const auto& preset = instrumentHandler.getPreset(toSetNumber);
+		if (instrumentHandler)
+		{
+			const auto& preset = instrumentHandler->getPreset(toSetNumber);
 
-		applyInstrumentPreset(toSetNumber, preset,choice);
-		juce::Thread::sleep(5);
+			applyInstrumentPreset(toSetNumber, preset, choice);
+			juce::Thread::sleep(5);
+		}
 	}
 }
 

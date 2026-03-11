@@ -16,6 +16,10 @@ MidiDevicesDataBase::MidiDevicesDataBase()
 	loadJsonFile();
 }
 
+MidiDevicesDataBase::MidiDevicesDataBase(IFileSystem& fs): fileSystem{&fs}
+{
+}
+
 MidiDevicesDataBase::~MidiDevicesDataBase()
 {
 }
@@ -67,28 +71,40 @@ void MidiDevicesDataBase::jsonEnsureExistance()
 
 void MidiDevicesDataBase::loadJsonFile()
 {
-	juce::File jsonFile = getJsonFile();
-	if (!jsonFile.existsAsFile())
-		return;
-	juce::String jsonString = jsonFile.loadFileAsString();
-	jsonData = juce::JSON::parse(jsonString);
-	if (!jsonData.isObject())
-		jsonData = juce::var{};
+	if (fileSystem) // mock file system provided
+	{
+		juce::String jsonString = fileSystem->readFile(fileSystem->getJsonFile());
+		jsonData = juce::JSON::parse(jsonString);
+	}
+	else
+	{
+		juce::File jsonFile = getJsonFile();
+		if (!jsonFile.existsAsFile())
+			return;
+		juce::String jsonString = jsonFile.loadFileAsString();
+		jsonData = juce::JSON::parse(jsonString);
+		if (!jsonData.isObject())
+			jsonData = juce::var{}; 
+	}
 }
 
 void MidiDevicesDataBase::saveJsonFile()
 {
-	DBG("se scrie in json");
-	juce::File jsonFile = getJsonFile();
-	jsonFile.replaceWithText(juce::JSON::toString(jsonData));
+	if (fileSystem) // test mode
+	{
+		DBG("in testing mode");
+		fileSystem->writeFile(fileSystem->getJsonFile(), juce::JSON::toString(jsonData));
+	}
+	else {
+		juce::File jsonFile = getJsonFile();
+		jsonFile.replaceWithText(juce::JSON::toString(jsonData));
+	}
 }
 
 void MidiDevicesDataBase::addDeviceJson(const juce::String& vid, const juce::String& pid, const juce::String& name, int numKeys)
 {
-	DBG("am ajuns in add device j");
 	if (!jsonData.isObject())
 	{
-		DBG("nu e un obiect");
 		jsonData = juce::var(new juce::DynamicObject());
 	}
 
@@ -96,17 +112,13 @@ void MidiDevicesDataBase::addDeviceJson(const juce::String& vid, const juce::Str
 
 	if (!rootObject)
 	{
-		DBG("nu e un root object");
 		return;
 	}
 
-	DBG("inainte de key");
 	juce::String key = vid + pid;
 
 	if (key.isEmpty())
 		return;
-
-	DBG("inainte de verificare proprietate key");
 	if (rootObject->hasProperty(key))
 		return;
 
@@ -153,19 +165,24 @@ void MidiDevicesDataBase::updateDeviceJson(const juce::String& vid, const juce::
 
 bool MidiDevicesDataBase::deviceExists(const juce::String& VID, const juce::String& PID)
 {
+	if (VID.isEmpty() || PID.isEmpty()) 
+		return false;
+
 	if (!jsonData.isObject())
-		return -1;
+		return false;
 
 	auto* rootObject = jsonData.getDynamicObject();
 	if (!rootObject)
-		return -1;
+		return false;
 
 	juce::String key = VID + PID;
 	if (key.isEmpty())
-		return -1;
+		return false;
 
 	if (!rootObject->hasProperty(key))
-		return -1;
+		return false;
+
+	return rootObject->hasProperty(key);
 }
 
 int MidiDevicesDataBase::getNrKeysPidVid(const juce::String& vid, const juce::String& pid)

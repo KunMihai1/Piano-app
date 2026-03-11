@@ -282,8 +282,10 @@ private:
     std::weak_ptr<juce::MidiInput> deviceOpenedIN; ///< Currently opened MIDI input device
     std::weak_ptr<juce::MidiOutput> deviceOpenedOUT; ///< Currently opened MIDI output device
 
+    
     MidiDevice MIDIDevice{};       ///< MIDI device instance
-    MidiHandler midiHandler{ MIDIDevice }; ///< MIDI event handler
+    InstrumentHandler instrumentHandler;
+    MidiHandler midiHandler{ MIDIDevice, &instrumentHandler }; ///< MIDI event handler
     KeyboardListener keyListener{ midiHandler }; ///< Keyboard listener
     MidiDevicesDataBase dataBase{};
     MidiRecordPlayer recordPlayer{}; ///< MIDI recording/playback

@@ -7,6 +7,8 @@
       <GROUP id="{A1B2C3D4-1111-2222-3333-444455556666}" name="Unit">
         <FILE id="fAdttJ" name="test_add_device_window.cpp" compile="1" resource="0"
               file="tests/unit/test_add_device_window.cpp"/>
+        <FILE id="xDyqb2" name="test_custom_beatbar.cpp" compile="1" resource="0"
+              file="tests/unit/test_custom_beatbar.cpp"/>
         <FILE id="km3oiF" name="test_helper_functions.cpp" compile="1" resource="0"
               file="tests/unit/test_helper_functions.cpp"/>
         <FILE id="rh3SYs" name="test_io_helper.cpp" compile="1" resource="0"
@@ -15,6 +17,8 @@
               file="tests/unit/test_key_listener.cpp"/>
         <FILE id="TXGKPC" name="test_midi_device.cpp" compile="1" resource="0"
               file="tests/unit/test_midi_device.cpp"/>
+        <FILE id="nFlm3M" name="test_midi_devices_db.cpp" compile="1" resource="0"
+              file="tests/unit/test_midi_devices_db.cpp"/>
         <FILE id="Ct4wz7" name="test_midi_handler.cpp" compile="1" resource="0"
               file="tests/unit/test_midi_handler.cpp"/>
         <FILE id="gNfg2Z" name="test_validator_ui.cpp" compile="1" resource="0"
@@ -288,6 +292,8 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="G3Jvlk" name="FileSystemInterface.h" compile="0" resource="0"
+            file="Source/FileSystemInterface.h"/>
       <FILE id="oLjKCa" name="SupabaseClient.cpp" compile="1" resource="0"
             file="Source/SupabaseClient.cpp"/>
       <FILE id="Ia73LG" name="SupabaseClient.h" compile="0" resource="0"
