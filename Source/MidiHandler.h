@@ -2,8 +2,8 @@
 
 #include <JuceHeader.h>
 #include "MidiDevicesDB.h"
-#include "InstrumentHandler.h"
 #include "MidiHandlerAbstractSubject.h"
+#include "InstrumentHandler.h"
 #include "displayGUI.h"
 
 class MidiDevice {
@@ -254,7 +254,7 @@ public:
 	std::function<void(const juce::String& vid, const juce::String& pid, std::function<void(const juce::String&, int)>)> onAddCallBack;
 
 	/** @brief Constructor with a MidiDevice as reference */
-	MidiHandler(MidiDevice& device);
+	MidiHandler(MidiDevice& device, InstrumentHandler* instrumentHandler=nullptr);
 
 	/** @brief Destructor */
 	~MidiHandler();
@@ -376,7 +376,7 @@ private:
 	juce::ListenerList<MidiHandlerListener> listeners;
 
 	MidiDevice& midiDevice;
-	InstrumentHandler instrumentHandler{};
+	InstrumentHandler* instrumentHandler=nullptr;
 
 	bool receivedValidNote = false;
 	juce::MidiBuffer incomingMidiMessages;

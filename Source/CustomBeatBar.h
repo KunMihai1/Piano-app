@@ -80,6 +80,12 @@ public:
      */
     void setCurrentBeatsElapsed(double elapsedBeats);
 
+    int getTotalSubdivisions();
+
+    int getCurrentSubdivision();
+
+    float getSubBeatsPerBeat();
+
 private:
     /** @brief Number of beats per bar (top number of time signature). */
     int numerator;
