@@ -21,8 +21,12 @@
               file="tests/unit/test_midi_devices_db.cpp"/>
         <FILE id="Ct4wz7" name="test_midi_handler.cpp" compile="1" resource="0"
               file="tests/unit/test_midi_handler.cpp"/>
-        <FILE id="NfFqHC" name="test_overlay_component.cpp" compile="1" resource="0"
+        <FILE id="o25ee2" name="test_overlay_component.cpp" compile="1" resource="0"
               file="tests/unit/test_overlay_component.cpp"/>
+        <FILE id="xuOL1B" name="test_section_group_component.cpp" compile="1"
+              resource="0" file="tests/unit/test_section_group_component.cpp"/>
+        <FILE id="rFzXfq" name="test_sections_component.cpp" compile="1" resource="0"
+              file="tests/unit/test_sections_component.cpp"/>
         <FILE id="gNfg2Z" name="test_validator_ui.cpp" compile="1" resource="0"
               file="tests/unit/test_validator_ui.cpp"/>
       </GROUP>
@@ -31,8 +35,12 @@
               file="tests/integration/test_midi_device_hw.cpp"/>
         <FILE id="HwMdHn" name="test_midi_handler_hw.cpp" compile="1" resource="0"
               file="tests/integration/test_midi_handler_hw.cpp"/>
-        <FILE id="yAe6jd" name="test_overlay_component_integration.cpp" compile="1"
+        <FILE id="Bk0DPL" name="test_overlay_component_integration.cpp" compile="1"
               resource="0" file="tests/integration/test_overlay_component_integration.cpp"/>
+        <FILE id="C9QYoZ" name="test_section_group_component_integration.cpp"
+              compile="1" resource="0" file="tests/integration/test_section_group_component_integration.cpp"/>
+        <FILE id="nwR6hK" name="test_sections_component_integration.cpp" compile="1"
+              resource="0" file="tests/integration/test_sections_component_integration.cpp"/>
         <FILE id="QgzFan" name="test_supabase_client_api.cpp" compile="1" resource="0"
               file="tests/integration/test_supabase_client_api.cpp"/>
       </GROUP>
