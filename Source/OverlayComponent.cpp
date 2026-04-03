@@ -62,8 +62,8 @@ void OverlayComponent::showOverlay()
     setVisible(true);
     toFront(true);
 
-
-    grabKeyboardFocus();
+    if (isShowing() || isOnDesktop())
+        grabKeyboardFocus();
 
     resized();
     repaint();
@@ -73,6 +73,16 @@ void OverlayComponent::hideOverlay()
 {
     setVisible(false);
 
+}
+
+juce::TextButton& OverlayComponent::getExitButton()
+{
+    return this->exitButton;
+}
+
+juce::TextButton& OverlayComponent::getSettingsButton()
+{
+    return this->settingsButton;
 }
 
 void OverlayComponent::mouseDown(const juce::MouseEvent& ev)
