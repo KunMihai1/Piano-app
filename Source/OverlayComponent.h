@@ -20,7 +20,14 @@ public:
     void showOverlay();
     void hideOverlay();
 
+    juce::TextButton& getExitButton();
+
+    juce::TextButton& getSettingsButton();
+
     void mouseDown(const juce::MouseEvent& ev) override;
+
+    bool keyPressed(const juce::KeyPress& key) override;
+
 
     // main component should assign this so overlay can request to be closed
     std::function<void()> onRequestClose;
@@ -31,7 +38,7 @@ private:
     juce::TextButton exitButton;
 
     // handle keyboard when overlay has focus
-    bool keyPressed(const juce::KeyPress& key) override;
+    
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(OverlayComponent)
 };
