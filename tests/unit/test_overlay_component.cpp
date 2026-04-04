@@ -9,8 +9,22 @@ public:
 
     void runTest() override
     {
-        // ---- Constructor defaults ----
+        testConstructorDefaults();
+        testSettingsButton();
+        testExitButton();
+        testShowHideOverlay();
+        testAccessors();
+        testSettingsButtonCallback();
+        testKeyPressed();
+        testBringSeparateWindowFront();
+        testPaint();
+        testResized();
+        testCallbackDefaults();
+    }
 
+private:
+    void testConstructorDefaults()
+    {
         beginTest("Constructor - starts invisible");
         {
             OverlayComponent overlay;
@@ -28,9 +42,10 @@ public:
             OverlayComponent overlay;
             expect(overlay.getWantsKeyboardFocus() == true);
         }
+    }
 
-        // ---- Settings button ----
-
+    void testSettingsButton()
+    {
         beginTest("Settings button - text is 'Settings'");
         {
             OverlayComponent overlay;
@@ -49,9 +64,10 @@ public:
             auto colour = overlay.getSettingsButton().findColour(juce::TextButton::textColourOffId);
             expect(colour == juce::Colours::white);
         }
+    }
 
-        // ---- Exit button ----
-
+    void testExitButton()
+    {
         beginTest("Exit button - text is 'Exit'");
         {
             OverlayComponent overlay;
@@ -70,9 +86,10 @@ public:
             auto colour = overlay.getExitButton().findColour(juce::TextButton::textColourOffId);
             expect(colour == juce::Colours::white);
         }
+    }
 
-        // ---- showOverlay / hideOverlay ----
-
+    void testShowHideOverlay()
+    {
         beginTest("showOverlay - setVisible true makes component visible");
         {
             OverlayComponent overlay;
@@ -100,9 +117,10 @@ public:
             overlay.showOverlay();
             expect(overlay.isVisible() == true);
         }
+    }
 
-        // ---- getExitButton / getSettingsButton accessors ----
-
+    void testAccessors()
+    {
         beginTest("getExitButton returns a valid reference");
         {
             OverlayComponent overlay;
@@ -116,9 +134,10 @@ public:
             auto& btn = overlay.getSettingsButton();
             expect(btn.getButtonText() == "Settings");
         }
+    }
 
-        // ---- Settings button callback ----
-
+    void testSettingsButtonCallback()
+    {
         beginTest("Settings button click - invokes onSettingsClick callback");
         {
             OverlayComponent overlay;
@@ -135,9 +154,10 @@ public:
             overlay.getSettingsButton().onClick();
             expect(true); // no crash
         }
+    }
 
-        // ---- keyPressed ----
-
+    void testKeyPressed()
+    {
         beginTest("keyPressed - escape key returns true");
         {
             OverlayComponent overlay;
@@ -186,9 +206,10 @@ public:
 
             expect(overlay.isVisible() == false);
         }
+    }
 
-        // ---- bringSeparateWindowFront callback (tested via direct callback) ----
-
+    void testBringSeparateWindowFront()
+    {
         beginTest("bringSeparateWindowFront - callable when set");
         {
             OverlayComponent overlay;
@@ -205,9 +226,10 @@ public:
             // mouseDown checks for null before calling, so no crash
             expect(!overlay.bringSeparateWindowFront);
         }
+    }
 
-        // ---- paint ----
-
+    void testPaint()
+    {
         beginTest("paint - executes without crash");
         {
             OverlayComponent overlay;
@@ -219,9 +241,10 @@ public:
             overlay.paint(g);
             expect(true); // no crash
         }
+    }
 
-        // ---- resized ----
-
+    void testResized()
+    {
         beginTest("resized - executes without crash");
         {
             OverlayComponent overlay;
@@ -249,9 +272,10 @@ public:
             expect(btn.getWidth() > 0);
             expect(btn.getHeight() > 0);
         }
+    }
 
-        // ---- Callback defaults ----
-
+    void testCallbackDefaults()
+    {
         beginTest("Callbacks are null by default");
         {
             OverlayComponent overlay;

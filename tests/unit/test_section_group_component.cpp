@@ -95,6 +95,7 @@ private:
 
         // Simulate mouse enter
         group.mouseEnter(e);
+         
         expect(tooltip->isVisible());
 
         // Simulate mouse exit

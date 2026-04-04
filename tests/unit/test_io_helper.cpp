@@ -566,89 +566,102 @@ public:
 
     void runTest() override
     {
+        saveAndLoadFullRangeKeyboard();
+        loadWithWrongVIDPID();
+        loadFromNonExistentFile();
+        saveWithSmallKeyboardRange();
+    }
+
+private:
+    void saveAndLoadFullRangeKeyboard()
+    {
         beginTest("Save and load roundtrip - full range keyboard");
-        {
-            auto tempFile = juce::File::createTempFile(".json");
 
-            PlayBackSettings original;
-            original.startNote = 36;
-            original.endNote = 96;
-            original.leftHandBound = 60;
-            original.rightHandBound = 72;
-            original.VID = "1234";
-            original.PID = "5678";
+        auto tempFile = juce::File::createTempFile(".json");
 
-            
-            PlaybackSettingsIOHelper::saveToFile(tempFile, original, 21, 108);
+        PlayBackSettings original;
+        original.startNote = 36;
+        original.endNote = 96;
+        original.leftHandBound = 60;
+        original.rightHandBound = 72;
+        original.VID = "1234";
+        original.PID = "5678";
 
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "1234", "5678");
+        PlaybackSettingsIOHelper::saveToFile(tempFile, original, 21, 108);
 
-            expect(loaded.startNote == 36);
-            expect(loaded.endNote == 96);
-            expect(loaded.leftHandBound == 60);
-            expect(loaded.rightHandBound == 72);
-            expect(loaded.VID == "1234");
-            expect(loaded.PID == "5678");
+        PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "1234", "5678");
 
-            tempFile.deleteFile();
-        }
+        expect(loaded.startNote == 36);
+        expect(loaded.endNote == 96);
+        expect(loaded.leftHandBound == 60);
+        expect(loaded.rightHandBound == 72);
+        expect(loaded.VID == "1234");
+        expect(loaded.PID == "5678");
 
+        tempFile.deleteFile();
+    }
+
+    void loadWithWrongVIDPID()
+    {
         beginTest("Load with wrong VID/PID returns defaults");
-        {
-            auto tempFile = juce::File::createTempFile(".json");
 
-            PlayBackSettings original;
-            original.startNote = 36;
-            original.endNote = 96;
-            original.leftHandBound = 60;
-            original.rightHandBound = 72;
-            original.VID = "1234";
-            original.PID = "5678";
+        auto tempFile = juce::File::createTempFile(".json");
 
-            PlaybackSettingsIOHelper::saveToFile(tempFile, original, 21, 108);
+        PlayBackSettings original;
+        original.startNote = 36;
+        original.endNote = 96;
+        original.leftHandBound = 60;
+        original.rightHandBound = 72;
+        original.VID = "1234";
+        original.PID = "5678";
 
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "9999", "0000");
+        PlaybackSettingsIOHelper::saveToFile(tempFile, original, 21, 108);
 
-            expect(loaded.startNote == -1);
-            expect(loaded.endNote == -1);
+        PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "9999", "0000");
 
-            tempFile.deleteFile();
-        }
+        expect(loaded.startNote == -1);
+        expect(loaded.endNote == -1);
 
+        tempFile.deleteFile();
+    }
+
+    void loadFromNonExistentFile()
+    {
         beginTest("Load from non-existent file returns defaults");
-        {
-            juce::File nonExistent("C:\\this_file_does_not_exist_12345.json");
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(nonExistent, "1234", "5678");
 
-            expect(loaded.startNote == -1);
-            expect(loaded.endNote == -1);
-            expect(loaded.leftHandBound == -1);
-            expect(loaded.rightHandBound == -1);
-        }
+        juce::File nonExistent("C:\\this_file_does_not_exist_12345.json");
+        PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(nonExistent, "1234", "5678");
 
+        expect(loaded.startNote == -1);
+        expect(loaded.endNote == -1);
+        expect(loaded.leftHandBound == -1);
+        expect(loaded.rightHandBound == -1);
+    }
+
+    void saveWithSmallKeyboardRange()
+    {
         beginTest("Save with small keyboard range clamps to base octave");
-        {
-            auto tempFile = juce::File::createTempFile(".json");
 
-            PlayBackSettings original;
-            original.startNote = 48;   // C3
-            original.endNote = 72;     // C5
-            original.leftHandBound = 55;
-            original.rightHandBound = 65;
-            original.VID = "AAAA";
-            original.PID = "BBBB";
+        auto tempFile = juce::File::createTempFile(".json");
 
-            // highest - lowest = 72 - 48 = 24, which is < 49, so clamping kicks in
-            PlaybackSettingsIOHelper::saveToFile(tempFile, original, 48, 72);
+        PlayBackSettings original;
+        original.startNote = 48;   // C3
+        original.endNote = 72;     // C5
+        original.leftHandBound = 55;
+        original.rightHandBound = 65;
+        original.VID = "AAAA";
+        original.PID = "BBBB";
 
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "AAAA", "BBBB");
+        // highest - lowest = 72 - 48 = 24, which is < 49, so clamping kicks in
+        PlaybackSettingsIOHelper::saveToFile(tempFile, original, 48, 72);
 
-            // Values should be remapped to base 60:  60 + (note % 12)
-            expect(loaded.startNote == 60 + (48 % 12)); 
-            expect(loaded.endNote == 60 + (72 % 12));    
+        PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "AAAA", "BBBB");
 
-            tempFile.deleteFile();
-        }
+        // Values should be remapped to base 60:  60 + (note % 12)
+        expect(loaded.startNote == 60 + (48 % 12));
+        expect(loaded.endNote == 60 + (72 % 12));
+
+        tempFile.deleteFile();
     }
 };
 
@@ -663,104 +676,118 @@ public:
 
     void runTest() override
     {
+        saveAndLoadRoundtrip();
+        loadFromNonExistentFile();
+        loadFromInvalidJson();
+        multipleStylesSaveAndLoad();
+    }
+
+private:
+    void saveAndLoadRoundtrip()
+    {
         beginTest("Save and load roundtrip");
-        {
-            auto tempFile = juce::File::createTempFile(".json");
 
-            std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> original;
+        auto tempFile = juce::File::createTempFile(".json");
 
-            StyleSection intro;
-            intro.id = "s1";
-            intro.name = "Intro";
-            intro.startTimeSeconds = 0.0;
-            intro.endTimeSeconds = 8.5;
-            intro.startBar = 1;
-            intro.endBar = 4;
+        std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> original;
 
-            StyleSection verse;
-            verse.id = "s2";
-            verse.name = "Verse";
-            verse.startTimeSeconds = 8.5;
-            verse.endTimeSeconds = 25.0;
-            verse.startBar = 5;
-            verse.endBar = 12;
+        StyleSection intro;
+        intro.id = "s1";
+        intro.name = "Intro";
+        intro.startTimeSeconds = 0.0;
+        intro.endTimeSeconds = 8.5;
+        intro.startBar = 1;
+        intro.endBar = 4;
 
-            original["style_A"]["Intro"] = intro;
-            original["style_A"]["Verse"] = verse;
+        StyleSection verse;
+        verse.id = "s2";
+        verse.name = "Verse";
+        verse.startTimeSeconds = 8.5;
+        verse.endTimeSeconds = 25.0;
+        verse.startBar = 5;
+        verse.endBar = 12;
 
-            SectionIOHelper::saveToFile(tempFile, original);
+        original["style_A"]["Intro"] = intro;
+        original["style_A"]["Verse"] = verse;
 
-            std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> loaded;
-            SectionIOHelper::loadFromFile(tempFile, loaded);
+        SectionIOHelper::saveToFile(tempFile, original);
 
-            expect(loaded.count("style_A") == 1);
-            expect(loaded["style_A"].count("Intro") == 1);
-            expect(loaded["style_A"].count("Verse") == 1);
+        std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> loaded;
+        SectionIOHelper::loadFromFile(tempFile, loaded);
 
-            expect(loaded["style_A"]["Intro"].id == "s1");
-            expect(loaded["style_A"]["Intro"].name == "Intro");
-            expect(std::abs(loaded["style_A"]["Intro"].startTimeSeconds - 0.0) < 0.001);
-            expect(std::abs(loaded["style_A"]["Intro"].endTimeSeconds - 8.5) < 0.001);
-            expect(loaded["style_A"]["Intro"].startBar == 1);
-            expect(loaded["style_A"]["Intro"].endBar == 4);
+        expect(loaded.count("style_A") == 1);
+        expect(loaded["style_A"].count("Intro") == 1);
+        expect(loaded["style_A"].count("Verse") == 1);
 
-            expect(loaded["style_A"]["Verse"].id == "s2");
-            expect(loaded["style_A"]["Verse"].startBar == 5);
+        expect(loaded["style_A"]["Intro"].id == "s1");
+        expect(loaded["style_A"]["Intro"].name == "Intro");
+        expect(std::abs(loaded["style_A"]["Intro"].startTimeSeconds - 0.0) < 0.001);
+        expect(std::abs(loaded["style_A"]["Intro"].endTimeSeconds - 8.5) < 0.001);
+        expect(loaded["style_A"]["Intro"].startBar == 1);
+        expect(loaded["style_A"]["Intro"].endBar == 4);
 
-            tempFile.deleteFile();
-        }
+        expect(loaded["style_A"]["Verse"].id == "s2");
+        expect(loaded["style_A"]["Verse"].startBar == 5);
 
+        tempFile.deleteFile();
+    }
+
+    void loadFromNonExistentFile()
+    {
         beginTest("Load from non-existent file gives empty map");
-        {
-            juce::File nonExistent("C:\\this_section_file_does_not_exist.json");
-            std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> loaded;
-            SectionIOHelper::loadFromFile(nonExistent, loaded);
-            expect(loaded.empty());
-        }
 
+        juce::File nonExistent("C:\\this_section_file_does_not_exist.json");
+        std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> loaded;
+        SectionIOHelper::loadFromFile(nonExistent, loaded);
+        expect(loaded.empty());
+    }
+
+    void loadFromInvalidJson()
+    {
         beginTest("Load from empty/invalid JSON gives empty map");
-        {
-            auto tempFile = juce::File::createTempFile(".json");
-            tempFile.replaceWithText("not valid json");
 
-            std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> loaded;
-            SectionIOHelper::loadFromFile(tempFile, loaded);
-            expect(loaded.empty());
+        auto tempFile = juce::File::createTempFile(".json");
+        tempFile.replaceWithText("not valid json");
 
-            tempFile.deleteFile();
-        }
+        std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> loaded;
+        SectionIOHelper::loadFromFile(tempFile, loaded);
+        expect(loaded.empty());
 
+        tempFile.deleteFile();
+    }
+
+    void multipleStylesSaveAndLoad()
+    {
         beginTest("Multiple styles save and load correctly");
-        {
-            auto tempFile = juce::File::createTempFile(".json");
 
-            std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> original;
+        auto tempFile = juce::File::createTempFile(".json");
 
-            StyleSection a;
-            a.id = "a1"; a.name = "PartA";
-            a.startTimeSeconds = 0.0; a.endTimeSeconds = 10.0;
-            a.startBar = 1; a.endBar = 8;
+        std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> original;
 
-            StyleSection b;
-            b.id = "b1"; b.name = "PartB";
-            b.startTimeSeconds = 0.0; b.endTimeSeconds = 5.0;
-            b.startBar = 1; b.endBar = 4;
+        StyleSection a;
+        a.id = "a1"; a.name = "PartA";
+        a.startTimeSeconds = 0.0; a.endTimeSeconds = 10.0;
+        a.startBar = 1; a.endBar = 8;
 
-            original["Rock"]["PartA"] = a;
-            original["Jazz"]["PartB"] = b;
+        StyleSection b;
+        b.id = "b1"; b.name = "PartB";
+        b.startTimeSeconds = 0.0; b.endTimeSeconds = 5.0;
+        b.startBar = 1; b.endBar = 4;
 
-            SectionIOHelper::saveToFile(tempFile, original);
+        original["Rock"]["PartA"] = a;
+        original["Jazz"]["PartB"] = b;
 
-            std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> loaded;
-            SectionIOHelper::loadFromFile(tempFile, loaded);
+        SectionIOHelper::saveToFile(tempFile, original);
 
-            expect(loaded.count("Rock") == 1);
-            expect(loaded.count("Jazz") == 1);
-            expect(loaded["Rock"]["PartA"].id == "a1");
-            expect(loaded["Jazz"]["PartB"].id == "b1");
+        std::unordered_map<juce::String, std::unordered_map<juce::String, StyleSection>> loaded;
+        SectionIOHelper::loadFromFile(tempFile, loaded);
 
-            tempFile.deleteFile();
-        }
+        expect(loaded.count("Rock") == 1);
+        expect(loaded.count("Jazz") == 1);
+        expect(loaded["Rock"]["PartA"].id == "a1");
+        expect(loaded["Jazz"]["PartB"].id == "b1");
+
+        tempFile.deleteFile();
     }
 };
 

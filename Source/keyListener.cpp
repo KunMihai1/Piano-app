@@ -63,6 +63,9 @@ void KeyboardListener::resetState()
     this->intToKey.clear();
     this->keyToInt.clear();
     this->allPressedKeys.clear();
+    this->isKeyBoardInput = false;
+    this->startNoteKeyboardInput = 60;
+    this->finishNoteKeyboardInput = 77;
 }
 
 int KeyboardListener::getStartNoteKeyboardInput()

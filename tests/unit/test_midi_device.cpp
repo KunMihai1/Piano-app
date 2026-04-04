@@ -9,8 +9,22 @@ public:
 
     void runTest() override
     {
-        // ---- Constructor Defaults ----
+        testConstructorDefaults();
+        testMinMaxNote();
+        testVolumePerChannel();
+        testReverbPerChannel();
+        testDeviceIndex();
+        testVIDPIDName();
+        testExtractPID();
+        testExtractVID();
+        testDeviceOpenINInvalid();
+        testDeviceOpenOUTInvalid();
+    }
 
+private:
+    // ---- Constructor Defaults ----
+    void testConstructorDefaults()
+    {
         beginTest("Constructor - default volume and reverb");
         {
             MidiDevice device;
@@ -40,9 +54,11 @@ public:
             expect(device.getDeviceIndexIN() == 0);
             expect(device.getDeviceIndexOUT() == 0);
         }
+    }
 
-        // ---- min/max Note ----
-
+    // ---- min/max Note ----
+    void testMinMaxNote()
+    {
         beginTest("set_minNote and get_minNote");
         {
             MidiDevice device;
@@ -64,7 +80,6 @@ public:
         beginTest("getNrKeysAfterInitialized - full range");
         {
             MidiDevice device;
-            // default: min=0, max=127 => 128 keys
             expect(device.getNrKeysAfterInitialized() == 128);
         }
 
@@ -75,15 +90,17 @@ public:
             device.set_maxNote(96);
             expect(device.getNrKeysAfterInitialized() == 61);
         }
+    }
 
-        // ---- Volume per channel ----
-
+    // ---- Volume per channel ----
+    void testVolumePerChannel()
+    {
         beginTest("setVolume / getVolume - channel 1");
         {
             MidiDevice device;
             device.setVolume(75.0f, 1);
             expect(device.getVolume(1) == 75.0f);
-            expect(device.getVolume(16) == 50.0f);  // channel 16 unchanged
+            expect(device.getVolume(16) == 50.0f);
         }
 
         beginTest("setVolume / getVolume - channel 16");
@@ -91,7 +108,7 @@ public:
             MidiDevice device;
             device.setVolume(30.0f, 16);
             expect(device.getVolume(16) == 30.0f);
-            expect(device.getVolume(1) == 50.0f);  // channel 1 unchanged
+            expect(device.getVolume(1) == 50.0f);
         }
 
         beginTest("getVolume - unknown channel returns 50.0");
@@ -99,9 +116,11 @@ public:
             MidiDevice device;
             expect(device.getVolume(5) == 50.0f);
         }
+    }
 
-        // ---- Reverb per channel ----
-
+    // ---- Reverb per channel ----
+    void testReverbPerChannel()
+    {
         beginTest("setReverb / getReverb - channel 1");
         {
             MidiDevice device;
@@ -123,9 +142,11 @@ public:
             MidiDevice device;
             expect(device.getReverb(7) == 50.0f);
         }
+    }
 
-        // ---- Device Index ----
-
+    // ---- Device Index ----
+    void testDeviceIndex()
+    {
         beginTest("setDeviceIN / getDeviceIndexIN");
         {
             MidiDevice device;
@@ -139,9 +160,11 @@ public:
             device.setDeviceOUT(5);
             expect(device.getDeviceIndexOUT() == 5);
         }
+    }
 
-        // ---- VID / PID / Name ----
-
+    // ---- VID / PID / Name ----
+    void testVIDPIDName()
+    {
         beginTest("setVID / getVID");
         {
             MidiDevice device;
@@ -162,13 +185,14 @@ public:
             device.setDeviceName("CT s-300");
             expect(device.getName() == "CT s-300");
         }
+    }
 
-        // ---- extractPID ----
-
+    // ---- extractPID ----
+    void testExtractPID()
+    {
         beginTest("extractPID - valid identifier");
         {
             MidiDevice device;
-            juce::String identifier = "\\\\?\\SWD#MMDEVAPI#MIDII_VID&pid_6803&SomethingElse";
             expect(device.extractPID("some_prefix_pid_6803_suffix") == "6803");
         }
 
@@ -189,9 +213,11 @@ public:
             MidiDevice device;
             expect(device.extractPID("") == "");
         }
+    }
 
-        // ---- extractVID ----
-
+    // ---- extractVID ----
+    void testExtractVID()
+    {
         beginTest("extractVID - valid identifier");
         {
             MidiDevice device;
@@ -209,9 +235,11 @@ public:
             MidiDevice device;
             expect(device.extractVID("") == "");
         }
+    }
 
-        // ---- deviceOpenIN invalid index ----
-
+    // ---- deviceOpenIN invalid index ----
+    void testDeviceOpenINInvalid()
+    {
         beginTest("deviceOpenIN - negative index returns false");
         {
             MidiDevice device;
@@ -225,9 +253,11 @@ public:
             expect(device.deviceOpenIN(999, nullptr) == false);
             expect(device.isOpenIN() == false);
         }
+    }
 
-        // ---- deviceOpenOUT invalid index ----
-
+    // ---- deviceOpenOUT invalid index ----
+    void testDeviceOpenOUTInvalid()
+    {
         beginTest("deviceOpenOUT - negative index returns false");
         {
             MidiDevice device;

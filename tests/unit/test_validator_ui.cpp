@@ -4,80 +4,51 @@
 
 class ValidatorTest : public juce::UnitTest
 {
+
 public:
     ValidatorTest() : juce::UnitTest("Validator", "Unit") {}
 
     void runTest() override
+    {   
+        testMidiStringCompatibilityInt();
+        testDoubleCompatilibityTimeStampDouble();
+        testMidiStringCompatibilityInt();
+        testMidiIntValues();
+        testMidiVelocities();
+    }
+
+private:
+
+    void testDoubleCompatilibityTimeStampDouble()
     {
-        // ---- isValidMidiIntValue ----
-
-        beginTest("isValidMidiIntValue - valid range 0-127");
+        beginTest("isValidMidiDoubleValueTimeStamps - valid within bounds");
         {
-            expect(Validator::isValidMidiIntValue(0) == true);
-            expect(Validator::isValidMidiIntValue(64) == true);
-            expect(Validator::isValidMidiIntValue(127) == true);
+
+            expect(Validator::isValidMidiDoubleValueTimeStamps(0.5, 5.0, 4.0, 6.0) == true);
         }
 
-        beginTest("isValidMidiIntValue - out of range");
+        beginTest("isValidMidiDoubleValueTimeStamps - newTime goes negative");
         {
-            expect(Validator::isValidMidiIntValue(-1) == false);
-            expect(Validator::isValidMidiIntValue(128) == false);
-            expect(Validator::isValidMidiIntValue(-100) == false);
-            expect(Validator::isValidMidiIntValue(999) == false);
+
+            expect(Validator::isValidMidiDoubleValueTimeStamps(-5.0, 1.0, 0.0, 2.0) == false);
         }
 
-        // ---- isValidMidiIntegerVelocities ----
-
-        beginTest("isValidMidiIntegerVelocities - valid velocities");
+        beginTest("isValidMidiDoubleValueTimeStamps - newTime before previous");
         {
-            expect(Validator::isValidMidiIntegerVelocities(0.0) == true);
-            expect(Validator::isValidMidiIntegerVelocities(64.0) == true);
-            expect(Validator::isValidMidiIntegerVelocities(127.0) == true);
+
+            expect(Validator::isValidMidiDoubleValueTimeStamps(-2.0, 5.0, 4.0, 6.0) == false);
         }
 
-        beginTest("isValidMidiIntegerVelocities - invalid velocities");
+        beginTest("isValidMidiDoubleValueTimeStamps - newTime after next");
         {
-            expect(Validator::isValidMidiIntegerVelocities(-1.0) == false);
-            expect(Validator::isValidMidiIntegerVelocities(128.0) == false);
+
+            expect(Validator::isValidMidiDoubleValueTimeStamps(3.0, 5.0, 4.0, 6.0) == false);
         }
+    }
 
-        // ---- isValidMidiIntegerString ----
 
-        beginTest("isValidMidiIntegerString - valid strings");
-        {
-            expect(Validator::isValidMidiIntegerString("0") == true);
-            expect(Validator::isValidMidiIntegerString("127") == true);
-            expect(Validator::isValidMidiIntegerString("-5") == true);
-            expect(Validator::isValidMidiIntegerString("+10") == true);
-            expect(Validator::isValidMidiIntegerString("42") == true);
-        }
-
-        beginTest("isValidMidiIntegerString - invalid: letters");
-        {
-            expect(Validator::isValidMidiIntegerString("abc") == false);
-            expect(Validator::isValidMidiIntegerString("12a") == false);
-        }
-
-        beginTest("isValidMidiIntegerString - invalid: minus/plus not at start");
-        {
-            expect(Validator::isValidMidiIntegerString("5-3") == false);
-            expect(Validator::isValidMidiIntegerString("5+3") == false);
-        }
-
-        beginTest("isValidMidiIntegerString - invalid: double signs");
-        {
-            expect(Validator::isValidMidiIntegerString("++5") == false);
-            expect(Validator::isValidMidiIntegerString("--5") == false);
-        }
-
-        beginTest("isValidMidiIntegerString - invalid: sign only");
-        {
-            expect(Validator::isValidMidiIntegerString("+") == false);
-            expect(Validator::isValidMidiIntegerString("-") == false);
-        }
-
-        // ---- isValidMidiDoubleString ----
-
+    void testMidiStringCompatibilityDouble()
+    {
         beginTest("isValidMidiDoubleString - valid strings");
         {
             expect(Validator::isValidMidiDoubleString("0.5") == true);
@@ -113,33 +84,79 @@ public:
             expect(Validator::isValidMidiDoubleString("+.") == false);
             expect(Validator::isValidMidiDoubleString("-.") == false);
         }
+    }
 
-        // ---- isValidMidiDoubleValueTimeStamps ----
-
-        beginTest("isValidMidiDoubleValueTimeStamps - valid within bounds");
+    void testMidiStringCompatibilityInt()
+    {
+        beginTest("isValidMidiIntegerString - valid strings");
         {
-            
-            expect(Validator::isValidMidiDoubleValueTimeStamps(0.5, 5.0, 4.0, 6.0) == true);
+            expect(Validator::isValidMidiIntegerString("0") == true);
+            expect(Validator::isValidMidiIntegerString("127") == true);
+            expect(Validator::isValidMidiIntegerString("-5") == true);
+            expect(Validator::isValidMidiIntegerString("+10") == true);
+            expect(Validator::isValidMidiIntegerString("42") == true);
         }
 
-        beginTest("isValidMidiDoubleValueTimeStamps - newTime goes negative");
+        beginTest("isValidMidiIntegerString - invalid: letters");
         {
-            
-            expect(Validator::isValidMidiDoubleValueTimeStamps(-5.0, 1.0, 0.0, 2.0) == false);
+            expect(Validator::isValidMidiIntegerString("abc") == false);
+            expect(Validator::isValidMidiIntegerString("12a") == false);
         }
 
-        beginTest("isValidMidiDoubleValueTimeStamps - newTime before previous");
+        beginTest("isValidMidiIntegerString - invalid: minus/plus not at start");
         {
-            
-            expect(Validator::isValidMidiDoubleValueTimeStamps(-2.0, 5.0, 4.0, 6.0) == false);
+            expect(Validator::isValidMidiIntegerString("5-3") == false);
+            expect(Validator::isValidMidiIntegerString("5+3") == false);
         }
 
-        beginTest("isValidMidiDoubleValueTimeStamps - newTime after next");
+        beginTest("isValidMidiIntegerString - invalid: double signs");
         {
-            
-            expect(Validator::isValidMidiDoubleValueTimeStamps(3.0, 5.0, 4.0, 6.0) == false);
+            expect(Validator::isValidMidiIntegerString("++5") == false);
+            expect(Validator::isValidMidiIntegerString("--5") == false);
+        }
+
+        beginTest("isValidMidiIntegerString - invalid: sign only");
+        {
+            expect(Validator::isValidMidiIntegerString("+") == false);
+            expect(Validator::isValidMidiIntegerString("-") == false);
         }
     }
+
+    void testMidiIntValues()
+    {
+        beginTest("isValidMidiIntValue - valid range 0-127");
+        {
+            expect(Validator::isValidMidiIntValue(0) == true);
+            expect(Validator::isValidMidiIntValue(64) == true);
+            expect(Validator::isValidMidiIntValue(127) == true);
+        }
+
+        beginTest("isValidMidiIntValue - out of range");
+        {
+            expect(Validator::isValidMidiIntValue(-1) == false);
+            expect(Validator::isValidMidiIntValue(128) == false);
+            expect(Validator::isValidMidiIntValue(-100) == false);
+            expect(Validator::isValidMidiIntValue(999) == false);
+        }
+    }
+
+
+    void testMidiVelocities()
+    {
+        beginTest("isValidMidiIntegerVelocities - valid velocities");
+        {
+            expect(Validator::isValidMidiIntegerVelocities(0.0) == true);
+            expect(Validator::isValidMidiIntegerVelocities(64.0) == true);
+            expect(Validator::isValidMidiIntegerVelocities(127.0) == true);
+        }
+
+        beginTest("isValidMidiIntegerVelocities - invalid velocities");
+        {
+            expect(Validator::isValidMidiIntegerVelocities(-1.0) == false);
+            expect(Validator::isValidMidiIntegerVelocities(128.0) == false);
+        }
+    }
+
 };
 
 static ValidatorTest validatorTest;
