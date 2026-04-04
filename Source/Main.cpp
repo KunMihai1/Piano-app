@@ -62,6 +62,7 @@ public:
             
         }
         
+        
 
         mainWindow.reset(new MainWindow(getApplicationName()));
     }
