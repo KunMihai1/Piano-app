@@ -142,3 +142,13 @@ std::unordered_map<juce::String, bool>& SectionGroupComponent::getActivationMap(
 {
     return this->activationMap;
 }
+
+CustomToolTip* SectionGroupComponent::getToggleToolTip()
+{
+    return this->toggleToolTip.get();
+}
+
+juce::ToggleButton* SectionGroupComponent::getToggleButton()
+{
+    return this->toggleButton.get();
+}
