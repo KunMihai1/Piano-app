@@ -74,6 +74,11 @@ void StyleSectionComponent::deactivateLastClicked()
     }
 }
 
+juce::OwnedArray<SectionGroupComponent>& StyleSectionComponent::getSectionGroups()
+{
+    return this->sectionGroups;
+}
+
 void StyleSectionComponent::assignCallBacks()
 {
     for (auto* group : sectionGroups)

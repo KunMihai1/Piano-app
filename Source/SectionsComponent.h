@@ -30,12 +30,13 @@ public:
 
     void deactivateLastClicked();
 
+    juce::OwnedArray<SectionGroupComponent>& getSectionGroups();
+
 private:
     juce::OwnedArray<SectionGroupComponent> sectionGroups;
     const std::unordered_map<juce::String, std::function<void()>>& callbacks;
     juce::TextButton* lastClickedButton=nullptr;
     std::unordered_map<juce::String, bool>* lastActivationMap=nullptr;
-    bool isProgramaticClick = false;
 
     void assignCallBacks();
 };

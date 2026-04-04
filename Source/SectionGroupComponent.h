@@ -31,6 +31,10 @@ public:
 
     std::unordered_map<juce::String, bool>& getActivationMap();
 
+    CustomToolTip* getToggleToolTip();
+
+    juce::ToggleButton* getToggleButton();
+
 private:
     juce::Label titleLabel;
     std::vector<std::unique_ptr<juce::TextButton>> buttons;
