@@ -5,12 +5,50 @@
 
 class TrackIOHelperTest : public juce::UnitTest
 {
+
 public:
     TrackIOHelperTest() : juce::UnitTest("TrackIOHelper", "Unit") {}
 
     void runTest() override
     {
 
+        testFoundPercussionTrue();
+        testFoundPercussionFalse();
+        testFoundPercussionEmpty();
+        testFoundPercussionMixedChannels();
+
+        testGetOriginalBpmEmptyFile();
+        testGetOriginalBpmFromTrack();
+        testGetOriginalBpmNoTempo();
+
+        testConvertTicksToSeconds120Bpm();
+        testConvertTicksZeroStaysZero();
+
+
+        testApplyChangesNotePairBasic();
+        testApplyChangesNotePairTimestampShift();
+        testApplyChangesNotePairClampToZero();
+        testApplyChangesNotePairOutOfRange();
+
+        testApplyChangesSequenceBasic();
+        testApplyChangesSequenceOutOfRange();
+
+        testExtractNotePairsBasic();
+        testExtractNotePairsEmpty();
+
+        testSaveLoadBasicRoundtrip();
+        testSaveLoadWithChangesMap();
+        testSaveLoadEmptyFolder();
+        testLoadFromNonExistentFile();
+        testSaveLoadMultipleFolders();
+        
+    }
+
+
+private:
+
+    void testFoundPercussionTrue()
+    {
         beginTest("foundPercussion - returns true for channel 10 notes");
         {
             juce::MidiMessageSequence seq;
@@ -18,7 +56,10 @@ public:
             seq.addEvent(juce::MidiMessage::noteOff(10, 36), 0.5);
             expect(TrackIOHelper::foundPercussion(&seq) == true);
         }
+    }
 
+    void testFoundPercussionFalse()
+    {
         beginTest("foundPercussion - returns false for non-channel-10 notes");
         {
             juce::MidiMessageSequence seq;
@@ -26,14 +67,19 @@ public:
             seq.addEvent(juce::MidiMessage::noteOff(1, 60), 0.5);
             expect(TrackIOHelper::foundPercussion(&seq) == false);
         }
+    }
 
+    void testFoundPercussionEmpty()
+    {
         beginTest("foundPercussion - returns false for empty sequence");
         {
             juce::MidiMessageSequence seq;
             expect(TrackIOHelper::foundPercussion(&seq) == false);
         }
+    }
 
-
+    void testFoundPercussionMixedChannels()
+    {
         //assumption is here that a midi file has been correctly been edited(this part isn't for my app to control)
         //in any situation possible, if a single track which should have all the notes on the same channel
         //has mixed channels, then i can't make neither assumption and correctly take a decision if it's
@@ -49,17 +95,19 @@ public:
             seq.addEvent(juce::MidiMessage::noteOff(10, 42), 1.5);
             expect(TrackIOHelper::foundPercussion(&seq) == true);
         }
+    }
 
-        
-
-
-
+    void testGetOriginalBpmEmptyFile()
+    {
         beginTest("getOriginalBpmFromFile - returns 120 for empty MIDI file");
         {
             juce::MidiFile midiFile;
             expect(TrackIOHelper::getOriginalBpmFromFile(midiFile) == 120.0);
         }
+    }
 
+    void testGetOriginalBpmFromTrack()
+    {
         beginTest("getOriginalBpmFromFile - reads tempo from first track");
         {
             juce::MidiFile midiFile;
@@ -75,11 +123,14 @@ public:
 
             midiFile.addTrack(tempoTrack);
             double bpm = TrackIOHelper::getOriginalBpmFromFile(midiFile);
-            
+
             //0.5 tolerance
             expect(std::abs(bpm - 140.0) < 0.5);
         }
+    }
 
+    void testGetOriginalBpmNoTempo()
+    {
         beginTest("getOriginalBpmFromFile - returns 120 if no tempo event");
         {
             juce::MidiFile midiFile;
@@ -88,9 +139,10 @@ public:
             midiFile.addTrack(track);
             expect(TrackIOHelper::getOriginalBpmFromFile(midiFile) == 120.0);
         }
+    }
 
-        
-
+    void testConvertTicksToSeconds120Bpm()
+    {
         beginTest("convertTicksToSeconds - converts correctly at 120 BPM");
         {
             juce::MidiFile midiFile;
@@ -110,7 +162,10 @@ public:
             // At 120 BPM, 960 ticks = 0.5 seconds
             expect(std::abs(convertedTime - 0.5) < 0.001);
         }
+    }
 
+    void testConvertTicksZeroStaysZero()
+    {
         beginTest("convertTicksToSeconds - tick 0 stays at 0");
         {
             juce::MidiFile midiFile;
@@ -127,7 +182,10 @@ public:
             auto* seq = midiFile.getTrack(0);
             expect(seq->getEventPointer(0)->message.getTimeStamp() == 0.0);
         }
+    }
 
+    void testApplyChangesNotePairBasic()
+    {
         beginTest("applyChangesToASequence (NotePair) - applies note and velocity changes");
         {
             juce::MidiMessageSequence seq;
@@ -139,7 +197,7 @@ public:
             std::unordered_map<int, MidiChangeInfo> changes;
             MidiChangeInfo info;
             info.oldTimeStamp = 1.0;
-            info.newTimeStamp = 1.0; 
+            info.newTimeStamp = 1.0;
             info.newNumber = 67;
             info.newVelocity = 110;
             changes[0] = info;
@@ -148,6 +206,10 @@ public:
             expect(pairs[0].noteOn->getVelocity() == 110);
             expect(pairs[0].noteOff->getNoteNumber() == 67);
         }
+    }
+
+    void testApplyChangesNotePairTimestampShift()
+    {
         beginTest("applyChangesToASequence (NotePair) - shifts timestamp by delta");
         {
             juce::MidiMessageSequence seq;
@@ -159,14 +221,18 @@ public:
             std::unordered_map<int, MidiChangeInfo> changes;
             MidiChangeInfo info;
             info.oldTimeStamp = 5.0;
-            info.newTimeStamp = 3.0;  
+            info.newTimeStamp = 3.0;
             info.newNumber = 60;
             info.newVelocity = 100;
             changes[0] = info;
             TrackIOHelper::applyChangesToASequence(pairs, changes);
             expect(std::abs(pairs[0].noteOn->getTimeStamp() - 3.0) < 0.001);
-            expect(std::abs(pairs[0].noteOff->getTimeStamp() - 4.0) < 0.001); 
+            expect(std::abs(pairs[0].noteOff->getTimeStamp() - 4.0) < 0.001);
         }
+    }
+
+    void testApplyChangesNotePairClampToZero()
+    {
         beginTest("applyChangesToASequence (NotePair) - clamps to 0 when shifted before start");
         {
             juce::MidiMessageSequence seq;
@@ -178,10 +244,10 @@ public:
             std::unordered_map<int, MidiChangeInfo> changes;
             MidiChangeInfo info;
             info.oldTimeStamp = 1.0;
-            info.newTimeStamp = 5.0;  
+            info.newTimeStamp = 5.0;
 
             info.oldTimeStamp = 1.0;
-            info.newTimeStamp = 3.0;  
+            info.newTimeStamp = 3.0;
 
             info.oldTimeStamp = 5.0;
             info.newTimeStamp = 0.0;
@@ -189,9 +255,13 @@ public:
             info.newVelocity = 100;
             changes[0] = info;
             TrackIOHelper::applyChangesToASequence(pairs, changes);
-            expect(pairs[0].noteOn->getTimeStamp() == 0.0);        
-            expect(std::abs(pairs[0].noteOff->getTimeStamp() - 1.0) < 0.001); 
+            expect(pairs[0].noteOn->getTimeStamp() == 0.0);
+            expect(std::abs(pairs[0].noteOff->getTimeStamp() - 1.0) < 0.001);
         }
+    }
+
+    void testApplyChangesNotePairOutOfRange()
+    {
         beginTest("applyChangesToASequence (NotePair) - out of range row is ignored");
         {
             juce::MidiMessageSequence seq;
@@ -208,9 +278,12 @@ public:
             info.newTimeStamp = 0.0;
             changes[99] = info;
             TrackIOHelper::applyChangesToASequence(pairs, changes);
-            expect(pairs[0].noteOn->getNoteNumber() == 60);  
+            expect(pairs[0].noteOn->getNoteNumber() == 60);
         }
+    }
 
+    void testApplyChangesSequenceBasic()
+    {
         beginTest("applyChangesToASequence - applies note number and velocity changes");
         {
             juce::MidiMessageSequence seq;
@@ -227,14 +300,14 @@ public:
             info.oldNumber = 60;
             info.oldTimeStamp = 1.0;
             info.oldVelocity = 100;
-            info.newNumber = 64;        
-            info.newTimeStamp = 1.0;    
+            info.newNumber = 64;
+            info.newTimeStamp = 1.0;
             info.newVelocity = 80;
             changes[0] = info;
 
             TrackIOHelper::applyChangesToASequence(seq, changes);
 
-            
+
             bool found = false;
             for (int i = 0; i < seq.getNumEvents(); ++i)
             {
@@ -249,7 +322,10 @@ public:
             }
             expect(found);
         }
+    }
 
+    void testApplyChangesSequenceOutOfRange()
+    {
         beginTest("applyChangesToASequence - out of range row is ignored");
         {
             juce::MidiMessageSequence seq;
@@ -267,15 +343,16 @@ public:
             info.newVelocity = 80;
             info.oldTimeStamp = 0.0;
             info.newTimeStamp = 0.0;
-            changes[99] = info;  
+            changes[99] = info;
 
             TrackIOHelper::applyChangesToASequence(seq, changes);
 
             expect(seq.getEventPointer(0)->message.getNoteNumber() == 60);
         }
+    }
 
-        
-
+    void testExtractNotePairsBasic()
+    {
         beginTest("extractNotePairEvents - extracts matched note on/off pairs");
         {
             juce::MidiMessageSequence seq;
@@ -294,7 +371,10 @@ public:
             expect(pairs[1].noteOn->getNoteNumber() == 64);
             expect(pairs[1].noteOff->getNoteNumber() == 64);
         }
+    }
 
+    void testExtractNotePairsEmpty()
+    {
         beginTest("extractNotePairEvents - empty sequence gives empty result");
         {
             juce::MidiMessageSequence seq;
@@ -302,12 +382,13 @@ public:
             TrackIOHelper::extractNotePairEvents(seq, pairs);
             expect(pairs.empty());
         }
+    }
 
-        
-
+    void testSaveLoadBasicRoundtrip()
+    {
         beginTest("saveToFile and loadFromFile - basic roundtrip");
         {
-            
+
             auto tempMidiFile = juce::File::createTempFile(".mid");
             {
                 juce::MidiFile midiFile;
@@ -326,7 +407,7 @@ public:
                     midiFile.writeTo(outStream);
             }
 
-            
+
             std::unordered_map<juce::String, std::deque<TrackEntry>> groupedTracks;
 
             TrackEntry entry;
@@ -338,16 +419,16 @@ public:
 
             groupedTracks["MyFolder"].push_back(entry);
 
-            
+
             auto tempJsonFile = juce::File::createTempFile(".json");
             TrackIOHelper::saveToFile(tempJsonFile, groupedTracks);
 
-            
+
             std::unordered_map<juce::String, std::deque<TrackEntry>> loadedTracks;
             std::vector<juce::String> loadedKeys;
             TrackIOHelper::loadFromFile(tempJsonFile, loadedTracks, loadedKeys);
 
-            
+
             expect((int)loadedKeys.size() == 1);
             expect(loadedKeys[0] == "MyFolder");
             expect(loadedTracks.count("MyFolder") == 1);
@@ -361,7 +442,10 @@ public:
             tempJsonFile.deleteFile();
             tempMidiFile.deleteFile();
         }
+    }
 
+    void testSaveLoadWithChangesMap()
+    {
         beginTest("saveToFile and loadFromFile - with non empty changes map");
         {
 
@@ -454,7 +538,10 @@ public:
             tempJsonFile.deleteFile();
             tempMidiFile.deleteFile();
         }
+    }
 
+    void testSaveLoadEmptyFolder()
+    {
         beginTest("saveToFile and loadFromFile - empty folder survives save-load");
         {
             auto tempJsonFile = juce::File::createTempFile(".json");
@@ -474,7 +561,10 @@ public:
 
             tempJsonFile.deleteFile();
         }
+    }
 
+    void testLoadFromNonExistentFile()
+    {
         beginTest("loadFromFile - non-existent file does nothing");
         {
             juce::File nonExistent("C:\\this_track_file_does_not_exist.json");
@@ -486,7 +576,10 @@ public:
             expect(loadedTracks.empty());
             expect(loadedKeys.empty());
         }
+    }
 
+    void testSaveLoadMultipleFolders()
+    {
         beginTest("saveToFile and loadFromFile - multiple folders with tracks");
         {
             //create two temp MIDI files
@@ -789,6 +882,7 @@ private:
 
         tempFile.deleteFile();
     }
+
 };
 
 static SectionIOHelperTest sectionIOHelperTest;
