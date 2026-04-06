@@ -11,24 +11,24 @@ struct SoundSettings
 	int reverb=64;
 	int volume=64;
 
-	int brightness = 64;
-	int chours = 64;
-	int expression = 64;
-	int resonance = 64;
+	int brightness = 0;
+	int chours = 0;
+	int expression = 0;
+	int resonance = 0;
 	bool sustainToggle = 0;
 
-	int attack = 64;
-	int decay = 64;
-	int release = 64;
-	int vibrato = 64;
+	int attack = 0;
+	int decay = 0;
+	int release = 0;
+	int vibrato = 0;
 
-	int delay = 64;
-	int pan = 64;
+	int delay = 0;
+	int pan = 0;
 
-	int distortion = 64;
-	int filterTrack = 64;
-	int tremolo = 64;
-	int randomMod = 64;
+	int distortion = 0;
+	int filterTrack = 0;
+	int tremolo = 0;
+	int randomMod = 0;
 
 };
 
