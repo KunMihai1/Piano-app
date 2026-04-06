@@ -6,6 +6,7 @@ class OverlayComponent : public juce::Component
 {
 public:
     std::function<void()> onSettingsClick;
+    std::function<void()> onEffectsClick;
     std::function<bool()> windowExists;
     std::function<void()> closeWindow;
     std::function<void()> bringSeparateWindowFront;
@@ -24,6 +25,8 @@ public:
 
     juce::TextButton& getSettingsButton();
 
+    juce::TextButton& getEffectsButton();
+
     void mouseDown(const juce::MouseEvent& ev) override;
 
     bool keyPressed(const juce::KeyPress& key) override;
@@ -36,6 +39,7 @@ private:
     juce::Component menuPanel;
     juce::TextButton settingsButton;
     juce::TextButton exitButton;
+    juce::TextButton effectsButton;
 
     // handle keyboard when overlay has focus
     

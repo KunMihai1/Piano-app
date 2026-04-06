@@ -237,11 +237,11 @@ public:
                 dev.getAvailableDevicesMidiOUT(devs);
                 dev.deviceOpenOUT(outputDeviceIndex);
 
-                dev.setVolume(75.0f, 1);
-                dev.changeVolumeInstrument(1);  // should not crash, sends CC7
+                dev.setVolume(75, 1);
+                dev.sendMidiCC(1,7,dev.getVolume(1));  // should not crash, sends CC7
 
-                dev.setVolume(50.0f, 16);
-                dev.changeVolumeInstrument(16);  // sends CC7 on channel 16
+                dev.setVolume(50, 16);
+                dev.sendMidiCC(16,7,dev.getVolume(16));  // sends CC7 on channel 16
 
                 dev.deviceCloseOUT();
             }
@@ -257,11 +257,11 @@ public:
                 dev.getAvailableDevicesMidiOUT(devs);
                 dev.deviceOpenOUT(outputDeviceIndex);
 
-                dev.setReverb(60.0f, 1);
-                dev.changeReverbInstrument(1);  // should not crash, sends CC91
+                dev.setReverb(60, 1);
+                dev.sendMidiCC(1,91,dev.getReverb(1));  // should not crash, sends CC91
 
-                dev.setReverb(30.0f, 16);
-                dev.changeReverbInstrument(16);  // sends CC91 on channel 16
+                dev.setReverb(30, 16);
+                dev.sendMidiCC(16,91,dev.getReverb(16));  // sends CC91 on channel 16
 
                 dev.deviceCloseOUT();
             }

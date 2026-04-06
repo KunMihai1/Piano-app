@@ -14,10 +14,10 @@ public:
         beginTest("Constructor - default volume and reverb");
         {
             MidiDevice device;
-            expect(device.getVolume(1) == 50.0f);
-            expect(device.getVolume(16) == 50.0f);
-            expect(device.getReverb(1) == 50.0f);
-            expect(device.getReverb(16) == 50.0f);
+            expect(device.getVolume(1) == 64);
+            expect(device.getVolume(16) == 64);
+            expect(device.getReverb(1) == 64);
+            expect(device.getReverb(16) == 64);
         }
 
         beginTest("Constructor - default note range");
@@ -81,23 +81,23 @@ public:
         beginTest("setVolume / getVolume - channel 1");
         {
             MidiDevice device;
-            device.setVolume(75.0f, 1);
-            expect(device.getVolume(1) == 75.0f);
-            expect(device.getVolume(16) == 50.0f);  // channel 16 unchanged
+            device.setVolume(75, 1);
+            expect(device.getVolume(1) == 75);
+            expect(device.getVolume(16) == 64);  // channel 16 unchanged
         }
 
         beginTest("setVolume / getVolume - channel 16");
         {
             MidiDevice device;
-            device.setVolume(30.0f, 16);
-            expect(device.getVolume(16) == 30.0f);
-            expect(device.getVolume(1) == 50.0f);  // channel 1 unchanged
+            device.setVolume(30, 16);
+            expect(device.getVolume(16) == 30);
+            expect(device.getVolume(1) == 64);  // channel 1 unchanged
         }
 
         beginTest("getVolume - unknown channel returns 50.0");
         {
             MidiDevice device;
-            expect(device.getVolume(5) == 50.0f);
+            expect(device.getVolume(5) == 50);
         }
 
         // ---- Reverb per channel ----
@@ -105,23 +105,23 @@ public:
         beginTest("setReverb / getReverb - channel 1");
         {
             MidiDevice device;
-            device.setReverb(80.0f, 1);
-            expect(device.getReverb(1) == 80.0f);
-            expect(device.getReverb(16) == 50.0f);
+            device.setReverb(80, 1);
+            expect(device.getReverb(1) == 80);
+            expect(device.getReverb(16) == 64);
         }
 
         beginTest("setReverb / getReverb - channel 16");
         {
             MidiDevice device;
-            device.setReverb(25.0f, 16);
-            expect(device.getReverb(16) == 25.0f);
-            expect(device.getReverb(1) == 50.0f);
+            device.setReverb(25, 16);
+            expect(device.getReverb(16) == 25);
+            expect(device.getReverb(1) == 64);
         }
 
         beginTest("getReverb - unknown channel returns 50.0");
         {
             MidiDevice device;
-            expect(device.getReverb(7) == 50.0f);
+            expect(device.getReverb(7) == 50);
         }
 
         // ---- Device Index ----
