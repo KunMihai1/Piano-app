@@ -35,6 +35,8 @@ public:
 
     std::function<void()> onWindowClosed;
 
+    std::function<void(int ccNumber, int value)> onValueChangeSync;
+
     /**
      * @brief Constructor.
      * @param mdevice Reference to the MIDI device object.
@@ -54,10 +56,10 @@ public:
 
 
     /** @brief Sets the volume slider to a specific value. */
-    void volumeSliderSetValue(double value);
+    void volumeSliderSetValue(double value, juce::NotificationType notify=juce::sendNotification);
 
     /** @brief Sets the reverb slider to a specific value. */
-    void reverbSliderSetValue(double value);
+    void reverbSliderSetValue(double value, juce::NotificationType notify = juce::sendNotification);
 
     /** @brief Called when the window visibility changes. */
     void visibilityChanged() override;
@@ -70,6 +72,8 @@ public:
 
     /** @brief Timer callback to update device lists if they change. */
     void timerCallback() override;
+
+    int getCurrentChannel();
 
 private:
 
