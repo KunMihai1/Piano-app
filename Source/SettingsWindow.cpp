@@ -112,14 +112,14 @@ bool MIDIWindow::keyPressed(const juce::KeyPress& key, juce::Component* comp)
     return false;
 }
 
-void MIDIWindow::volumeSliderSetValue(double value)
+void MIDIWindow::volumeSliderSetValue(double value, juce::NotificationType notify)
 {
-    this->volumeSlider.setValue(value);
+    this->volumeSlider.setValue(value,notify);
 }
 
-void MIDIWindow::reverbSliderSetValue(double value)
+void MIDIWindow::reverbSliderSetValue(double value, juce::NotificationType notify)
 {
-    this->reverbSlider.setValue(value);
+    this->reverbSlider.setValue(value,notify);
 }
 
 void MIDIWindow::visibilityChanged()
@@ -196,6 +196,14 @@ void MIDIWindow::timerCallback()
     }
 
 
+}
+
+int MIDIWindow::getCurrentChannel()
+{
+    if (currentInstrumentSettingsCB.getText().equalsIgnoreCase("First instrument"))
+        return 1;
+    else if (currentInstrumentSettingsCB.getText().equalsIgnoreCase("Second instrument"))
+        return 16;
 }
 
 int MIDIWindow::getCorrectChannel(juce::String& text)
@@ -357,18 +365,20 @@ void MIDIWindow::slidersInit()
         if (propertyFile)
         {
             if (channel==1)
-                propertyFile->setValue("midiVolumeFirst", volumeSlider.getValue());
-            else propertyFile->setValue("midiVolumeSecond", volumeSlider.getValue());
+                propertyFile->setValue("midiVolumeFirst", (int)volumeSlider.getValue());
+            else propertyFile->setValue("midiVolumeSecond", (int)volumeSlider.getValue());
 
             propertyFile->saveIfNeeded();
         }
-        MIDIDevice.setVolume(volumeSlider.getValue(),channel);
+        MIDIDevice.setVolume((int)volumeSlider.getValue(),channel);
 
+        if (onValueChangeSync)
+            onValueChangeSync(7,(int)volumeSlider.getValue());
         
 
         if (isMidiDeviceOpen && isMidiDeviceOpen())
         {
-            MIDIDevice.changeVolumeInstrument(channel);
+            MIDIDevice.sendMidiCC(channel, 7, (int)volumeSlider.getValue());
         }
     };
 
@@ -378,17 +388,20 @@ void MIDIWindow::slidersInit()
         if (propertyFile)
         {
             if(channel==1)
-                propertyFile->setValue("midiReverbFirst", reverbSlider.getValue());
+                propertyFile->setValue("midiReverbFirst", (int)reverbSlider.getValue());
             else if(channel==16)
-                propertyFile->setValue("midiReverbSecond", reverbSlider.getValue());
+                propertyFile->setValue("midiReverbSecond", (int)reverbSlider.getValue());
 
             propertyFile->saveIfNeeded();
         }
-        MIDIDevice.setReverb(reverbSlider.getValue(),channel);
+        MIDIDevice.setReverb((int)reverbSlider.getValue(),channel);
+
+        if (onValueChangeSync)
+            onValueChangeSync(91, (int)volumeSlider.getValue());
 
         if (isMidiDeviceOpen && isMidiDeviceOpen())
         {
-            MIDIDevice.changeReverbInstrument(channel);
+            MIDIDevice.sendMidiCC(channel,91,(int)reverbSlider.getValue());
         }
     };
 }

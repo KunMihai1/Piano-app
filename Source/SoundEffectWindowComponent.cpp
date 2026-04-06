@@ -117,13 +117,13 @@ EffectKnobComponent::EffectKnobComponent(const juce::String& name,
     nameLabel.setText(name, juce::dontSendNotification);
     nameLabel.setJustificationType(juce::Justification::centred);
     nameLabel.setColour(juce::Label::textColourId, subtitleText);
-    nameLabel.setFont(juce::FontOptions(13.0f));
+    nameLabel.setFont(juce::FontOptions(14.0f));
     addAndMakeVisible(nameLabel);
 
     valueLabel.setText(juce::String((int)knob.getValue()), juce::dontSendNotification);
     valueLabel.setJustificationType(juce::Justification::centred);
     valueLabel.setColour(juce::Label::textColourId, titleText);
-    valueLabel.setFont(juce::FontOptions(14.0f));
+    valueLabel.setFont(juce::FontOptions(15.0f));
     addAndMakeVisible(valueLabel);
 }
 
@@ -255,10 +255,25 @@ void SustainToggleComponent::resized()
 //==============================================================================
 SoundEffectContentComponent::SoundEffectContentComponent()
     : brightnessKnob ("Brightness",  74, accent1),
-      expressionKnob ("Expression",  11, accent2),
-      chorusKnob     ("Chorus",      93, accent3),
-      resonanceKnob  ("Resonance",   71, accent4),
-      sustainToggle  ()
+      expressionKnob ("Expression",  11, accent1),
+      chorusKnob     ("Chorus",      93, accent1),
+      resonanceKnob  ("Resonance",   71, accent1),
+      sustainToggle  (),
+      // Line 2 – Envelope
+      attackKnob     ("Attack",      73, accent5),
+      decayKnob      ("Decay",       75, accent5),
+      releaseKnob    ("Release",     72, accent5),
+      vibratoKnob    ("Vibrato",      1, accent5),
+      // Line 3 – Space
+      volumeKnob     ("Volume",      7,  accent3),
+      reverbKnob     ("Reverb", 91, accent3),
+      delayKnob      ("Delay",       94, accent3),
+      panKnob        ("Pan",         10, accent3),
+      // Line 4 – Modulation
+      distortionKnob ("Distortion",  80, accent6),
+      filterTrackKnob("Filter",      76, accent6),
+      tremoloKnob    ("Tremolo",     92, accent6),
+      randomModKnob  ("Random Mod",  95, accent6)
 {
     // --- header ---
     headerLabel.setText("Sound Effects", juce::dontSendNotification);
@@ -292,11 +307,29 @@ SoundEffectContentComponent::SoundEffectContentComponent()
     };
     addAndMakeVisible(channelSelector);
 
-    // --- knobs ---
+    // --- Line 1 knobs: Tone ---
     addAndMakeVisible(brightnessKnob);
     addAndMakeVisible(expressionKnob);
     addAndMakeVisible(chorusKnob);
     addAndMakeVisible(resonanceKnob);
+
+    // --- Line 2 knobs: Envelope ---
+    addAndMakeVisible(attackKnob);
+    addAndMakeVisible(decayKnob);
+    addAndMakeVisible(releaseKnob);
+    addAndMakeVisible(vibratoKnob);
+
+    // --- Line 3 knobs: Space ---
+    addAndMakeVisible(volumeKnob);
+    addAndMakeVisible(reverbKnob);
+    addAndMakeVisible(delayKnob);
+    addAndMakeVisible(panKnob);
+
+    // --- Line 4 knobs: Modulation ---
+    addAndMakeVisible(distortionKnob);
+    addAndMakeVisible(filterTrackKnob);
+    addAndMakeVisible(tremoloKnob);
+    addAndMakeVisible(randomModKnob);
 
     // --- sustain ---
     addAndMakeVisible(sustainToggle);
@@ -322,40 +355,111 @@ void SoundEffectContentComponent::paint(juce::Graphics& g)
     g.setColour(separator);
     g.fillRect(16, 52, getWidth() - 32, 1);
 
-    // Horizontal separator above sustain
-    auto knobsBottom = 60 + (int)((getHeight() - 60 - 80) * 0.85f);
-    g.fillRect(16, knobsBottom + 4, getWidth() - 32, 1);
+    // --- Row section labels ---
+    // We compute the same layout metrics used in resized()
+    const int margin        = 16;
+    const int headerH       = 36;
+    const int postHeaderGap  = 14;
+    const int sustainH      = 64;
+    const int sustainGap    = 10;
+    const int rowLabelW     = 22;
+    const int numRows       = 4;
+
+    const int topOfRows  = margin + headerH + postHeaderGap;
+    const int bottomLimit = getHeight() - margin - sustainH - sustainGap;
+    const int totalRowsH = bottomLimit - topOfRows;
+    const int rowH       = totalRowsH / numRows;
+
+    const juce::String rowNames[] = { "TONE", "ENVELOPE", "SPACE", "MODULATION" };
+    const juce::Colour rowAccents[] = { accent1, accent5, accent3, accent6 };
+
+    g.setFont(juce::FontOptions(16.0f));
+
+    for (int i = 0; i < numRows; ++i)
+    {
+        int rowY = topOfRows + i * rowH;
+
+        // Subtle separator line above each row (skip the first)
+        if (i > 0)
+        {
+            g.setColour(separator);
+            g.fillRect(margin, rowY, getWidth() - margin * 2, 1);
+        }
+
+        // Vertical accent bar
+        g.setColour(rowAccents[i].withAlpha(0.5f));
+        g.fillRoundedRectangle((float)margin, (float)(rowY + 8),
+                               3.0f, (float)(rowH - 16), 1.5f);
+
+        // Rotated row label
+        g.setColour(rowLabel);
+        g.saveState();
+        // Position label centred on the left margin
+        float labelCentreX = (float)(margin + 11);
+        float labelCentreY = (float)(rowY + rowH / 2);
+        g.addTransform(juce::AffineTransform::rotation(
+            -juce::MathConstants<float>::halfPi, labelCentreX, labelCentreY));
+        g.drawText(rowNames[i],
+                   (int)(labelCentreX - rowH / 2), (int)(labelCentreY - 8),
+                   rowH, 16, juce::Justification::centred);
+        g.restoreState();
+    }
+
+    // Separator above sustain
+    int sustainY = bottomLimit + 2;
+    g.setColour(separator);
+    g.fillRect(margin, sustainY, getWidth() - margin * 2, 1);
 }
 
 void SoundEffectContentComponent::resized()
 {
-    auto area = getLocalBounds().reduced(16);
+    const int margin        = 16;
+    const int headerH       = 36;
+    const int postHeaderGap = 14;
+    const int sustainH      = 64;
+    const int sustainGap    = 10;
+    const int rowLabelW     = 22;   // space reserved for the painted row label
+    const int numRows       = 4;
+
+    auto area = getLocalBounds().reduced(margin);
 
     // --- header row: title on left, channel selector on right ---
-    auto headerRow = area.removeFromTop(36);
+    auto headerRow = area.removeFromTop(headerH);
     headerLabel.setBounds(headerRow.removeFromLeft(180));
 
     auto selectorArea = headerRow.removeFromRight(200);
     channelLabel.setBounds(selectorArea.removeFromLeft(60));
     channelSelector.setBounds(selectorArea.reduced(0, 4));
 
-    area.removeFromTop(20);  // spacing
+    area.removeFromTop(postHeaderGap);
 
-    // --- 4 knobs in a row ---
-    auto sustainHeight = 70;
-    auto knobsArea = area.removeFromTop(area.getHeight() - sustainHeight - 12);
-    int knobWidth = knobsArea.getWidth() / 4;
+    // --- Reserve space for sustain at the bottom ---
+    auto sustainArea = area.removeFromBottom(sustainH);
+    area.removeFromBottom(sustainGap);
 
-    brightnessKnob.setBounds (knobsArea.removeFromLeft(knobWidth));
-    expressionKnob.setBounds (knobsArea.removeFromLeft(knobWidth));
-    chorusKnob.setBounds     (knobsArea.removeFromLeft(knobWidth));
-    resonanceKnob.setBounds  (knobsArea);
+    // --- 4 rows of 4 knobs ---
+    int rowH = area.getHeight() / numRows;
 
-    area.removeFromTop(12);  // spacing
+    auto layoutRow = [&](juce::Rectangle<int> rowArea,
+                         EffectKnobComponent& k1, EffectKnobComponent& k2,
+                         EffectKnobComponent& k3, EffectKnobComponent& k4)
+    {
+        // Skip the painted label zone on the left
+        rowArea.removeFromLeft(rowLabelW);
+        int knobW = rowArea.getWidth() / 4;
+        k1.setBounds(rowArea.removeFromLeft(knobW));
+        k2.setBounds(rowArea.removeFromLeft(knobW));
+        k3.setBounds(rowArea.removeFromLeft(knobW));
+        k4.setBounds(rowArea);
+    };
+
+    layoutRow(area.removeFromTop(rowH), brightnessKnob, expressionKnob,  chorusKnob,    resonanceKnob);
+    layoutRow(area.removeFromTop(rowH), attackKnob,     decayKnob,       releaseKnob,   vibratoKnob);
+    layoutRow(area.removeFromTop(rowH),  volumeKnob, reverbKnob,  delayKnob,       panKnob);
+    layoutRow(area,                     distortionKnob, filterTrackKnob, tremoloKnob,   randomModKnob);
 
     // --- sustain toggle centred ---
-    auto sustainArea = area;
-    int sustainWidth = juce::jmin(280, sustainArea.getWidth());
+    int sustainWidth = juce::jmin(320, sustainArea.getWidth());
     sustainToggle.setBounds(sustainArea.withSizeKeepingCentre(sustainWidth, sustainArea.getHeight()));
 }
 
@@ -363,8 +467,8 @@ void SoundEffectContentComponent::resized()
 //==============================================================================
 //  SoundEffectWindow  (DocumentWindow)
 //==============================================================================
-SoundEffectWindow::SoundEffectWindow()
-    : juce::DocumentWindow("Sound Effects",
+SoundEffectWindow::SoundEffectWindow(juce::PropertiesFile* prop) 
+    :propertyFile{ prop }, juce::DocumentWindow("Sound Effects",
                            background,
                            DocumentWindow::closeButton)
 {
@@ -379,7 +483,7 @@ SoundEffectWindow::SoundEffectWindow()
     content = new SoundEffectContentComponent();
     setContentOwned(content, false);
 
-    setBounds(250, 150, 520, 380);
+    setBounds(200, 80, 580, 720);
     setVisible(true);
 
     addKeyListener(this);

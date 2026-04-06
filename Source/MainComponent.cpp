@@ -264,97 +264,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
             overlayWindow->toFront(true);
 
 
-            overlayWindow->onRequestClose = [this]()
-            {
-                if (overlayWindow)
-                {
-                    overlayShouldBeVisible = false;
-                    overlayWindow->removeFromDesktop();
-                    overlayWindow.reset();
-                }
-            };
-
-            overlayWindow->setWindowFlag = [this]()
-            {
-                overlayShouldBeVisible = false;
-            };
-
-            overlayWindow->bringSeparateWindowFront = [this]()
-            {
-                if (midiWindow)
-                {
-                    midiWindow->toFront(true);
-                    midiWindow->grabKeyboardFocus();
-                }
-
-                if (soundEffectWindow)
-                {
-                    soundEffectWindow->toFront(true);
-                    soundEffectWindow->grabKeyboardFocus();
-                }
-            };
-
-            overlayWindow->onSettingsClick = [this]()
-            {
-
-                midiWindowShouldBeVisible = true;
-
-                if (!midiWindow)
-                {
-                    midiWindow = std::make_unique<MIDIWindow>(
-                        this->MIDIDevice, devicesIN, devicesOUT, propertiesFile);
-
-
-                    midiWindow->setAlwaysOnTop(true);
-                    midiWindow->toFront(true);
-
-                    midiWindow->setVisible(true);
-
-                    midiWindow->onWindowClosed = [this]()
-                    {
-                        midiWindowShouldBeVisible = false;
-                        midiWindow.reset();
-                    };
-
-                    midiWindow->isMidiDeviceOpen = [this]()
-                    {
-                        return !playButton.isVisible();
-                    };
-
-                    loadSettings();
-                }
-                else
-                {
-                    midiWindow->setVisible(true);
-                    midiWindow->toFront(true);
-                }
-            };
-
-            overlayWindow->onEffectsClick = [this]()
-            {
-                soundEffecttWindowShouldBeVisible = true;
-
-                if (!soundEffectWindow)
-                {
-                    soundEffectWindow = std::make_unique<SoundEffectWindow>();
-
-                    soundEffectWindow->setAlwaysOnTop(true);
-                    soundEffectWindow->toFront(true);
-                    soundEffectWindow->setVisible(true);
-
-                    soundEffectWindow->onWindowClosed = [this]()
-                    {
-                        soundEffecttWindowShouldBeVisible = false;
-                        soundEffectWindow.reset();
-                    };
-
-                   
-                }
-                else {
-                    soundEffectWindow->setVisible(true);
-                    soundEffectWindow->toFront(true);
-                }
-            };
+            setCallBacksForOverlayWindow();
 
             overlayWindow->grabKeyboardFocus();
         }
@@ -481,7 +391,7 @@ void MainComponent::populateUpdateComboBoxDevices()
         juce::String identifier = dev.second;
         juce::String PID = MIDIDevice.extractPID(identifier);
         juce::String VID = MIDIDevice.extractVID(identifier);
-        if (dataBase.deviceExists(VID, PID)==-1)
+        if (dataBase.deviceExists(VID, PID)==false)
             continue;
 
         if (i == 1)
@@ -553,27 +463,51 @@ void MainComponent::loginWindowInitialize()
 
 }
 
+void MainComponent::loadEffectsFromFile()
+{
+    auto load = [&](const juce::String& name, auto setter)
+    {
+        int first = propertiesFile->getIntValue(name + "First", 64);
+        int second = propertiesFile->getIntValue(name + "Second", 64);
+
+        setter(first, 1);   // Channel 1
+        setter(second, 16); // Channel 16
+    };
+
+    // Line 1
+    load("midiBrightness", [&](int v, int ch) { MIDIDevice.setBrightness(v, ch); });
+    load("midiExpression", [&](int v, int ch) { MIDIDevice.setExpression(v, ch); });
+    load("midiChorus", [&](int v, int ch) { MIDIDevice.setChorus(v, ch); });
+    load("midiResonance", [&](int v, int ch) { MIDIDevice.setResonance(v, ch); });
+
+    // Line 2
+    load("midiAttack", [&](int v, int ch) { MIDIDevice.setAttack(v, ch); });
+    load("midiDecay", [&](int v, int ch) { MIDIDevice.setDecay(v, ch); });
+    load("midiRelease", [&](int v, int ch) { MIDIDevice.setRelease(v, ch); });
+    load("midiVibrato", [&](int v, int ch) { MIDIDevice.setVibrato(v, ch); });
+
+    // Line 3
+    load("midiDelay", [&](int v, int ch) { MIDIDevice.setDelay(v, ch); });
+    load("midiPan", [&](int v, int ch) { MIDIDevice.setPan(v, ch); });
+    load("midiReverb", [&](int v, int ch) { MIDIDevice.setReverb(v, ch); });
+    load("midiVolume", [&](int v, int ch) { MIDIDevice.setVolume(v, ch); });
+
+    // Line 4
+    load("midiDistortion", [&](int v, int ch) { MIDIDevice.setDistortion(v, ch); });
+    load("midiFilterTrack", [&](int v, int ch) { MIDIDevice.setFilterTrack(v, ch); });
+    load("midiTremolo", [&](int v, int ch) { MIDIDevice.setTremolo(v, ch); });
+    load("midiRandomMod", [&](int v, int ch) { MIDIDevice.setRandomMod(v, ch); });
+}
+
 void MainComponent::loadSettings()
 {
     if (propertiesFile)
     {
-        double savedVolumeFirst = propertiesFile->getDoubleValue("midiVolumeFirst", 100.0);
-        double savedReverbFirst = propertiesFile->getDoubleValue("midiReverbFirst", 100.0);
 
-        double savedVolumeSecond = propertiesFile->getDoubleValue("midiVolumeSecond", 100.0);
-        double savedReverbSecond = propertiesFile->getDoubleValue("midiReverbSecond", 100.0);
+        loadEffectsFromFile();
 
         int leftHandInstrumentNumber = propertiesFile->getIntValue("leftInstrumentNumber", 0);
         int rightHandInstrumentNumber = propertiesFile->getIntValue("rightInstrumentNumber", 0);
-        if (midiWindow)
-        {
-            this->midiWindow->volumeSliderSetValue(savedVolumeFirst);
-            this->midiWindow->reverbSliderSetValue(savedReverbFirst);
-        }
-        this->MIDIDevice.setVolume(savedVolumeFirst,1);
-        this->MIDIDevice.setReverb(savedReverbFirst,1);
-        this->MIDIDevice.setVolume(savedVolumeSecond, 16);
-        this->MIDIDevice.setReverb(savedReverbSecond, 16);
 
 
         this->midiHandler.setProgramNumber(leftHandInstrumentNumber, "left");
@@ -633,6 +567,265 @@ void MainComponent::buildChordLibrary()
         }
     }
 
+}
+
+void MainComponent::setCallBacksForEffectWindow()
+{
+    std::function<void(int, int)> saveCallback = [this](int ccNumber, int value)
+    {
+        int currentChannel = this->soundEffectWindow->getContent().getSelectedChannel();
+
+        juce::String key;
+
+        switch (ccNumber)
+        {
+        // Line 1 – Tone
+        case 74: key = "midiBrightness"; MIDIDevice.setBrightness(value, currentChannel); break;
+        case 11: key = "midiExpression"; MIDIDevice.setExpression(value, currentChannel); break;
+        case 93: key = "midiChorus"; MIDIDevice.setChorus(value, currentChannel); break;
+        case 71: key = "midiResonance"; MIDIDevice.setResonance(value, currentChannel); break;
+        case 64: key = "midiSustain"; MIDIDevice.setSustainToggle(value, currentChannel); break;
+
+        // Line 2 – Envelope
+        case 1:key = "midiVibrato"; MIDIDevice.setVibrato(value, currentChannel); break;
+        case 73: key = "midiAttack"; MIDIDevice.setAttack(value, currentChannel); break;
+        case 75: key = "midiDecay"; MIDIDevice.setDecay(value, currentChannel); break;
+        case 72: key = "midiRelease"; MIDIDevice.setRelease(value, currentChannel); break;
+
+        // Line 3 – Space
+        case 7: key = "midiVolume"; MIDIDevice.setVolume(value, currentChannel); 
+            if (midiWindow && currentChannel==midiWindow->getCurrentChannel()) 
+                midiWindow->volumeSliderSetValue(value, juce::dontSendNotification); break;
+        case 91:key = "midiReverb"; MIDIDevice.setReverb(value, currentChannel); 
+            if (midiWindow && currentChannel==midiWindow->getCurrentChannel()) 
+                midiWindow->reverbSliderSetValue(value, juce::dontSendNotification); break;
+        case 94: key = "midiDelay"; MIDIDevice.setDelay(value, currentChannel); break;
+        case 10: key = "midiPan"; MIDIDevice.setPan(value, currentChannel); break;
+
+        // Line 4 – Modulation
+        case 80: key = "midiDistortion"; MIDIDevice.setDistortion(value, currentChannel); break;
+        case 76: key = "midiFilterTrack"; MIDIDevice.setFilterTrack(value, currentChannel); break;
+        case 92: key = "midiTremolo"; MIDIDevice.setTremolo(value, currentChannel); break;
+        case 95: key = "midiRandomMod"; MIDIDevice.setRandomMod(value, currentChannel); break;
+
+        default: return;
+        }
+
+        if (currentChannel == 1)       key += "First";
+        else if (currentChannel == 16) key += "Second";
+
+        if (!playButton.isVisible())
+        {
+            MIDIDevice.sendMidiCC(currentChannel, ccNumber, value);
+        }
+
+        propertiesFile->setValue(key, value);
+        propertiesFile->saveIfNeeded();
+    };
+
+
+    auto& content = this->soundEffectWindow->getContent();
+
+    // Line 1 – Tone
+    content.getBrightnessKnob().onValueChanged = saveCallback;
+    content.getExpressionKnob().onValueChanged = saveCallback;
+    content.getChorusKnob().onValueChanged = saveCallback;
+    content.getResonanceKnob().onValueChanged = saveCallback;
+    content.getSustainToggle().onValueChanged = saveCallback;
+
+    // Line 2 – Envelope
+    content.getAttackKnob().onValueChanged   = saveCallback;
+    content.getDecayKnob().onValueChanged     = saveCallback;
+    content.getReleaseKnob().onValueChanged   = saveCallback;
+    content.getVibratoKnob().onValueChanged = saveCallback;
+
+    // Line 3 – Space
+    content.getVolumeKnob().onValueChanged = saveCallback;
+    content.getReverbKnob().onValueChanged = saveCallback;
+    content.getDelayKnob().onValueChanged     = saveCallback;
+    content.getPanKnob().onValueChanged       = saveCallback;
+
+    // Line 4 – Modulation
+    content.getDistortionKnob().onValueChanged  = saveCallback;
+    content.getFilterTrackKnob().onValueChanged = saveCallback;
+    content.getTremoloKnob().onValueChanged     = saveCallback;
+    content.getRandomModKnob().onValueChanged   = saveCallback;
+
+    content.onChannelChanged = [this](int channel)
+    {
+        auto& content = this->soundEffectWindow->getContent();
+
+        // Line 1 – Tone
+        content.getBrightnessKnob().setValue(MIDIDevice.getBrightness(channel));
+        content.getExpressionKnob().setValue(MIDIDevice.getExpression(channel));
+        content.getChorusKnob().setValue(MIDIDevice.getChorus(channel));
+        content.getResonanceKnob().setValue(MIDIDevice.getResonance(channel));
+        content.getSustainToggle().setOn(MIDIDevice.getSustainToggle(channel));
+
+        // Line 2 – Envelope
+        content.getAttackKnob().setValue(MIDIDevice.getAttack(channel));
+        content.getDecayKnob().setValue(MIDIDevice.getDecay(channel));
+        content.getReleaseKnob().setValue(MIDIDevice.getRelease(channel));
+        content.getVibratoKnob().setValue(MIDIDevice.getVibrato(channel));
+
+        // Line 3 – Space
+        content.getVolumeKnob().setValue(MIDIDevice.getVolume(channel));
+        content.getReverbKnob().setValue(MIDIDevice.getReverb(channel));
+        content.getDelayKnob().setValue(MIDIDevice.getDelay(channel));
+        content.getPanKnob().setValue(MIDIDevice.getPan(channel));
+
+        // Line 4 – Modulation
+        content.getDistortionKnob().setValue(MIDIDevice.getDistortion(channel));
+        content.getFilterTrackKnob().setValue(MIDIDevice.getFilterTrack(channel));
+        content.getTremoloKnob().setValue(MIDIDevice.getTremolo(channel));
+        content.getRandomModKnob().setValue(MIDIDevice.getRandomMod(channel));
+    };
+}
+
+void MainComponent::setInitialValuesFromSettingsFileEffectWindow()
+{
+    auto& content = soundEffectWindow->getContent();
+
+    content.getBrightnessKnob().setValue(MIDIDevice.getBrightness(1));
+    content.getChorusKnob().setValue(MIDIDevice.getChorus(1));
+    content.getExpressionKnob().setValue(MIDIDevice.getExpression(1));
+    content.getResonanceKnob().setValue(MIDIDevice.getResonance(1));
+    content.getSustainToggle().setOn(MIDIDevice.getSustainToggle(1));
+
+    // Line 2 - Envelope & Modulation
+    content.getAttackKnob().setValue(MIDIDevice.getAttack(1));
+    content.getDecayKnob().setValue(MIDIDevice.getDecay(1));
+    content.getReleaseKnob().setValue(MIDIDevice.getRelease(1));
+    content.getVibratoKnob().setValue(MIDIDevice.getVibrato(1));
+
+    // Line 3 - Effects & Pan
+    content.getVolumeKnob().setValue(MIDIDevice.getVolume(1));
+    content.getReverbKnob().setValue(MIDIDevice.getReverb(1));
+    content.getDelayKnob().setValue(MIDIDevice.getDelay(1));
+    content.getPanKnob().setValue(MIDIDevice.getPan(1));
+
+    // Line 4 - Additional Effects
+    content.getDistortionKnob().setValue(MIDIDevice.getDistortion(1));
+    content.getFilterTrackKnob().setValue(MIDIDevice.getFilterTrack(1));
+    content.getTremoloKnob().setValue(MIDIDevice.getTremolo(1));
+    content.getRandomModKnob().setValue(MIDIDevice.getRandomMod(1));
+}
+
+void MainComponent::setCallBacksForOverlayWindow()
+{
+    overlayWindow->onRequestClose = [this]()
+    {
+        if (overlayWindow)
+        {
+            overlayShouldBeVisible = false;
+            overlayWindow->removeFromDesktop();
+            overlayWindow.reset();
+        }
+    };
+
+    overlayWindow->setWindowFlag = [this]()
+    {
+        overlayShouldBeVisible = false;
+    };
+
+    overlayWindow->bringSeparateWindowFront = [this]()
+    {
+        if (midiWindow)
+        {
+            midiWindow->toFront(true);
+            midiWindow->grabKeyboardFocus();
+        }
+
+        if (soundEffectWindow)
+        {
+            soundEffectWindow->toFront(true);
+            soundEffectWindow->grabKeyboardFocus();
+        }
+    };
+
+    overlayWindow->onSettingsClick = [this]()
+    {
+
+        midiWindowShouldBeVisible = true;
+
+        if (!midiWindow)
+        {
+            midiWindow = std::make_unique<MIDIWindow>(
+                this->MIDIDevice, devicesIN, devicesOUT, propertiesFile);
+
+
+            midiWindow->setAlwaysOnTop(true);
+            midiWindow->toFront(true);
+
+            midiWindow->setVisible(true);
+
+            midiWindow->onWindowClosed = [this]()
+            {
+                midiWindowShouldBeVisible = false;
+                midiWindow.reset();
+            };
+
+            midiWindow->isMidiDeviceOpen = [this]()
+            {
+                return !playButton.isVisible();
+            };
+
+            midiWindow->onValueChangeSync = [this](int ccNumber, int value)
+            {
+                if (soundEffectWindow && midiWindow->getCurrentChannel() == soundEffectWindow->getContent().getSelectedChannel())
+                {
+                    auto& content = soundEffectWindow->getContent();
+                    switch (ccNumber)
+                    {
+                    case 7: content.getVolumeKnob().setValue(value,juce::dontSendNotification); break;
+                    case 91: content.getReverbKnob().setValue(value, juce::dontSendNotification); break;
+
+                    default: return;
+                    }
+                }
+            };
+
+            midiWindow->volumeSliderSetValue(MIDIDevice.getVolume(1));
+            midiWindow->reverbSliderSetValue(MIDIDevice.getReverb(1));
+
+
+        }
+        else
+        {
+            midiWindow->setVisible(true);
+            midiWindow->toFront(true);
+        }
+    };
+
+    overlayWindow->onEffectsClick = [this]()
+    {
+        soundEffecttWindowShouldBeVisible = true;
+
+        if (!soundEffectWindow)
+        {
+            soundEffectWindow = std::make_unique<SoundEffectWindow>();
+
+            soundEffectWindow->setAlwaysOnTop(true);
+            soundEffectWindow->toFront(true);
+            soundEffectWindow->setVisible(true);
+
+            soundEffectWindow->onWindowClosed = [this]()
+            {
+                soundEffecttWindowShouldBeVisible = false;
+                soundEffectWindow.reset();
+            };
+
+            setCallBacksForEffectWindow();
+
+            setInitialValuesFromSettingsFileEffectWindow();
+
+
+        }
+        else {
+            soundEffectWindow->setVisible(true);
+            soundEffectWindow->toFront(true);
+        }
+    };
 }
 
 void MainComponent::toggleSettingsPanel()
@@ -1405,10 +1598,10 @@ void MainComponent::playButtonOnClick()
         repaint();
         toggleHPanel();
 
-        MIDIDevice.changeVolumeInstrument(1);
-        MIDIDevice.changeReverbInstrument(1);
-        MIDIDevice.changeReverbInstrument(16);
-        MIDIDevice.changeVolumeInstrument(16);
+        MIDIDevice.sendMidiCC(1, 7, MIDIDevice.getVolume(1));
+        MIDIDevice.sendMidiCC(1,91,MIDIDevice.getReverb(1));
+        MIDIDevice.sendMidiCC(16,91,MIDIDevice.getReverb(16));
+        MIDIDevice.sendMidiCC(16,7,MIDIDevice.getVolume(16));
 
 
         recordPlayer.setReverb(MIDIDevice.getReverb(1),1);
@@ -2029,3 +2222,4 @@ void MainComponent::headerPanel::paint(juce::Graphics& g)
     g.setGradientFill(gradient); 
     g.fillAll();
 }
+    

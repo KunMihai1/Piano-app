@@ -2,7 +2,7 @@
 #include "InstrumentHandler.h"
 #include "MidiDevicesDB.h"
 
-MidiDevice::MidiDevice() : reverbFirst{ 50.0f }, volumeFirst{ 50.0f }, reverbSecond{ 50.0f }, volumeSecond{ 50.0f }, currentDeviceIDin { 0 }, currentDeviceIDout{ 0 }, identifier{ "" }, minNote{ 0 }, maxNote{ 127 } {
+MidiDevice::MidiDevice() : currentDeviceIDin { 0 }, currentDeviceIDout{ 0 }, identifier{ "" }, minNote{ 0 }, maxNote{ 127 } {
 	this->currentDevicesIN.push_back("PC Keyboard");
 }
 
@@ -324,41 +324,264 @@ std::weak_ptr<juce::MidiOutput> MidiDevice::getDeviceOUT() const
 	return this->currentDeviceUSEDout;
 }
 
-void MidiDevice::setVolume(const float vValue, int channel) 
+void MidiDevice::setVolume(const int vValue, int channel) 
 {
 	if (channel == 1)
-		this->volumeFirst = vValue;
+		this-> firstInstrument.volume = vValue;
 	else if (channel == 16)
-		this->volumeSecond = vValue;
+		this->secondInstrument.volume = vValue;
 }
 
-float MidiDevice::getVolume(int channel) const
+int MidiDevice::getVolume(int channel) const
 {
 	if (channel == 1)
-		return this->volumeFirst;
+		return this->firstInstrument.volume;
 	else if (channel == 16)
-		return this->volumeSecond;
+		return this->secondInstrument.volume;
 
 	return 50.0;
 }
 
-void MidiDevice::setReverb(const float rValue, int channel) 
+void MidiDevice::setReverb(const int rValue, int channel) 
 {
 	if (channel == 1)
-		this->reverbFirst = rValue;
+		this->firstInstrument.reverb = rValue;
 	else if (channel == 16)
-		this->reverbSecond = rValue;
+		this->secondInstrument.reverb = rValue;
 }
 
-float MidiDevice::getReverb(int channel) const
+int MidiDevice::getReverb(int channel) const
 {
 	if (channel == 1)
-		return this->reverbFirst;
+		return this->firstInstrument.reverb;
 	else if (channel == 16)
-		return this->reverbSecond;
+		return this->secondInstrument.reverb;
 
 	return 50.0;
 }
+
+void MidiDevice::setBrightness(const int rValue, int channel)
+{
+	if (channel == 1)
+		this->firstInstrument.brightness = rValue;
+	else if (channel == 16)
+		this->secondInstrument.brightness = rValue;
+}
+
+int MidiDevice::getBrightness(int channel) const
+{
+	if (channel == 1)
+		return this->firstInstrument.brightness;
+	else if (channel == 16)
+		return this->secondInstrument.brightness;
+}
+
+void MidiDevice::setExpression(const int rValue, int channel)
+{
+	if (channel == 1)
+		this->firstInstrument.expression = rValue;
+	else if (channel == 16)
+		this->secondInstrument.expression = rValue;
+}
+
+int MidiDevice::getExpression(int channel) const
+{
+	if (channel == 1)
+		return this->firstInstrument.expression;
+	else if (channel == 16)
+		return this->secondInstrument.expression;
+}
+
+void MidiDevice::setChorus(const int rValue, int channel)
+{
+	if (channel == 1)
+		this->firstInstrument.chours = rValue;
+	else if (channel == 16)
+		this->secondInstrument.chours = rValue;
+}
+
+int MidiDevice::getChorus(int channel) const
+{
+	if (channel == 1)
+		return this->firstInstrument.chours;
+	else if (channel == 16)
+		return this->secondInstrument.chours;
+}
+
+void MidiDevice::setResonance(const int rValue, int channel)
+{
+	if (channel == 1)
+		this->firstInstrument.resonance = rValue;
+	else if (channel == 16)
+		this->secondInstrument.resonance = rValue;
+}
+
+int MidiDevice::getResonance(int channel) const
+{
+	if (channel == 1)
+		return this->firstInstrument.resonance;
+	else if (channel == 16)
+		return this->secondInstrument.resonance;
+}
+
+void MidiDevice::setSustainToggle(const bool rValue, int channel)
+{
+	if (channel == 1)
+		this->firstInstrument.sustainToggle = rValue;
+	else if (channel == 16)
+		this->secondInstrument.sustainToggle = rValue;
+}
+
+bool MidiDevice::getSustainToggle(int channel) const
+{
+	if (channel == 1)
+		return this->firstInstrument.sustainToggle;
+	else if (channel == 16)
+		return this->secondInstrument.sustainToggle;
+}
+
+
+void MidiDevice::setAttack(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.attack = rValue;
+	else if (channel == 16) secondInstrument.attack = rValue;
+}
+
+int MidiDevice::getAttack(int channel) const
+{
+	if (channel == 1) return firstInstrument.attack;
+	else if (channel == 16) return secondInstrument.attack;
+	return 0;
+}
+
+
+void MidiDevice::setDecay(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.decay = rValue;
+	else if (channel == 16) secondInstrument.decay = rValue;
+}
+
+int MidiDevice::getDecay(int channel) const
+{
+	if (channel == 1) return firstInstrument.decay;
+	else if (channel == 16) return secondInstrument.decay;
+	return 0;
+}
+
+
+void MidiDevice::setRelease(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.release = rValue;
+	else if (channel == 16) secondInstrument.release = rValue;
+}
+
+int MidiDevice::getRelease(int channel) const
+{
+	if (channel == 1) return firstInstrument.release;
+	else if (channel == 16) return secondInstrument.release;
+	return 0;
+}
+
+
+void MidiDevice::setVibrato(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.vibrato = rValue;
+	else if (channel == 16) secondInstrument.vibrato = rValue;
+}
+
+int MidiDevice::getVibrato(int channel) const
+{
+	if (channel == 1) return firstInstrument.vibrato;
+	else if (channel == 16) return secondInstrument.vibrato;
+	return 0;
+}
+
+
+
+void MidiDevice::setDelay(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.delay = rValue;
+	else if (channel == 16) secondInstrument.delay = rValue;
+}
+
+int MidiDevice::getDelay(int channel) const
+{
+	if (channel == 1) return firstInstrument.delay;
+	else if (channel == 16) return secondInstrument.delay;
+	return 0;
+}
+
+
+void MidiDevice::setPan(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.pan = rValue;
+	else if (channel == 16) secondInstrument.pan = rValue;
+}
+
+int MidiDevice::getPan(int channel) const
+{
+	if (channel == 1) return firstInstrument.pan;
+	else if (channel == 16) return secondInstrument.pan;
+	return 0;
+}
+
+
+void MidiDevice::setDistortion(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.distortion = rValue;
+	else if (channel == 16) secondInstrument.distortion = rValue;
+}
+
+int MidiDevice::getDistortion(int channel) const
+{
+	if (channel == 1) return firstInstrument.distortion;
+	else if (channel == 16) return secondInstrument.distortion;
+	return 0;
+}
+
+
+void MidiDevice::setFilterTrack(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.filterTrack = rValue;
+	else if (channel == 16) secondInstrument.filterTrack = rValue;
+}
+
+int MidiDevice::getFilterTrack(int channel) const
+{
+	if (channel == 1) return firstInstrument.filterTrack;
+	else if (channel == 16) return secondInstrument.filterTrack;
+	return 0;
+}
+
+
+void MidiDevice::setTremolo(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.tremolo = rValue;
+	else if (channel == 16) secondInstrument.tremolo = rValue;
+}
+
+int MidiDevice::getTremolo(int channel) const
+{
+	if (channel == 1) return firstInstrument.tremolo;
+	else if (channel == 16) return secondInstrument.tremolo;
+	return 0;
+}
+
+
+void MidiDevice::setRandomMod(const int rValue, int channel)
+{
+	if (channel == 1) firstInstrument.randomMod = rValue;
+	else if (channel == 16) secondInstrument.randomMod = rValue;
+}
+
+int MidiDevice::getRandomMod(int channel) const
+{
+	if (channel == 1) return firstInstrument.randomMod;
+	else if (channel == 16) return secondInstrument.randomMod;
+	return 0;
+}
+
+
 
 int MidiDevice::get_minNote() const
 {
@@ -370,50 +593,17 @@ int MidiDevice::get_maxNote() const
 	return this->maxNote;
 }
 
-void MidiDevice::changeVolumeInstrument(int channel)
+void MidiDevice::sendMidiCC(int channel, int ccNumber, int value)
 {
-	float volume1 = this->getVolume(channel);
-	float normalizedVolume = juce::jlimit(0.0f, 1.0f, volume1 / 100.0f);
-	juce::uint8 midiValue = static_cast<juce::uint8>(juce::jlimit(0, 127, int(normalizedVolume * 127.0f)));
+	juce::uint8 midiValue = static_cast<juce::uint8>(
+		juce::jlimit(0, 127, value)
+		);
 
-	if (channel == 1)
-	{
-		juce::MidiMessage volumeMessage = juce::MidiMessage::controllerEvent(1, 7, midiValue);
-		this->currentDeviceUSEDout->sendMessageNow(volumeMessage);
-	}
-	else if (channel == 16)
-	{
-		juce::MidiMessage volumeMessage2 = juce::MidiMessage::controllerEvent(16, 7, midiValue);
-		this->currentDeviceUSEDout->sendMessageNow(volumeMessage2);
-	}
+	if (channel < 1 || channel > 16)
+		return;
 
-	
-	
-	//DBG("Changed to:" + juce::String(midiValue));
-
-	
-	
-}
-
-void MidiDevice::changeReverbInstrument(int channel)
-{
-	float reverb1 = this->getReverb(channel);
-	float normalizedReverb = juce::jlimit(0.0f, 1.0f, reverb1 / 100.0f);
-	juce::uint8 midiValue= static_cast<juce::uint8>(juce::jlimit(0, 127, int(normalizedReverb * 127.0f)));
-
-	if (channel == 1)
-	{
-		juce::MidiMessage reverbMessage = juce::MidiMessage::controllerEvent(1, 91, midiValue);
-		this->currentDeviceUSEDout->sendMessageNow(reverbMessage);
-	}
-	else if (channel == 16)
-	{
-		juce::MidiMessage reverbMessage2 = juce::MidiMessage::controllerEvent(16, 91, midiValue);
-		this->currentDeviceUSEDout->sendMessageNow(reverbMessage2);
-	}
-	
-	
-
+	juce::MidiMessage msg = juce::MidiMessage::controllerEvent(channel, ccNumber, midiValue);
+	currentDeviceUSEDout->sendMessageNow(msg);
 }
 
 const juce::String& MidiDevice::get_identifier() const
