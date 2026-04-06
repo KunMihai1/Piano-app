@@ -304,6 +304,11 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="ksM2Lf" name="AppColours.h" compile="0" resource="0" file="Source/AppColours.h"/>
+      <FILE id="DXD47A" name="SoundEffectWindowComponent.cpp" compile="1"
+            resource="0" file="Source/SoundEffectWindowComponent.cpp"/>
+      <FILE id="HppmMB" name="SoundEffectWindowComponent.h" compile="0" resource="0"
+            file="Source/SoundEffectWindowComponent.h"/>
       <FILE id="G3Jvlk" name="FileSystemInterface.h" compile="0" resource="0"
             file="Source/FileSystemInterface.h"/>
       <FILE id="oLjKCa" name="SupabaseClient.cpp" compile="1" resource="0"

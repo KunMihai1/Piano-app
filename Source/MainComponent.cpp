@@ -1,4 +1,4 @@
-﻿#include "MainComponent.h"
+#include "MainComponent.h"
 
 //==============================================================================
 MainComponent::MainComponent()
@@ -149,6 +149,9 @@ void MainComponent::globalFocusChanged(juce::Component* focusedComponent)
 
         if (midiWindow)
             midiWindow->setVisible(midiWindowShouldBeVisible);
+
+        if (soundEffectWindow)
+            soundEffectWindow->setVisible(soundEffecttWindowShouldBeVisible);
     }
 }
 
@@ -283,6 +286,12 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
                     midiWindow->toFront(true);
                     midiWindow->grabKeyboardFocus();
                 }
+
+                if (soundEffectWindow)
+                {
+                    soundEffectWindow->toFront(true);
+                    soundEffectWindow->grabKeyboardFocus();
+                }
             };
 
             overlayWindow->onSettingsClick = [this]()
@@ -318,6 +327,32 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
                 {
                     midiWindow->setVisible(true);
                     midiWindow->toFront(true);
+                }
+            };
+
+            overlayWindow->onEffectsClick = [this]()
+            {
+                soundEffecttWindowShouldBeVisible = true;
+
+                if (!soundEffectWindow)
+                {
+                    soundEffectWindow = std::make_unique<SoundEffectWindow>();
+
+                    soundEffectWindow->setAlwaysOnTop(true);
+                    soundEffectWindow->toFront(true);
+                    soundEffectWindow->setVisible(true);
+
+                    soundEffectWindow->onWindowClosed = [this]()
+                    {
+                        soundEffecttWindowShouldBeVisible = false;
+                        soundEffectWindow.reset();
+                    };
+
+                   
+                }
+                else {
+                    soundEffectWindow->setVisible(true);
+                    soundEffectWindow->toFront(true);
                 }
             };
 
@@ -495,6 +530,7 @@ void MainComponent::loginWindowInitialize()
 
     loginWindow->onSuccessfullLogin = [this]()
     {
+        /*
         playtimeTracker = std::make_unique<PlaytimeTracker>([this](int secondsToIncreaseWith)
             {
                 auto clientPtr = client; 
@@ -505,7 +541,7 @@ void MainComponent::loginWindowInitialize()
                     clientPtr->incrementPlaytime(secondsToIncreaseWith,VID,PID);
                     }).detach();
             },300);
-
+        */
         playButton.setVisible(true);
         loginWindow->setVisible(false);
        
