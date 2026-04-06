@@ -132,26 +132,43 @@ void MainComponent::focusGained(juce::Component::FocusChangeType)
 
 void MainComponent::globalFocusChanged(juce::Component* focusedComponent)
 {
-    bool appIsActive = juce::Process::isForegroundProcess();
-
-    if (!appIsActive)
+    if (focusedComponent == nullptr)
     {
-        if (overlayWindow)
-            overlayWindow->setVisible(false);
+        // Focus left JUCE — but on Windows this also fires briefly during
+        // within-app window switches.  Defer the hide so we don't flicker.
+        juce::Timer::callAfterDelay(150,
+            [safeThis = juce::Component::SafePointer<MainComponent>(this)]()
+            {
+                if (safeThis == nullptr) return;
 
-        if (midiWindow)
-            midiWindow->setVisible(false);
+                // After the delay, check if the app truly lost foreground.
+                if (!juce::Process::isForegroundProcess())
+                {
+                    if (safeThis->overlayWindow)
+                        safeThis->overlayWindow->setVisible(false);
+
+                    if (safeThis->midiWindow)
+                        safeThis->midiWindow->setVisible(false);
+
+                    if (safeThis->soundEffectWindow)
+                        safeThis->soundEffectWindow->setVisible(false);
+                }
+            });
     }
     else
     {
-        if (overlayWindow)
-            overlayWindow->setVisible(overlayShouldBeVisible);
+        // Focus returned to the app — only restore windows that were
+        // actually hidden (e.g. after alt-tab away). During normal
+        // within-app focus transitions nothing was hidden, so this
+        // branch does nothing, avoiding any native-window side effects.
+        if (overlayWindow && !overlayWindow->isVisible() && overlayShouldBeVisible)
+            overlayWindow->setVisible(true);
 
-        if (midiWindow)
-            midiWindow->setVisible(midiWindowShouldBeVisible);
+        if (midiWindow && !midiWindow->isVisible() && midiWindowShouldBeVisible)
+            midiWindow->setVisible(true);
 
-        if (soundEffectWindow)
-            soundEffectWindow->setVisible(soundEffecttWindowShouldBeVisible);
+        if (soundEffectWindow && !soundEffectWindow->isVisible() && soundEffecttWindowShouldBeVisible)
+            soundEffectWindow->setVisible(true);
     }
 }
 
@@ -467,8 +484,9 @@ void MainComponent::loadEffectsFromFile()
 {
     auto load = [&](const juce::String& name, auto setter)
     {
-        int first = propertiesFile->getIntValue(name + "First", 64);
-        int second = propertiesFile->getIntValue(name + "Second", 64);
+        int fallbackValue=64;
+        int first = propertiesFile->getIntValue(name + "First", fallbackValue);
+        int second = propertiesFile->getIntValue(name + "Second", fallbackValue);
 
         setter(first, 1);   // Channel 1
         setter(second, 16); // Channel 16
@@ -711,6 +729,49 @@ void MainComponent::setInitialValuesFromSettingsFileEffectWindow()
     content.getRandomModKnob().setValue(MIDIDevice.getRandomMod(1));
 }
 
+void MainComponent::sendEffectsBeforePlaying()
+{
+    struct EffectCC
+    {
+        int ccNumber;
+        std::function<int(int)> getter; // int parameter = channel
+    };
+
+    std::vector<EffectCC> effects = {
+    { 74, [&](int ch) { return MIDIDevice.getBrightness(ch); } },
+    { 11, [&](int ch) { return MIDIDevice.getExpression(ch); } },
+    { 93, [&](int ch) { return MIDIDevice.getChorus(ch); } },
+    { 71, [&](int ch) { return MIDIDevice.getResonance(ch); } },
+    { 64, [&](int ch) { return MIDIDevice.getSustainToggle(ch) ? 127 : 0; } },
+
+    { 73, [&](int ch) { return MIDIDevice.getAttack(ch); } },
+    { 75, [&](int ch) { return MIDIDevice.getDecay(ch); } },
+    { 72, [&](int ch) { return MIDIDevice.getRelease(ch); } },
+    { 1,  [&](int ch) { return MIDIDevice.getVibrato(ch); } },
+
+    { 94, [&](int ch) { return MIDIDevice.getDelay(ch); } },
+    { 10, [&](int ch) { return MIDIDevice.getPan(ch); } },
+    { 91, [&](int ch) { return MIDIDevice.getReverb(ch); } },
+    { 7,  [&](int ch) { return MIDIDevice.getVolume(ch); } },
+
+    { 80, [&](int ch) { return MIDIDevice.getDistortion(ch); } },
+    { 76, [&](int ch) { return MIDIDevice.getFilterTrack(ch); } },
+    { 92, [&](int ch) { return MIDIDevice.getTremolo(ch); } },
+    { 95, [&](int ch) { return MIDIDevice.getRandomMod(ch); } }
+    };
+
+    std::vector<int> channels = { 1, 16 };
+
+    for (int ch : channels)
+    {
+        for (auto& effect : effects)
+        {
+            MIDIDevice.sendMidiCC(ch, effect.ccNumber, effect.getter(ch));
+        }
+    }
+
+}
+
 void MainComponent::setCallBacksForOverlayWindow()
 {
     overlayWindow->onRequestClose = [this]()
@@ -730,17 +791,17 @@ void MainComponent::setCallBacksForOverlayWindow()
 
     overlayWindow->bringSeparateWindowFront = [this]()
     {
+        // Bring the child windows above the overlay without stealing
+        // focus.  toFront(true) + grabKeyboardFocus from inside the
+        // overlay's mouseDown causes a focus fight: after the handler
+        // returns the OS restores activation to the overlay (the
+        // clicked native window), leaving both DocumentWindows grey.
         if (midiWindow)
-        {
-            midiWindow->toFront(true);
-            midiWindow->grabKeyboardFocus();
-        }
+            midiWindow->toFront(false);
 
         if (soundEffectWindow)
-        {
-            soundEffectWindow->toFront(true);
-            soundEffectWindow->grabKeyboardFocus();
-        }
+            soundEffectWindow->toFront(false);
+
     };
 
     overlayWindow->onSettingsClick = [this]()
@@ -755,7 +816,6 @@ void MainComponent::setCallBacksForOverlayWindow()
 
 
             midiWindow->setAlwaysOnTop(true);
-            midiWindow->toFront(true);
 
             midiWindow->setVisible(true);
 
@@ -795,6 +855,18 @@ void MainComponent::setCallBacksForOverlayWindow()
             midiWindow->setVisible(true);
             midiWindow->toFront(true);
         }
+
+        // Grab focus asynchronously so the overlay's button-click event
+        // finishes first and the OS doesn't steal activation back.
+        juce::MessageManager::callAsync([this]()
+        {
+            if (midiWindow)
+            {
+                midiWindow->toFront(false);
+                midiWindow->grabKeyboardFocus();
+            }
+                
+        });
     };
 
     overlayWindow->onEffectsClick = [this]()
@@ -806,7 +878,6 @@ void MainComponent::setCallBacksForOverlayWindow()
             soundEffectWindow = std::make_unique<SoundEffectWindow>();
 
             soundEffectWindow->setAlwaysOnTop(true);
-            soundEffectWindow->toFront(true);
             soundEffectWindow->setVisible(true);
 
             soundEffectWindow->onWindowClosed = [this]()
@@ -825,6 +896,17 @@ void MainComponent::setCallBacksForOverlayWindow()
             soundEffectWindow->setVisible(true);
             soundEffectWindow->toFront(true);
         }
+
+        // Grab focus asynchronously so the overlay's button-click event
+        // finishes first and the OS doesn't steal activation back.
+        juce::MessageManager::callAsync([this]()
+        {
+            if (soundEffectWindow)
+            {
+                soundEffectWindow->toFront(false);
+                soundEffectWindow->grabKeyboardFocus();
+            }
+        });
     };
 }
 
@@ -1598,11 +1680,14 @@ void MainComponent::playButtonOnClick()
         repaint();
         toggleHPanel();
 
+        sendEffectsBeforePlaying();
+
+        /*
         MIDIDevice.sendMidiCC(1, 7, MIDIDevice.getVolume(1));
         MIDIDevice.sendMidiCC(1,91,MIDIDevice.getReverb(1));
         MIDIDevice.sendMidiCC(16,91,MIDIDevice.getReverb(16));
         MIDIDevice.sendMidiCC(16,7,MIDIDevice.getVolume(16));
-
+        */
 
         recordPlayer.setReverb(MIDIDevice.getReverb(1),1);
         recordPlayer.setReverb(MIDIDevice.getReverb(16), 16);

@@ -849,53 +849,9 @@ void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair
 		for (int i = 0; i < 128; ++i)
 			midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, i));
 
-		midiOut->sendMessageNow(juce::MidiMessage::controllerEvent(channel, 64, 0));
-		//juce::MidiMessage localOff = juce::MidiMessage::controllerEvent(1, 122, 0);
-		//midiOut->sendMessageNow(localOff);
-
 		midiOut->sendMessageNow(juce::MidiMessage::programChange(channel, programNumber));
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::programChange(channel, programNumber));
 
-		for (auto& cc : ccValues)
-		{
-			int ccNumber = cc.first;
-			int ccValue = cc.second;
-			if (ccNumber == 91 && ccValue == -1)
-				ccValue = midiDevice.getReverb(channel);
-
-			juce::MidiMessage msg = juce::MidiMessage::controllerEvent(channel, ccNumber, ccValue);
-			midiOut->sendMessageNow(msg);
-			listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
-		}
-	}
-
-	//applying some of these will see for keyboard gs synth so it actually improves something because these take effect
-	// Mod Wheel (CC 1) - moderate
-	//auto msg = juce::MidiMessage::controllerEvent(1, 1, 64);
-	//midiOut->sendMessageNow(msg);
-	//listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
-
-
-	// Pan (CC 10) - center pan
-	{
-		//auto msg = juce::MidiMessage::controllerEvent(1, 10, 64);
-		//midiOut->sendMessageNow(msg);
-		//listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
-	}
-
-
-	// Aftertouch (Channel Pressure) - moderate
-	{
-		//auto msg = juce::MidiMessage::channelPressureChange(1, 80);
-		//midiOut->sendMessageNow(msg);
-		//listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
-	}
-
-	// Pitch Bend - neutral (8192)
-	{
-		//auto msg = juce::MidiMessage::pitchWheel(1, 8192);
-		//midiOut->sendMessageNow(msg);
-		//listeners.call(&MidiHandlerListener::handleIncomingMessage, msg);
 	}
 }
 

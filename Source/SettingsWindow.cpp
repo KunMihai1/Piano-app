@@ -130,7 +130,7 @@ void MIDIWindow::visibilityChanged()
         populateCBOUT(); //selected id is set to 1 implicitly
         restoreCBoxes();
         startTimer(750);
-        grabKeyboardFocus();
+        //grabKeyboardFocus();
     }
     else stopTimer();
 

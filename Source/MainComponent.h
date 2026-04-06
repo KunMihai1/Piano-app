@@ -199,6 +199,8 @@ private:
 
     void setInitialValuesFromSettingsFileEffectWindow();
 
+    void sendEffectsBeforePlaying();
+
     // UI toggles
     void toggleSettingsPanel();
     void toggleSettingsButton();
