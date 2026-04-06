@@ -159,6 +159,10 @@ LoginComponent::~LoginComponent()
 
 void LoginComponent::handleLogin()
 {
+    if (onSuccessfullLogin)
+        onSuccessfullLogin();
+    return;
+
     auto email = emailTE->getText().trim();
     auto pass = passwordField->getTextEditor().getText().trim();
 
@@ -174,6 +178,8 @@ void LoginComponent::handleLogin()
 
     juce::Component::SafePointer<LoginComponent> safeThis(this);
     auto clientPtr = client;
+
+    
 
     std::thread([email, pass, safeThis, clientPtr]()
         {

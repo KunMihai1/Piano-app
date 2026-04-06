@@ -11,6 +11,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include <cstdlib>
 #include "settingsWindow.h"
 #include "BinaryData.h"
 #include "MidiHandler.h"
@@ -26,10 +27,9 @@
 #include "SectionsComponent.h"
 #include "OverlayComponent.h"
 #include "chordBrowser.h"
-#include <cstdlib>
 #include "LoginComponent.h"
 #include "PlaytimeTracker.h"
-
+#include "SoundEffectWindowComponent.h"
 
 /**
  * @class SmoothRotarySlider
@@ -184,11 +184,22 @@ private:
 
 
     /** @brief Loads settings from disk */
+
+    void loadEffectsFromFile();
+
     void loadSettings();
 
     void playChordOnClick(const Chord& c);
 
     void buildChordLibrary();
+
+    void setCallBacksForEffectWindow();
+
+    void setCallBacksForOverlayWindow();
+
+    void setInitialValuesFromSettingsFileEffectWindow();
+
+    void sendEffectsBeforePlaying();
 
     // UI toggles
     void toggleSettingsPanel();
@@ -297,6 +308,7 @@ private:
 
     bool midiWindowShouldBeVisible = false;
     bool overlayShouldBeVisible = false;
+    bool soundEffecttWindowShouldBeVisible = false;
     // UI buttons and toggles
     juce::TextButton settingsButton{ "Settings" };
     juce::TextButton midiButton{ "MIDI Settings" };
@@ -339,6 +351,7 @@ private:
     std::unique_ptr<Display> display = nullptr;
     std::unique_ptr<AddDeviceWindow> addDeviceWindow=nullptr;
     std::unique_ptr<OverlayComponent> overlayWindow=nullptr;
+    std::unique_ptr<SoundEffectWindow> soundEffectWindow = nullptr;
 
     std::vector<Chord> myChordLibrary;
     std::vector<int> currentlyPlayingNotes;

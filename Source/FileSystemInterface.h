@@ -17,7 +17,7 @@ class IFileSystem
 public:
     virtual ~IFileSystem() = default;
 
-    // Get a ìfileî for JSON
+    // Get a ‚Äúfile‚Äù for JSON
     virtual juce::File getJsonFile() = 0;
 
     // Write text to a file
