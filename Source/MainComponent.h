@@ -184,11 +184,20 @@ private:
 
 
     /** @brief Loads settings from disk */
+
+    void loadEffectsFromFile();
+
     void loadSettings();
 
     void playChordOnClick(const Chord& c);
 
     void buildChordLibrary();
+
+    void setCallBacksForEffectWindow();
+
+    void setCallBacksForOverlayWindow();
+
+    void setInitialValuesFromSettingsFileEffectWindow();
 
     // UI toggles
     void toggleSettingsPanel();

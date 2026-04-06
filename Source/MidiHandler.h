@@ -6,6 +6,32 @@
 #include "InstrumentHandler.h"
 #include "displayGUI.h"
 
+struct SoundSettings
+{
+	int reverb=64;
+	int volume=64;
+
+	int brightness = 64;
+	int chours = 64;
+	int expression = 64;
+	int resonance = 64;
+	bool sustainToggle = 0;
+
+	int attack = 64;
+	int decay = 64;
+	int release = 64;
+	int vibrato = 64;
+
+	int delay = 64;
+	int pan = 64;
+
+	int distortion = 64;
+	int filterTrack = 64;
+	int tremolo = 64;
+	int randomMod = 64;
+
+};
+
 class MidiDevice {
 public:
 
@@ -121,25 +147,80 @@ public:
 	 * @brief Sets the volume of the instrument
 	 * @param vValue Volume value 
 	 */
-	void setVolume(const float vValue, int channel=1);
+	void setVolume(const int vValue, int channel=1);
 
 	/**
 	 * @brief Gets the current volume of the instrument
 	 * @return current volume value
 	 */
-	float getVolume(int channel) const;
+	int getVolume(int channel) const;
 
 	/**
 	 * @brief Sets the reverb amount of the instrument
 	 * @param rValue Reverb value (typically 0.0 - 1.0)
 	 */
-	void setReverb(const float rValue, int channel=1) ;
+	void setReverb(const int rValue, int channel=1) ;
 
 	/**
 	 * @brief Gets the current reverb amount of the instrument
 	 * @return current reverb value
 	 */
-	float getReverb(int channel) const;
+	int getReverb(int channel) const;
+
+
+	void setBrightness(const int rValue, int channel = 1);
+
+	int getBrightness(int channel) const;
+
+	void setChorus(const int rValue, int channel = 1);
+
+	int getChorus(int channel) const;
+
+	void setExpression(const int rValue, int channel = 1);
+
+	int getExpression(int channel) const;
+
+	void setResonance(const int rValue, int channel = 1);
+
+	int getResonance(int channel) const;
+
+	void setSustainToggle(const bool rValue, int channel = 1);
+
+	bool getSustainToggle(int channel) const;
+
+	// Envelope & Modulation
+	void setAttack(const int rValue, int channel = 1);
+	int getAttack(int channel) const;
+
+	void setDecay(const int rValue, int channel = 1);
+	int getDecay(int channel) const;
+
+	void setRelease(const int rValue, int channel = 1);
+	int getRelease(int channel) const;
+
+	void setVibrato(const int rValue, int channel = 1);
+	int getVibrato(int channel) const;
+
+	// Effects & Pan
+
+	void setDelay(const int rValue, int channel = 1);
+	int getDelay(int channel) const;
+
+	void setPan(const int rValue, int channel = 1);
+	int getPan(int channel) const;
+
+	// Additional effects
+	void setDistortion(const int rValue, int channel = 1);
+	int getDistortion(int channel) const;
+
+	void setFilterTrack(const int rValue, int channel = 1);
+	int getFilterTrack(int channel) const;
+
+	void setTremolo(const int rValue, int channel = 1);
+	int getTremolo(int channel) const;
+
+	void setRandomMod(const int rValue, int channel = 1);
+	int getRandomMod(int channel) const;
 
 	/**
 	 * @brief Gets the minimum MIDI note allowed
@@ -165,11 +246,7 @@ public:
 	 */
 	void set_maxNote(int maxNoteReceived);
 
-	/** @brief Updates the instrument with the current volume setting */
-	void changeVolumeInstrument(int channel=1);
-
-	/** @brief Updates the instrument with the current reverb setting */
-	void changeReverbInstrument(int channel=1);
+	void sendMidiCC(int channel, int ccNumber, int value);
 
 	/**
 	 * @brief Gets the MIDI device identifier string
@@ -235,11 +312,8 @@ private:
 	bool deviceCheckedForUpdateAtLeastOnce = false;
 	juce::String identifier;
 
-	float reverbFirst{ 0.0f };
-	float volumeFirst{ 0.0f };
-
-	float reverbSecond{ 0.0f };
-	float volumeSecond{ 0.0f };
+	SoundSettings firstInstrument;
+	SoundSettings secondInstrument;
 
 	int minNote, maxNote;
 

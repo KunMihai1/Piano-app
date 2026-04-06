@@ -106,6 +106,24 @@ public:
     EffectKnobComponent& getResonanceKnob()   { return resonanceKnob; }
     SustainToggleComponent& getSustainToggle() { return sustainToggle; }
 
+    // Line 2
+    EffectKnobComponent& getAttackKnob()      { return attackKnob; }
+    EffectKnobComponent& getDecayKnob()       { return decayKnob; }
+    EffectKnobComponent& getReleaseKnob()     { return releaseKnob; }
+    EffectKnobComponent& getVibratoKnob()     { return vibratoKnob; }
+
+    // Line 3
+    EffectKnobComponent& getReverbKnob()      { return reverbKnob; }
+    EffectKnobComponent& getDelayKnob()       { return delayKnob; }
+    EffectKnobComponent& getPanKnob()         { return panKnob; }
+    EffectKnobComponent& getVolumeKnob()      { return volumeKnob; }
+
+    // Line 4
+    EffectKnobComponent& getDistortionKnob()  { return distortionKnob; }
+    EffectKnobComponent& getFilterTrackKnob() { return filterTrackKnob; }
+    EffectKnobComponent& getTremoloKnob()     { return tremoloKnob; }
+    EffectKnobComponent& getRandomModKnob()   { return randomModKnob; }
+
     void paint(juce::Graphics&) override;
     void resized() override;
 
@@ -113,12 +131,34 @@ private:
     juce::Label       headerLabel;
     juce::ComboBox    channelSelector;
     juce::Label       channelLabel;
-
+    
+    //line 1
     EffectKnobComponent  brightnessKnob;   // CC 74
     EffectKnobComponent  expressionKnob;   // CC 11
     EffectKnobComponent  chorusKnob;       // CC 93
     EffectKnobComponent  resonanceKnob;    // CC 71
     SustainToggleComponent sustainToggle;   // CC 64
+
+    //line 2
+    EffectKnobComponent attackKnob;   // CC 73
+    EffectKnobComponent decayKnob;    // CC 75
+    EffectKnobComponent releaseKnob;  // CC 72
+    EffectKnobComponent vibratoKnob;  // CC 1
+
+
+    // Line 3
+    EffectKnobComponent delayKnob;    // CC 94
+    EffectKnobComponent panKnob;      // CC 10
+    EffectKnobComponent reverbKnob;    // CC 91
+    EffectKnobComponent volumeKnob;    // CC 7
+
+    // Line 4
+    EffectKnobComponent distortionKnob;   // CC 80
+    EffectKnobComponent filterTrackKnob;  // CC 76
+    EffectKnobComponent tremoloKnob;      // CC 92
+    EffectKnobComponent randomModKnob;    // CC 95
+
+    std::vector<EffectKnobComponent*> knobs;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SoundEffectContentComponent)
 };
@@ -133,7 +173,7 @@ class SoundEffectWindow : public juce::DocumentWindow,
 public:
     std::function<void()> onWindowClosed;
 
-    SoundEffectWindow();
+    SoundEffectWindow(juce::PropertiesFile* prop=nullptr);
     ~SoundEffectWindow() override;
 
     bool keyPressed(const juce::KeyPress& key, juce::Component*) override;
@@ -144,6 +184,7 @@ public:
 
 private:
     SoundEffectContentComponent* content = nullptr;   // owned by the window via setContentOwned
+    juce::PropertiesFile* propertyFile = nullptr;
 
     JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SoundEffectWindow)
 };
