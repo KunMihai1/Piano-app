@@ -11,6 +11,7 @@ OverlayComponent::OverlayComponent()
     menuPanel.setInterceptsMouseClicks(true, true);
 
     menuPanel.addAndMakeVisible(settingsButton);
+    menuPanel.addAndMakeVisible(effectsButton);
     menuPanel.addAndMakeVisible(exitButton);
 
     settingsButton.setButtonText("Settings");
@@ -29,6 +30,15 @@ OverlayComponent::OverlayComponent()
 
         juce::JUCEApplication::getInstance()->systemRequestedQuit();
     };
+
+    effectsButton.setButtonText("Effects");
+    effectsButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    effectsButton.setColour(juce::TextButton::textColourOffId, juce::Colours::white);
+    effectsButton.onClick = [this]()
+    {
+        if (onEffectsClick)
+            onEffectsClick();
+    };
 }
 
 void OverlayComponent::paint(juce::Graphics& g)
@@ -41,7 +51,7 @@ void OverlayComponent::resized()
 {
     auto area = getLocalBounds();
     const int panelWidth = 300;
-    const int panelHeight = 200;
+    const int panelHeight = 300;
     menuPanel.setBounds(area.getCentreX() - panelWidth / 2,
         area.getCentreY() - panelHeight / 2,
         panelWidth, panelHeight);
@@ -50,11 +60,13 @@ void OverlayComponent::resized()
     const int buttonHeight = 40;
     const int spacing = 20;
 
-    settingsButton.setBounds(panelArea.removeFromTop(buttonHeight)
-        .withSizeKeepingCentre(panelArea.getWidth(), buttonHeight));
+    settingsButton.setBounds(panelArea.removeFromTop(buttonHeight));
     panelArea.removeFromTop(spacing);
-    exitButton.setBounds(panelArea.removeFromTop(buttonHeight)
-        .withSizeKeepingCentre(panelArea.getWidth(), buttonHeight));
+
+    effectsButton.setBounds(panelArea.removeFromTop(buttonHeight));
+    panelArea.removeFromTop(spacing);
+
+    exitButton.setBounds(panelArea.removeFromTop(buttonHeight));
 }
 
 void OverlayComponent::showOverlay()
@@ -83,6 +95,11 @@ juce::TextButton& OverlayComponent::getExitButton()
 juce::TextButton& OverlayComponent::getSettingsButton()
 {
     return this->settingsButton;
+}
+
+juce::TextButton& OverlayComponent::getEffectsButton()
+{
+    return this->effectsButton;
 }
 
 void OverlayComponent::mouseDown(const juce::MouseEvent& ev)
