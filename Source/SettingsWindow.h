@@ -35,8 +35,6 @@ public:
 
     std::function<void()> onWindowClosed;
 
-    std::function<void(int ccNumber, int value)> onValueChangeSync;
-
     /**
      * @brief Constructor.
      * @param mdevice Reference to the MIDI device object.

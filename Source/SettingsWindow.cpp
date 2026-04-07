@@ -371,9 +371,6 @@ void MIDIWindow::slidersInit()
             propertyFile->saveIfNeeded();
         }
         MIDIDevice.setVolume((int)volumeSlider.getValue(),channel);
-
-        if (onValueChangeSync)
-            onValueChangeSync(7,(int)volumeSlider.getValue());
         
 
         if (isMidiDeviceOpen && isMidiDeviceOpen())
@@ -395,9 +392,6 @@ void MIDIWindow::slidersInit()
             propertyFile->saveIfNeeded();
         }
         MIDIDevice.setReverb((int)reverbSlider.getValue(),channel);
-
-        if (onValueChangeSync)
-            onValueChangeSync(91, (int)volumeSlider.getValue());
 
         if (isMidiDeviceOpen && isMidiDeviceOpen())
         {
