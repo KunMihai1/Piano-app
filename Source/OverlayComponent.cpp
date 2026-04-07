@@ -122,7 +122,7 @@ bool OverlayComponent::keyPressed(const juce::KeyPress& key)
         {
             if (setWindowFlag)
                 setWindowFlag();
-            removeFromDesktop();
+            //removeFromDesktop();
             setVisible(false);
         }
         return true;

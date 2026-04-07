@@ -61,6 +61,9 @@ MainComponent::MainComponent()
         });
 
     loadSettings();
+    initializeOverlay();
+
+
     startTimer(1000);
 
 }
@@ -259,31 +262,13 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
     if (key == juce::KeyPress::escapeKey)
     {
 
-        if (!overlayWindow)
+        if (!overlayWindow->isVisible())
         {
-            overlayWindow = std::make_unique<OverlayComponent>();
-            auto topLevel = getTopLevelComponent();
-            juce::Rectangle<int> screenBounds = topLevel->getScreenBounds();
-
-            overlayWindow->setBounds(screenBounds);
-            overlayWindow->setAlwaysOnTop(true);
-            overlayWindow->setOpaque(false);
-
+            
             overlayShouldBeVisible = true;
             overlayWindow->setVisible(true);
+            overlayWindow->toFront(false);
 
-
-            overlayWindow->addToDesktop(
-                juce::ComponentPeer::windowIsTemporary
-                | juce::ComponentPeer::windowHasDropShadow,
-                nullptr);
-
-            overlayWindow->toFront(true);
-
-
-            setCallBacksForOverlayWindow();
-
-            overlayWindow->grabKeyboardFocus();
         }
         else
         {
@@ -293,8 +278,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
             else
             {
                 overlayShouldBeVisible = false;
-                overlayWindow->removeFromDesktop();
-                overlayWindow.reset();
+                overlayWindow->setVisible(false);
             }
         }
     }
@@ -775,8 +759,7 @@ void MainComponent::setCallBacksForOverlayWindow()
         if (overlayWindow)
         {
             overlayShouldBeVisible = false;
-            overlayWindow->removeFromDesktop();
-            overlayWindow.reset();
+            overlayWindow->setVisible(false);
         }
     };
 
@@ -803,10 +786,10 @@ void MainComponent::setCallBacksForOverlayWindow()
     overlayWindow->onSettingsClick = [this]()
     {
 
-        midiWindowShouldBeVisible = true;
 
         if (!midiWindow)
         {
+            midiWindowShouldBeVisible = true;
             if (soundEffectWindow)
                 soundEffectWindow->closeButtonPressed();
 
@@ -836,29 +819,34 @@ void MainComponent::setCallBacksForOverlayWindow()
         }
         else
         {
-            midiWindow->setVisible(true);
-            midiWindow->toFront(true);
-        }
-
-        // Grab focus asynchronously so the overlay's button-click event
-        // finishes first and the OS doesn't steal activation back.
-        juce::MessageManager::callAsync([this]()
-        {
-            if (midiWindow)
+            if (!midiWindow->isVisible())
             {
-                midiWindow->toFront(false);
-                midiWindow->grabKeyboardFocus();
+                midiWindowShouldBeVisible = true;
+                midiWindow->setVisible(true);
+                midiWindow->toFront(true);
+                juce::MessageManager::callAsync([this]()
+                    {
+                        if (midiWindow)
+                        {
+                            midiWindow->grabKeyboardFocus();
+                        }
+
+                    });
             }
-                
-        });
+            else
+            {
+                midiWindowShouldBeVisible = false;
+                midiWindow->setVisible(false);
+            }
+        }
     };
 
     overlayWindow->onEffectsClick = [this]()
     {
-        soundEffecttWindowShouldBeVisible = true;
 
         if (!soundEffectWindow)
         {
+            soundEffecttWindowShouldBeVisible = true;
             if (midiWindow)
                 midiWindow->closeButtonPressed();
 
@@ -880,20 +868,25 @@ void MainComponent::setCallBacksForOverlayWindow()
 
         }
         else {
-            soundEffectWindow->setVisible(true);
-            soundEffectWindow->toFront(true);
-        }
-
-        // Grab focus asynchronously so the overlay's button-click event
-        // finishes first and the OS doesn't steal activation back.
-        juce::MessageManager::callAsync([this]()
-        {
-            if (soundEffectWindow)
+            if (!soundEffectWindow->isVisible())
             {
-                soundEffectWindow->toFront(false);
-                soundEffectWindow->grabKeyboardFocus();
+                soundEffecttWindowShouldBeVisible = true;
+                soundEffectWindow->setVisible(true);
+                soundEffectWindow->toFront(true);
+
+                juce::MessageManager::callAsync([this]()
+                    {
+                        if (soundEffectWindow)
+                        {
+                            soundEffectWindow->grabKeyboardFocus();
+                        }
+                    });
             }
-        });
+            else {
+                soundEffectWindow->setVisible(false);
+                soundEffecttWindowShouldBeVisible = false;
+            }
+        }
     };
 }
 
@@ -2192,6 +2185,31 @@ void MainComponent::handleFill(const juce::String& name)
 void MainComponent::handleBreak(const juce::String& name)
 {
 
+}
+
+void MainComponent::initializeOverlay()
+{
+    overlayWindow = std::make_unique<OverlayComponent>();
+    auto topLevel = getTopLevelComponent();
+    juce::Rectangle<int> screenBounds = topLevel->getScreenBounds();
+
+    overlayWindow->setBounds(screenBounds);
+    overlayWindow->setAlwaysOnTop(true);
+    overlayWindow->setOpaque(false);
+
+    overlayShouldBeVisible = false;
+
+
+    overlayWindow->addToDesktop(
+        juce::ComponentPeer::windowIsTemporary
+        | juce::ComponentPeer::windowHasDropShadow,
+        nullptr);
+
+    setCallBacksForOverlayWindow();
+
+    overlayWindow->setVisible(true);  
+    overlayWindow->repaint();          
+    overlayWindow->setVisible(false);
 }
 
 SmoothRotarySlider::SmoothRotarySlider()
