@@ -611,12 +611,8 @@ void MainComponent::setCallBacksForEffectWindow()
         case 72: key = "midiRelease"; MIDIDevice.setRelease(value, currentChannel); break;
 
         // Line 3 – Space
-        case 7: key = "midiVolume"; MIDIDevice.setVolume(value, currentChannel); 
-            if (midiWindow && currentChannel==midiWindow->getCurrentChannel()) 
-                midiWindow->volumeSliderSetValue(value, juce::dontSendNotification); break;
-        case 91:key = "midiReverb"; MIDIDevice.setReverb(value, currentChannel); 
-            if (midiWindow && currentChannel==midiWindow->getCurrentChannel()) 
-                midiWindow->reverbSliderSetValue(value, juce::dontSendNotification); break;
+        case 7: key = "midiVolume"; MIDIDevice.setVolume(value, currentChannel);  break;
+        case 91:key = "midiReverb"; MIDIDevice.setReverb(value, currentChannel);  break;
         case 94: key = "midiDelay"; MIDIDevice.setDelay(value, currentChannel); break;
         case 10: key = "midiPan"; MIDIDevice.setPan(value, currentChannel); break;
 
@@ -811,6 +807,9 @@ void MainComponent::setCallBacksForOverlayWindow()
 
         if (!midiWindow)
         {
+            if (soundEffectWindow)
+                soundEffectWindow->closeButtonPressed();
+
             midiWindow = std::make_unique<MIDIWindow>(
                 this->MIDIDevice, devicesIN, devicesOUT, propertiesFile);
 
@@ -828,21 +827,6 @@ void MainComponent::setCallBacksForOverlayWindow()
             midiWindow->isMidiDeviceOpen = [this]()
             {
                 return !playButton.isVisible();
-            };
-
-            midiWindow->onValueChangeSync = [this](int ccNumber, int value)
-            {
-                if (soundEffectWindow && midiWindow->getCurrentChannel() == soundEffectWindow->getContent().getSelectedChannel())
-                {
-                    auto& content = soundEffectWindow->getContent();
-                    switch (ccNumber)
-                    {
-                    case 7: content.getVolumeKnob().setValue(value,juce::dontSendNotification); break;
-                    case 91: content.getReverbKnob().setValue(value, juce::dontSendNotification); break;
-
-                    default: return;
-                    }
-                }
             };
 
             midiWindow->volumeSliderSetValue(MIDIDevice.getVolume(1));
@@ -875,6 +859,9 @@ void MainComponent::setCallBacksForOverlayWindow()
 
         if (!soundEffectWindow)
         {
+            if (midiWindow)
+                midiWindow->closeButtonPressed();
+
             soundEffectWindow = std::make_unique<SoundEffectWindow>();
 
             soundEffectWindow->setAlwaysOnTop(true);
