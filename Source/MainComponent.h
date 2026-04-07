@@ -278,6 +278,8 @@ private:
 
     void handleBreak(const juce::String& name);
 
+    void initializeOverlay();
+
     //==========================================================================
     // Member variables
     juce::ApplicationProperties appProperties; ///< Application properties manager
