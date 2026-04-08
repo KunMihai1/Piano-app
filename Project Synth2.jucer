@@ -304,6 +304,10 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="j3KJpG" name="styleSettingsEntry.h" compile="0" resource="0"
+            file="Source/styleSettingsEntry.h"/>
+      <FILE id="DspLsn" name="DisplayListener.h" compile="0" resource="0"
+            file="Source/DisplayListener.h"/>
       <FILE id="ksM2Lf" name="AppColours.h" compile="0" resource="0" file="Source/AppColours.h"/>
       <FILE id="DXD47A" name="SoundEffectWindowComponent.cpp" compile="1"
             resource="0" file="Source/SoundEffectWindowComponent.cpp"/>

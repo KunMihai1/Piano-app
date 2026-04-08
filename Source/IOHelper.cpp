@@ -595,3 +595,64 @@ void SectionIOHelper::loadFromFile(const juce::File& file, std::unordered_map<ju
         map[styleID] = std::move(sectionsMap);
     }
 }
+
+void EffectSettingsIOHelper::saveEffectsStyle(juce::PropertiesFile* propertiesFile ,const juce::String& styleID, int channel, const SoundSettings& s)
+{
+    const juce::String ch = (channel == 1 ? "First" : "Second");
+    const juce::String p = styleID + ".";
+
+    propertiesFile->setValue(p + "reverb" + ch, s.reverb);
+    propertiesFile->setValue(p + "volume" + ch, s.volume);
+
+    propertiesFile->setValue(p + "brightness" + ch, s.brightness);
+    propertiesFile->setValue(p + "chorus" + ch, s.chorus);
+    propertiesFile->setValue(p + "expression" + ch, s.expression);
+    propertiesFile->setValue(p + "resonance" + ch, s.resonance);
+    propertiesFile->setValue(p + "sustainToggle" + ch, s.sustainToggle ? 1 : 0);
+
+    propertiesFile->setValue(p + "attack" + ch, s.attack);
+    propertiesFile->setValue(p + "decay" + ch, s.decay);
+    propertiesFile->setValue(p + "release" + ch, s.release);
+    propertiesFile->setValue(p + "vibrato" + ch, s.vibrato);
+
+    propertiesFile->setValue(p + "delay" + ch, s.delay);
+    propertiesFile->setValue(p + "pan" + ch, s.pan);
+
+    propertiesFile->setValue(p + "distortion" + ch, s.distortion);
+    propertiesFile->setValue(p + "filterTrack" + ch, s.filterTrack);
+    propertiesFile->setValue(p + "tremolo" + ch, s.tremolo);
+    propertiesFile->setValue(p + "randomMod" + ch, s.randomMod);
+
+    propertiesFile->saveIfNeeded();
+}
+
+SoundSettings EffectSettingsIOHelper::loadEffectsStyle(const juce::PropertiesFile* propertiesFile, const juce::String& styleID, int channel)
+{
+    SoundSettings s;
+    const juce::String suffix = (channel == 1) ? "First" : "Second";
+    const juce::String p = styleID + ".";
+
+    s.reverb = propertiesFile->getIntValue(p + "reverb" + suffix, s.reverb);
+    s.volume = propertiesFile->getIntValue(p + "volume" + suffix, s.volume);
+
+    s.brightness = propertiesFile->getIntValue(p + "brightness" + suffix, s.brightness);
+    s.chorus = propertiesFile->getIntValue(p + "chorus" + suffix, s.chorus);
+    s.expression = propertiesFile->getIntValue(p + "expression" + suffix, s.expression);
+    s.resonance = propertiesFile->getIntValue(p + "resonance" + suffix, s.resonance);
+    s.sustainToggle = propertiesFile->getIntValue(p + "sustainToggle" + suffix, 0) != 0;
+
+    s.attack = propertiesFile->getIntValue(p + "attack" + suffix, s.attack);
+    s.decay = propertiesFile->getIntValue(p + "decay" + suffix, s.decay);
+    s.release = propertiesFile->getIntValue(p + "release" + suffix, s.release);
+    s.vibrato = propertiesFile->getIntValue(p + "vibrato" + suffix, s.vibrato);
+
+    s.delay = propertiesFile->getIntValue(p + "delay" + suffix, s.delay);
+    s.pan = propertiesFile->getIntValue(p + "pan" + suffix, s.pan);
+
+    s.distortion = propertiesFile->getIntValue(p + "distortion" + suffix, s.distortion);
+    s.filterTrack = propertiesFile->getIntValue(p + "filterTrack" + suffix, s.filterTrack);
+    s.tremolo = propertiesFile->getIntValue(p + "tremolo" + suffix, s.tremolo);
+    s.randomMod = propertiesFile->getIntValue(p + "randomMod" + suffix, s.randomMod);
+
+    return s;
+}

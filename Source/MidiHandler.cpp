@@ -4,6 +4,7 @@
 
 MidiDevice::MidiDevice() : currentDeviceIDin { 0 }, currentDeviceIDout{ 0 }, identifier{ "" }, minNote{ 0 }, maxNote{ 127 } {
 	this->currentDevicesIN.push_back("PC Keyboard");
+	styleSettings = std::make_unique<StyleSettings>();
 }
 
 MidiDevice::~MidiDevice()
@@ -327,17 +328,17 @@ std::weak_ptr<juce::MidiOutput> MidiDevice::getDeviceOUT() const
 void MidiDevice::setVolume(const int vValue, int channel) 
 {
 	if (channel == 1)
-		this-> firstInstrument.volume = vValue;
+		this->styleSettings->firstHand.volume = vValue;
 	else if (channel == 16)
-		this->secondInstrument.volume = vValue;
+		this->styleSettings->secondHand.volume = vValue;
 }
 
 int MidiDevice::getVolume(int channel) const
 {
 	if (channel == 1)
-		return this->firstInstrument.volume;
+		return this->styleSettings->firstHand.volume;
 	else if (channel == 16)
-		return this->secondInstrument.volume;
+		return this->styleSettings->secondHand.volume;
 
 	return 50.0;
 }
@@ -345,17 +346,17 @@ int MidiDevice::getVolume(int channel) const
 void MidiDevice::setReverb(const int rValue, int channel) 
 {
 	if (channel == 1)
-		this->firstInstrument.reverb = rValue;
+		this->styleSettings->firstHand.reverb = rValue;
 	else if (channel == 16)
-		this->secondInstrument.reverb = rValue;
+		this->styleSettings->secondHand.reverb = rValue;
 }
 
 int MidiDevice::getReverb(int channel) const
 {
 	if (channel == 1)
-		return this->firstInstrument.reverb;
+		return this->styleSettings->firstHand.reverb;
 	else if (channel == 16)
-		return this->secondInstrument.reverb;
+		return this->styleSettings->secondHand.reverb;
 
 	return 50.0;
 }
@@ -363,136 +364,136 @@ int MidiDevice::getReverb(int channel) const
 void MidiDevice::setBrightness(const int rValue, int channel)
 {
 	if (channel == 1)
-		this->firstInstrument.brightness = rValue;
+		this->styleSettings->firstHand.brightness = rValue;
 	else if (channel == 16)
-		this->secondInstrument.brightness = rValue;
+		this->styleSettings->secondHand.brightness = rValue;
 }
 
 int MidiDevice::getBrightness(int channel) const
 {
 	if (channel == 1)
-		return this->firstInstrument.brightness;
+		return this->styleSettings->firstHand.brightness;
 	else if (channel == 16)
-		return this->secondInstrument.brightness;
+		return this->styleSettings->secondHand.brightness;
 }
 
 void MidiDevice::setExpression(const int rValue, int channel)
 {
 	if (channel == 1)
-		this->firstInstrument.expression = rValue;
+		this->styleSettings->firstHand.expression = rValue;
 	else if (channel == 16)
-		this->secondInstrument.expression = rValue;
+		this->styleSettings->secondHand.expression = rValue;
 }
 
 int MidiDevice::getExpression(int channel) const
 {
 	if (channel == 1)
-		return this->firstInstrument.expression;
+		return this->styleSettings->firstHand.expression;
 	else if (channel == 16)
-		return this->secondInstrument.expression;
+		return this->styleSettings->secondHand.expression;
 }
 
 void MidiDevice::setChorus(const int rValue, int channel)
 {
 	if (channel == 1)
-		this->firstInstrument.chours = rValue;
+		this->styleSettings->firstHand.chorus = rValue;
 	else if (channel == 16)
-		this->secondInstrument.chours = rValue;
+		this->styleSettings->secondHand.chorus = rValue;
 }
 
 int MidiDevice::getChorus(int channel) const
 {
 	if (channel == 1)
-		return this->firstInstrument.chours;
+		return this->styleSettings->firstHand.chorus;
 	else if (channel == 16)
-		return this->secondInstrument.chours;
+		return this->styleSettings->secondHand.chorus;
 }
 
 void MidiDevice::setResonance(const int rValue, int channel)
 {
 	if (channel == 1)
-		this->firstInstrument.resonance = rValue;
+		this->styleSettings->firstHand.resonance = rValue;
 	else if (channel == 16)
-		this->secondInstrument.resonance = rValue;
+		this->styleSettings->secondHand.resonance = rValue;
 }
 
 int MidiDevice::getResonance(int channel) const
 {
 	if (channel == 1)
-		return this->firstInstrument.resonance;
+		return this->styleSettings->firstHand.resonance;
 	else if (channel == 16)
-		return this->secondInstrument.resonance;
+		return this->styleSettings->secondHand.resonance;
 }
 
 void MidiDevice::setSustainToggle(const bool rValue, int channel)
 {
 	if (channel == 1)
-		this->firstInstrument.sustainToggle = rValue;
+		this->styleSettings->firstHand.sustainToggle = rValue;
 	else if (channel == 16)
-		this->secondInstrument.sustainToggle = rValue;
+		this->styleSettings->secondHand.sustainToggle = rValue;
 }
 
 bool MidiDevice::getSustainToggle(int channel) const
 {
 	if (channel == 1)
-		return this->firstInstrument.sustainToggle;
+		return this->styleSettings->firstHand.sustainToggle;
 	else if (channel == 16)
-		return this->secondInstrument.sustainToggle;
+		return this->styleSettings->secondHand.sustainToggle;
 }
 
 
 void MidiDevice::setAttack(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.attack = rValue;
-	else if (channel == 16) secondInstrument.attack = rValue;
+	if (channel == 1) styleSettings->firstHand.attack = rValue;
+	else if (channel == 16) styleSettings->secondHand.attack = rValue;
 }
 
 int MidiDevice::getAttack(int channel) const
 {
-	if (channel == 1) return firstInstrument.attack;
-	else if (channel == 16) return secondInstrument.attack;
+	if (channel == 1) return styleSettings->firstHand.attack;
+	else if (channel == 16) return styleSettings->secondHand.attack;
 	return 0;
 }
 
 
 void MidiDevice::setDecay(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.decay = rValue;
-	else if (channel == 16) secondInstrument.decay = rValue;
+	if (channel == 1) styleSettings->firstHand.decay = rValue;
+	else if (channel == 16) styleSettings->secondHand.decay = rValue;
 }
 
 int MidiDevice::getDecay(int channel) const
 {
-	if (channel == 1) return firstInstrument.decay;
-	else if (channel == 16) return secondInstrument.decay;
+	if (channel == 1) return styleSettings->firstHand.decay;
+	else if (channel == 16) return styleSettings->secondHand.decay;
 	return 0;
 }
 
 
 void MidiDevice::setRelease(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.release = rValue;
-	else if (channel == 16) secondInstrument.release = rValue;
+	if (channel == 1) styleSettings->firstHand.release = rValue;
+	else if (channel == 16) styleSettings->secondHand.release = rValue;
 }
 
 int MidiDevice::getRelease(int channel) const
 {
-	if (channel == 1) return firstInstrument.release;
-	else if (channel == 16) return secondInstrument.release;
+	if (channel == 1) return styleSettings->firstHand.release;
+	else if (channel == 16) return styleSettings->secondHand.release;
 	return 0;
 }
 
 
 void MidiDevice::setVibrato(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.vibrato = rValue;
-	else if (channel == 16) secondInstrument.vibrato = rValue;
+	if (channel == 1) styleSettings->firstHand.vibrato = rValue;
+	else if (channel == 16) styleSettings->secondHand.vibrato = rValue;
 }
 
 int MidiDevice::getVibrato(int channel) const
 {
-	if (channel == 1) return firstInstrument.vibrato;
-	else if (channel == 16) return secondInstrument.vibrato;
+	if (channel == 1) return styleSettings->firstHand.vibrato;
+	else if (channel == 16) return styleSettings->secondHand.vibrato;
 	return 0;
 }
 
@@ -500,84 +501,84 @@ int MidiDevice::getVibrato(int channel) const
 
 void MidiDevice::setDelay(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.delay = rValue;
-	else if (channel == 16) secondInstrument.delay = rValue;
+	if (channel == 1) styleSettings->firstHand.delay = rValue;
+	else if (channel == 16) styleSettings->secondHand.delay = rValue;
 }
 
 int MidiDevice::getDelay(int channel) const
 {
-	if (channel == 1) return firstInstrument.delay;
-	else if (channel == 16) return secondInstrument.delay;
+	if (channel == 1) return styleSettings->firstHand.delay;
+	else if (channel == 16) return styleSettings->secondHand.delay;
 	return 0;
 }
 
 
 void MidiDevice::setPan(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.pan = rValue;
-	else if (channel == 16) secondInstrument.pan = rValue;
+	if (channel == 1) styleSettings->firstHand.pan = rValue;
+	else if (channel == 16) styleSettings->secondHand.pan = rValue;
 }
 
 int MidiDevice::getPan(int channel) const
 {
-	if (channel == 1) return firstInstrument.pan;
-	else if (channel == 16) return secondInstrument.pan;
+	if (channel == 1) return styleSettings->firstHand.pan;
+	else if (channel == 16) return styleSettings->secondHand.pan;
 	return 0;
 }
 
 
 void MidiDevice::setDistortion(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.distortion = rValue;
-	else if (channel == 16) secondInstrument.distortion = rValue;
+	if (channel == 1) styleSettings->firstHand.distortion = rValue;
+	else if (channel == 16) styleSettings->secondHand.distortion = rValue;
 }
 
 int MidiDevice::getDistortion(int channel) const
 {
-	if (channel == 1) return firstInstrument.distortion;
-	else if (channel == 16) return secondInstrument.distortion;
+	if (channel == 1) return styleSettings->firstHand.distortion;
+	else if (channel == 16) return styleSettings->secondHand.distortion;
 	return 0;
 }
 
 
 void MidiDevice::setFilterTrack(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.filterTrack = rValue;
-	else if (channel == 16) secondInstrument.filterTrack = rValue;
+	if (channel == 1) styleSettings->firstHand.filterTrack = rValue;
+	else if (channel == 16) styleSettings->secondHand.filterTrack = rValue;
 }
 
 int MidiDevice::getFilterTrack(int channel) const
 {
-	if (channel == 1) return firstInstrument.filterTrack;
-	else if (channel == 16) return secondInstrument.filterTrack;
+	if (channel == 1) return styleSettings->firstHand.filterTrack;
+	else if (channel == 16) return styleSettings->secondHand.filterTrack;
 	return 0;
 }
 
 
 void MidiDevice::setTremolo(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.tremolo = rValue;
-	else if (channel == 16) secondInstrument.tremolo = rValue;
+	if (channel == 1) styleSettings->firstHand.tremolo = rValue;
+	else if (channel == 16) styleSettings->secondHand.tremolo = rValue;
 }
 
 int MidiDevice::getTremolo(int channel) const
 {
-	if (channel == 1) return firstInstrument.tremolo;
-	else if (channel == 16) return secondInstrument.tremolo;
+	if (channel == 1) return styleSettings->firstHand.tremolo;
+	else if (channel == 16) return styleSettings->secondHand.tremolo;
 	return 0;
 }
 
 
 void MidiDevice::setRandomMod(const int rValue, int channel)
 {
-	if (channel == 1) firstInstrument.randomMod = rValue;
-	else if (channel == 16) secondInstrument.randomMod = rValue;
+	if (channel == 1) styleSettings->firstHand.randomMod = rValue;
+	else if (channel == 16) styleSettings->secondHand.randomMod = rValue;
 }
 
 int MidiDevice::getRandomMod(int channel) const
 {
-	if (channel == 1) return firstInstrument.randomMod;
-	else if (channel == 16) return secondInstrument.randomMod;
+	if (channel == 1) return styleSettings->firstHand.randomMod;
+	else if (channel == 16) return styleSettings->secondHand.randomMod;
 	return 0;
 }
 

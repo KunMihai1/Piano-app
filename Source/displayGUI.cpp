@@ -164,6 +164,13 @@ void Display::changeListenerCallback(juce::ChangeBroadcaster* source)
     }
 }
 
+juce::String Display::getStyleID() const
+{
+    if (currentStyleComponent)
+        return this->currentStyleComponent->getStyleID();
+    else return "style_default";
+}
+
 int Display::getTabIndexByName(const juce::String& name)
 {
     auto& tabBar = tabComp->getTabbedButtonBar();
@@ -243,6 +250,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
         tabComp->getTabbedButtonBar().setTabName(index, name);
         currentStyleComponent->updateName(name);
     }
+
     currentStyleComponent->anyTrackChanged = [this, name]()
     {
         updateStyleInJson(name);
@@ -282,6 +290,11 @@ void Display::showCurrentStyleTab(const juce::String& name)
     }
 
     double bpmToUse = currentStyleComponent->getTempo();
+
+    //aici dam load la efecte si tot ce tine de acest stil
+    
+    if (loadSettingsOnStyleChange)
+        loadSettingsOnStyleChange(styleID);
 
     currentStyleComponent->applyBPMchangeBeforePlayback(bpmToUse);
     currentStyleComponent->applyChangesForAllTracksCurrentStyle();
@@ -772,7 +785,26 @@ void Display::initializeAllStyles()
 
     juce::Array<juce::var> stylesArray;
 
-    for (int i = 0; i < 10; ++i)
+    auto* styleObj = new juce::DynamicObject{};
+    juce::String styleName = "DEFAULT Style";
+    styleObj->setProperty("name", styleName);
+    styleObj->setProperty("BPM", 120.0f);
+    styleObj->setProperty("StyleID", "style_default");
+    juce::Array<juce::var> tracksArray;
+    for (int t = 0; t < 8; ++t)
+    {
+        auto* trackObj = new juce::DynamicObject{};
+        trackObj->setProperty("name", "None");
+        trackObj->setProperty("type", "None");
+        trackObj->setProperty("volume", 50.0f);
+        trackObj->setProperty("instrumentNumber", -1);
+        trackObj->setProperty("uuid", "noID");
+        tracksArray.add(trackObj);
+    }
+    styleObj->setProperty("tracks", tracksArray);
+    stylesArray.add(styleObj);
+
+    for (int i = 0; i < 9; ++i)
     {
         auto* styleObj = new juce::DynamicObject{};
         juce::String styleName = "Style " + juce::String(i + 1);
@@ -1060,14 +1092,24 @@ void StyleViewComponent::mouseUp(const juce::MouseEvent& event)
         else if (event.mods.isRightButtonDown())
         {
             juce::PopupMenu menu;
-            menu.addItem("Rename", [this]() {
-                changeNameLabel();
-                });
+            if (label.getText() == "DEFAULT Style")
+            {
+                menu.addItem("Can't change", [this]() {
+                    
+                    });
+            }
+            else
+            {
+                menu.addItem("Rename", [this]() {
+                    changeNameLabel();
+                    });
 
-            menu.addItem("Delete", [this]() {
-                removeStyle();
-                });
+                menu.addItem("Delete", [this]() {
+                    removeStyle();
+                    });
 
+                
+            }
             menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this));
         }
     }

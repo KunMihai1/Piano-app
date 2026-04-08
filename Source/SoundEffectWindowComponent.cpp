@@ -109,7 +109,10 @@ EffectKnobComponent::EffectKnobComponent(const juce::String& name,
     knob.onValueChange = [this]()
     {
         valueLabel.setText(juce::String((int)knob.getValue()), juce::dontSendNotification);
+    };
 
+    knob.onDragEnd = [this]()
+    {
         if (onValueChanged)
             onValueChanged(cc, (int)knob.getValue());
     };

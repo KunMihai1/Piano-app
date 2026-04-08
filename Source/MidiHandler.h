@@ -1,36 +1,12 @@
+
 #pragma once
 
 #include <JuceHeader.h>
+#include "styleSettingsEntry.h"
 #include "MidiDevicesDB.h"
 #include "MidiHandlerAbstractSubject.h"
 #include "InstrumentHandler.h"
-#include "displayGUI.h"
-
-struct SoundSettings
-{
-	int reverb=64;
-	int volume=64;
-
-	int brightness = 0;
-	int chours = 0;
-	int expression = 0;
-	int resonance = 0;
-	bool sustainToggle = 0;
-
-	int attack = 0;
-	int decay = 0;
-	int release = 0;
-	int vibrato = 0;
-
-	int delay = 0;
-	int pan = 0;
-
-	int distortion = 0;
-	int filterTrack = 0;
-	int tremolo = 0;
-	int randomMod = 0;
-
-};
+#include "DisplayListener.h"
 
 class MidiDevice {
 public:
@@ -312,8 +288,7 @@ private:
 	bool deviceCheckedForUpdateAtLeastOnce = false;
 	juce::String identifier;
 
-	SoundSettings firstInstrument;
-	SoundSettings secondInstrument;
+	std::unique_ptr<StyleSettings> styleSettings=nullptr;
 
 	int minNote, maxNote;
 
