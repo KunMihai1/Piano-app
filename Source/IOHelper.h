@@ -11,6 +11,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "styleSettingsEntry.h"
 #include "TrackEntry.h"
 #include "StyleSection.h"
 #include "PlayBackSettingsCustomComponent.h"
@@ -139,4 +140,13 @@ public:
 
 private:
 
+};
+
+
+class EffectSettingsIOHelper
+{
+public:
+    static void saveEffectsStyle(juce::PropertiesFile* propertiesFile, const juce::String& styleID, int channel, const SoundSettings& s);
+
+    static SoundSettings loadEffectsStyle(const juce::PropertiesFile* propertiesFile, const juce::String& styleID, int channel);
 };

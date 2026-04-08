@@ -21,6 +21,7 @@
 #include "IOHelper.h"
 #include "TrackPlayerListener.h"
 #include "StyleSection.h"
+#include "DisplayListener.h"
 
 /**
  * @class TrackListComponent
@@ -854,27 +855,7 @@ public:
     //JUCE_LEAK_DETECTOR(MyTabbedComponent)
 };
 
-/**
- * @class DisplayListener
- * @brief Abstract interface to receive updates from the Display component.
- *
- * Classes implementing `DisplayListener` can receive notifications when
- * playback settings are changed.
- */
-class DisplayListener {
-public:
-
-    /** @brief Destructor */
-    virtual ~DisplayListener() = default;
-
-    /**
-     * @brief Called when playback settings change.
-     * @param settings The new playback settings
-     */
-    virtual void playBackSettingsChanged(const PlayBackSettings& settings)=0;
-
-    virtual void playBackSettingsTransposeChanged(int transposeValue) = 0;
-};
+// DisplayListener is now defined in DisplayListener.h
 
 
 
@@ -892,6 +873,9 @@ class Display : public juce::Component,
                 public TrackListListener
 {
 public:
+
+    std::function<void(const juce::String& styleID)> loadSettingsOnStyleChange;
+
     //==============================================================================
     /**
      * @brief Constructs a Display component.
@@ -905,6 +889,8 @@ public:
 
     /** @brief Callback from `ChangeBroadcaster` */
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+
+    juce::String getStyleID() const;
 
     /**
      * @brief Gets the tab index for a tab by its name.
