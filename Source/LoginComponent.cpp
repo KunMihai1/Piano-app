@@ -186,16 +186,16 @@ void LoginComponent::handleLogin()
 
             auto response = clientPtr->login(email, pass);
 
-           
+            if (safeThis == nullptr)
+                return;
 
-            juce::MessageManager::callAsync([response, safeThis, clientPtr]()
+            auto body = response.body;
+
+            auto parsed = juce::JSON::parse(body);
+
+            juce::MessageManager::callAsync([body,parsed,response, safeThis, clientPtr]()
                 {
-                    if (safeThis == nullptr)
-                        return;
-
-                    auto body = response.body;
-
-                    auto parsed = juce::JSON::parse(body);
+                    
 
                     if (!parsed.isObject())
                     {
@@ -343,16 +343,16 @@ void LoginComponent::handleDoneSignup()
 
             auto response = clientPtr->signup(email, pass, username);
 
-            
+            if (safeThis == nullptr)
+                return;
 
-            juce::MessageManager::callAsync([response, safeThis]()
+            auto body = response.body;
+
+            auto parsed = juce::JSON::parse(body);
+
+            juce::MessageManager::callAsync([body,parsed,response, safeThis]()
                 {
-                    if (safeThis == nullptr)
-                        return;
-
-                    auto body = response.body;
-
-                    auto parsed = juce::JSON::parse(body);
+                    
 
                     if (!parsed.isObject())
                     {
