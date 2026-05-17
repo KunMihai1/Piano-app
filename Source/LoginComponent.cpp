@@ -9,146 +9,167 @@
 */
 
 #include "LoginComponent.h"
+#include "AppColours.h"
+
+using namespace AppColours;
 
 
 LoginComponent::LoginComponent(std::shared_ptr<SupabaseClient> newClient): client{newClient}
 {
+    auto setupLabel = [](juce::Label& lbl, const juce::String& text) {
+        lbl.setText(text, juce::dontSendNotification);
+        lbl.setColour(juce::Label::textColourId, subtitleText);
+        lbl.setFont(juce::FontOptions(16.0f, juce::Font::bold));
+        lbl.setJustificationType(juce::Justification::centredRight);
+    };
+
+    auto setupTE = [](juce::TextEditor& te, const juce::String& emptyText) {
+        te.setMultiLine(false);
+        te.setColour(juce::TextEditor::backgroundColourId, background.withAlpha(0.6f));
+        te.setColour(juce::TextEditor::textColourId, titleText);
+        te.setColour(juce::TextEditor::outlineColourId, separator);
+        te.setColour(juce::TextEditor::focusedOutlineColourId, accent1);
+        te.setFont(juce::FontOptions(16.0f));
+        te.setTextToShowWhenEmpty(emptyText, subtitleText);
+    };
+
     emailLabel = std::make_unique<juce::Label>();
-    emailLabel->setText("Email:", juce::dontSendNotification);
+    setupLabel(*emailLabel, "Email:");
     addAndMakeVisible(emailLabel.get());
 
     emailTE = std::make_unique<juce::TextEditor>();
-    emailTE->setMultiLine(false);
+    setupTE(*emailTE, "Enter email...");
     addAndMakeVisible(emailTE.get());
 
-
-
     passwordLabel = std::make_unique<juce::Label>();
-    passwordLabel->setText("Password:", juce::dontSendNotification);
+    setupLabel(*passwordLabel, "Password:");
     addAndMakeVisible(passwordLabel.get());
 
     passwordField = std::make_unique<PasswordField>();
     addAndMakeVisible(passwordField.get());
 
-
     UsernameLabel = std::make_unique<juce::Label>();
-    UsernameLabel->setText("Username", juce::dontSendNotification);
-    
+    setupLabel(*UsernameLabel, "Username:");
     addAndMakeVisible(UsernameLabel.get());
-
     UsernameLabel->setVisible(false);
 
     UsernameTE = std::make_unique<juce::TextEditor>();
-    UsernameTE->setMultiLine(false);
-    
+    setupTE(*UsernameTE, "Enter username...");
     addAndMakeVisible(UsernameTE.get());
-
     UsernameTE->setVisible(false);
 
+    auto styleButton = [](juce::TextButton* btn, juce::Colour bgColour) {
+        btn->setColour(juce::TextButton::buttonColourId, bgColour);
+        btn->setColour(juce::TextButton::textColourOnId, titleText);
+        btn->setColour(juce::TextButton::textColourOffId, titleText);
+        btn->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    };
 
     loginTB = std::make_unique<juce::TextButton>("Login");
     loginTB->onClick = [this]() { handleLogin(); };
-    loginTB->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    styleButton(loginTB.get(), accent1); // Warm orange for main action
     addAndMakeVisible(loginTB.get());
     
-
     signupTB = std::make_unique<juce::TextButton>("Sign Up");
     signupTB->onClick = [this]() { handleSignup(); };
-    signupTB->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    styleButton(signupTB.get(), panelBg);
     addAndMakeVisible(signupTB.get());
 
-
-    forgotPassTB = std::make_unique<juce::TextButton>("Forgot Password?");
+    forgotPassTB = std::make_unique<juce::TextButton>("Forgot Pass?");
     forgotPassTB->onClick = [this]() { handleForgotPassword(); };
-    forgotPassTB->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    styleButton(forgotPassTB.get(), panelBg);
     addAndMakeVisible(forgotPassTB.get());
 
     doneTB = std::make_unique<juce::TextButton>("Done");
-    doneTB->onClick = [this]()
-    {
-        handleDoneSignup();
-    };
-
-    doneTB->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    doneTB->onClick = [this]() { handleDoneSignup(); };
+    styleButton(doneTB.get(), accent1);
     addAndMakeVisible(doneTB.get());
-
     doneTB->setVisible(false);
 
     backTB = std::make_unique<juce::TextButton>("Back");
-    backTB->onClick = [this]()
-    {
-        handleBack();
-     };
-
+    backTB->onClick = [this]() { handleBack(); };
+    styleButton(backTB.get(), panelBg);
     addAndMakeVisible(backTB.get());
     backTB->setVisible(false);
-
-
 }
 
 void LoginComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::grey);
+    auto bounds = getLocalBounds().toFloat();
+    
+    // Glassmorphism card background
+    g.setColour(cardBg.withAlpha(0.85f));
+    g.fillRoundedRectangle(bounds, 15.0f);
 
-    g.setColour(juce::Colours::black);
+    // Subtle border
+    g.setColour(separator.withAlpha(0.5f));
+    g.drawRoundedRectangle(bounds, 15.0f, 1.5f);
 
-    int borderThickness = 3;
-
-    g.drawRect(getLocalBounds(), borderThickness);
+    // Header Title
+    g.setFont(juce::FontOptions(32.0f, juce::Font::bold));
+    g.setColour(titleText);
+    
+    // Offset the header down slightly so it doesn't overlap the Back button
+    auto headerArea = bounds.removeFromTop(90).withTrimmedTop(25);
+    g.drawText(UsernameLabel->isVisible() ? "Create Account" : "Welcome Back", 
+               headerArea, juce::Justification::centred, false);
 }
 
 
 void LoginComponent::resized()
 {
     auto bounds = getLocalBounds();
-    auto area = bounds.reduced(20);
-    const int rowHeight = 30;
+    auto area = bounds.reduced(30); 
+    const int rowHeight = 35; 
+    const int spacing = 20;
 
-    
     if (backTB != nullptr)
-        backTB->setBounds(bounds.getX() + 10,
-            bounds.getY() + 10,
-            80,
-            30);
+        backTB->setBounds(bounds.getX() + 15, bounds.getY() + 15, 80, 30);
 
+    area.removeFromTop(60); // Skip header
+
+    auto layoutField = [&](juce::Label* label, juce::Component* field) {
+        auto row = area.removeFromTop(rowHeight);
+        label->setBounds(row.removeFromLeft(90).reduced(0, 0)); 
+        row.removeFromLeft(10); // Spacing between label and input
+        field->setBounds(row);
+        area.removeFromTop(spacing);
+    };
+
+    if (UsernameLabel->isVisible()) {
+        layoutField(UsernameLabel.get(), UsernameTE.get());
+    } else {
+        UsernameLabel->setBounds(0,0,0,0);
+        UsernameTE->setBounds(0,0,0,0);
+    }
+
+    layoutField(emailLabel.get(), emailTE.get());
+    layoutField(passwordLabel.get(), passwordField.get());
+
+    area.removeFromTop(10); 
+
+    auto buttonArea = area.removeFromTop(rowHeight + 5);
+    int buttonSpacing = 12;
     
-    area.removeFromTop(50);
+    if (loginTB->isVisible()) {
+        int buttonWidth = (buttonArea.getWidth() - 2 * buttonSpacing) / 3;
+        int x = buttonArea.getX();
 
-    
-    emailLabel->setBounds(area.removeFromTop(rowHeight).removeFromLeft(120));
-    emailTE->setBounds(area.removeFromTop(rowHeight));
+        loginTB->setBounds(x, buttonArea.getY(), buttonWidth, buttonArea.getHeight());
+        x += buttonWidth + buttonSpacing;
 
-    passwordLabel->setBounds(area.removeFromTop(rowHeight).removeFromLeft(120));
-    passwordField->setBounds(area.removeFromTop(rowHeight));
+        signupTB->setBounds(x, buttonArea.getY(), buttonWidth, buttonArea.getHeight());
+        x += buttonWidth + buttonSpacing;
 
-    UsernameLabel->setBounds(area.removeFromTop(rowHeight).removeFromLeft(150));
-    UsernameTE->setBounds(area.removeFromTop(rowHeight));
+        forgotPassTB->setBounds(x, buttonArea.getY(), buttonWidth, buttonArea.getHeight());
+    }
 
-    area.removeFromTop(20); 
-
-    
-    auto buttonArea = area.removeFromTop(rowHeight);
-    int buttonSpacing = 10;
-    int buttonWidth = (buttonArea.getWidth() - 2 * buttonSpacing) / 3;
-    int x = buttonArea.getX();
-
-    loginTB->setBounds(x, buttonArea.getY(), buttonWidth, rowHeight);
-    x += buttonWidth + buttonSpacing;
-
-    signupTB->setBounds(x, buttonArea.getY(), buttonWidth, rowHeight);
-    x += buttonWidth + buttonSpacing;
-
-    forgotPassTB->setBounds(x, buttonArea.getY(), buttonWidth, rowHeight);
-
-    
-    if (doneTB != nullptr)
+    if (doneTB != nullptr && doneTB->isVisible())
     {
-        int doneWidth = 120;
-        int doneHeight = 35;
-
+        int doneWidth = 140;
+        int doneHeight = 45;
         int doneX = bounds.getCentreX() - doneWidth / 2;
-        int doneY = bounds.getBottom() - 70; 
-
+        int doneY = bounds.getBottom() - 65; 
         doneTB->setBounds(doneX, doneY, doneWidth, doneHeight);
     }
 }
@@ -449,6 +470,9 @@ void LoginComponent::toLoginVisbility()
     forgotPassTB->setVisible(true);
     loginTB->setVisible(true);
     signupTB->setVisible(true);
+    
+    resized();
+    repaint();
 }
 
 void LoginComponent::toSignupVisibility()
@@ -464,14 +488,23 @@ void LoginComponent::toSignupVisibility()
     forgotPassTB->setVisible(false);
     loginTB->setVisible(false);
     signupTB->setVisible(false);
+    
+    resized();
+    repaint();
 }
 
 PasswordField::PasswordField()
 {
     passwordTE.setMultiLine(false);
-    passwordTE.setPasswordCharacter('*');
+    passwordTE.setPasswordCharacter((juce::juce_wchar)0x2022);
     passwordTE.setCaretVisible(true);
-    passwordTE.setTextToShowWhenEmpty("Enter password...", juce::Colours::grey);
+    passwordTE.setTextToShowWhenEmpty("Enter password...", subtitleText);
+    
+    passwordTE.setColour(juce::TextEditor::backgroundColourId, background.withAlpha(0.6f));
+    passwordTE.setColour(juce::TextEditor::textColourId, titleText);
+    passwordTE.setColour(juce::TextEditor::outlineColourId, separator);
+    passwordTE.setColour(juce::TextEditor::focusedOutlineColourId, accent1);
+    passwordTE.setFont(juce::FontOptions(16.0f));
     addAndMakeVisible(passwordTE);
 
     
@@ -485,7 +518,7 @@ PasswordField::PasswordField()
     eyeButton->onClick = [this]()
         {
             visible = !visible;
-            passwordTE.setPasswordCharacter(visible ? 0 : '*'); 
+            passwordTE.setPasswordCharacter(visible ? 0 : (juce::juce_wchar)0x2022); 
             eyeButton->setImages(visible ? eyeVisibleDrawable.get() : eyeInvisibleDrawable.get());
         };
 
