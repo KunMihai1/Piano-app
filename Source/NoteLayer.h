@@ -10,17 +10,17 @@
 
 #pragma once
 
+#include <vector>
+#include <unordered_map>
+#include <utility>
+#include <memory>
+#include <atomic>
+#include <algorithm>
+
 #include "MidiHandler.h"
 #include "KeyboardUI.h"
 
-/**
- * @class NoteLayer
- * @brief Visual layer displaying active and falling MIDI notes with particle effects.
- *
- * This component listens to MIDI note events, draws active notes and falling notes,
- * and manages particle effects for note-on events. It supports OpenGL rendering
- * for performant particle animations and visual effects.
- */
+// NoteLayer displays active and falling MIDI notes with particle effects.
 class NoteLayer : public juce::Component, public MidiHandlerListener, public juce::Timer, private juce::OpenGLRenderer
 {
 public:
@@ -72,11 +72,13 @@ public:
     /** @brief Enables or disables spawning of particles */
     void setSpawnParticleState(bool state);
 
-    std::pair<const char*, const char*> basicParticlesShader();
+    /** @brief Sets the particle skin style (1 = Sparks, 2 = Dust, 3 = Smoke) */
+    void setParticleStyle(int styleId);
 
+    std::pair<const char*, const char*> sparksShader();
     std::pair<const char*, const char*> dustShader();
-
-    std::pair<const char*, const char*> getShaderChoice(int choice = 1);
+    std::pair<const char*, const char*> smokeShader();
+    std::pair<const char*, const char*> getShaderChoice(int styleId);
 
 
 private:
@@ -119,13 +121,20 @@ private:
     juce::OpenGLShaderProgram::Attribute* pointSizeAttr = nullptr;
     juce::OpenGLShaderProgram::Attribute* colourAttr = nullptr;
 
+    struct Vertex {
+        float x, y;
+        float size;
+        float r, g, b, a;
+    };
     GLuint particleVBO = 0;                    /**< Vertex buffer object for particles */
     std::vector<Particle> particles;           /**< Active particles */
+    std::vector<Vertex> renderVerts;           /**< Preallocated vertex buffer */
 
     std::unordered_map<int, AnimatedNote> activeNotes; /**< Notes currently pressed */
     std::vector<AnimatedNote> fallingNotes;           /**< Notes released and falling */
 
     bool isActive;                             /**< Whether the layer is active */
     bool spawnParticleState = false;           /**< Whether particle spawning is enabled */
-    int choice = 1;
+    int currentStyle = 2;                      /**< 1: Sparks, 2: Dust, 3: Smoke */
+    std::atomic<bool> needsShaderRecompile;
 };
