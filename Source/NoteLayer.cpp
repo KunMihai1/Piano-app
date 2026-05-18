@@ -18,8 +18,13 @@
 
 using namespace juce::gl;
 
-NoteLayer::NoteLayer(KeyboardUI& referenceKeyboard) : keyBoardUI{ referenceKeyboard }
+NoteLayer::NoteLayer(KeyboardUI& referenceKeyboard) 
+    : keyBoardUI{ referenceKeyboard }, 
+      needsShaderRecompile (false)
 {
+    particles.reserve(2000);
+    renderVerts.reserve(2000);
+
     setSize(getWidth(), getHeight());
     //keyBoardUI.midiHandler.addListener(this);
 
@@ -109,7 +114,7 @@ void NoteLayer::noteOffReceived(int midiNote)
 
 void NoteLayer::newOpenGLContextCreated()
 {
-    std::pair<const char*, const char*> p = getShaderChoice(choice);
+    std::pair<const char*, const char*> p = getShaderChoice(currentStyle);
     const char* vertexSource = p.first;
     const char* fragmentSource = p.second;
 
@@ -147,6 +152,12 @@ void NoteLayer::newOpenGLContextCreated()
 
 void NoteLayer::renderOpenGL()
 {
+    if (needsShaderRecompile.exchange(false))
+    {
+        openGLContextClosing();
+        newOpenGLContextCreated();
+    }
+
     glClearColor(0.f, 0.f, 0.f, 0.f);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -154,24 +165,15 @@ void NoteLayer::renderOpenGL()
     {
         shader->use();
 
-        if (choice == 2)
-        {
-            float t = (float)juce::Time::getMillisecondCounterHiRes() * 0.001f;
+        float t = (float)juce::Time::getMillisecondCounterHiRes() * 0.001f;
+        if (shader->getUniformIDFromName("uTime") >= 0)
             shader->setUniform("uTime", t);
-        }
 
-        struct Vertex {
-            float x, y;
-            float size;
-            float r, g, b, a;
-        };
-
-        std::vector<Vertex> verts;
-        verts.reserve(particles.size());
+        renderVerts.clear();
 
         for (const auto& p : particles)
         {
-            verts.push_back({ p.pos.x, p.pos.y, p.size*0.5f,
+            renderVerts.push_back({ p.pos.x, p.pos.y, p.size*0.5f,
                               p.colour.getFloatRed(),
                               p.colour.getFloatGreen(),
                               p.colour.getFloatBlue(),
@@ -179,7 +181,7 @@ void NoteLayer::renderOpenGL()
         }
 
         openGLContext.extensions.glBindBuffer(GL_ARRAY_BUFFER, particleVBO);
-        openGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(Vertex)* verts.size()), verts.data(), GL_DYNAMIC_DRAW);
+        openGLContext.extensions.glBufferData(GL_ARRAY_BUFFER, (GLsizeiptr)(sizeof(Vertex)* renderVerts.size()), renderVerts.data(), GL_DYNAMIC_DRAW);
 
         if (positionAttr != nullptr)
         {
@@ -204,7 +206,7 @@ void NoteLayer::renderOpenGL()
         //glBlendFunc(GL_SRC_ALPHA, GL_ONE); // additive blend
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        glDrawArrays(GL_POINTS, 0, (GLsizei)verts.size());
+        glDrawArrays(GL_POINTS, 0, (GLsizei)renderVerts.size());
 
         // Cleanup
         if (positionAttr) openGLContext.extensions.glDisableVertexAttribArray(positionAttr->attributeID);
@@ -258,9 +260,16 @@ void NoteLayer::setSpawnParticleState(bool state)
     this->spawnParticleState = state;
 }
 
-std::pair<const char*, const char*> NoteLayer::basicParticlesShader()
+void NoteLayer::setParticleStyle(int styleId)
 {
-    const char* basicVertex =
+    if (currentStyle == styleId) return;
+    currentStyle = styleId;
+    needsShaderRecompile = true;
+}
+
+std::pair<const char*, const char*> NoteLayer::sparksShader()
+{
+    const char* sparksVertex =
         "attribute vec2 position;\n"
         "attribute float pointSize;\n"
         "attribute vec4 colour;\n"
@@ -272,7 +281,37 @@ std::pair<const char*, const char*> NoteLayer::basicParticlesShader()
         "    vColour = colour;\n"
         "}\n";
 
-    const char* basicFragment =
+    const char* sparksFragment =
+        "#ifdef GL_ES\n"
+        "precision mediump float;\n"
+        "#endif\n"
+        "varying vec4 vColour;\n"
+        "void main()\n"
+        "{\n"
+        "    vec2 uv = gl_PointCoord.xy;\n"
+        "    float dist = distance(uv, vec2(0.5, 0.5));\n"
+        "    float alpha = 1.0 - smoothstep(0.4, 0.5, dist);\n"
+        "    gl_FragColor = vec4(vColour.rgb, alpha * vColour.a);\n"
+        "}\n";
+
+    return {sparksVertex, sparksFragment};
+}
+
+std::pair<const char*, const char*> NoteLayer::dustShader()
+{
+    const char* dustVertex =
+        "attribute vec2 position;\n"
+        "attribute float pointSize;\n"
+        "attribute vec4 colour;\n"
+        "varying vec4 vColour;\n"
+        "void main()\n"
+        "{\n"
+        "    gl_PointSize = pointSize;\n"
+        "    gl_Position = vec4(position, 0.0, 1.0);\n"
+        "    vColour = colour;\n"
+        "}\n";
+
+    const char* dustFragment =
         "#ifdef GL_ES\n"
         "precision mediump float;\n"
         "#endif\n"
@@ -287,138 +326,132 @@ std::pair<const char*, const char*> NoteLayer::basicParticlesShader()
         "    gl_FragColor = vec4(color, alpha * vColour.a);\n"
         "}\n";
 
-    return std::pair<const char*, const char*>(basicVertex,basicFragment);
+    return {dustVertex, dustFragment};
 }
 
-std::pair<const char*, const char*> NoteLayer::dustShader()
+std::pair<const char*, const char*> NoteLayer::smokeShader()
 {
-    const char* dustVertex = R"VERT(
-    attribute vec2 position;
-    attribute float pointSize;
-    attribute vec4 colour;
+    const char* smokeVertex =
+        "attribute vec2 position;\n"
+        "attribute float pointSize;\n"
+        "attribute vec4 colour;\n"
+        "varying vec4 vColour;\n"
+        "void main()\n"
+        "{\n"
+        "    gl_PointSize = pointSize;\n"
+        "    gl_Position = vec4(position, 0.0, 1.0);\n"
+        "    vColour = colour;\n"
+        "}\n";
 
-    varying vec4 vColour;
+    const char* smokeFragment =
+        "#ifdef GL_ES\n"
+        "precision mediump float;\n"
+        "#endif\n"
+        "varying vec4 vColour;\n"
+        "void main()\n"
+        "{\n"
+        "    vec2 uv = gl_PointCoord.xy;\n"
+        "    float dist = distance(uv, vec2(0.5, 0.5));\n"
+        "    float alpha = 1.0 - smoothstep(0.0, 0.5, dist);\n"
+        "    alpha = alpha * alpha;\n"
+        "    gl_FragColor = vec4(vColour.rgb, alpha * vColour.a);\n"
+        "}\n";
 
-    void main()
-    {
-        gl_PointSize = pointSize;
-        gl_Position = vec4(position, 0.0, 1.0);
-        vColour = colour;
-    }
-    )VERT";
-
-    const char* dustFragment = R"FRAG(
-    #ifdef GL_ES
-    precision mediump float;
-    #endif
-
-    varying vec4 vColour;
-    uniform float uTime;
-
-    float rand(vec2 co){
-        return fract(sin(dot(co.xy ,vec2(12.9898,78.233))) * 43758.5453);
-    }
-
-    void main()
-    {
-        vec2 uv = gl_PointCoord.xy;
-
-        // Optional drift
-        uv += vec2(sin(uTime*0.5), cos(uTime*0.3))*0.05;
-
-        float dist = distance(uv, vec2(0.5));
-
-        // Soft radial falloff for smoke
-        float alpha = exp(-dist*6.0);
-
-        // Subtle noise
-        float noise = rand(uv*5.0 + uTime*0.3);
-        alpha *= 0.5 + 0.5*noise;
-
-        // Color modulation
-        vec3 color = vColour.rgb * (0.8 + 0.2*noise);
-
-        // Output final color
-        gl_FragColor = vec4(color, 1.0);
-    }
-    )FRAG";
-
-    return std::pair<const char*, const char*>(dustVertex, dustFragment);
+    return {smokeVertex, smokeFragment};
 }
 
-std::pair<const char*, const char*> NoteLayer::getShaderChoice(int choice)
+std::pair<const char*, const char*> NoteLayer::getShaderChoice(int styleId)
 {
-    switch (choice)
+    switch (styleId)
     {
-    case 1: return basicParticlesShader();
+    case 1: return sparksShader();
     case 2: return dustShader();
+    case 3: return smokeShader();
     default:
         return {nullptr,nullptr};
     }
-    return std::pair<const char*, const char*>();
 }
 
 void NoteLayer::updateParticles()
 {
     float dt = 1.0f / 60.0f;
-    for (auto& p : particles)
+    for (int i = 0; i < (int)particles.size(); )
     {
-        // Add Brownian motion to horizontal velocity for a swirling dust effect
-        p.velocity.x += (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.5f * dt;
-        
-        // Add subtle horizontal drag
-        p.velocity.x *= 0.95f;
+        auto& p = particles[i];
+        if (currentStyle == 1) { // Sparks
+            p.velocity.y -= 2.0f * dt; // Gravity pulls them down slightly
+            p.pos += p.velocity * dt;
+            p.life -= dt * 1.5f; // Fast fade
+        }
+        else if (currentStyle == 2) { // Dust
+            p.velocity.x += (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.5f * dt; // Brownian
+            p.velocity.x *= 0.95f; // Drag
+            p.pos += p.velocity * dt;
+            p.life -= dt * 0.6f; // Slow fade
+        }
+        else if (currentStyle == 3) { // Smoke
+            p.velocity.x += (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.2f * dt; // Slight wiggle
+            p.size += dt * 30.0f; // Smoke expands as it rises
+            p.pos += p.velocity * dt;
+            p.life -= dt * 0.4f; // Very slow fade
+        }
 
-        p.pos += p.velocity * dt;
-        p.life -= dt * 0.6f; // Slower fade, lasts ~1.6 seconds
+        // Unordered erase for O(1) removal, avoiding expensive std::remove_if memory shifting
+        if (p.life <= 0.0f) {
+            particles[i] = particles.back();
+            particles.pop_back();
+        } else {
+            ++i;
+        }
     }
-
-
-    particles.erase(std::remove_if(particles.begin(), particles.end(),
-        [](const Particle& p)
-        {
-            return p.life <= 0.0f;
-        }),
-        particles.end());
 }
 
 void NoteLayer::spawnParticlesForNote(int midiNote)
 {
-    if (!spawnParticleState)
-        return;
+    if (!spawnParticleState || particles.size() > 1800)
+        return; // Prevent excessive spawning if many notes are played simultaneously
 
     auto keyBounds = this->keyBoardUI.keys[midiNote].bounds;
 
-    // Convert pixel center to NDC [-1, 1]
     float x_ndc = (keyBounds.getCentreX() / (float)getWidth()) * 2.0f - 1.0f;
     float y_ndc = -(1.0f - (keyBounds.getY() / (float)getHeight()) * 2.0f);
     y_ndc += 0.05f;
     juce::Point<float> pos(x_ndc, y_ndc);
 
-    for (int i = 0; i < 40; i++)
+    int count = 0;
+    if (currentStyle == 1) count = 25; // Sparks
+    else if (currentStyle == 2) count = 40; // Dust
+    else if (currentStyle == 3) count = 15; // Smoke
+
+    for (int i = 0; i < count; i++)
     {
         Particle p;
-        // Spread initial position around the key slightly to form a cloud
-        float spreadX = (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.08f;
-        float spreadY = (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.02f;
-        p.pos = pos + juce::Point<float>(spreadX, spreadY);
-
-        // Gentle, slow upward and outward drift
-        p.velocity = {
-            (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.2f, // Gentle horizontal drift
-            juce::Random::getSystemRandom().nextFloat() * 0.4f + 0.1f    // Slow upward float
-        };
-
-        // Variable sizes: some tiny specs, some larger soft glows
-        p.size = 3.0f + juce::Random::getSystemRandom().nextFloat() * 15.0f;
-
-        // Slightly vary alpha for softer particles
-        float alpha = 0.4f + juce::Random::getSystemRandom().nextFloat() * 0.6f;
-        p.colour = this->particleColourUser.withAlpha(alpha);
-
-        // Slightly vary initial life for more organic fading
-        p.life = 0.8f + juce::Random::getSystemRandom().nextFloat() * 0.4f;
-        
+        if (currentStyle == 1) { // Sparks
+            p.pos = pos;
+            p.velocity = { (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.8f, juce::Random::getSystemRandom().nextFloat() * 1.5f };
+            p.size = 2.0f + juce::Random::getSystemRandom().nextFloat() * 6.0f;
+            p.life = 0.8f + juce::Random::getSystemRandom().nextFloat() * 0.4f;
+            p.colour = this->particleColourUser;
+        } 
+        else if (currentStyle == 2) { // Dust
+            float spreadX = (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.08f;
+            float spreadY = (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.02f;
+            p.pos = pos + juce::Point<float>(spreadX, spreadY);
+            p.velocity = { (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.2f, juce::Random::getSystemRandom().nextFloat() * 0.4f + 0.1f };
+            p.size = 3.0f + juce::Random::getSystemRandom().nextFloat() * 15.0f;
+            float alpha = 0.4f + juce::Random::getSystemRandom().nextFloat() * 0.6f;
+            p.colour = this->particleColourUser.withAlpha(alpha);
+            p.life = 0.8f + juce::Random::getSystemRandom().nextFloat() * 0.4f;
+        }
+        else if (currentStyle == 3) { // Smoke
+            float spreadX = (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.12f;
+            p.pos = pos + juce::Point<float>(spreadX, 0.0f);
+            p.velocity = { (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.1f, juce::Random::getSystemRandom().nextFloat() * 0.2f + 0.05f };
+            p.size = 20.0f + juce::Random::getSystemRandom().nextFloat() * 30.0f; // Very large
+            float alpha = 0.15f + juce::Random::getSystemRandom().nextFloat() * 0.2f;
+            p.colour = this->particleColourUser.withAlpha(alpha);
+            p.life = 1.0f + juce::Random::getSystemRandom().nextFloat() * 1.0f; // longer life
+        }
         particles.push_back(p);
     }
 }
