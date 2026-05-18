@@ -53,7 +53,7 @@ void NoteLayer::paint(juce::Graphics& g)
     {
         auto bounds = note.bounds.toFloat();
         
-        // A gentle, modern corner radius instead of a full pill shape
+       
         float cornerRadius = std::min(bounds.getWidth(), bounds.getHeight()) * 0.25f;
 
         // Elegant frosted glass gradient using whitesmoke/neutral colors

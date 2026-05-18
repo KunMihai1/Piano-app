@@ -40,3 +40,5 @@ Project Synth2.jucer
 Doxyfile
 /html
 /latex
+/modules/*
+!/modules/SFZero/
