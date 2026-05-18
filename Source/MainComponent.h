@@ -17,7 +17,6 @@
 #include "MidiHandler.h"
 #include "KeyboardUI.h"
 #include "NoteLayer.h"
-#include "audioProcessor.h"
 #include "keyListener.h"
 #include "temporaryNotificationUI.h"
 #include "InstrumentTreeItem.h"
