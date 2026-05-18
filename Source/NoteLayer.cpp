@@ -1,4 +1,4 @@
-﻿/*
+/*
   ==============================================================================
 
     NoteLayer.cpp
@@ -11,6 +11,10 @@
 
 #include "NoteLayer.h" 
 #include <juce_opengl/juce_opengl.h>
+
+#ifndef GL_POINT_SPRITE
+#define GL_POINT_SPRITE 0x8861
+#endif
 
 using namespace juce::gl;
 
@@ -76,6 +80,8 @@ void NoteLayer::noteOnReceived(int midiNote)
                 newNote.bounds.setY(static_cast<int>(round(newNote.yPosition)));
 
                 activeNotes[midiNote] = newNote;
+                
+                spawnParticlesForNote(midiNote);
 
                 if(!isTimerRunning())
                     startTimerHz(60);
@@ -123,6 +129,7 @@ void NoteLayer::newOpenGLContextCreated()
     if (openGLContext.isActive())
     {
         glEnable(GL_PROGRAM_POINT_SIZE);
+        glEnable(GL_POINT_SPRITE);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glViewport(0, 0, getWidth(), getHeight());
@@ -130,6 +137,7 @@ void NoteLayer::newOpenGLContextCreated()
     else {
         openGLContext.makeActive();
         glEnable(GL_PROGRAM_POINT_SIZE);
+        glEnable(GL_POINT_SPRITE);
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glViewport(0, 0, getWidth(), getHeight());
@@ -191,6 +199,7 @@ void NoteLayer::renderOpenGL()
         }
 
         glEnable(GL_PROGRAM_POINT_SIZE);
+        glEnable(GL_POINT_SPRITE);
         glEnable(GL_BLEND);
         //glBlendFunc(GL_SRC_ALPHA, GL_ONE); // additive blend
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
@@ -251,48 +260,32 @@ void NoteLayer::setSpawnParticleState(bool state)
 
 std::pair<const char*, const char*> NoteLayer::basicParticlesShader()
 {
-    const char* basicVertex = R"VERT(
-    attribute vec2 position;
-    attribute float pointSize;
-    attribute vec4 colour;
-    varying vec4 vColour;
+    const char* basicVertex =
+        "attribute vec2 position;\n"
+        "attribute float pointSize;\n"
+        "attribute vec4 colour;\n"
+        "varying vec4 vColour;\n"
+        "void main()\n"
+        "{\n"
+        "    gl_PointSize = pointSize;\n"
+        "    gl_Position = vec4(position, 0.0, 1.0);\n"
+        "    vColour = colour;\n"
+        "}\n";
 
-    void main()
-    {
-        gl_PointSize = pointSize;
-        gl_Position = vec4(position, 0.0, 1.0);
-        vColour = colour;
-    }
-    )VERT";
-
-    const char* basicFragment = R"FRAG(
-    #ifdef GL_ES
-    precision mediump float;
-    #endif
-
-    varying vec4 vColour;
-    varying vec2 vTexCoord;
-    uniform float uTime;
-
-    void main()
-    {
-        // Normalize texture coordinates to range [0.0, 1.0]
-        vec2 uv = vTexCoord;
-
-        // Calculate distance from the center
-        float dist = length(uv - vec2(0.5));
-
-        // Apply smoothstep for soft radial falloff
-        float alpha = smoothstep(0.4, 0.6, dist);
-        //float alpha = smoothstep(0.5, 0.0, dist);
-
-        // Introduce a time-based color shift using sine wave modulation
-        vec3 color = vColour.rgb * (0.5 + 0.5 * sin(uTime + dist * 10.0));
-
-        // Output the final color with alpha transparency
-        gl_FragColor = vec4(color, alpha);
-    }
-    )FRAG";
+    const char* basicFragment =
+        "#ifdef GL_ES\n"
+        "precision mediump float;\n"
+        "#endif\n"
+        "varying vec4 vColour;\n"
+        "void main()\n"
+        "{\n"
+        "    vec2 uv = gl_PointCoord.xy;\n"
+        "    float dist = distance(uv, vec2(0.5, 0.5));\n"
+        "    float alpha = 1.0 - smoothstep(0.0, 0.5, dist);\n"
+        "    float core = 1.0 - smoothstep(0.0, 0.2, dist);\n"
+        "    vec3 color = vColour.rgb + vec3(core * 0.3);\n"
+        "    gl_FragColor = vec4(color, alpha * vColour.a);\n"
+        "}\n";
 
     return std::pair<const char*, const char*>(basicVertex,basicFragment);
 }
@@ -370,8 +363,14 @@ void NoteLayer::updateParticles()
     float dt = 1.0f / 60.0f;
     for (auto& p : particles)
     {
+        // Add Brownian motion to horizontal velocity for a swirling dust effect
+        p.velocity.x += (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.5f * dt;
+        
+        // Add subtle horizontal drag
+        p.velocity.x *= 0.95f;
+
         p.pos += p.velocity * dt;
-        p.life -= dt * 0.25f;
+        p.life -= dt * 0.6f; // Slower fade, lasts ~1.6 seconds
     }
 
 
@@ -396,27 +395,30 @@ void NoteLayer::spawnParticlesForNote(int midiNote)
     y_ndc += 0.05f;
     juce::Point<float> pos(x_ndc, y_ndc);
 
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < 40; i++)
     {
         Particle p;
-        p.pos = pos;
+        // Spread initial position around the key slightly to form a cloud
+        float spreadX = (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.08f;
+        float spreadY = (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.02f;
+        p.pos = pos + juce::Point<float>(spreadX, spreadY);
 
-        // Velocity should be small since NDC is from -1 to 1
-        /*
+        // Gentle, slow upward and outward drift
         p.velocity = {
-            (juce::Random::getSystemRandom().nextFloat() * 2.0f - 1.0f) * 0.5f,  // horizontal velocity in NDC units/sec
-            -(juce::Random::getSystemRandom().nextFloat() * 1.0f)                // vertical velocity in NDC units/sec
-        };
-        */
-        p.velocity = {
-        (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.1f, // subtle wiggle
-        juce::Random::getSystemRandom().nextFloat() * 0.8f - 0.3f   // upward, fast
+            (juce::Random::getSystemRandom().nextFloat() - 0.5f) * 0.2f, // Gentle horizontal drift
+            juce::Random::getSystemRandom().nextFloat() * 0.4f + 0.1f    // Slow upward float
         };
 
-        p.size = 1.0f + juce::Random::getSystemRandom().nextFloat() * 8.0f;
+        // Variable sizes: some tiny specs, some larger soft glows
+        p.size = 3.0f + juce::Random::getSystemRandom().nextFloat() * 15.0f;
 
-        p.colour = this->particleColourUser;
-        p.life = 1.0f;
+        // Slightly vary alpha for softer particles
+        float alpha = 0.4f + juce::Random::getSystemRandom().nextFloat() * 0.6f;
+        p.colour = this->particleColourUser.withAlpha(alpha);
+
+        // Slightly vary initial life for more organic fading
+        p.life = 0.8f + juce::Random::getSystemRandom().nextFloat() * 0.4f;
+        
         particles.push_back(p);
     }
 }
@@ -457,8 +459,6 @@ void NoteLayer::timerCallback()
 
         n.bounds.setY(static_cast<int>(std::round(n.yPosition)));
         n.bounds.setHeight(static_cast<int>(std::round(n.height)));
-
-        spawnParticlesForNote(pair.first);
     }
 
     // Update falling notes (released notes)
