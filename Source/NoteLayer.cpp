@@ -48,22 +48,37 @@ NoteLayer::~NoteLayer()
 void NoteLayer::paint(juce::Graphics& g)
 {
     g.reduceClipRegion(getLocalBounds());
+
     for (const auto& [midiNote, note] : activeNotes)
     {
-        g.setColour(juce::Colours::transparentBlack.withAlpha(0.1f));
-        g.fillRoundedRectangle(note.bounds.toFloat(), 6.0f);
+        auto bounds = note.bounds.toFloat();
+        
+        // A gentle, modern corner radius instead of a full pill shape
+        float cornerRadius = std::min(bounds.getWidth(), bounds.getHeight()) * 0.25f;
 
-        g.setColour(juce::Colours::whitesmoke.withAlpha(1.0f));
-        g.drawRoundedRectangle(note.bounds.toFloat(), 6.0f, 1.5f); // 1.5f = outline thickness
+        // Elegant frosted glass gradient using whitesmoke/neutral colors
+        juce::ColourGradient fillGradient(juce::Colours::white.withAlpha(0.4f), bounds.getTopLeft(),
+                                          juce::Colours::white.withAlpha(0.05f), bounds.getBottomLeft(), false);
+        g.setGradientFill(fillGradient);
+        g.fillRoundedRectangle(bounds, cornerRadius);
+
+        // Clean whitesmoke outline
+        g.setColour(juce::Colours::whitesmoke.withAlpha(0.9f));
+        g.drawRoundedRectangle(bounds, cornerRadius, 1.5f);
     }
+    
     for (const auto& note : fallingNotes)
     {
-        g.setColour(juce::Colours::transparentBlack.withAlpha(note.alpha));
-        g.fillRoundedRectangle(note.bounds.toFloat(), 6.0f);
+        auto bounds = note.bounds.toFloat();
+        float cornerRadius = std::min(bounds.getWidth(), bounds.getHeight()) * 0.25f;
 
-        // Outline for falling notes
-        g.setColour(juce::Colours::whitesmoke.withAlpha(note.alpha));
-        g.drawRoundedRectangle(note.bounds.toFloat(), 6.0f, 1.5f);;
+        juce::ColourGradient fillGradient(juce::Colours::white.withAlpha(0.4f * note.alpha), bounds.getTopLeft(),
+                                          juce::Colours::white.withAlpha(0.05f * note.alpha), bounds.getBottomLeft(), false);
+        g.setGradientFill(fillGradient);
+        g.fillRoundedRectangle(bounds, cornerRadius);
+
+        g.setColour(juce::Colours::whitesmoke.withAlpha(0.9f * note.alpha));
+        g.drawRoundedRectangle(bounds, cornerRadius, 1.5f);
     }
 }
 
@@ -499,41 +514,35 @@ void NoteLayer::timerCallback()
     {
         AnimatedNote& n = *it;
 
-        // Scale fade time and fade rate based on initial height relative to window height
-        float fadeTimeScaled = fadeTimeBase * (n.initialHeight / windowHeight);
-        fadeTimeScaled = std::max(1.0f, fadeTimeScaled); // minimum 1 sec fade
-        float fadeRateScaled = 1.0f / fadeTimeScaled;
+        // Move upward at a constant speed, identical to active notes
+        n.yPosition -= riseSpeed * dt;
 
-        // Scale shrink speed similarly
-        float shrinkSpeedScaled = shrinkSpeedBase * (n.initialHeight / windowHeight);
+        // If the top of the note hits the top of the screen (y < 0), shrink it smoothly!
+        if (n.yPosition < 0.0f)
+        {
+            n.height += n.yPosition; // Shrink the height by the overshoot amount
+            n.yPosition = 0.0f;      // Pin the top to the screen boundary
+        }
 
-        // Fade alpha
-        n.alpha = std::max(0.0f, n.alpha - dt * fadeRateScaled);
+        // Calculate the bottom edge (tail)
+        float tailY = n.yPosition + n.height;
 
-        // Move upward
-        n.yPosition -= fadeSpeedBase * dt;
+        // Smoothly fade out as the tail disappears
+        float fadeZone = 80.0f;
+        if (tailY < fadeZone)
+        {
+            n.alpha = std::max(0.0f, tailY / fadeZone);
+        }
 
-        // Shrink height WITHOUT clamping to 1.0f here
-        float bottom = n.yPosition + n.height;
-        n.height -= shrinkSpeedScaled * dt;
-
-        // Clamp height not below tiny positive number internally
-        if (n.height < 0.01f)
-            n.height = 0.01f;
-
-        // Keep bottom fixed so note shrinks upwards
-        n.yPosition = bottom - n.height;
-
-        // Clamp height for rendering (at least 1 pixel)
+        // Apply position to bounds
         int yInt = static_cast<int>(std::round(n.yPosition));
         int hInt = std::max(1, static_cast<int>(std::round(n.height)));
         n.bounds.setY(yInt);
         n.bounds.setHeight(hInt);
 
-        // Erase note if fully faded OR fully shrunk internally
-        if (n.alpha <= 0.001f || n.height <= 0.01f)
+        // Erase note once the tail is off-screen or height is fully shrunk
+        if (tailY <= 0.0f || n.height <= 0.1f || n.alpha <= 0.0f)
         {
-            //DBG("NOTE OFF");
             it = fallingNotes.erase(it);
         }
         else
