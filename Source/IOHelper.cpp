@@ -433,79 +433,50 @@ void TrackIOHelper::extractNotePairEvents(juce::MidiMessageSequence& sequence, s
     }
 }
 
-void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBackSettings& settings, int lowest, int highest)
+void PlaybackSettingsIOHelper::savePlaybackSettings(juce::PropertiesFile* propertiesFile, const PlayBackSettings& settings, int lowest, int highest, const juce::String& styleID)
 {
+    if (!propertiesFile) return;
+
     int baseStart = 60;
-    bool keyboardInputCase=false;
+    bool keyboardInputCase = false;
     if (highest - lowest < 49)
         keyboardInputCase = true;
 
-
-    juce::var rootVar;
-
-    if (file.existsAsFile())
-    {
-        auto jsonText = file.loadFileAsString();
-        rootVar = juce::JSON::parse(jsonText);
-    }
-
-    if (!rootVar.isObject())
-        rootVar = new juce::DynamicObject();
-
-    auto* rootObj = rootVar.getDynamicObject();
-
-    juce::String key = settings.VID + "_" + settings.PID;
-
-    auto keyboardObj = new juce::DynamicObject();
+    juce::String deviceKey = settings.VID + "_" + settings.PID;
+    if (deviceKey == "_") deviceKey = "default";
+    juce::String prefix = styleID + "." + deviceKey + ".";
 
     if (keyboardInputCase && lowest != 60)
     {
-
-        keyboardObj->setProperty("startNote", baseStart+settings.startNote%12);
-        keyboardObj->setProperty("endNote", baseStart+settings.endNote%12);
-        keyboardObj->setProperty("leftHandBound", baseStart+settings.leftHandBound%12);
-        keyboardObj->setProperty("rightHandBound", baseStart+settings.rightHandBound%12);
+        propertiesFile->setValue(prefix + "startNote", baseStart + settings.startNote % 12);
+        propertiesFile->setValue(prefix + "endNote", baseStart + settings.endNote % 12);
+        propertiesFile->setValue(prefix + "leftHandBound", baseStart + settings.leftHandBound % 12);
+        propertiesFile->setValue(prefix + "rightHandBound", baseStart + settings.rightHandBound % 12);
     }
     else {
-        keyboardObj->setProperty("startNote", settings.startNote);
-        keyboardObj->setProperty("endNote", settings.endNote);
-        keyboardObj->setProperty("leftHandBound", settings.leftHandBound);
-        keyboardObj->setProperty("rightHandBound", settings.rightHandBound);
+        propertiesFile->setValue(prefix + "startNote", settings.startNote);
+        propertiesFile->setValue(prefix + "endNote", settings.endNote);
+        propertiesFile->setValue(prefix + "leftHandBound", settings.leftHandBound);
+        propertiesFile->setValue(prefix + "rightHandBound", settings.rightHandBound);
     }
 
-    rootObj->setProperty(key, keyboardObj);
-
-    juce::String json = juce::JSON::toString(rootVar);
-    file.replaceWithText(json);
+    propertiesFile->saveIfNeeded();
 }
 
-PlayBackSettings PlaybackSettingsIOHelper::loadFromFile(const juce::File& file, const juce::String& VID, const juce::String& PID)
+PlayBackSettings PlaybackSettingsIOHelper::loadPlaybackSettings(const juce::PropertiesFile* propertiesFile, const juce::String& VID, const juce::String& PID, const juce::String& styleID)
 {
-    PlayBackSettings settings{ -1,-1,-1,-1, "", ""};
+    PlayBackSettings settings{ -1,-1,-1,-1, "", "" };
 
-    if (!file.existsAsFile())
-        return settings;
-
-    juce::String json = file.loadFileAsString();
-    juce::var rootVar = juce::JSON::parse(json);
-
-    juce::String key = juce::String(VID) + "_" + juce::String(PID);
-
-    auto* rootObj = rootVar.getDynamicObject();
-    if (!rootObj)
-        return settings;
-
-    if (rootObj->hasProperty(key))
+    if (propertiesFile)
     {
-        auto keyboardVar = rootObj->getProperty(key);
-        auto* keyboardObj = keyboardVar.getDynamicObject();
-        if (keyboardObj)
-        {
-            settings.startNote = (int)keyboardObj->getProperty("startNote");
-            settings.endNote = (int)keyboardObj->getProperty("endNote");
-            settings.leftHandBound = (int)keyboardObj->getProperty("leftHandBound");
-            settings.rightHandBound = (int)keyboardObj->getProperty("rightHandBound");
-        }
+        juce::String deviceKey = juce::String(VID) + "_" + juce::String(PID);
+        if (deviceKey == "_") deviceKey = "default";
+        juce::String prefix = styleID + "." + deviceKey + ".";
+
+        settings.startNote = propertiesFile->getIntValue(prefix + "startNote", settings.startNote);
+        settings.endNote = propertiesFile->getIntValue(prefix + "endNote", settings.endNote);
+        settings.leftHandBound = propertiesFile->getIntValue(prefix + "leftHandBound", settings.leftHandBound);
+        settings.rightHandBound = propertiesFile->getIntValue(prefix + "rightHandBound", settings.rightHandBound);
     }
 
     settings.VID = VID;

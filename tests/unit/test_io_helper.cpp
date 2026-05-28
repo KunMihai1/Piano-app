@@ -568,7 +568,10 @@ public:
     {
         beginTest("Save and load roundtrip - full range keyboard");
         {
-            auto tempFile = juce::File::createTempFile(".json");
+            juce::PropertiesFile::Options options;
+            options.applicationName = "TestApp_PlaybackSettings1";
+            juce::PropertiesFile propertiesFile(options);
+            propertiesFile.clear();
 
             PlayBackSettings original;
             original.startNote = 36;
@@ -578,10 +581,9 @@ public:
             original.VID = "1234";
             original.PID = "5678";
 
-            
-            PlaybackSettingsIOHelper::saveToFile(tempFile, original, 21, 108);
+            PlaybackSettingsIOHelper::savePlaybackSettings(&propertiesFile, original, 21, 108, "style_default");
 
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "1234", "5678");
+            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadPlaybackSettings(&propertiesFile, "1234", "5678", "style_default");
 
             expect(loaded.startNote == 36);
             expect(loaded.endNote == 96);
@@ -590,12 +592,15 @@ public:
             expect(loaded.VID == "1234");
             expect(loaded.PID == "5678");
 
-            tempFile.deleteFile();
+            propertiesFile.getFile().deleteFile();
         }
 
         beginTest("Load with wrong VID/PID returns defaults");
         {
-            auto tempFile = juce::File::createTempFile(".json");
+            juce::PropertiesFile::Options options;
+            options.applicationName = "TestApp_PlaybackSettings2";
+            juce::PropertiesFile propertiesFile(options);
+            propertiesFile.clear();
 
             PlayBackSettings original;
             original.startNote = 36;
@@ -605,30 +610,39 @@ public:
             original.VID = "1234";
             original.PID = "5678";
 
-            PlaybackSettingsIOHelper::saveToFile(tempFile, original, 21, 108);
+            PlaybackSettingsIOHelper::savePlaybackSettings(&propertiesFile, original, 21, 108, "style_default");
 
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "9999", "0000");
+            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadPlaybackSettings(&propertiesFile, "9999", "0000", "style_default");
 
             expect(loaded.startNote == -1);
             expect(loaded.endNote == -1);
 
-            tempFile.deleteFile();
+            propertiesFile.getFile().deleteFile();
         }
 
-        beginTest("Load from non-existent file returns defaults");
+        beginTest("Load from non-existent properties returns defaults");
         {
-            juce::File nonExistent("C:\\this_file_does_not_exist_12345.json");
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(nonExistent, "1234", "5678");
+            juce::PropertiesFile::Options options;
+            options.applicationName = "TestApp_PlaybackSettings3_NonExistent";
+            juce::PropertiesFile propertiesFile(options);
+            propertiesFile.clear();
+
+            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadPlaybackSettings(&propertiesFile, "1234", "5678", "style_default");
 
             expect(loaded.startNote == -1);
             expect(loaded.endNote == -1);
             expect(loaded.leftHandBound == -1);
             expect(loaded.rightHandBound == -1);
+
+            propertiesFile.getFile().deleteFile();
         }
 
         beginTest("Save with small keyboard range clamps to base octave");
         {
-            auto tempFile = juce::File::createTempFile(".json");
+            juce::PropertiesFile::Options options;
+            options.applicationName = "TestApp_PlaybackSettings4";
+            juce::PropertiesFile propertiesFile(options);
+            propertiesFile.clear();
 
             PlayBackSettings original;
             original.startNote = 48;   // C3
@@ -639,15 +653,15 @@ public:
             original.PID = "BBBB";
 
             // highest - lowest = 72 - 48 = 24, which is < 49, so clamping kicks in
-            PlaybackSettingsIOHelper::saveToFile(tempFile, original, 48, 72);
+            PlaybackSettingsIOHelper::savePlaybackSettings(&propertiesFile, original, 48, 72, "style_default");
 
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "AAAA", "BBBB");
+            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadPlaybackSettings(&propertiesFile, "AAAA", "BBBB", "style_default");
 
             // Values should be remapped to base 60:  60 + (note % 12)
             expect(loaded.startNote == 60 + (48 % 12)); 
             expect(loaded.endNote == 60 + (72 % 12));    
 
-            tempFile.deleteFile();
+            propertiesFile.getFile().deleteFile();
         }
     }
 };
