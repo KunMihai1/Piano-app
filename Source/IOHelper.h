@@ -11,6 +11,7 @@
 #pragma once
 
 #include <JuceHeader.h>
+#include "styleSettingsEntry.h"
 #include "TrackEntry.h"
 #include "StyleSection.h"
 #include "PlayBackSettingsCustomComponent.h"
@@ -113,19 +114,23 @@ class PlaybackSettingsIOHelper
 public:
     /**
      * @brief Saves playback settings to a file.
-     * @param file File to save to
+     * @param properties Pointer to the properties storage
      * @param settings Settings to save
+     * @param lowest Lowest value
+     * @param highest Highest value
+     * @param styleID Style ID
      */
-    static void saveToFile(const juce::File& file, const PlayBackSettings& settings, int lowest, int highest);
+    static void savePlaybackSettings(juce::PropertySet* properties, const PlayBackSettings& settings, int lowest, int highest, const juce::String& styleID);
 
     /**
      * @brief Loads playback settings from a file.
-     * @param file File to load from
+     * @param properties Pointer to the properties storage
      * @param VID Device VID
      * @param PID Device PID
+     * @param styleID Style ID
      * @return Loaded PlayBackSettings object
      */
-    static PlayBackSettings loadFromFile(const juce::File& file, const juce::String& VID, const juce::String& PID);
+    static PlayBackSettings loadPlaybackSettings(const juce::PropertySet* properties, const juce::String& VID, const juce::String& PID, const juce::String& styleID);
 
 private:
 };
@@ -139,4 +144,13 @@ public:
 
 private:
 
+};
+
+
+class EffectSettingsIOHelper
+{
+public:
+    static void saveEffectsStyle(juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel, const SoundSettings& s);
+
+    static SoundSettings loadEffectsStyle(const juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel);
 };

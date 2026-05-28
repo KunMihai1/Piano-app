@@ -10,6 +10,27 @@
 
 #include "IOHelper.h"
 
+namespace
+{
+    juce::String getDeviceSettingsKey(const juce::String& VID, const juce::String& PID)
+    {
+        juce::String deviceKey = VID + "_" + PID;
+        if (deviceKey == "_") deviceKey = "default";
+        return deviceKey;
+    }
+
+    juce::String getStyleDeviceSettingsPrefix(const juce::String& styleID, const juce::String& VID, const juce::String& PID)
+    {
+        return styleID + "." + getDeviceSettingsKey(VID, PID) + ".";
+    }
+
+    void saveIfFileBacked(juce::PropertySet* properties)
+    {
+        if (auto* propertiesFile = dynamic_cast<juce::PropertiesFile*>(properties))
+            propertiesFile->saveIfNeeded();
+    }
+}
+
 juce::File IOHelper::getFolder(const juce::String& name)
 {
     return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
@@ -433,79 +454,46 @@ void TrackIOHelper::extractNotePairEvents(juce::MidiMessageSequence& sequence, s
     }
 }
 
-void PlaybackSettingsIOHelper::saveToFile(const juce::File& file, const PlayBackSettings& settings, int lowest, int highest)
+void PlaybackSettingsIOHelper::savePlaybackSettings(juce::PropertySet* properties, const PlayBackSettings& settings, int lowest, int highest, const juce::String& styleID)
 {
+    if (!properties) return;
+
     int baseStart = 60;
-    bool keyboardInputCase=false;
+    bool keyboardInputCase = false;
     if (highest - lowest < 49)
         keyboardInputCase = true;
 
-
-    juce::var rootVar;
-
-    if (file.existsAsFile())
-    {
-        auto jsonText = file.loadFileAsString();
-        rootVar = juce::JSON::parse(jsonText);
-    }
-
-    if (!rootVar.isObject())
-        rootVar = new juce::DynamicObject();
-
-    auto* rootObj = rootVar.getDynamicObject();
-
-    juce::String key = settings.VID + "_" + settings.PID;
-
-    auto keyboardObj = new juce::DynamicObject();
+    juce::String prefix = getStyleDeviceSettingsPrefix(styleID, settings.VID, settings.PID);
 
     if (keyboardInputCase && lowest != 60)
     {
-
-        keyboardObj->setProperty("startNote", baseStart+settings.startNote%12);
-        keyboardObj->setProperty("endNote", baseStart+settings.endNote%12);
-        keyboardObj->setProperty("leftHandBound", baseStart+settings.leftHandBound%12);
-        keyboardObj->setProperty("rightHandBound", baseStart+settings.rightHandBound%12);
+        properties->setValue(prefix + "startNote", baseStart + settings.startNote % 12);
+        properties->setValue(prefix + "endNote", baseStart + settings.endNote % 12);
+        properties->setValue(prefix + "leftHandBound", baseStart + settings.leftHandBound % 12);
+        properties->setValue(prefix + "rightHandBound", baseStart + settings.rightHandBound % 12);
     }
     else {
-        keyboardObj->setProperty("startNote", settings.startNote);
-        keyboardObj->setProperty("endNote", settings.endNote);
-        keyboardObj->setProperty("leftHandBound", settings.leftHandBound);
-        keyboardObj->setProperty("rightHandBound", settings.rightHandBound);
+        properties->setValue(prefix + "startNote", settings.startNote);
+        properties->setValue(prefix + "endNote", settings.endNote);
+        properties->setValue(prefix + "leftHandBound", settings.leftHandBound);
+        properties->setValue(prefix + "rightHandBound", settings.rightHandBound);
     }
 
-    rootObj->setProperty(key, keyboardObj);
-
-    juce::String json = juce::JSON::toString(rootVar);
-    file.replaceWithText(json);
+    saveIfFileBacked(properties);
 }
 
-PlayBackSettings PlaybackSettingsIOHelper::loadFromFile(const juce::File& file, const juce::String& VID, const juce::String& PID)
+PlayBackSettings PlaybackSettingsIOHelper::loadPlaybackSettings(const juce::PropertySet* properties, const juce::String& VID, const juce::String& PID, const juce::String& styleID)
 {
-    PlayBackSettings settings{ -1,-1,-1,-1, "", ""};
+    PlayBackSettings settings{ -1,-1,-1,-1, "", "" };
 
-    if (!file.existsAsFile())
-        return settings;
-
-    juce::String json = file.loadFileAsString();
-    juce::var rootVar = juce::JSON::parse(json);
-
-    juce::String key = juce::String(VID) + "_" + juce::String(PID);
-
-    auto* rootObj = rootVar.getDynamicObject();
-    if (!rootObj)
-        return settings;
-
-    if (rootObj->hasProperty(key))
+    if (properties)
     {
-        auto keyboardVar = rootObj->getProperty(key);
-        auto* keyboardObj = keyboardVar.getDynamicObject();
-        if (keyboardObj)
-        {
-            settings.startNote = (int)keyboardObj->getProperty("startNote");
-            settings.endNote = (int)keyboardObj->getProperty("endNote");
-            settings.leftHandBound = (int)keyboardObj->getProperty("leftHandBound");
-            settings.rightHandBound = (int)keyboardObj->getProperty("rightHandBound");
-        }
+        juce::String prefix = getStyleDeviceSettingsPrefix(styleID, VID, PID);
+
+        settings.startNote = properties->getIntValue(prefix + "startNote", settings.startNote);
+        settings.endNote = properties->getIntValue(prefix + "endNote", settings.endNote);
+        settings.leftHandBound = properties->getIntValue(prefix + "leftHandBound", settings.leftHandBound);
+        settings.rightHandBound = properties->getIntValue(prefix + "rightHandBound", settings.rightHandBound);
     }
 
     settings.VID = VID;
@@ -594,4 +582,69 @@ void SectionIOHelper::loadFromFile(const juce::File& file, std::unordered_map<ju
 
         map[styleID] = std::move(sectionsMap);
     }
+}
+
+void EffectSettingsIOHelper::saveEffectsStyle(juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel, const SoundSettings& s)
+{
+    if (!properties) return;
+
+    const juce::String ch = (channel == 1 ? "First" : "Second");
+    const juce::String p = getStyleDeviceSettingsPrefix(styleID, VID, PID);
+
+    properties->setValue(p + "reverb" + ch, s.reverb);
+    properties->setValue(p + "volume" + ch, s.volume);
+
+    properties->setValue(p + "brightness" + ch, s.brightness);
+    properties->setValue(p + "chorus" + ch, s.chorus);
+    properties->setValue(p + "expression" + ch, s.expression);
+    properties->setValue(p + "resonance" + ch, s.resonance);
+    properties->setValue(p + "sustainToggle" + ch, s.sustainToggle ? 1 : 0);
+
+    properties->setValue(p + "attack" + ch, s.attack);
+    properties->setValue(p + "decay" + ch, s.decay);
+    properties->setValue(p + "release" + ch, s.release);
+    properties->setValue(p + "vibrato" + ch, s.vibrato);
+
+    properties->setValue(p + "delay" + ch, s.delay);
+    properties->setValue(p + "pan" + ch, s.pan);
+
+    properties->setValue(p + "distortion" + ch, s.distortion);
+    properties->setValue(p + "filterTrack" + ch, s.filterTrack);
+    properties->setValue(p + "tremolo" + ch, s.tremolo);
+    properties->setValue(p + "randomMod" + ch, s.randomMod);
+
+    saveIfFileBacked(properties);
+}
+
+SoundSettings EffectSettingsIOHelper::loadEffectsStyle(const juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel)
+{
+    SoundSettings s;
+    if (!properties) return s;
+
+    const juce::String suffix = (channel == 1) ? "First" : "Second";
+    const juce::String p = getStyleDeviceSettingsPrefix(styleID, VID, PID);
+
+    s.reverb = properties->getIntValue(p + "reverb" + suffix, s.reverb);
+    s.volume = properties->getIntValue(p + "volume" + suffix, s.volume);
+
+    s.brightness = properties->getIntValue(p + "brightness" + suffix, s.brightness);
+    s.chorus = properties->getIntValue(p + "chorus" + suffix, s.chorus);
+    s.expression = properties->getIntValue(p + "expression" + suffix, s.expression);
+    s.resonance = properties->getIntValue(p + "resonance" + suffix, s.resonance);
+    s.sustainToggle = properties->getIntValue(p + "sustainToggle" + suffix, 0) != 0;
+
+    s.attack = properties->getIntValue(p + "attack" + suffix, s.attack);
+    s.decay = properties->getIntValue(p + "decay" + suffix, s.decay);
+    s.release = properties->getIntValue(p + "release" + suffix, s.release);
+    s.vibrato = properties->getIntValue(p + "vibrato" + suffix, s.vibrato);
+
+    s.delay = properties->getIntValue(p + "delay" + suffix, s.delay);
+    s.pan = properties->getIntValue(p + "pan" + suffix, s.pan);
+
+    s.distortion = properties->getIntValue(p + "distortion" + suffix, s.distortion);
+    s.filterTrack = properties->getIntValue(p + "filterTrack" + suffix, s.filterTrack);
+    s.tremolo = properties->getIntValue(p + "tremolo" + suffix, s.tremolo);
+    s.randomMod = properties->getIntValue(p + "randomMod" + suffix, s.randomMod);
+
+    return s;
 }
