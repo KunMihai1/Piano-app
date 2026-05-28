@@ -23,12 +23,12 @@ public:
     //==============================================================================
     void initialise(const juce::String& commandLine) override
     {
-        /*
         // This method is where you should put your application's initialisation code..
         int pass = 0;
         int fail = 0;
         int total = 0;
 
+        /*
         if (commandLine.contains("--run-tests"))
         {
             juce::UnitTestRunner runner;

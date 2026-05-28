@@ -878,11 +878,12 @@ public:
 
     //==============================================================================
     /**
-     * @brief Constructs a Display component.
-     * @param outputDev Optional MIDI output device.
+     * @brief Constructor.
+     * @param outputDev Pointer to the MIDI output device.
+     * @param props Pointer to the application properties file.
      * @param widthForList Width of the style list component.
      */
-    Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList = 0);
+    Display(std::weak_ptr<juce::MidiOutput> outputDev, juce::PropertiesFile* props, int widthForList = 0);
 
     /** @brief Destructor */
     ~Display() override;
@@ -974,8 +975,8 @@ public:
     /** @brief Gets the PID of the current input device*/
     juce::String getPID();
 
-    /** @brief Loads playback settings from JSON */
-    void readSettingsFromJSON();
+    /** @brief Reads and updates playback settings from the properties file */
+    void readPlaybackSettingsFromProperties();
 
     /** @brief Handles home button interactions */
     void homeButtonInteraction();
@@ -1043,6 +1044,7 @@ private:
     std::shared_ptr<std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>> sectionsPerStyleMap;
 
     std::weak_ptr<juce::MidiOutput> outputDevice; ///< MIDI output device
+    juce::PropertiesFile* propertiesFile = nullptr; ///< Application properties file
 
     std::unique_ptr<TrackListComponent> trackListComp; ///< Track selection component
     juce::var allStylesJsonVar; ///< Root JSON object storing all styles

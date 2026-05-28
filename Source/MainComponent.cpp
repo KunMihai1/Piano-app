@@ -862,8 +862,6 @@ void MainComponent::setCallBacksForOverlayWindow()
                 return !playButton.isVisible();
             };
 
-            midiWindow->volumeSliderSetValue(MIDIDevice.getVolume(1));
-            midiWindow->reverbSliderSetValue(MIDIDevice.getReverb(1));
 
 
         }
@@ -1363,7 +1361,7 @@ void MainComponent::knobsInit()
 
 void MainComponent::displayInit()
 {
-    display = std::make_unique<Display>(deviceOpenedOUT,400);
+    display = std::make_unique<Display>(deviceOpenedOUT, propertiesFile, 400);
     headerPanel.addAndMakeVisible(display.get());
     display->setVisible(false);
 
@@ -1708,7 +1706,7 @@ void MainComponent::playButtonOnClick()
             this->display->set_VID_PID("", "");
         else this->display->set_VID_PID(VID, PID);
 
-        this->display->readSettingsFromJSON();
+        this->display->readPlaybackSettingsFromProperties();
 
         currentBackground = playBackground;
         repaint();

@@ -12,7 +12,7 @@
 #include "InstrumentChooser.h"
 #include "CustomTableContainer.h"
 
-Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList) : outputDevice{outputDev}
+Display::Display(std::weak_ptr<juce::MidiOutput> outputDev, juce::PropertiesFile* props, int widthForList) : outputDevice{outputDev}, propertiesFile{props}
 {
     availableTracksFromFolder = std::make_shared<std::deque<TrackEntry>>();
     groupedTracks = std::make_shared<std::unordered_map<juce::String, std::deque<TrackEntry>>>();
@@ -216,11 +216,13 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
 
             playBackSettings = std::make_unique<PlayBackSettingsComponent>(minNote, maxNote, this->settings);
+            playBackSettings->getStyleID = [this]() { return this->getStyleID(); };
             playBackSettings->setBounds(getLocalBounds());
 
             playBackSettings->onChangingSettings = [this](PlayBackSettings newSettings)
             {
-                //this->settings = newSettings; no need of this anymore since the PlaybackSettings class holds a reference to the settings;
+                // Save settings using PropertiesFile
+                PlaybackSettingsIOHelper::savePlaybackSettings(propertiesFile, this->settings, minNote, maxNote, this->getStyleID());
                 displayListeners.call(&DisplayListener::playBackSettingsChanged, this->settings);
             };
 
@@ -295,6 +297,12 @@ void Display::showCurrentStyleTab(const juce::String& name)
     
     if (loadSettingsOnStyleChange)
         loadSettingsOnStyleChange(styleID);
+
+    readPlaybackSettingsFromProperties();
+    if (playBackSettings)
+    {
+        playBackSettings->setNewSettings(this->settings);
+    }
 
     currentStyleComponent->applyBPMchangeBeforePlayback(bpmToUse);
     currentStyleComponent->applyChangesForAllTracksCurrentStyle();
@@ -432,9 +440,9 @@ juce::String Display::getPID()
     return this->settings.PID;
 }
 
-void Display::readSettingsFromJSON()
+void Display::readPlaybackSettingsFromProperties()
 {
-    PlayBackSettings settingsLoaded = PlaybackSettingsIOHelper::loadFromFile(IOHelper::getFile("playbackSettings.json"), this->settings.VID, this->settings.PID);
+    PlayBackSettings settingsLoaded = PlaybackSettingsIOHelper::loadPlaybackSettings(propertiesFile, this->settings.VID, this->settings.PID, this->getStyleID());
     this->settings = settingsLoaded;
 }
 

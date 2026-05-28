@@ -114,19 +114,23 @@ class PlaybackSettingsIOHelper
 public:
     /**
      * @brief Saves playback settings to a file.
-     * @param file File to save to
+     * @param propertiesFile Pointer to the properties file
      * @param settings Settings to save
+     * @param lowest Lowest value
+     * @param highest Highest value
+     * @param styleID Style ID
      */
-    static void saveToFile(const juce::File& file, const PlayBackSettings& settings, int lowest, int highest);
+    static void savePlaybackSettings(juce::PropertiesFile* propertiesFile, const PlayBackSettings& settings, int lowest, int highest, const juce::String& styleID);
 
     /**
      * @brief Loads playback settings from a file.
-     * @param file File to load from
+     * @param propertiesFile Pointer to the properties file
      * @param VID Device VID
      * @param PID Device PID
+     * @param styleID Style ID
      * @return Loaded PlayBackSettings object
      */
-    static PlayBackSettings loadFromFile(const juce::File& file, const juce::String& VID, const juce::String& PID);
+    static PlayBackSettings loadPlaybackSettings(const juce::PropertiesFile* propertiesFile, const juce::String& VID, const juce::String& PID, const juce::String& styleID);
 
 private:
 };
