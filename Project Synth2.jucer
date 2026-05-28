@@ -409,16 +409,6 @@
             file="Source/InstrumentTreeItem.h"/>
       <FILE id="ZZkI5J" name="keyListener.cpp" compile="1" resource="0" file="Source/keyListener.cpp"/>
       <FILE id="VuWhA6" name="keyListener.h" compile="0" resource="0" file="Source/keyListener.h"/>
-      <FILE id="gycLDS" name="SynthSound.cpp" compile="1" resource="0" file="Source/SynthSound.cpp"/>
-      <FILE id="vH6ZQ1" name="SynthSound.h" compile="0" resource="0" file="Source/SynthSound.h"/>
-      <FILE id="wDfkTH" name="SynthVoice.cpp" compile="1" resource="0" file="Source/SynthVoice.cpp"/>
-      <FILE id="ujOnE9" name="SynthVoice.h" compile="0" resource="0" file="Source/SynthVoice.h"/>
-      <FILE id="woG07v" name="Synth.cpp" compile="1" resource="0" file="Source/Synth.cpp"/>
-      <FILE id="wfK7hc" name="Synth.h" compile="0" resource="0" file="Source/Synth.h"/>
-      <FILE id="wykBtg" name="audioProcessor.cpp" compile="1" resource="0"
-            file="Source/audioProcessor.cpp"/>
-      <FILE id="p65jRZ" name="audioProcessor.h" compile="0" resource="0"
-            file="Source/audioProcessor.h"/>
       <FILE id="iqvpAW" name="NoteLayer.cpp" compile="1" resource="0" file="Source/NoteLayer.cpp"/>
       <FILE id="cFN9eI" name="NoteLayer.h" compile="0" resource="0" file="Source/NoteLayer.h"/>
       <FILE id="XnnPrB" name="InstrumentHandler.cpp" compile="1" resource="0"
@@ -468,6 +458,7 @@
     <MODULE id="juce_product_unlocking" showAllCode="1" useLocalCopy="0"
             useGlobalPath="1"/>
     <MODULE id="juce_video" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="SFZero" showAllCode="1" useLocalCopy="0" useGlobalPath="0"/>
   </MODULES>
   <JUCEOPTIONS JUCE_STRICT_REFCOUNTEDPOINTER="1"/>
   <EXPORTFORMATS>
@@ -500,6 +491,7 @@
         <MODULEPATH id="juce_product_unlocking" path="../../JUCE/JUCE/modules"/>
         <MODULEPATH id="juce_video" path="../../JUCE/JUCE/modules"/>
         <MODULEPATH id="juce_audio_processors_headless" path="../../NEW JUCE/JUCE/modules"/>
+        <MODULEPATH id="SFZero" path="modules"/>
       </MODULEPATHS>
     </VS2022>
   </EXPORTFORMATS>
