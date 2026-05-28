@@ -10,6 +10,27 @@
 
 #include "IOHelper.h"
 
+namespace
+{
+    juce::String getDeviceSettingsKey(const juce::String& VID, const juce::String& PID)
+    {
+        juce::String deviceKey = VID + "_" + PID;
+        if (deviceKey == "_") deviceKey = "default";
+        return deviceKey;
+    }
+
+    juce::String getStyleDeviceSettingsPrefix(const juce::String& styleID, const juce::String& VID, const juce::String& PID)
+    {
+        return styleID + "." + getDeviceSettingsKey(VID, PID) + ".";
+    }
+
+    void saveIfFileBacked(juce::PropertySet* properties)
+    {
+        if (auto* propertiesFile = dynamic_cast<juce::PropertiesFile*>(properties))
+            propertiesFile->saveIfNeeded();
+    }
+}
+
 juce::File IOHelper::getFolder(const juce::String& name)
 {
     return juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
@@ -433,50 +454,46 @@ void TrackIOHelper::extractNotePairEvents(juce::MidiMessageSequence& sequence, s
     }
 }
 
-void PlaybackSettingsIOHelper::savePlaybackSettings(juce::PropertiesFile* propertiesFile, const PlayBackSettings& settings, int lowest, int highest, const juce::String& styleID)
+void PlaybackSettingsIOHelper::savePlaybackSettings(juce::PropertySet* properties, const PlayBackSettings& settings, int lowest, int highest, const juce::String& styleID)
 {
-    if (!propertiesFile) return;
+    if (!properties) return;
 
     int baseStart = 60;
     bool keyboardInputCase = false;
     if (highest - lowest < 49)
         keyboardInputCase = true;
 
-    juce::String deviceKey = settings.VID + "_" + settings.PID;
-    if (deviceKey == "_") deviceKey = "default";
-    juce::String prefix = styleID + "." + deviceKey + ".";
+    juce::String prefix = getStyleDeviceSettingsPrefix(styleID, settings.VID, settings.PID);
 
     if (keyboardInputCase && lowest != 60)
     {
-        propertiesFile->setValue(prefix + "startNote", baseStart + settings.startNote % 12);
-        propertiesFile->setValue(prefix + "endNote", baseStart + settings.endNote % 12);
-        propertiesFile->setValue(prefix + "leftHandBound", baseStart + settings.leftHandBound % 12);
-        propertiesFile->setValue(prefix + "rightHandBound", baseStart + settings.rightHandBound % 12);
+        properties->setValue(prefix + "startNote", baseStart + settings.startNote % 12);
+        properties->setValue(prefix + "endNote", baseStart + settings.endNote % 12);
+        properties->setValue(prefix + "leftHandBound", baseStart + settings.leftHandBound % 12);
+        properties->setValue(prefix + "rightHandBound", baseStart + settings.rightHandBound % 12);
     }
     else {
-        propertiesFile->setValue(prefix + "startNote", settings.startNote);
-        propertiesFile->setValue(prefix + "endNote", settings.endNote);
-        propertiesFile->setValue(prefix + "leftHandBound", settings.leftHandBound);
-        propertiesFile->setValue(prefix + "rightHandBound", settings.rightHandBound);
+        properties->setValue(prefix + "startNote", settings.startNote);
+        properties->setValue(prefix + "endNote", settings.endNote);
+        properties->setValue(prefix + "leftHandBound", settings.leftHandBound);
+        properties->setValue(prefix + "rightHandBound", settings.rightHandBound);
     }
 
-    propertiesFile->saveIfNeeded();
+    saveIfFileBacked(properties);
 }
 
-PlayBackSettings PlaybackSettingsIOHelper::loadPlaybackSettings(const juce::PropertiesFile* propertiesFile, const juce::String& VID, const juce::String& PID, const juce::String& styleID)
+PlayBackSettings PlaybackSettingsIOHelper::loadPlaybackSettings(const juce::PropertySet* properties, const juce::String& VID, const juce::String& PID, const juce::String& styleID)
 {
     PlayBackSettings settings{ -1,-1,-1,-1, "", "" };
 
-    if (propertiesFile)
+    if (properties)
     {
-        juce::String deviceKey = juce::String(VID) + "_" + juce::String(PID);
-        if (deviceKey == "_") deviceKey = "default";
-        juce::String prefix = styleID + "." + deviceKey + ".";
+        juce::String prefix = getStyleDeviceSettingsPrefix(styleID, VID, PID);
 
-        settings.startNote = propertiesFile->getIntValue(prefix + "startNote", settings.startNote);
-        settings.endNote = propertiesFile->getIntValue(prefix + "endNote", settings.endNote);
-        settings.leftHandBound = propertiesFile->getIntValue(prefix + "leftHandBound", settings.leftHandBound);
-        settings.rightHandBound = propertiesFile->getIntValue(prefix + "rightHandBound", settings.rightHandBound);
+        settings.startNote = properties->getIntValue(prefix + "startNote", settings.startNote);
+        settings.endNote = properties->getIntValue(prefix + "endNote", settings.endNote);
+        settings.leftHandBound = properties->getIntValue(prefix + "leftHandBound", settings.leftHandBound);
+        settings.rightHandBound = properties->getIntValue(prefix + "rightHandBound", settings.rightHandBound);
     }
 
     settings.VID = VID;
@@ -567,63 +584,67 @@ void SectionIOHelper::loadFromFile(const juce::File& file, std::unordered_map<ju
     }
 }
 
-void EffectSettingsIOHelper::saveEffectsStyle(juce::PropertiesFile* propertiesFile ,const juce::String& styleID, int channel, const SoundSettings& s)
+void EffectSettingsIOHelper::saveEffectsStyle(juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel, const SoundSettings& s)
 {
+    if (!properties) return;
+
     const juce::String ch = (channel == 1 ? "First" : "Second");
-    const juce::String p = styleID + ".";
+    const juce::String p = getStyleDeviceSettingsPrefix(styleID, VID, PID);
 
-    propertiesFile->setValue(p + "reverb" + ch, s.reverb);
-    propertiesFile->setValue(p + "volume" + ch, s.volume);
+    properties->setValue(p + "reverb" + ch, s.reverb);
+    properties->setValue(p + "volume" + ch, s.volume);
 
-    propertiesFile->setValue(p + "brightness" + ch, s.brightness);
-    propertiesFile->setValue(p + "chorus" + ch, s.chorus);
-    propertiesFile->setValue(p + "expression" + ch, s.expression);
-    propertiesFile->setValue(p + "resonance" + ch, s.resonance);
-    propertiesFile->setValue(p + "sustainToggle" + ch, s.sustainToggle ? 1 : 0);
+    properties->setValue(p + "brightness" + ch, s.brightness);
+    properties->setValue(p + "chorus" + ch, s.chorus);
+    properties->setValue(p + "expression" + ch, s.expression);
+    properties->setValue(p + "resonance" + ch, s.resonance);
+    properties->setValue(p + "sustainToggle" + ch, s.sustainToggle ? 1 : 0);
 
-    propertiesFile->setValue(p + "attack" + ch, s.attack);
-    propertiesFile->setValue(p + "decay" + ch, s.decay);
-    propertiesFile->setValue(p + "release" + ch, s.release);
-    propertiesFile->setValue(p + "vibrato" + ch, s.vibrato);
+    properties->setValue(p + "attack" + ch, s.attack);
+    properties->setValue(p + "decay" + ch, s.decay);
+    properties->setValue(p + "release" + ch, s.release);
+    properties->setValue(p + "vibrato" + ch, s.vibrato);
 
-    propertiesFile->setValue(p + "delay" + ch, s.delay);
-    propertiesFile->setValue(p + "pan" + ch, s.pan);
+    properties->setValue(p + "delay" + ch, s.delay);
+    properties->setValue(p + "pan" + ch, s.pan);
 
-    propertiesFile->setValue(p + "distortion" + ch, s.distortion);
-    propertiesFile->setValue(p + "filterTrack" + ch, s.filterTrack);
-    propertiesFile->setValue(p + "tremolo" + ch, s.tremolo);
-    propertiesFile->setValue(p + "randomMod" + ch, s.randomMod);
+    properties->setValue(p + "distortion" + ch, s.distortion);
+    properties->setValue(p + "filterTrack" + ch, s.filterTrack);
+    properties->setValue(p + "tremolo" + ch, s.tremolo);
+    properties->setValue(p + "randomMod" + ch, s.randomMod);
 
-    propertiesFile->saveIfNeeded();
+    saveIfFileBacked(properties);
 }
 
-SoundSettings EffectSettingsIOHelper::loadEffectsStyle(const juce::PropertiesFile* propertiesFile, const juce::String& styleID, int channel)
+SoundSettings EffectSettingsIOHelper::loadEffectsStyle(const juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel)
 {
     SoundSettings s;
+    if (!properties) return s;
+
     const juce::String suffix = (channel == 1) ? "First" : "Second";
-    const juce::String p = styleID + ".";
+    const juce::String p = getStyleDeviceSettingsPrefix(styleID, VID, PID);
 
-    s.reverb = propertiesFile->getIntValue(p + "reverb" + suffix, s.reverb);
-    s.volume = propertiesFile->getIntValue(p + "volume" + suffix, s.volume);
+    s.reverb = properties->getIntValue(p + "reverb" + suffix, s.reverb);
+    s.volume = properties->getIntValue(p + "volume" + suffix, s.volume);
 
-    s.brightness = propertiesFile->getIntValue(p + "brightness" + suffix, s.brightness);
-    s.chorus = propertiesFile->getIntValue(p + "chorus" + suffix, s.chorus);
-    s.expression = propertiesFile->getIntValue(p + "expression" + suffix, s.expression);
-    s.resonance = propertiesFile->getIntValue(p + "resonance" + suffix, s.resonance);
-    s.sustainToggle = propertiesFile->getIntValue(p + "sustainToggle" + suffix, 0) != 0;
+    s.brightness = properties->getIntValue(p + "brightness" + suffix, s.brightness);
+    s.chorus = properties->getIntValue(p + "chorus" + suffix, s.chorus);
+    s.expression = properties->getIntValue(p + "expression" + suffix, s.expression);
+    s.resonance = properties->getIntValue(p + "resonance" + suffix, s.resonance);
+    s.sustainToggle = properties->getIntValue(p + "sustainToggle" + suffix, 0) != 0;
 
-    s.attack = propertiesFile->getIntValue(p + "attack" + suffix, s.attack);
-    s.decay = propertiesFile->getIntValue(p + "decay" + suffix, s.decay);
-    s.release = propertiesFile->getIntValue(p + "release" + suffix, s.release);
-    s.vibrato = propertiesFile->getIntValue(p + "vibrato" + suffix, s.vibrato);
+    s.attack = properties->getIntValue(p + "attack" + suffix, s.attack);
+    s.decay = properties->getIntValue(p + "decay" + suffix, s.decay);
+    s.release = properties->getIntValue(p + "release" + suffix, s.release);
+    s.vibrato = properties->getIntValue(p + "vibrato" + suffix, s.vibrato);
 
-    s.delay = propertiesFile->getIntValue(p + "delay" + suffix, s.delay);
-    s.pan = propertiesFile->getIntValue(p + "pan" + suffix, s.pan);
+    s.delay = properties->getIntValue(p + "delay" + suffix, s.delay);
+    s.pan = properties->getIntValue(p + "pan" + suffix, s.pan);
 
-    s.distortion = propertiesFile->getIntValue(p + "distortion" + suffix, s.distortion);
-    s.filterTrack = propertiesFile->getIntValue(p + "filterTrack" + suffix, s.filterTrack);
-    s.tremolo = propertiesFile->getIntValue(p + "tremolo" + suffix, s.tremolo);
-    s.randomMod = propertiesFile->getIntValue(p + "randomMod" + suffix, s.randomMod);
+    s.distortion = properties->getIntValue(p + "distortion" + suffix, s.distortion);
+    s.filterTrack = properties->getIntValue(p + "filterTrack" + suffix, s.filterTrack);
+    s.tremolo = properties->getIntValue(p + "tremolo" + suffix, s.tremolo);
+    s.randomMod = properties->getIntValue(p + "randomMod" + suffix, s.randomMod);
 
     return s;
 }

@@ -187,6 +187,10 @@ private:
 
     void applySettingsToChannel(const SoundSettings& s, int channel);
 
+    void getCurrentEffectDeviceIds(juce::String& VID, juce::String& PID);
+
+    juce::String getCurrentEffectSettingsKey(const juce::String& styleID);
+
     void loadEffectsFromFile(const juce::String& styleID="style_default");
 
     void loadSettings(const juce::String& styleID="style_default");

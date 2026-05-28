@@ -1,5 +1,15 @@
 #include "MainComponent.h"
 
+namespace
+{
+    juce::String makeDeviceSettingsKey(const juce::String& VID, const juce::String& PID)
+    {
+        juce::String deviceKey = VID + "_" + PID;
+        if (deviceKey == "_") deviceKey = "default";
+        return deviceKey;
+    }
+}
+
 //==============================================================================
 MainComponent::MainComponent()
 {
@@ -488,55 +498,57 @@ void MainComponent::applySettingsToChannel(const SoundSettings& s, int channel)
     MIDIDevice.setRandomMod(s.randomMod, channel);
 }
 
+void MainComponent::getCurrentEffectDeviceIds(juce::String& VID, juce::String& PID)
+{
+    if (display)
+    {
+        VID = display->getVID();
+        PID = display->getPID();
+        return;
+    }
+
+    VID = MIDIDevice.getVID();
+    PID = MIDIDevice.getPID();
+}
+
+juce::String MainComponent::getCurrentEffectSettingsKey(const juce::String& styleID)
+{
+    juce::String VID, PID;
+    getCurrentEffectDeviceIds(VID, PID);
+    return styleID + "." + makeDeviceSettingsKey(VID, PID);
+}
+
 void MainComponent::loadEffectsFromFile(const juce::String& styleID)
 {
     SoundSettings firstChannel, secondChannel;
+    juce::String VID, PID;
+    getCurrentEffectDeviceIds(VID, PID);
+    const juce::String settingsKey = styleID + "." + makeDeviceSettingsKey(VID, PID);
 
-    auto it = styleSettingsMap.find(styleID);
-
-    if (it != styleSettingsMap.end())
     {
-        firstChannel = it->second.firstHand;
-        secondChannel = it->second.secondHand;
+        std::lock_guard<std::mutex> lock(styleMutex);
+        auto it = styleSettingsMap.find(settingsKey);
 
-        juce::MessageManager::callAsync([this, firstChannel, secondChannel]()
-            {
-                applySettingsToChannel(firstChannel, 1);
-                applySettingsToChannel(secondChannel, 16);
-            });
-    }
-    else
-    {
+        if (it != styleSettingsMap.end())
         {
-            std::lock_guard<std::mutex> lock(styleMutex);
-
-            
-            if (styleSettingsMap.find(styleID) != styleSettingsMap.end())
-                return;
-
-            
-            styleSettingsMap.emplace(styleID, StyleSettings{});
+            firstChannel = it->second.firstHand;
+            secondChannel = it->second.secondHand;
+            applySettingsToChannel(firstChannel, 1);
+            applySettingsToChannel(secondChannel, 16);
+            return;
         }
-
-        std::thread([this, styleID]()
-            {
-                SoundSettings first = EffectSettingsIOHelper::loadEffectsStyle(propertiesFile, styleID, 1);
-                SoundSettings second = EffectSettingsIOHelper::loadEffectsStyle(propertiesFile, styleID, 16);
-
-                {
-                    std::lock_guard<std::mutex> lock(styleMutex);
-                    styleSettingsMap[styleID] = StyleSettings{ first, second };
-                }
-
-                juce::MessageManager::callAsync([this, first, second]()
-                    {
-                        applySettingsToChannel(first, 1);
-                        applySettingsToChannel(second, 16);
-                    });
-
-            }).detach();
     }
 
+    SoundSettings first = EffectSettingsIOHelper::loadEffectsStyle(propertiesFile, styleID, VID, PID, 1);
+    SoundSettings second = EffectSettingsIOHelper::loadEffectsStyle(propertiesFile, styleID, VID, PID, 16);
+
+    {
+        std::lock_guard<std::mutex> lock(styleMutex);
+        styleSettingsMap[settingsKey] = StyleSettings{ first, second };
+    }
+
+    applySettingsToChannel(first, 1);
+    applySettingsToChannel(second, 16);
 }
 
 void MainComponent::loadSettings(const juce::String& styleID)
@@ -615,6 +627,9 @@ void MainComponent::setCallBacksForEffectWindow()
     {
         int currentChannel = this->soundEffectWindow->getContent().getSelectedChannel();
         juce::String styleID = display->getStyleID();
+        juce::String VID, PID;
+        getCurrentEffectDeviceIds(VID, PID);
+        const juce::String settingsKey = styleID + "." + makeDeviceSettingsKey(VID, PID);
 
         juce::String key;
 
@@ -650,7 +665,7 @@ void MainComponent::setCallBacksForEffectWindow()
 
         {
             std::lock_guard<std::mutex> lock(styleMutex);
-            StyleSettings& s = styleSettingsMap[styleID]; 
+            StyleSettings& s = styleSettingsMap[settingsKey];
 
             if (currentChannel == 1) s.firstHand.setValue(key, value);
             else if (currentChannel == 16) s.secondHand.setValue(key, value);
@@ -660,11 +675,14 @@ void MainComponent::setCallBacksForEffectWindow()
         if (currentChannel == 1)       key += "First" ;
         else if (currentChannel == 16) key += "Second" ;
 
-        // FULL KEY with styleID prefix
-        key = styleID + "." + key;
+        // FULL KEY with styleID and device prefix
+        key = settingsKey + "." + key;
 
-        propertiesFile->setValue(key, value);
-        propertiesFile->saveIfNeeded();
+        if (propertiesFile)
+        {
+            propertiesFile->setValue(key, value);
+            propertiesFile->saveIfNeeded();
+        }
 
         if (!playButton.isVisible())
         {
@@ -731,7 +749,6 @@ void MainComponent::setCallBacksForEffectWindow()
         content.getRandomModKnob().setValue(MIDIDevice.getRandomMod(channel));
     };
 }
-
 void MainComponent::setInitialValuesFromSettingsFileEffectWindow()
 {
     auto& content = soundEffectWindow->getContent();
@@ -763,6 +780,9 @@ void MainComponent::setInitialValuesFromSettingsFileEffectWindow()
 
 void MainComponent::sendEffectsBeforePlaying()
 {
+    if (!MIDIDevice.isOpenOUT())
+        return;
+
     struct EffectCC
     {
         int ccNumber;
@@ -1368,6 +1388,9 @@ void MainComponent::displayInit()
     display->loadSettingsOnStyleChange = [this](const juce::String& styleID)
     {
         loadEffectsFromFile(styleID);
+
+        if (MIDIDevice.isOpenOUT())
+            sendEffectsBeforePlaying();
     };
 }
 
@@ -1707,6 +1730,7 @@ void MainComponent::playButtonOnClick()
         else this->display->set_VID_PID(VID, PID);
 
         this->display->readPlaybackSettingsFromProperties();
+        loadEffectsFromFile(this->display->getStyleID());
 
         currentBackground = playBackground;
         repaint();
@@ -2364,8 +2388,7 @@ void MainComponent::headerPanel::paint(juce::Graphics& g)
     juce::Colour startColour = juce::Colour(128, 0, 32);
     juce::Colour endColour = juce::Colour(212, 175, 55); 
 
-    juce::ColourGradient gradient(startColour, 0, 0, endColour, 0, 50, false); 
-    g.setGradientFill(gradient); 
+    juce::ColourGradient gradient(startColour, 0, 0, endColour, 0, 50, false);
+    g.setGradientFill(gradient);
     g.fillAll();
 }
-    
