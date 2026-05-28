@@ -114,23 +114,23 @@ class PlaybackSettingsIOHelper
 public:
     /**
      * @brief Saves playback settings to a file.
-     * @param propertiesFile Pointer to the properties file
+     * @param properties Pointer to the properties storage
      * @param settings Settings to save
      * @param lowest Lowest value
      * @param highest Highest value
      * @param styleID Style ID
      */
-    static void savePlaybackSettings(juce::PropertiesFile* propertiesFile, const PlayBackSettings& settings, int lowest, int highest, const juce::String& styleID);
+    static void savePlaybackSettings(juce::PropertySet* properties, const PlayBackSettings& settings, int lowest, int highest, const juce::String& styleID);
 
     /**
      * @brief Loads playback settings from a file.
-     * @param propertiesFile Pointer to the properties file
+     * @param properties Pointer to the properties storage
      * @param VID Device VID
      * @param PID Device PID
      * @param styleID Style ID
      * @return Loaded PlayBackSettings object
      */
-    static PlayBackSettings loadPlaybackSettings(const juce::PropertiesFile* propertiesFile, const juce::String& VID, const juce::String& PID, const juce::String& styleID);
+    static PlayBackSettings loadPlaybackSettings(const juce::PropertySet* properties, const juce::String& VID, const juce::String& PID, const juce::String& styleID);
 
 private:
 };
@@ -150,7 +150,7 @@ private:
 class EffectSettingsIOHelper
 {
 public:
-    static void saveEffectsStyle(juce::PropertiesFile* propertiesFile, const juce::String& styleID, int channel, const SoundSettings& s);
+    static void saveEffectsStyle(juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel, const SoundSettings& s);
 
-    static SoundSettings loadEffectsStyle(const juce::PropertiesFile* propertiesFile, const juce::String& styleID, int channel);
+    static SoundSettings loadEffectsStyle(const juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel);
 };
