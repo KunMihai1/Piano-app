@@ -48,6 +48,7 @@ public:
      */
     std::function<void(PlayBackSettings settings)> onChangingSettings;
     std::function<void(int transposeValue)> onChangingTranspose;
+    std::function<juce::String()> getStyleID;
 
     /**
      * @brief Constructor
@@ -107,4 +108,5 @@ private:
     juce::ComboBox rightHandBoundBox; /**< ComboBox to select right hand range */
 
     juce::Slider transposeSlider;
+    
 };

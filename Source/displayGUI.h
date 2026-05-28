@@ -21,6 +21,7 @@
 #include "IOHelper.h"
 #include "TrackPlayerListener.h"
 #include "StyleSection.h"
+#include "DisplayListener.h"
 
 /**
  * @class TrackListComponent
@@ -854,27 +855,7 @@ public:
     //JUCE_LEAK_DETECTOR(MyTabbedComponent)
 };
 
-/**
- * @class DisplayListener
- * @brief Abstract interface to receive updates from the Display component.
- *
- * Classes implementing `DisplayListener` can receive notifications when
- * playback settings are changed.
- */
-class DisplayListener {
-public:
-
-    /** @brief Destructor */
-    virtual ~DisplayListener() = default;
-
-    /**
-     * @brief Called when playback settings change.
-     * @param settings The new playback settings
-     */
-    virtual void playBackSettingsChanged(const PlayBackSettings& settings)=0;
-
-    virtual void playBackSettingsTransposeChanged(int transposeValue) = 0;
-};
+// DisplayListener is now defined in DisplayListener.h
 
 
 
@@ -892,19 +873,25 @@ class Display : public juce::Component,
                 public TrackListListener
 {
 public:
+
+    std::function<void(const juce::String& styleID)> loadSettingsOnStyleChange;
+
     //==============================================================================
     /**
-     * @brief Constructs a Display component.
-     * @param outputDev Optional MIDI output device.
+     * @brief Constructor.
+     * @param outputDev Pointer to the MIDI output device.
+     * @param props Pointer to the application properties file.
      * @param widthForList Width of the style list component.
      */
-    Display(std::weak_ptr<juce::MidiOutput> outputDev, int widthForList = 0);
+    Display(std::weak_ptr<juce::MidiOutput> outputDev, juce::PropertiesFile* props, int widthForList = 0);
 
     /** @brief Destructor */
     ~Display() override;
 
     /** @brief Callback from `ChangeBroadcaster` */
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
+
+    juce::String getStyleID() const;
 
     /**
      * @brief Gets the tab index for a tab by its name.
@@ -988,8 +975,8 @@ public:
     /** @brief Gets the PID of the current input device*/
     juce::String getPID();
 
-    /** @brief Loads playback settings from JSON */
-    void readSettingsFromJSON();
+    /** @brief Reads and updates playback settings from the properties file */
+    void readPlaybackSettingsFromProperties();
 
     /** @brief Handles home button interactions */
     void homeButtonInteraction();
@@ -1057,6 +1044,7 @@ private:
     std::shared_ptr<std::unordered_map<juce::String, std::unordered_map<juce::String,StyleSection>>> sectionsPerStyleMap;
 
     std::weak_ptr<juce::MidiOutput> outputDevice; ///< MIDI output device
+    juce::PropertiesFile* propertiesFile = nullptr; ///< Application properties file
 
     std::unique_ptr<TrackListComponent> trackListComp; ///< Track selection component
     juce::var allStylesJsonVar; ///< Root JSON object storing all styles

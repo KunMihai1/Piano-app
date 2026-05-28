@@ -568,7 +568,7 @@ public:
     {
         beginTest("Save and load roundtrip - full range keyboard");
         {
-            auto tempFile = juce::File::createTempFile(".json");
+            juce::PropertySet properties;
 
             PlayBackSettings original;
             original.startNote = 36;
@@ -578,10 +578,9 @@ public:
             original.VID = "1234";
             original.PID = "5678";
 
-            
-            PlaybackSettingsIOHelper::saveToFile(tempFile, original, 21, 108);
+            PlaybackSettingsIOHelper::savePlaybackSettings(&properties, original, 21, 108, "style_default");
 
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "1234", "5678");
+            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadPlaybackSettings(&properties, "1234", "5678", "style_default");
 
             expect(loaded.startNote == 36);
             expect(loaded.endNote == 96);
@@ -590,12 +589,11 @@ public:
             expect(loaded.VID == "1234");
             expect(loaded.PID == "5678");
 
-            tempFile.deleteFile();
         }
 
         beginTest("Load with wrong VID/PID returns defaults");
         {
-            auto tempFile = juce::File::createTempFile(".json");
+            juce::PropertySet properties;
 
             PlayBackSettings original;
             original.startNote = 36;
@@ -605,30 +603,31 @@ public:
             original.VID = "1234";
             original.PID = "5678";
 
-            PlaybackSettingsIOHelper::saveToFile(tempFile, original, 21, 108);
+            PlaybackSettingsIOHelper::savePlaybackSettings(&properties, original, 21, 108, "style_default");
 
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "9999", "0000");
+            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadPlaybackSettings(&properties, "9999", "0000", "style_default");
 
             expect(loaded.startNote == -1);
             expect(loaded.endNote == -1);
 
-            tempFile.deleteFile();
         }
 
-        beginTest("Load from non-existent file returns defaults");
+        beginTest("Load from empty properties returns defaults");
         {
-            juce::File nonExistent("C:\\this_file_does_not_exist_12345.json");
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(nonExistent, "1234", "5678");
+            juce::PropertySet properties;
+
+            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadPlaybackSettings(&properties, "1234", "5678", "style_default");
 
             expect(loaded.startNote == -1);
             expect(loaded.endNote == -1);
             expect(loaded.leftHandBound == -1);
             expect(loaded.rightHandBound == -1);
+
         }
 
         beginTest("Save with small keyboard range clamps to base octave");
         {
-            auto tempFile = juce::File::createTempFile(".json");
+            juce::PropertySet properties;
 
             PlayBackSettings original;
             original.startNote = 48;   // C3
@@ -639,20 +638,79 @@ public:
             original.PID = "BBBB";
 
             // highest - lowest = 72 - 48 = 24, which is < 49, so clamping kicks in
-            PlaybackSettingsIOHelper::saveToFile(tempFile, original, 48, 72);
+            PlaybackSettingsIOHelper::savePlaybackSettings(&properties, original, 48, 72, "style_default");
 
-            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadFromFile(tempFile, "AAAA", "BBBB");
+            PlayBackSettings loaded = PlaybackSettingsIOHelper::loadPlaybackSettings(&properties, "AAAA", "BBBB", "style_default");
 
             // Values should be remapped to base 60:  60 + (note % 12)
             expect(loaded.startNote == 60 + (48 % 12)); 
             expect(loaded.endNote == 60 + (72 % 12));    
 
-            tempFile.deleteFile();
         }
     }
 };
 
 static PlaybackSettingsIOHelperTest playbackSettingsIOHelperTest;
+
+
+
+class EffectSettingsIOHelperTest : public juce::UnitTest
+{
+public:
+    EffectSettingsIOHelperTest() : juce::UnitTest("EffectSettingsIOHelper", "Unit") {}
+
+    void runTest() override
+    {
+        beginTest("Save and load roundtrip uses style and device key");
+        {
+            juce::PropertySet properties;
+
+            SoundSettings deviceOne;
+            deviceOne.reverb = 25;
+            deviceOne.volume = 90;
+            deviceOne.brightness = 100;
+
+            SoundSettings deviceTwo;
+            deviceTwo.reverb = 75;
+            deviceTwo.volume = 30;
+            deviceTwo.brightness = 40;
+
+            EffectSettingsIOHelper::saveEffectsStyle(&properties, "style_default", "1234", "5678", 1, deviceOne);
+            EffectSettingsIOHelper::saveEffectsStyle(&properties, "style_default", "9999", "0000", 1, deviceTwo);
+
+            SoundSettings loadedOne = EffectSettingsIOHelper::loadEffectsStyle(&properties, "style_default", "1234", "5678", 1);
+            SoundSettings loadedTwo = EffectSettingsIOHelper::loadEffectsStyle(&properties, "style_default", "9999", "0000", 1);
+
+            expect(loadedOne.reverb == 25);
+            expect(loadedOne.volume == 90);
+            expect(loadedOne.brightness == 100);
+
+            expect(loadedTwo.reverb == 75);
+            expect(loadedTwo.volume == 30);
+            expect(loadedTwo.brightness == 40);
+
+        }
+
+        beginTest("Load with wrong VID/PID returns defaults");
+        {
+            juce::PropertySet properties;
+
+            SoundSettings original;
+            original.reverb = 12;
+            original.volume = 34;
+
+            EffectSettingsIOHelper::saveEffectsStyle(&properties, "style_default", "1234", "5678", 16, original);
+
+            SoundSettings loaded = EffectSettingsIOHelper::loadEffectsStyle(&properties, "style_default", "9999", "0000", 16);
+
+            expect(loaded.reverb == 64);
+            expect(loaded.volume == 64);
+
+        }
+    }
+};
+
+static EffectSettingsIOHelperTest effectSettingsIOHelperTest;
 
 
 

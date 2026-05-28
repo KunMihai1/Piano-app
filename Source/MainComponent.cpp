@@ -1,5 +1,15 @@
 #include "MainComponent.h"
 
+namespace
+{
+    juce::String makeDeviceSettingsKey(const juce::String& VID, const juce::String& PID)
+    {
+        juce::String deviceKey = VID + "_" + PID;
+        if (deviceKey == "_") deviceKey = "default";
+        return deviceKey;
+    }
+}
+
 //==============================================================================
 MainComponent::MainComponent()
 {
@@ -60,7 +70,9 @@ MainComponent::MainComponent()
                 grabKeyboardFocus();
         });
 
-    loadSettings();
+    initializeOverlay();
+
+
     startTimer(1000);
 
 }
@@ -259,31 +271,13 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
     if (key == juce::KeyPress::escapeKey)
     {
 
-        if (!overlayWindow)
+        if (!overlayWindow->isVisible())
         {
-            overlayWindow = std::make_unique<OverlayComponent>();
-            auto topLevel = getTopLevelComponent();
-            juce::Rectangle<int> screenBounds = topLevel->getScreenBounds();
-
-            overlayWindow->setBounds(screenBounds);
-            overlayWindow->setAlwaysOnTop(true);
-            overlayWindow->setOpaque(false);
-
+            
             overlayShouldBeVisible = true;
             overlayWindow->setVisible(true);
+            overlayWindow->toFront(false);
 
-
-            overlayWindow->addToDesktop(
-                juce::ComponentPeer::windowIsTemporary
-                | juce::ComponentPeer::windowHasDropShadow,
-                nullptr);
-
-            overlayWindow->toFront(true);
-
-
-            setCallBacksForOverlayWindow();
-
-            overlayWindow->grabKeyboardFocus();
         }
         else
         {
@@ -293,8 +287,7 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
             else
             {
                 overlayShouldBeVisible = false;
-                overlayWindow->removeFromDesktop();
-                overlayWindow.reset();
+                overlayWindow->setVisible(false);
             }
         }
     }
@@ -480,49 +473,90 @@ void MainComponent::loginWindowInitialize()
 
 }
 
-void MainComponent::loadEffectsFromFile()
+void MainComponent::applySettingsToChannel(const SoundSettings& s, int channel)
 {
-    auto load = [&](const juce::String& name, auto setter)
-    {
-        int fallbackValue=64;
-        int first = propertiesFile->getIntValue(name + "First", fallbackValue);
-        int second = propertiesFile->getIntValue(name + "Second", fallbackValue);
+    MIDIDevice.setReverb(s.reverb, channel);
+    MIDIDevice.setVolume(s.volume, channel);
 
-        setter(first, 1);   // Channel 1
-        setter(second, 16); // Channel 16
-    };
+    MIDIDevice.setBrightness(s.brightness, channel);
+    MIDIDevice.setChorus(s.chorus, channel);
+    MIDIDevice.setExpression(s.expression, channel);
+    MIDIDevice.setResonance(s.resonance, channel);
+    MIDIDevice.setSustainToggle(s.sustainToggle, channel);
 
-    // Line 1
-    load("midiBrightness", [&](int v, int ch) { MIDIDevice.setBrightness(v, ch); });
-    load("midiExpression", [&](int v, int ch) { MIDIDevice.setExpression(v, ch); });
-    load("midiChorus", [&](int v, int ch) { MIDIDevice.setChorus(v, ch); });
-    load("midiResonance", [&](int v, int ch) { MIDIDevice.setResonance(v, ch); });
+    MIDIDevice.setAttack(s.attack, channel);
+    MIDIDevice.setDecay(s.decay, channel);
+    MIDIDevice.setRelease(s.release, channel);
+    MIDIDevice.setVibrato(s.vibrato, channel);
 
-    // Line 2
-    load("midiAttack", [&](int v, int ch) { MIDIDevice.setAttack(v, ch); });
-    load("midiDecay", [&](int v, int ch) { MIDIDevice.setDecay(v, ch); });
-    load("midiRelease", [&](int v, int ch) { MIDIDevice.setRelease(v, ch); });
-    load("midiVibrato", [&](int v, int ch) { MIDIDevice.setVibrato(v, ch); });
+    MIDIDevice.setDelay(s.delay, channel);
+    MIDIDevice.setPan(s.pan, channel);
 
-    // Line 3
-    load("midiDelay", [&](int v, int ch) { MIDIDevice.setDelay(v, ch); });
-    load("midiPan", [&](int v, int ch) { MIDIDevice.setPan(v, ch); });
-    load("midiReverb", [&](int v, int ch) { MIDIDevice.setReverb(v, ch); });
-    load("midiVolume", [&](int v, int ch) { MIDIDevice.setVolume(v, ch); });
-
-    // Line 4
-    load("midiDistortion", [&](int v, int ch) { MIDIDevice.setDistortion(v, ch); });
-    load("midiFilterTrack", [&](int v, int ch) { MIDIDevice.setFilterTrack(v, ch); });
-    load("midiTremolo", [&](int v, int ch) { MIDIDevice.setTremolo(v, ch); });
-    load("midiRandomMod", [&](int v, int ch) { MIDIDevice.setRandomMod(v, ch); });
+    MIDIDevice.setDistortion(s.distortion, channel);
+    MIDIDevice.setFilterTrack(s.filterTrack, channel);
+    MIDIDevice.setTremolo(s.tremolo, channel);
+    MIDIDevice.setRandomMod(s.randomMod, channel);
 }
 
-void MainComponent::loadSettings()
+void MainComponent::getCurrentEffectDeviceIds(juce::String& VID, juce::String& PID)
+{
+    if (display)
+    {
+        VID = display->getVID();
+        PID = display->getPID();
+        return;
+    }
+
+    VID = MIDIDevice.getVID();
+    PID = MIDIDevice.getPID();
+}
+
+juce::String MainComponent::getCurrentEffectSettingsKey(const juce::String& styleID)
+{
+    juce::String VID, PID;
+    getCurrentEffectDeviceIds(VID, PID);
+    return styleID + "." + makeDeviceSettingsKey(VID, PID);
+}
+
+void MainComponent::loadEffectsFromFile(const juce::String& styleID)
+{
+    SoundSettings firstChannel, secondChannel;
+    juce::String VID, PID;
+    getCurrentEffectDeviceIds(VID, PID);
+    const juce::String settingsKey = styleID + "." + makeDeviceSettingsKey(VID, PID);
+
+    {
+        std::lock_guard<std::mutex> lock(styleMutex);
+        auto it = styleSettingsMap.find(settingsKey);
+
+        if (it != styleSettingsMap.end())
+        {
+            firstChannel = it->second.firstHand;
+            secondChannel = it->second.secondHand;
+            applySettingsToChannel(firstChannel, 1);
+            applySettingsToChannel(secondChannel, 16);
+            return;
+        }
+    }
+
+    SoundSettings first = EffectSettingsIOHelper::loadEffectsStyle(propertiesFile, styleID, VID, PID, 1);
+    SoundSettings second = EffectSettingsIOHelper::loadEffectsStyle(propertiesFile, styleID, VID, PID, 16);
+
+    {
+        std::lock_guard<std::mutex> lock(styleMutex);
+        styleSettingsMap[settingsKey] = StyleSettings{ first, second };
+    }
+
+    applySettingsToChannel(first, 1);
+    applySettingsToChannel(second, 16);
+}
+
+void MainComponent::loadSettings(const juce::String& styleID)
 {
     if (propertiesFile)
     {
 
-        loadEffectsFromFile();
+        loadEffectsFromFile(styleID);
 
         int leftHandInstrumentNumber = propertiesFile->getIntValue("leftInstrumentNumber", 0);
         int rightHandInstrumentNumber = propertiesFile->getIntValue("rightInstrumentNumber", 0);
@@ -592,49 +626,69 @@ void MainComponent::setCallBacksForEffectWindow()
     std::function<void(int, int)> saveCallback = [this](int ccNumber, int value)
     {
         int currentChannel = this->soundEffectWindow->getContent().getSelectedChannel();
+        juce::String styleID = display->getStyleID();
+        juce::String VID, PID;
+        getCurrentEffectDeviceIds(VID, PID);
+        const juce::String settingsKey = styleID + "." + makeDeviceSettingsKey(VID, PID);
 
         juce::String key;
 
         switch (ccNumber)
         {
-        // Line 1 – Tone
-        case 74: key = "midiBrightness"; MIDIDevice.setBrightness(value, currentChannel); break;
-        case 11: key = "midiExpression"; MIDIDevice.setExpression(value, currentChannel); break;
-        case 93: key = "midiChorus"; MIDIDevice.setChorus(value, currentChannel); break;
-        case 71: key = "midiResonance"; MIDIDevice.setResonance(value, currentChannel); break;
-        case 64: key = "midiSustain"; MIDIDevice.setSustainToggle(value, currentChannel); break;
+            // Line 1 – Tone
+        case 74: key = "brightness"; MIDIDevice.setBrightness(value, currentChannel); break;
+        case 11: key = "expression"; MIDIDevice.setExpression(value, currentChannel); break;
+        case 93: key = "chorus"; MIDIDevice.setChorus(value, currentChannel); break;
+        case 71: key = "resonance"; MIDIDevice.setResonance(value, currentChannel); break;
+        case 64: key = "sustainToggle"; MIDIDevice.setSustainToggle(value, currentChannel); break;
 
-        // Line 2 – Envelope
-        case 1:key = "midiVibrato"; MIDIDevice.setVibrato(value, currentChannel); break;
-        case 73: key = "midiAttack"; MIDIDevice.setAttack(value, currentChannel); break;
-        case 75: key = "midiDecay"; MIDIDevice.setDecay(value, currentChannel); break;
-        case 72: key = "midiRelease"; MIDIDevice.setRelease(value, currentChannel); break;
+            // Line 2 – Envelope
+        case 1:  key = "vibrato"; MIDIDevice.setVibrato(value, currentChannel); break;
+        case 73: key = "attack"; MIDIDevice.setAttack(value, currentChannel); break;
+        case 75: key = "decay"; MIDIDevice.setDecay(value, currentChannel); break;
+        case 72: key = "release"; MIDIDevice.setRelease(value, currentChannel); break;
 
-        // Line 3 – Space
-        case 7: key = "midiVolume"; MIDIDevice.setVolume(value, currentChannel);  break;
-        case 91:key = "midiReverb"; MIDIDevice.setReverb(value, currentChannel);  break;
-        case 94: key = "midiDelay"; MIDIDevice.setDelay(value, currentChannel); break;
-        case 10: key = "midiPan"; MIDIDevice.setPan(value, currentChannel); break;
+            // Line 3 – Space
+        case 7:  key = "volume"; MIDIDevice.setVolume(value, currentChannel); break;
+        case 91: key = "reverb"; MIDIDevice.setReverb(value, currentChannel); break;
+        case 94: key = "delay"; MIDIDevice.setDelay(value, currentChannel); break;
+        case 10: key = "pan"; MIDIDevice.setPan(value, currentChannel); break;
 
-        // Line 4 – Modulation
-        case 80: key = "midiDistortion"; MIDIDevice.setDistortion(value, currentChannel); break;
-        case 76: key = "midiFilterTrack"; MIDIDevice.setFilterTrack(value, currentChannel); break;
-        case 92: key = "midiTremolo"; MIDIDevice.setTremolo(value, currentChannel); break;
-        case 95: key = "midiRandomMod"; MIDIDevice.setRandomMod(value, currentChannel); break;
+            // Line 4 – Modulation
+        case 80: key = "distortion"; MIDIDevice.setDistortion(value, currentChannel); break;
+        case 76: key = "filterTrack"; MIDIDevice.setFilterTrack(value, currentChannel); break;
+        case 92: key = "tremolo"; MIDIDevice.setTremolo(value, currentChannel); break;
+        case 95: key = "randomMod"; MIDIDevice.setRandomMod(value, currentChannel); break;
 
         default: return;
         }
 
-        if (currentChannel == 1)       key += "First";
-        else if (currentChannel == 16) key += "Second";
+        {
+            std::lock_guard<std::mutex> lock(styleMutex);
+            StyleSettings& s = styleSettingsMap[settingsKey];
+
+            if (currentChannel == 1) s.firstHand.setValue(key, value);
+            else if (currentChannel == 16) s.secondHand.setValue(key, value);
+        }
+
+        // Channel suffix
+        if (currentChannel == 1)       key += "First" ;
+        else if (currentChannel == 16) key += "Second" ;
+
+        // FULL KEY with styleID and device prefix
+        key = settingsKey + "." + key;
+
+        if (propertiesFile)
+        {
+            propertiesFile->setValue(key, value);
+            propertiesFile->saveIfNeeded();
+        }
 
         if (!playButton.isVisible())
         {
             MIDIDevice.sendMidiCC(currentChannel, ccNumber, value);
         }
 
-        propertiesFile->setValue(key, value);
-        propertiesFile->saveIfNeeded();
     };
 
 
@@ -695,7 +749,6 @@ void MainComponent::setCallBacksForEffectWindow()
         content.getRandomModKnob().setValue(MIDIDevice.getRandomMod(channel));
     };
 }
-
 void MainComponent::setInitialValuesFromSettingsFileEffectWindow()
 {
     auto& content = soundEffectWindow->getContent();
@@ -727,6 +780,9 @@ void MainComponent::setInitialValuesFromSettingsFileEffectWindow()
 
 void MainComponent::sendEffectsBeforePlaying()
 {
+    if (!MIDIDevice.isOpenOUT())
+        return;
+
     struct EffectCC
     {
         int ccNumber;
@@ -775,8 +831,7 @@ void MainComponent::setCallBacksForOverlayWindow()
         if (overlayWindow)
         {
             overlayShouldBeVisible = false;
-            overlayWindow->removeFromDesktop();
-            overlayWindow.reset();
+            overlayWindow->setVisible(false);
         }
     };
 
@@ -802,11 +857,9 @@ void MainComponent::setCallBacksForOverlayWindow()
 
     overlayWindow->onSettingsClick = [this]()
     {
-
-        midiWindowShouldBeVisible = true;
-
         if (!midiWindow)
         {
+            midiWindowShouldBeVisible = true;
             if (soundEffectWindow)
                 soundEffectWindow->closeButtonPressed();
 
@@ -829,36 +882,39 @@ void MainComponent::setCallBacksForOverlayWindow()
                 return !playButton.isVisible();
             };
 
-            midiWindow->volumeSliderSetValue(MIDIDevice.getVolume(1));
-            midiWindow->reverbSliderSetValue(MIDIDevice.getReverb(1));
 
 
         }
         else
         {
-            midiWindow->setVisible(true);
-            midiWindow->toFront(true);
-        }
-
-        // Grab focus asynchronously so the overlay's button-click event
-        // finishes first and the OS doesn't steal activation back.
-        juce::MessageManager::callAsync([this]()
-        {
-            if (midiWindow)
+            if (!midiWindow->isVisible())
             {
-                midiWindow->toFront(false);
-                midiWindow->grabKeyboardFocus();
+                midiWindowShouldBeVisible = true;
+                midiWindow->setVisible(true);
+                midiWindow->toFront(true);
+                juce::MessageManager::callAsync([this]()
+                    {
+                        if (midiWindow)
+                        {
+                            midiWindow->grabKeyboardFocus();
+                        }
+
+                    });
             }
-                
-        });
+            else
+            {
+                midiWindowShouldBeVisible = false;
+                midiWindow->setVisible(false);
+            }
+        }
     };
 
     overlayWindow->onEffectsClick = [this]()
     {
-        soundEffecttWindowShouldBeVisible = true;
 
         if (!soundEffectWindow)
         {
+            soundEffecttWindowShouldBeVisible = true;
             if (midiWindow)
                 midiWindow->closeButtonPressed();
 
@@ -880,20 +936,25 @@ void MainComponent::setCallBacksForOverlayWindow()
 
         }
         else {
-            soundEffectWindow->setVisible(true);
-            soundEffectWindow->toFront(true);
-        }
-
-        // Grab focus asynchronously so the overlay's button-click event
-        // finishes first and the OS doesn't steal activation back.
-        juce::MessageManager::callAsync([this]()
-        {
-            if (soundEffectWindow)
+            if (!soundEffectWindow->isVisible())
             {
-                soundEffectWindow->toFront(false);
-                soundEffectWindow->grabKeyboardFocus();
+                soundEffecttWindowShouldBeVisible = true;
+                soundEffectWindow->setVisible(true);
+                soundEffectWindow->toFront(true);
+
+                juce::MessageManager::callAsync([this]()
+                    {
+                        if (soundEffectWindow)
+                        {
+                            soundEffectWindow->grabKeyboardFocus();
+                        }
+                    });
             }
-        });
+            else {
+                soundEffectWindow->setVisible(false);
+                soundEffecttWindowShouldBeVisible = false;
+            }
+        }
     };
 }
 
@@ -1320,10 +1381,17 @@ void MainComponent::knobsInit()
 
 void MainComponent::displayInit()
 {
-    display = std::make_unique<Display>(deviceOpenedOUT,400);
+    display = std::make_unique<Display>(deviceOpenedOUT, propertiesFile, 400);
     headerPanel.addAndMakeVisible(display.get());
     display->setVisible(false);
-    display->setVisible(false);
+
+    display->loadSettingsOnStyleChange = [this](const juce::String& styleID)
+    {
+        loadEffectsFromFile(styleID);
+
+        if (MIDIDevice.isOpenOUT())
+            sendEffectsBeforePlaying();
+    };
 }
 
 void MainComponent::toggleButtonInit()
@@ -1661,7 +1729,8 @@ void MainComponent::playButtonOnClick()
             this->display->set_VID_PID("", "");
         else this->display->set_VID_PID(VID, PID);
 
-        this->display->readSettingsFromJSON();
+        this->display->readPlaybackSettingsFromProperties();
+        loadEffectsFromFile(this->display->getStyleID());
 
         currentBackground = playBackground;
         repaint();
@@ -1712,7 +1781,9 @@ void MainComponent::playButtonOnClick()
         this->midiHandler.set_start_end_notes(this->display->getStartNote(), this->display->getEndNote());
         this->midiHandler.set_left_right_bounds(this->display->getLeftBound(), this->display->getRightBound());
 
-        //this->display()
+        loadSettings();
+
+
 
         keyboard.setIsDrawn(false);
         keyboard.repaint();
@@ -2194,6 +2265,33 @@ void MainComponent::handleBreak(const juce::String& name)
 
 }
 
+void MainComponent::initializeOverlay()
+{
+    overlayWindow = std::make_unique<OverlayComponent>();
+    auto topLevel = getTopLevelComponent();
+    juce::Rectangle<int> screenBounds = topLevel->getScreenBounds();
+
+    overlayWindow->setBounds(screenBounds);
+    overlayWindow->setAlwaysOnTop(true);
+    overlayWindow->setOpaque(false);
+
+    overlayShouldBeVisible = false;
+
+
+    overlayWindow->addToDesktop(
+        juce::ComponentPeer::windowIsTemporary
+        | juce::ComponentPeer::windowHasDropShadow,
+        nullptr);
+
+    setCallBacksForOverlayWindow();
+
+    overlayWindow->setVisible(true);  
+    overlayWindow->repaint();          
+    overlayWindow->setVisible(false);
+
+    loadEffectsFromFile();
+}
+
 SmoothRotarySlider::SmoothRotarySlider()
 {
     setSliderStyle(juce::Slider::Rotary);
@@ -2290,8 +2388,7 @@ void MainComponent::headerPanel::paint(juce::Graphics& g)
     juce::Colour startColour = juce::Colour(128, 0, 32);
     juce::Colour endColour = juce::Colour(212, 175, 55); 
 
-    juce::ColourGradient gradient(startColour, 0, 0, endColour, 0, 50, false); 
-    g.setGradientFill(gradient); 
+    juce::ColourGradient gradient(startColour, 0, 0, endColour, 0, 50, false);
+    g.setGradientFill(gradient);
     g.fillAll();
 }
-    

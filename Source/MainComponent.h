@@ -29,6 +29,7 @@
 #include "LoginComponent.h"
 #include "PlaytimeTracker.h"
 #include "SoundEffectWindowComponent.h"
+#include "styleSettingsEntry.h"
 
 /**
  * @class SmoothRotarySlider
@@ -184,9 +185,15 @@ private:
 
     /** @brief Loads settings from disk */
 
-    void loadEffectsFromFile();
+    void applySettingsToChannel(const SoundSettings& s, int channel);
 
-    void loadSettings();
+    void getCurrentEffectDeviceIds(juce::String& VID, juce::String& PID);
+
+    juce::String getCurrentEffectSettingsKey(const juce::String& styleID);
+
+    void loadEffectsFromFile(const juce::String& styleID="style_default");
+
+    void loadSettings(const juce::String& styleID="style_default");
 
     void playChordOnClick(const Chord& c);
 
@@ -277,6 +284,8 @@ private:
 
     void handleBreak(const juce::String& name);
 
+    void initializeOverlay();
+
     //==========================================================================
     // Member variables
     juce::ApplicationProperties appProperties; ///< Application properties manager
@@ -325,6 +334,7 @@ private:
 
 
     std::unordered_map<juce::String, juce::String> updateDevicesMap;
+    std::unordered_map<juce::String, StyleSettings> styleSettingsMap;
 
     juce::TextButton updateNumberOfKeysDevice{"Update number of keys"};
     juce::ComboBox devicesCBUpdate;
@@ -351,6 +361,8 @@ private:
     std::unique_ptr<AddDeviceWindow> addDeviceWindow=nullptr;
     std::unique_ptr<OverlayComponent> overlayWindow=nullptr;
     std::unique_ptr<SoundEffectWindow> soundEffectWindow = nullptr;
+    
+    std::mutex styleMutex;
 
     std::vector<Chord> myChordLibrary;
     std::vector<int> currentlyPlayingNotes;
