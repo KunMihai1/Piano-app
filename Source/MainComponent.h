@@ -30,6 +30,7 @@
 #include "PlaytimeTracker.h"
 #include "SoundEffectWindowComponent.h"
 #include "styleSettingsEntry.h"
+#include "SFZLibraryUI.h"
 
 /**
  * @class SmoothRotarySlider
@@ -370,6 +371,9 @@ private:
 
     std::unique_ptr<PlaytimeTracker> playtimeTracker;
     std::shared_ptr<SupabaseClient> client;
+
+    SFZLibraryManager sfzManager;
+    std::unique_ptr<SFZLibraryUI> sfzLibraryUI;
 
     //==========================================================================
     // Panels

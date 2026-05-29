@@ -892,6 +892,7 @@ public:
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 
     juce::String getStyleID() const;
+    juce::String getStyleName() const;
 
     /**
      * @brief Gets the tab index for a tab by its name.

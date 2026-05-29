@@ -73,12 +73,19 @@ MainComponent::MainComponent()
     initializeOverlay();
 
 
+    sfzManager.load(IOHelper::getFile("SFZLibrary.json"));
+    sfzLibraryUI = std::make_unique<SFZLibraryUI>(sfzManager);
+    addAndMakeVisible(*sfzLibraryUI);
+    sfzLibraryUI->setVisible(false);
+
     startTimer(1000);
 
 }
 
 MainComponent::~MainComponent()
 {
+    sfzManager.save(IOHelper::getFile("SFZLibrary.json"));
+
     if (this->MIDIDevice.isOpenIN())
         this->MIDIDevice.deviceCloseIN();
     if (this->MIDIDevice.isOpenOUT())
@@ -226,6 +233,9 @@ void MainComponent::resized()
 
     saveRecordingButton.setBounds(startRecording.getX()-140-10, 10, 140, 30);
     playRecordingFileButton.setBounds(305, 10, 100, 30);
+
+    if (sfzLibraryUI)
+        sfzLibraryUI->setBounds(getLocalBounds().withSizeKeepingCentre(500, 400));
 
 
 
@@ -869,7 +879,7 @@ void MainComponent::setCallBacksForOverlayWindow()
                 soundEffectWindow->closeButtonPressed();
 
             midiWindow = std::make_unique<MIDIWindow>(
-                this->MIDIDevice, devicesIN, devicesOUT, devicesAudioOUT, propertiesFile);
+                this->MIDIDevice, devicesIN, devicesOUT, devicesAudioOUT, propertiesFile, &sfzManager);
 
 
             midiWindow->setAlwaysOnTop(true);
@@ -885,6 +895,20 @@ void MainComponent::setCallBacksForOverlayWindow()
             midiWindow->isMidiDeviceOpen = [this]()
             {
                 return !playButton.isVisible();
+            };
+
+            midiWindow->getCurrentStyleId = [this]() -> juce::String
+            {
+                if (display)
+                    return display->getStyleID();
+                return {};
+            };
+
+            midiWindow->getCurrentStyleName = [this]() -> juce::String
+            {
+                if (display)
+                    return display->getStyleName();
+                return {};
             };
 
 
@@ -1656,7 +1680,19 @@ void MainComponent::midiButtonOnClick()
 {
     if (!midiWindow)
     {
-        midiWindow = std::make_unique<MIDIWindow>(this->MIDIDevice, devicesIN, devicesOUT, devicesAudioOUT, propertiesFile);
+        midiWindow = std::make_unique<MIDIWindow>(this->MIDIDevice, devicesIN, devicesOUT, devicesAudioOUT, propertiesFile, &sfzManager);
+        midiWindow->getCurrentStyleId = [this]() -> juce::String
+        {
+            if (display)
+                return display->getStyleID();
+            return {};
+        };
+        midiWindow->getCurrentStyleName = [this]() -> juce::String
+        {
+            if (display)
+                return display->getStyleName();
+            return {};
+        };
         loadSettings();
     }
     else {
