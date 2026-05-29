@@ -171,6 +171,13 @@ juce::String Display::getStyleID() const
     else return "style_default";
 }
 
+juce::String Display::getStyleName() const
+{
+    if (currentStyleComponent)
+        return this->currentStyleComponent->getName();
+    else return "DEFAULT Style";
+}
+
 int Display::getTabIndexByName(const juce::String& name)
 {
     auto& tabBar = tabComp->getTabbedButtonBar();

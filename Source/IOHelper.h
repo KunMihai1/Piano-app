@@ -15,6 +15,7 @@
 #include "TrackEntry.h"
 #include "StyleSection.h"
 #include "PlayBackSettingsCustomComponent.h"
+#include "SFZlibrary.h"
 
 /**
  * @class IOHelper
@@ -158,5 +159,6 @@ public:
 class SFZLibraryIOHelper
 {
 public:
-
+    static void saveToFile(const juce::File& file, const SFZLibraryData& data);
+    static void loadFromFile(const juce::File& file, SFZLibraryData& data);
 };

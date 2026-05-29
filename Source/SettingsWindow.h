@@ -11,6 +11,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "MidiHandler.h"
+#include "SFZLibraryUI.h"
 
 /**
  * @class MIDIWindow
@@ -31,8 +32,9 @@ class MIDIWindow : public juce::DocumentWindow,
 public:
 
     std::function<bool()> isMidiDeviceOpen;
-
     std::function<void()> onWindowClosed;
+    std::function<juce::String()> getCurrentStyleId;  // optional, set by owner
+    std::function<juce::String()> getCurrentStyleName; // optional, set by owner
 
     /**
      * @brief Constructor.
@@ -44,7 +46,7 @@ public:
      * Initializes the window, its sliders, ComboBoxes, and panel, and sets default visibility.
      */
     MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesListIN,
-               std::vector<std::string>& devicesListOUT, std::vector<std::string>& devicesListAudioOUT, juce::PropertiesFile* prop);
+               std::vector<std::string>& devicesListOUT, std::vector<std::string>& devicesListAudioOUT, juce::PropertiesFile* prop, SFZLibraryManager* sfzManagerPtr = nullptr);
 
     /** @brief Destructor stops the update timer and cleans up. */
     ~MIDIWindow() override;
@@ -135,6 +137,8 @@ private:
 
     juce::Component settingsPanel;            /**< Panel containing all settings components */
 	juce::TextButton sfzLibraryButton{ "SFZ Library" };
+    SFZLibraryManager* sfzManager = nullptr;
+    std::unique_ptr<SFZLibraryUI> sfzLibraryUI;
 
     juce::ComboBox comboBoxDevicesIN;         /**< ComboBox for selecting MIDI input devices */
     juce::ComboBox comboBoxDevicesOUT;        /**< ComboBox for selecting MIDI output devices */

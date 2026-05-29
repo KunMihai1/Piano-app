@@ -1,6 +1,7 @@
 #include "SettingsWindow.h"
 #include "MidiHandler.h"
 #include "AppColours.h"
+#include "IOHelper.h"
 
 
 using namespace AppColours;
@@ -72,9 +73,9 @@ static MidiWindowSliderLnF& getSliderLnF()
 }
 
 MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesListIN, std::vector<std::string>& devicesListOUT
-    , std::vector<std::string>& devicesListAudioOUT, juce::PropertiesFile* prop)
+    , std::vector<std::string>& devicesListAudioOUT, juce::PropertiesFile* prop, SFZLibraryManager* sfzManagerPtr)
     : juce::DocumentWindow{ "MIDI Settings", background, DocumentWindow::closeButton },
-    MIDIDevice{ mdevice }, devicesListIN{ devicesListIN }, devicesListOUT{ devicesListOUT }, devicesListAudioOUT{ devicesListAudioOUT }, propertyFile{ prop }
+    MIDIDevice{ mdevice }, devicesListIN{ devicesListIN }, devicesListOUT{ devicesListOUT }, devicesListAudioOUT{ devicesListAudioOUT }, propertyFile{ prop }, sfzManager{ sfzManagerPtr }
 {
     setUsingNativeTitleBar(false);
     setResizable(false, false);
@@ -286,7 +287,6 @@ void MIDIWindow::toggleSettingsAll()
 {
     toggleSettingsPanel();
     toggleSettingsCB();
-	toggleSFZbutton();
 }
 
 void MIDIWindow::setBounds_components()
@@ -401,9 +401,37 @@ void MIDIWindow::sfzButtonInit()
 	settingsPanel.addAndMakeVisible(sfzLibraryButton);
 	sfzLibraryButton.setVisible(false);
 	sfzLibraryButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    
+    if (sfzManager != nullptr)
+    {
+        sfzLibraryUI = std::make_unique<SFZLibraryUI>(*sfzManager);
+        settingsPanel.addChildComponent(sfzLibraryUI.get());
+        sfzLibraryUI->setVisible(false);
+        sfzLibraryUI->getCurrentStyleId = [this]() -> juce::String
+        {
+            return getCurrentStyleId ? getCurrentStyleId() : juce::String();
+        };
+        sfzLibraryUI->getCurrentStyleName = [this]() -> juce::String
+        {
+            return getCurrentStyleName ? getCurrentStyleName() : juce::String("DEFAULT Style");
+        };
+        sfzLibraryUI->onLibraryChanged = [this]()
+        {
+            sfzManager->save(IOHelper::getFile("SFZLibrary.json"));
+        };
+    }
+
     sfzLibraryButton.onClick = [this]()
     {
-            
+        if (sfzLibraryUI)
+        {
+            sfzLibraryUI->setVisible(!sfzLibraryUI->isVisible());
+            if (sfzLibraryUI->isVisible())
+            {
+                sfzLibraryUI->setBounds(settingsPanel.getLocalBounds().reduced(20));
+                sfzLibraryUI->toFront(true);
+            }
+        }
 	};
 }
 
@@ -501,10 +529,12 @@ void MIDIWindow::switchBetweenEngineOptions(int selectedId)
     {
 		toggleSettingsOutMIDICB();
 		toggleSettingsAudioOutCB();
+        toggleSFZbutton();
     }
     else if(selectedId == 2)
     {
         toggleSettingsOutMIDICB();
         toggleSettingsAudioOutCB();
+        toggleSFZbutton();
 	}
 }
