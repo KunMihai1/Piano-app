@@ -94,6 +94,8 @@ MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesLis
     populateCBOUT();
     populateCBaudioOUT();
 	populateCBengine();
+
+    restoreCBoxes(); // Apply saved settings
 }
 
 MIDIWindow::~MIDIWindow()
@@ -145,6 +147,7 @@ void MIDIWindow::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
         {
             this->MIDIDevice.setDeviceIN(index);
             lastIndexIN = index + 1;
+            if (propertyFile) { propertyFile->setValue("MidiInIndex", lastIndexIN); propertyFile->saveIfNeeded(); }
         }
     }
     else if (comboBoxThatHasChanged == &this->comboBoxDevicesOUT)
@@ -154,11 +157,13 @@ void MIDIWindow::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
         {
             this->MIDIDevice.setDeviceOUT(index);
             lastIndexOUT = index + 1;
+            if (propertyFile) { propertyFile->setValue("MidiOutIndex", lastIndexOUT); propertyFile->saveIfNeeded(); }
         }
     }
     else if (comboBoxThatHasChanged == &this->comboBoxOutputEngineType)
     {
-		int lastIndexEngineOption = comboBoxOutputEngineType.getSelectedId();
+		lastIndexEngineOption = comboBoxOutputEngineType.getSelectedId();
+        if (propertyFile) { propertyFile->setValue("EngineOptionIndex", lastIndexEngineOption); propertyFile->saveIfNeeded(); }
 		switchBetweenEngineOptions(lastIndexEngineOption);
     }
     else if(comboBoxThatHasChanged == &this->comboBoxAudioDevicesOUT)
@@ -168,6 +173,7 @@ void MIDIWindow::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
         {
             this->MIDIDevice.setDeviceAudioOUT(index);
 			lastIndexAudioOut = index + 1;
+            if (propertyFile) { propertyFile->setValue("AudioOutIndex", lastIndexAudioOut); propertyFile->saveIfNeeded(); }
         }
 	}
 }
@@ -437,6 +443,14 @@ void MIDIWindow::sfzButtonInit()
 
 void MIDIWindow::allInit()
 {
+    if (propertyFile != nullptr)
+    {
+        lastIndexIN = propertyFile->getIntValue("MidiInIndex", 1);
+        lastIndexOUT = propertyFile->getIntValue("MidiOutIndex", 1);
+        lastIndexEngineOption = propertyFile->getIntValue("EngineOptionIndex", 1);
+        lastIndexAudioOut = propertyFile->getIntValue("AudioOutIndex", 1);
+    }
+
     panelInit();
     devicesCBinit();
     outputEngineCBinit();
@@ -452,7 +466,7 @@ void MIDIWindow::populateCBIN()
         this->comboBoxDevicesIN.addItem(juce::String(device), id);
         id++;
     }
-    comboBoxDevicesIN.setSelectedId(1);
+    comboBoxDevicesIN.setSelectedId(1, juce::dontSendNotification);
 }
 
 void MIDIWindow::populateCBOUT()
@@ -464,7 +478,7 @@ void MIDIWindow::populateCBOUT()
         this->comboBoxDevicesOUT.addItem(juce::String(device), id);
         id++;
     }
-    comboBoxDevicesOUT.setSelectedId(1);
+    comboBoxDevicesOUT.setSelectedId(1, juce::dontSendNotification);
 }
 
 void MIDIWindow::populateCBengine()
@@ -498,14 +512,14 @@ void MIDIWindow::populateCBaudioOUT()
 
 void MIDIWindow::restoreCBoxes()
 {
-    if(lastIndexIN<=comboBoxDevicesIN.getNumItems())
-        comboBoxDevicesIN.setSelectedId(lastIndexIN, juce::dontSendNotification);
-    if(lastIndexOUT<=comboBoxDevicesOUT.getNumItems())
-        comboBoxDevicesOUT.setSelectedId(lastIndexOUT, juce::dontSendNotification);
-    if (lastIndexEngineOption <= comboBoxOutputEngineType.getNumItems())
-        comboBoxOutputEngineType.setSelectedId(lastIndexEngineOption, juce::dontSendNotification);
+    if(lastIndexIN <= comboBoxDevicesIN.getNumItems())
+        comboBoxDevicesIN.setSelectedId(lastIndexIN, juce::sendNotificationSync);
+    if(lastIndexOUT <= comboBoxDevicesOUT.getNumItems())
+        comboBoxDevicesOUT.setSelectedId(lastIndexOUT, juce::sendNotificationSync);
     if(lastIndexAudioOut <= comboBoxAudioDevicesOUT.getNumItems())
-		comboBoxAudioDevicesOUT.setSelectedId(lastIndexAudioOut, juce::dontSendNotification);
+		comboBoxAudioDevicesOUT.setSelectedId(lastIndexAudioOut, juce::sendNotificationSync);
+    if(lastIndexEngineOption <= comboBoxOutputEngineType.getNumItems())
+        comboBoxOutputEngineType.setSelectedId(lastIndexEngineOption, juce::sendNotificationSync);
 }
 
 void MIDIWindow::setStyleComboBox(juce::ComboBox& cb)
