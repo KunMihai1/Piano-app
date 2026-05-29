@@ -9,10 +9,15 @@ MidiDevice::MidiDevice() : currentDeviceIDin { 0 }, currentDeviceIDout{ 0 }, ide
 
 MidiDevice::~MidiDevice()
 {
+	audioDeviceManager.closeAudioDevice();
+
 	this->CachedDevicesIN.clear();
 	this->currentDevicesIN.clear();
 	this->CachedDevicesOUT.clear();
 	this->currentDevicesOUT.clear();
+	this->CachedDevicesAudioOUT.clear();
+	this->currentDevicesAudioOUT.clear();
+	this->audioDeviceTypes.clear();
 	if (this -> currentDeviceUSEDin)
 	{
 		this->currentDeviceUSEDin->stop();
@@ -41,7 +46,7 @@ void MidiDevice::getAvailableDevicesMidiIN(std::vector<std::string>& devices)
 	if (devices.empty())
 	{
 		devices.clear();
-		devices.push_back("No devices found!");
+		devices.push_back("No MIDI INPUT devices found!");
 	}
 }
 
@@ -51,9 +56,22 @@ void MidiDevice::getAvailableDevicesMidiOUT(std::vector<std::string>& devices) {
 	if (devices.empty())
 	{
 		devices.clear();
-		devices.push_back("No devices found!");
+		devices.push_back("No MIDI OUTPUT devices found!");
 	}
 }
+
+void MidiDevice::getAvailableAudioDevicesOUT(std::vector<std::string>& devices)
+{
+	refreshDeviceList(2);
+	devices = currentDevicesAudioOUT;
+	if (devices.empty())
+	{
+		devices.clear();
+		devices.push_back("No AUDIO OUTPUT devices found!");
+	}
+}
+
+
 
 juce::String MidiDevice::getDeviceNameBasedOnIndex(int Index, int choice)
 {
@@ -136,6 +154,47 @@ void MidiDevice::refreshDeviceList(int choice)
 		}
 		else
 			this->devicesChange = false;
+	}
+	else if (choice == 2)
+	{
+		if (!audioDeviceTypesInitialized)
+		{
+			audioDeviceManager.createAudioDeviceTypes(audioDeviceTypes);
+			audioDeviceTypesInitialized = true;
+		}
+
+		std::vector<std::string> newDeviceNames;
+		std::vector<AudioOutputDeviceInfo> newDevices;
+
+		for (auto* deviceType : audioDeviceTypes)
+		{
+			if (deviceType == nullptr)
+				continue;
+
+			deviceType->scanForDevices();
+
+			const auto typeName = deviceType->getTypeName();
+			const auto outputNames = deviceType->getDeviceNames(false);
+
+			for (const auto& outputName : outputNames)
+			{
+				if (outputName.isEmpty())
+					continue;
+
+				newDevices.push_back({ typeName, outputName });
+				newDeviceNames.push_back((typeName + ": " + outputName).toStdString());
+			}
+		}
+
+		if (newDevices != this->CachedDevicesAudioOUT)
+		{
+			this->CachedDevicesAudioOUT = newDevices;
+			this->currentDevicesAudioOUT = newDeviceNames;
+			this->devicesChange = true;
+		}
+		else
+			this->devicesChange = false;
+
 	}
 }
 

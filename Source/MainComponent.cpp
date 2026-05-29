@@ -864,7 +864,7 @@ void MainComponent::setCallBacksForOverlayWindow()
                 soundEffectWindow->closeButtonPressed();
 
             midiWindow = std::make_unique<MIDIWindow>(
-                this->MIDIDevice, devicesIN, devicesOUT, propertiesFile);
+                this->MIDIDevice, devicesIN, devicesOUT, devicesOUT, propertiesFile);
 
 
             midiWindow->setAlwaysOnTop(true);
@@ -1651,7 +1651,7 @@ void MainComponent::midiButtonOnClick()
 {
     if (!midiWindow)
     {
-        midiWindow = std::make_unique<MIDIWindow>(this->MIDIDevice, devicesIN, devicesOUT, propertiesFile);
+        midiWindow = std::make_unique<MIDIWindow>(this->MIDIDevice, devicesIN, devicesOUT,devicesOUT, propertiesFile);
         loadSettings();
     }
     else {
