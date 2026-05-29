@@ -86,6 +86,11 @@ MainComponent::~MainComponent()
         this->display->stoppingPlayer();
         this->MIDIDevice.deviceCloseOUT();
     }
+    if(this->MIDIDevice.isOpenAudioOUT())
+    {
+        this->display->stoppingPlayer();
+        this->MIDIDevice.deviceCloseAudioOUT();
+	}
     if (treeView != nullptr && treeView->getRootItem() != nullptr)
     {
         //DBG("Deleting root item dest main: " << treeView->getRootItem()->getUniqueName());

@@ -66,6 +66,8 @@ public:
 	 */
 	bool deviceOpenOUT(int DeviceIndex);
 
+	bool deviceOpenAudioOUT(int DeviceIndex);
+
 	/**
 	 * @brief Checks if a MIDI input device is currently open
 	 * @return true if a device is open, false otherwise
@@ -78,12 +80,15 @@ public:
 	 */
 	bool isOpenOUT() const;
 
+	bool isOpenAudioOUT() const;
+
 	/** @brief Closes the currently open MIDI input device */
 	void deviceCloseIN();
 
 	/** @brief Closes the currently open MIDI output device */
 	void deviceCloseOUT();
 
+	void deviceCloseAudioOUT();
 
 	/**
 	 * @brief Gets the index of the currently selected MIDI input device
@@ -108,6 +113,10 @@ public:
 	 * @param index Index of the device to set as active
 	 */
 	void setDeviceOUT(const int index);
+
+	void setDeviceAudioOUT(const int index);
+
+	int getDeviceIndexAudioOUT() const;
 
 	/**
 	 * @brief Gets the currently active MIDI input device as a weak pointer

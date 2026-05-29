@@ -157,9 +157,18 @@ void MIDIWindow::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
     }
     else if (comboBoxThatHasChanged == &this->comboBoxOutputEngineType)
     {
-		int selectedIndex = comboBoxOutputEngineType.getSelectedId();
-		switchBetweenEngineOptions(selectedIndex);
+		int lastIndexEngineOption = comboBoxOutputEngineType.getSelectedId();
+		switchBetweenEngineOptions(lastIndexEngineOption);
     }
+    else if(comboBoxThatHasChanged == &this->comboBoxAudioDevicesOUT)
+    {
+        int index = comboBoxAudioDevicesOUT.getSelectedId() - 1;
+        if (index >= 0 && index < this->devicesListAudioOUT.size())
+        {
+            this->MIDIDevice.setDeviceAudioOUT(index);
+			lastIndexAudioOut = index + 1;
+        }
+	}
 }
 
 void MIDIWindow::timerCallback()
@@ -261,10 +270,23 @@ void MIDIWindow::toggleSettingsAudioOutCB()
     }
 }
 
+void MIDIWindow::toggleSFZbutton()
+{
+    if(this->sfzLibraryButton.isVisible())
+    {
+        this->sfzLibraryButton.setVisible(false);
+    }
+    else
+    {
+        this->sfzLibraryButton.setVisible(true);
+	}
+}
+
 void MIDIWindow::toggleSettingsAll()
 {
     toggleSettingsPanel();
     toggleSettingsCB();
+	toggleSFZbutton();
 }
 
 void MIDIWindow::setBounds_components()
@@ -294,6 +316,14 @@ void MIDIWindow::setBounds_components()
 
 	audioDevicesLabelOUT.setBounds(pad, y + 8, labelW, 20);
 	comboBoxAudioDevicesOUT.setBounds(cbX, y, cbW, rowH);
+
+    y += 55;
+
+    const int buttonW = 140;
+    const int buttonH = 34;
+    const int buttonX = (settingsPanel.getWidth() - buttonW) / 2;
+
+    sfzLibraryButton.setBounds(buttonX, y, buttonW, buttonH);
 }
 
 void MIDIWindow::panelInit()
@@ -365,11 +395,24 @@ void MIDIWindow::deviceAudioOutCBinit()
 	audioDevicesLabelOUT.setVisible(false);
 }
 
+void MIDIWindow::sfzButtonInit()
+{
+	sfzLibraryButton.setButtonText("SFZ Library");
+	settingsPanel.addAndMakeVisible(sfzLibraryButton);
+	sfzLibraryButton.setVisible(false);
+	sfzLibraryButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    sfzLibraryButton.onClick = [this]()
+    {
+            
+	};
+}
+
 void MIDIWindow::allInit()
 {
     panelInit();
     devicesCBinit();
     outputEngineCBinit();
+	sfzButtonInit();
 }
 
 void MIDIWindow::populateCBIN()
@@ -428,11 +471,13 @@ void MIDIWindow::populateCBaudioOUT()
 void MIDIWindow::restoreCBoxes()
 {
     if(lastIndexIN<=comboBoxDevicesIN.getNumItems())
-        comboBoxDevicesIN.setSelectedId(lastIndexIN);
+        comboBoxDevicesIN.setSelectedId(lastIndexIN, juce::dontSendNotification);
     if(lastIndexOUT<=comboBoxDevicesOUT.getNumItems())
-        comboBoxDevicesOUT.setSelectedId(lastIndexOUT);
+        comboBoxDevicesOUT.setSelectedId(lastIndexOUT, juce::dontSendNotification);
     if (lastIndexEngineOption <= comboBoxOutputEngineType.getNumItems())
-        comboBoxOutputEngineType.setSelectedId(lastIndexEngineOption);
+        comboBoxOutputEngineType.setSelectedId(lastIndexEngineOption, juce::dontSendNotification);
+    if(lastIndexAudioOut <= comboBoxAudioDevicesOUT.getNumItems())
+		comboBoxAudioDevicesOUT.setSelectedId(lastIndexAudioOut, juce::dontSendNotification);
 }
 
 void MIDIWindow::setStyleComboBox(juce::ComboBox& cb)

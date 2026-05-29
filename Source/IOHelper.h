@@ -154,3 +154,9 @@ public:
 
     static SoundSettings loadEffectsStyle(const juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel);
 };
+
+class SFZLibraryIOHelper
+{
+public:
+
+};
