@@ -71,9 +71,10 @@ static MidiWindowSliderLnF& getSliderLnF()
     return instance;
 }
 
-MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesListIN, std::vector<std::string>& devicesListOUT, juce::PropertiesFile* prop)
+MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesListIN, std::vector<std::string>& devicesListOUT
+    , std::vector<std::string>& devicesListAudioOUT, juce::PropertiesFile* prop)
     : juce::DocumentWindow{ "MIDI Settings", background, DocumentWindow::closeButton },
-    MIDIDevice{ mdevice }, devicesListIN{ devicesListIN }, devicesListOUT{ devicesListOUT }, propertyFile{ prop }
+    MIDIDevice{ mdevice }, devicesListIN{ devicesListIN }, devicesListOUT{ devicesListOUT }, devicesListAudioOUT{ devicesListAudioOUT }, propertyFile{ prop }
 {
     setUsingNativeTitleBar(false);
     setResizable(false, false);
@@ -90,6 +91,7 @@ MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesLis
     toggleSettingsAll();
     populateCBIN();
     populateCBOUT();
+	populateCBengine();
 }
 
 MIDIWindow::~MIDIWindow()
@@ -152,6 +154,11 @@ void MIDIWindow::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
             lastIndexOUT = index + 1;
         }
     }
+    else if (comboBoxThatHasChanged == &this->comboBoxOutputEngineType)
+    {
+		int selectedIndex = comboBoxOutputEngineType.getSelectedId();
+		switchBetweenEngineOptions(selectedIndex);
+    }
 }
 
 void MIDIWindow::timerCallback()
@@ -187,6 +194,13 @@ void MIDIWindow::toggleSettingsPanel()
 
 void MIDIWindow::toggleSettingsCB()
 {
+	toggleSettingsInMIDICB();
+	toggleSettingsOutMIDICB();
+    toggleSettingsOutputEngineCB();
+}
+
+void MIDIWindow::toggleSettingsInMIDICB()
+{
     if (this->comboBoxDevicesIN.isVisible()) {
         this->comboBoxDevicesIN.setVisible(false);
         this->midiDevicesLabelIN.setVisible(false);
@@ -195,6 +209,10 @@ void MIDIWindow::toggleSettingsCB()
         this->midiDevicesLabelIN.setVisible(true);
         this->comboBoxDevicesIN.setVisible(true);
     }
+}
+
+void MIDIWindow::toggleSettingsOutMIDICB()
+{
     if (this->comboBoxDevicesOUT.isVisible()) {
         this->comboBoxDevicesOUT.setVisible(false);
         this->midiDevicesLabelOUT.setVisible(false);
@@ -202,6 +220,34 @@ void MIDIWindow::toggleSettingsCB()
     else {
         this->comboBoxDevicesOUT.setVisible(true);
         this->midiDevicesLabelOUT.setVisible(true);
+    }
+}
+
+void MIDIWindow::toggleSettingsOutputEngineCB()
+{
+    if (this->comboBoxOutputEngineType.isVisible())
+    {
+        this->comboBoxOutputEngineType.setVisible(false);
+        this->outputEngineTypeLabel.setVisible(false);
+    }
+    else
+    {
+        this->comboBoxOutputEngineType.setVisible(true);
+        this->outputEngineTypeLabel.setVisible(true);
+    }
+}
+
+void MIDIWindow::toggleSettingsAudioOutCB()
+{
+    if (this->comboBoxAudioDevicesOUT.isVisible())
+    {
+        this->comboBoxAudioDevicesOUT.setVisible(false);
+        this->audioDevicesLabelOUT.setVisible(false);
+    }
+    else
+    {
+        this->comboBoxAudioDevicesOUT.setVisible(true);
+        this->audioDevicesLabelOUT.setVisible(true);
     }
 }
 
@@ -217,16 +263,27 @@ void MIDIWindow::setBounds_components()
     const int rowH = 36;
     int y = pad;
 
-    // --- Devices section ---
-    const int cbX = 80;
-    const int cbW = 480 - cbX - pad * 2;  // fill remaining width
+    const int labelW = 80;
+    const int cbX = 100;
+    const int cbW = 260;
 
-    midiDevicesLabelIN.setBounds(pad, y + 10, 60, 20);
+
+    outputEngineTypeLabel.setBounds(pad, y + 8, labelW, 20);
+    comboBoxOutputEngineType.setBounds(cbX, y, 180, rowH);
+
+    y += 55;
+
+
+    midiDevicesLabelIN.setBounds(pad, y + 8, labelW, 20);
     comboBoxDevicesIN.setBounds(cbX, y, cbW, rowH);
-    y = comboBoxDevicesIN.getBottom() + 10;
 
-    midiDevicesLabelOUT.setBounds(pad, y + 10, 70, 20);
+    y += 46;
+
+    midiDevicesLabelOUT.setBounds(pad, y + 8, labelW, 20);
     comboBoxDevicesOUT.setBounds(cbX, y, cbW, rowH);
+
+	audioDevicesLabelOUT.setBounds(pad, y + 8, labelW, 20);
+	comboBoxAudioDevicesOUT.setBounds(cbX, y, cbW, rowH);
 }
 
 void MIDIWindow::panelInit()
@@ -241,46 +298,68 @@ void MIDIWindow::panelInit()
 
 void MIDIWindow::devicesCBinit()
 {
-    auto styleCombo = [](juce::ComboBox& cb)
-    {
-        cb.setColour(juce::ComboBox::backgroundColourId, cardBg);
-        cb.setColour(juce::ComboBox::outlineColourId,    separator);
-        cb.setColour(juce::ComboBox::textColourId,       titleText);
-        cb.setColour(juce::ComboBox::arrowColourId,      accent1);
-        cb.setMouseCursor(juce::MouseCursor::PointingHandCursor);
-    };
+	deviceInMIDICBinit();
+	deviceOutMIDICBinit();
+	deviceAudioOutCBinit();
+}
 
-    auto styleLabel = [](juce::Label& lbl)
-    {
-        lbl.setFont(juce::FontOptions(13.0f));
-        lbl.setColour(juce::Label::textColourId, accent1);
-    };
-
+void MIDIWindow::deviceInMIDICBinit()
+{
     comboBoxDevicesIN.addListener(this);
-    styleCombo(comboBoxDevicesIN);
+    setStyleComboBox(comboBoxDevicesIN);
     settingsPanel.addAndMakeVisible(this->comboBoxDevicesIN);
     comboBoxDevicesIN.setVisible(false);
 
     midiDevicesLabelIN.setText("MIDI IN", juce::dontSendNotification);
-    styleLabel(midiDevicesLabelIN);
+    setStyleLabel(midiDevicesLabelIN);
     settingsPanel.addAndMakeVisible(midiDevicesLabelIN);
     midiDevicesLabelIN.setVisible(false);
+}
 
+void MIDIWindow::deviceOutMIDICBinit()
+{
     comboBoxDevicesOUT.addListener(this);
-    styleCombo(comboBoxDevicesOUT);
+    setStyleComboBox(comboBoxDevicesOUT);
     settingsPanel.addAndMakeVisible(this->comboBoxDevicesOUT);
     comboBoxDevicesOUT.setVisible(false);
 
     midiDevicesLabelOUT.setText("MIDI OUT", juce::dontSendNotification);
-    styleLabel(midiDevicesLabelOUT);
+    setStyleLabel(midiDevicesLabelOUT);
     settingsPanel.addAndMakeVisible(this->midiDevicesLabelOUT);
     midiDevicesLabelOUT.setVisible(false);
+}
+
+void MIDIWindow::outputEngineCBinit()
+{
+    comboBoxOutputEngineType.addListener(this);
+	setStyleComboBox(comboBoxOutputEngineType);
+	settingsPanel.addAndMakeVisible(this->comboBoxOutputEngineType);
+	comboBoxOutputEngineType.setVisible(false);
+
+	outputEngineTypeLabel.setText("Output Engine", juce::dontSendNotification);
+	setStyleLabel(outputEngineTypeLabel);
+	settingsPanel.addAndMakeVisible(this->outputEngineTypeLabel);
+	outputEngineTypeLabel.setVisible(false);
+}
+
+void MIDIWindow::deviceAudioOutCBinit()
+{
+	comboBoxAudioDevicesOUT.addListener(this);
+	setStyleComboBox(comboBoxAudioDevicesOUT);
+	settingsPanel.addAndMakeVisible(this->comboBoxAudioDevicesOUT);
+	comboBoxAudioDevicesOUT.setVisible(false);
+
+	audioDevicesLabelOUT.setText("Audio OUT", juce::dontSendNotification);
+	setStyleLabel(audioDevicesLabelOUT);
+	settingsPanel.addAndMakeVisible(this->audioDevicesLabelOUT);
+	audioDevicesLabelOUT.setVisible(false);
 }
 
 void MIDIWindow::allInit()
 {
     panelInit();
     devicesCBinit();
+    outputEngineCBinit();
 }
 
 void MIDIWindow::populateCBIN()
@@ -307,6 +386,22 @@ void MIDIWindow::populateCBOUT()
     comboBoxDevicesOUT.setSelectedId(1);
 }
 
+void MIDIWindow::populateCBengine()
+{
+    this->comboBoxOutputEngineType.clear();
+    int id = 1;
+    for (const auto& engine : { "External MIDI", "Internal SFZ Synth" })
+    {
+        this->comboBoxOutputEngineType.addItem(juce::String(engine), id);
+        id++;
+    }
+    comboBoxOutputEngineType.setSelectedId(1, juce::dontSendNotification);
+}
+
+void MIDIWindow::populateCBaudioOUT()
+{
+}
+
 
 void MIDIWindow::restoreCBoxes()
 {
@@ -314,4 +409,35 @@ void MIDIWindow::restoreCBoxes()
         comboBoxDevicesIN.setSelectedId(lastIndexIN);
     if(lastIndexOUT<=comboBoxDevicesOUT.getNumItems())
         comboBoxDevicesOUT.setSelectedId(lastIndexOUT);
+    if (lastIndexEngineOption <= comboBoxOutputEngineType.getNumItems())
+        comboBoxOutputEngineType.setSelectedId(lastIndexEngineOption);
+}
+
+void MIDIWindow::setStyleComboBox(juce::ComboBox& cb)
+{
+    cb.setColour(juce::ComboBox::backgroundColourId, cardBg);
+    cb.setColour(juce::ComboBox::outlineColourId, separator);
+    cb.setColour(juce::ComboBox::textColourId, titleText);
+    cb.setColour(juce::ComboBox::arrowColourId, accent1);
+    cb.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+}
+
+void MIDIWindow::setStyleLabel(juce::Label& label)
+{
+    label.setFont(juce::FontOptions(13.0f));
+    label.setColour(juce::Label::textColourId, accent1);
+}
+
+void MIDIWindow::switchBetweenEngineOptions(int selectedId)
+{
+    if (selectedId == 1)
+    {
+		toggleSettingsOutMIDICB();
+		toggleSettingsAudioOutCB();
+    }
+    else if(selectedId == 2)
+    {
+        toggleSettingsOutMIDICB();
+        toggleSettingsAudioOutCB();
+	}
 }

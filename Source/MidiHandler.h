@@ -32,6 +32,8 @@ public:
 	 */
 	void getAvailableDevicesMidiOUT(std::vector<std::string>& devices);
 
+	void getAvailableAudioDevicesOUT(std::vector<std::string>& devices);
+
 	/**
 	 * @brief Gets a device name, based on its index in the list of devices
 	 * @param Index the index of the device 
@@ -262,6 +264,18 @@ public:
 
 private:
 	friend class MidiHandler;
+
+	struct AudioOutputDeviceInfo
+	{
+		juce::String typeName;
+		juce::String deviceName;
+
+		bool operator==(const AudioOutputDeviceInfo& other) const
+		{
+			return typeName == other.typeName && deviceName == other.deviceName;
+		}
+	};
+
 	void refreshDeviceList(int choice = 0);
 
 	void refreshDeviceListNew(std::vector<std::pair<juce::String,juce::String>>& vec, int choice=0);
@@ -273,8 +287,15 @@ private:
 	std::vector<std::string> currentDevicesOUT;
 	juce::Array<juce::MidiDeviceInfo> CachedDevicesOUT;
 
+	std::vector<std::string> currentDevicesAudioOUT;
+	std::vector<AudioOutputDeviceInfo> CachedDevicesAudioOUT;
+	juce::AudioDeviceManager audioDeviceManager;
+	juce::OwnedArray<juce::AudioIODeviceType> audioDeviceTypes;
+	bool audioDeviceTypesInitialized = false;
+
 	int currentDeviceIDin;
 	int currentDeviceIDout;
+	int currentDeviceIDAudioOUT;
 
 
 	std::shared_ptr<juce::MidiInput> currentDeviceUSEDin = nullptr;
@@ -284,6 +305,7 @@ private:
 	bool devicesChange = false;
 	bool isdeviceOpenIN = false;
 	bool isdeviceOpenOUT = false;
+	bool isdeviceOpenAudioOUT = false;
 
 	bool deviceCheckedForUpdateAtLeastOnce = false;
 	juce::String identifier;

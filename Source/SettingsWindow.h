@@ -44,7 +44,7 @@ public:
      * Initializes the window, its sliders, ComboBoxes, and panel, and sets default visibility.
      */
     MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesListIN,
-               std::vector<std::string>& devicesListOUT, juce::PropertiesFile* prop);
+               std::vector<std::string>& devicesListOUT, std::vector<std::string>& devicesListAudioOUT, juce::PropertiesFile* prop);
 
     /** @brief Destructor stops the update timer and cleans up. */
     ~MIDIWindow() override;
@@ -72,6 +72,14 @@ private:
     /** @brief Toggles visibility of device ComboBoxes. */
     void toggleSettingsCB();
 
+	void toggleSettingsInMIDICB();
+
+	void toggleSettingsOutMIDICB();
+
+	void toggleSettingsOutputEngineCB();
+
+	void toggleSettingsAudioOutCB();
+
     /** @brief Toggles visibility of all settings components. */
     void toggleSettingsAll();
 
@@ -84,6 +92,14 @@ private:
     /** @brief Initializes device ComboBoxes. */
     void devicesCBinit();
 
+	void deviceInMIDICBinit();
+
+	void deviceOutMIDICBinit();
+
+	void outputEngineCBinit();
+
+	void deviceAudioOutCBinit();
+
     /** @brief Calls all initialization functions. */
     void allInit();
 
@@ -93,22 +109,37 @@ private:
     /** @brief Populates the output device ComboBox. */
     void populateCBOUT();
 
+    void populateCBengine();
+
+	void populateCBaudioOUT();
+
     /** @brief Restores ComboBox selections from previously saved indices. */
     void restoreCBoxes();
+
+	void static setStyleComboBox(juce::ComboBox& comboBox);
+    
+	void static setStyleLabel(juce::Label& label);
+    
+	void switchBetweenEngineOptions(int selectedId);
 
     // Member variables
     MidiDevice& MIDIDevice;                   /**< Reference to the MIDI device object */
     std::vector<std::string>& devicesListIN; /**< Vector of available MIDI input devices */
     std::vector<std::string>& devicesListOUT;/**< Vector of available MIDI output devices */
+	std::vector<std::string>& devicesListAudioOUT;/**< Vector of available audio output devices */
     juce::PropertiesFile* propertyFile = nullptr; /**< Optional storage for user settings */
 
     juce::Component settingsPanel;            /**< Panel containing all settings components */
 
     juce::ComboBox comboBoxDevicesIN;         /**< ComboBox for selecting MIDI input devices */
     juce::ComboBox comboBoxDevicesOUT;        /**< ComboBox for selecting MIDI output devices */
+    juce::ComboBox comboBoxOutputEngineType;  /**< ComboBox for selecting audio output engine type */
+	juce::ComboBox comboBoxAudioDevicesOUT;       /**< ComboBox for selecting audio output devices */
     juce::Label midiDevicesLabelIN;           /**< Label for input devices */
     juce::Label midiDevicesLabelOUT;          /**< Label for output devices */
-
+	juce::Label outputEngineTypeLabel;        /**< Label for audio output engine type */
+	juce::Label audioDevicesLabelOUT;        /**< Label for audio output devices */
     int lastIndexIN = 1;                       /**< Last selected input device index */
     int lastIndexOUT = 1;                      /**< Last selected output device index */
+    int lastIndexEngineOption = 1;
 };
