@@ -91,6 +91,7 @@ MIDIWindow::MIDIWindow(MidiDevice& mdevice, std::vector<std::string>& devicesLis
     toggleSettingsAll();
     populateCBIN();
     populateCBOUT();
+    populateCBaudioOUT();
 	populateCBengine();
 }
 
@@ -182,7 +183,16 @@ void MIDIWindow::timerCallback()
         populateCBOUT();
     }
 
+    std::vector<std::string> devicesNewAudioOUT;
+    MIDIDevice.getAvailableAudioDevicesOUT(devicesNewAudioOUT);
+    if (devicesNewAudioOUT != devicesListAudioOUT)
+    {
+        if (comboBoxAudioDevicesOUT.isPopupActive())
+            comboBoxAudioDevicesOUT.hidePopup();
 
+        devicesListAudioOUT = devicesNewAudioOUT;
+        populateCBaudioOUT();
+    }
 }
 
 void MIDIWindow::toggleSettingsPanel()
@@ -400,6 +410,18 @@ void MIDIWindow::populateCBengine()
 
 void MIDIWindow::populateCBaudioOUT()
 {
+    MIDIDevice.getAvailableAudioDevicesOUT(this->devicesListAudioOUT);
+
+    comboBoxAudioDevicesOUT.clear();
+
+    int id = 1;
+    for (const auto& device : devicesListAudioOUT)
+    {
+        comboBoxAudioDevicesOUT.addItem(juce::String(device), id);
+		id++;
+    }
+
+    comboBoxAudioDevicesOUT.setSelectedId(1, juce::dontSendNotification);
 }
 
 
