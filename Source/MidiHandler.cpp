@@ -2,7 +2,7 @@
 #include "InstrumentHandler.h"
 #include "MidiDevicesDB.h"
 
-MidiDevice::MidiDevice() : currentDeviceIDin { 0 }, currentDeviceIDout{ 0 }, identifier{ "" }, minNote{ 0 }, maxNote{ 127 } {
+MidiDevice::MidiDevice() : currentDeviceIDin{ 0 }, currentDeviceIDout{ 0 }, currentDeviceIDAudioOUT{ 0 }, identifier { "" }, minNote{ 0 }, maxNote{ 127 } {
 	this->currentDevicesIN.push_back("PC Keyboard");
 	styleSettings = std::make_unique<StyleSettings>();
 }
@@ -327,6 +327,43 @@ bool MidiDevice::deviceOpenOUT(int DeviceIndex) {
 	return false;
 }
 
+bool MidiDevice::deviceOpenAudioOUT(int DeviceIndex)
+{
+	refreshDeviceList(2);
+
+	if (DeviceIndex < 0 || DeviceIndex >= this->CachedDevicesAudioOUT.size())
+	{
+		this->isdeviceOpenAudioOUT = false;
+		return false;
+	}
+
+	const auto& selectedDevice = this->CachedDevicesAudioOUT[DeviceIndex];
+
+	deviceCloseAudioOUT();
+
+	audioDeviceManager.setCurrentAudioDeviceType(selectedDevice.typeName, true);
+
+	juce::AudioDeviceManager::AudioDeviceSetup setup;
+	audioDeviceManager.getAudioDeviceSetup(setup);
+
+	setup.inputDeviceName = {};
+	setup.outputDeviceName = selectedDevice.deviceName;
+	setup.useDefaultInputChannels = false;
+	setup.useDefaultOutputChannels = true;
+
+	const auto result = audioDeviceManager.initialise(0, 2, nullptr, false, {}, &setup);
+
+	if (result.isNotEmpty() || audioDeviceManager.getCurrentAudioDevice() == nullptr)
+	{
+		this->isdeviceOpenAudioOUT = false;
+		return false;
+	}
+
+	this->currentDeviceIDAudioOUT = DeviceIndex;
+	this->isdeviceOpenAudioOUT = true;
+	return true;
+}
+
 bool MidiDevice::isOpenIN() const
 {
 	return this->isdeviceOpenIN;
@@ -335,6 +372,11 @@ bool MidiDevice::isOpenIN() const
 bool MidiDevice::isOpenOUT() const
 {
 	return this->isdeviceOpenOUT;
+}
+
+bool MidiDevice::isOpenAudioOUT() const
+{
+	return this->isdeviceOpenAudioOUT;
 }
 
 void MidiDevice::deviceCloseIN()
@@ -357,6 +399,12 @@ void MidiDevice::deviceCloseOUT()
 	}
 }
 
+void MidiDevice::deviceCloseAudioOUT()
+{
+	audioDeviceManager.closeAudioDevice();
+	isdeviceOpenAudioOUT = false;
+}
+
 int MidiDevice::getDeviceIndexIN() const
 {
 	return this->currentDeviceIDin;
@@ -372,6 +420,16 @@ int MidiDevice::getDeviceIndexOUT() const {
 
 void MidiDevice::setDeviceOUT(const int index) {
 	this->currentDeviceIDout = index;
+}
+
+void MidiDevice::setDeviceAudioOUT(const int index)
+{
+	this->currentDeviceIDAudioOUT = index;
+}
+
+int MidiDevice::getDeviceIndexAudioOUT() const
+{
+	return this->currentDeviceIDAudioOUT;
 }
 
 std::weak_ptr<juce::MidiInput> MidiDevice::getDeviceIN() const

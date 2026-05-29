@@ -80,6 +80,8 @@ private:
 
 	void toggleSettingsAudioOutCB();
 
+	void toggleSFZbutton();
+
     /** @brief Toggles visibility of all settings components. */
     void toggleSettingsAll();
 
@@ -99,6 +101,8 @@ private:
 	void outputEngineCBinit();
 
 	void deviceAudioOutCBinit();
+
+    void sfzButtonInit();
 
     /** @brief Calls all initialization functions. */
     void allInit();
@@ -130,6 +134,7 @@ private:
     juce::PropertiesFile* propertyFile = nullptr; /**< Optional storage for user settings */
 
     juce::Component settingsPanel;            /**< Panel containing all settings components */
+	juce::TextButton sfzLibraryButton{ "SFZ Library" };
 
     juce::ComboBox comboBoxDevicesIN;         /**< ComboBox for selecting MIDI input devices */
     juce::ComboBox comboBoxDevicesOUT;        /**< ComboBox for selecting MIDI output devices */
@@ -142,4 +147,5 @@ private:
     int lastIndexIN = 1;                       /**< Last selected input device index */
     int lastIndexOUT = 1;                      /**< Last selected output device index */
     int lastIndexEngineOption = 1;
+	int lastIndexAudioOut = 1;
 };
