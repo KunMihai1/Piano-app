@@ -118,6 +118,8 @@ public:
 
 	int getDeviceIndexAudioOUT() const;
 
+	juce::AudioDeviceManager& getAudioDeviceManager();
+
 	/**
 	 * @brief Gets the currently active MIDI input device as a weak pointer
 	 * @return weak_ptr to the active MIDI input device

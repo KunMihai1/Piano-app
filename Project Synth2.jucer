@@ -435,6 +435,8 @@
       <FILE id="J92BVY" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
       <FILE id="jn7l0T" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
+      <FILE id="audioH" name="AudioHandler.h" compile="0" resource="0" file="Source/AudioHandler.h"/>
+      <FILE id="audioC" name="AudioHandler.cpp" compile="1" resource="0" file="Source/AudioHandler.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

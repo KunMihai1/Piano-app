@@ -432,6 +432,11 @@ int MidiDevice::getDeviceIndexAudioOUT() const
 	return this->currentDeviceIDAudioOUT;
 }
 
+juce::AudioDeviceManager& MidiDevice::getAudioDeviceManager()
+{
+	return this->audioDeviceManager;
+}
+
 std::weak_ptr<juce::MidiInput> MidiDevice::getDeviceIN() const
 {
 	return this->currentDeviceUSEDin;
@@ -824,32 +829,38 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	int ok = 0;
 	setCorrectChannelBasedOnHand(note);
 	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
+    
+	if (note != this->startNoteSetting && note!=this->endNoteSetting)
+	{
+		ok = 1;
+	}
+	else if(note==this->startNoteSetting)
+	{
+		if(onStartNoteSetting)
+			onStartNoteSetting();
+	}
+	else if (note == this->endNoteSetting)
+	{
+		if (onEndNoteSetting)
+			onEndNoteSetting();
+	}
+
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
-		//here we need to add and if the note received is by chance, start note or end note, do to the according things.
-		//DBG("The note is" + juce::String(note) + " the setting one is:" + juce::String(startNoteSetting));
-		if (note != this->startNoteSetting && note!=this->endNoteSetting)
+		if (ok)
 		{
-			ok = 1;
-
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
 			midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocity));
 		}
-		else if(note==this->startNoteSetting)
-		{
-			if(onStartNoteSetting)
-				onStartNoteSetting();
-		}
-		else if (note == this->endNoteSetting)
-		{
-			if (onEndNoteSetting)
-				onEndNoteSetting();
-		}
 	}
+
 	if (ok)
 	{
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocity));
+
+		const juce::ScopedLock lock(midiMutex);
+		incomingMidiMessages.addEvent(juce::MidiMessage::noteOn(channel, transposedNote, velocity), 0);
 	}
 }
 
@@ -863,6 +874,9 @@ void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
 	}
 	listeners.call(&MidiHandlerListener::noteOffReceived,note);
 	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(channel, note));
+
+	const juce::ScopedLock lock(midiMutex);
+	incomingMidiMessages.addEvent(juce::MidiMessage::noteOff(channel, transposedNote, velocity), 0);
 } 
 
 void MidiHandler::allOffKeyboard()

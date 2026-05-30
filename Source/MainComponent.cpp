@@ -35,6 +35,15 @@ MainComponent::MainComponent()
 
     loginWindowInitialize();
 
+    openingAudioLabel.setText("Opening Audio Device...", juce::dontSendNotification);
+    openingAudioLabel.setJustificationType(juce::Justification::centred);
+    openingAudioLabel.setFont(juce::Font(24.0f, juce::Font::bold));
+    openingAudioLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    openingAudioLabel.setColour(juce::Label::backgroundColourId, juce::Colours::black.withAlpha(0.7f));
+    openingAudioLabel.setAlwaysOnTop(true);
+    addAndMakeVisible(openingAudioLabel);
+    openingAudioLabel.setVisible(false);
+
     midiHandler.addListener(&recordPlayer);
     midiHandler.addListener(&keyboard);
     
@@ -95,6 +104,8 @@ MainComponent::~MainComponent()
     }
     if(this->MIDIDevice.isOpenAudioOUT())
     {
+        if (audioHandler != nullptr)
+            this->MIDIDevice.getAudioDeviceManager().removeAudioCallback(audioHandler.get());
         this->display->stoppingPlayer();
         this->MIDIDevice.deviceCloseAudioOUT();
 	}
@@ -201,6 +212,7 @@ void MainComponent::resized()
     // This is called when the MainComponent is resized.
     // If you add any child components, this is where you should
     // update their positions.
+    openingAudioLabel.setBounds(getLocalBounds());
     int buttonWidth = getWidth() / 16;
     int buttonHeight = getHeight() / 24;
     int x = (int)(getWidth() * 0.5 - getWidth() * 0.175);
@@ -573,8 +585,8 @@ void MainComponent::loadSettings(const juce::String& styleID)
 
         loadEffectsFromFile(styleID);
 
-        int leftHandInstrumentNumber = propertiesFile->getIntValue("leftInstrumentNumber", 0);
-        int rightHandInstrumentNumber = propertiesFile->getIntValue("rightInstrumentNumber", 0);
+        int leftHandInstrumentNumber = propertiesFile->getIntValue(styleID + "_leftInstrumentNumber", 0);
+        int rightHandInstrumentNumber = propertiesFile->getIntValue(styleID + "_rightInstrumentNumber", 0);
 
 
         this->midiHandler.setProgramNumber(leftHandInstrumentNumber, "left");
@@ -1209,7 +1221,11 @@ void MainComponent::playButtonInit()
     playButton.setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     playButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     playButton.onClick = [this] {
-        playButtonOnClick();
+        openingAudioLabel.setVisible(true);
+        juce::Timer::callAfterDelay(50, [this]() {
+            playButtonOnClick();
+            openingAudioLabel.setVisible(false);
+        });
     };
     addAndMakeVisible(this->playButton);
     playButton.setVisible(false);
@@ -1797,11 +1813,24 @@ void MainComponent::playButtonOnClick()
         if (!keyboardInitialized)
         {
             keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
-            midiHandler.setProgramNumber(midiHandler.getProgramNumberLeftHand(), "left");
-            midiHandler.setProgramNumber(midiHandler.getProgramNumberRightHand(), "right");
+            int leftProg = midiHandler.getProgramNumberLeftHand();
+            int rightProg = midiHandler.getProgramNumberRightHand();
 
-            recordPlayer.setProgarmNumber(midiHandler.getProgramNumberLeftHand(),"left");
-            recordPlayer.setProgarmNumber(midiHandler.getProgramNumberRightHand(), "right");
+            midiHandler.setProgramNumber(leftProg, "left");
+            midiHandler.setProgramNumber(rightProg, "right");
+
+            recordPlayer.setProgarmNumber(leftProg,"left");
+            recordPlayer.setProgarmNumber(rightProg, "right");
+            
+            auto styleId = display ? display->getStyleID() : "style_default";
+            if (audioHandler != nullptr)
+            {
+                auto sfzFileLeft = sfzManager.getSfzForStyleInstrument(styleId, leftProg);
+                audioHandler->loadSfz(sfzFileLeft, 1);
+
+                auto sfzFileRight = sfzManager.getSfzForStyleInstrument(styleId, rightProg);
+                audioHandler->loadSfz(sfzFileRight, 16);
+            }
         }
         else {
             keyboard.setVisible(true);
@@ -2053,13 +2082,20 @@ InstrumentTreeItem* MainComponent::createInstrumentItem(const juce::Image& img, 
     auto item = std::make_unique<InstrumentTreeItem>(img,name,program);
     item->onProgramSelected = [&](int programNumber, juce::String name="")
     {
+        auto styleId = display ? display->getStyleID() : "style_default";
+
         if (leftHandInstrumentToggle.getToggleState() == true)
         {
             midiHandler.setProgramNumber(programNumber, "left"); //setting the actual sound to the new program for both midiHandler and also the recordPlayer by listener
             if (propertiesFile)
             {
-                propertiesFile->setValue("leftInstrumentNumber", programNumber);
+                propertiesFile->setValue(styleId + "_leftInstrumentNumber", programNumber);
                 propertiesFile->saveIfNeeded();
+            }
+            if (audioHandler != nullptr)
+            {
+                auto sfzFile = sfzManager.getSfzForStyleInstrument(styleId, programNumber);
+                audioHandler->loadSfz(sfzFile, 1);
             }
         }
 
@@ -2068,8 +2104,13 @@ InstrumentTreeItem* MainComponent::createInstrumentItem(const juce::Image& img, 
             midiHandler.setProgramNumber(programNumber, "right");
             if (propertiesFile)
             {
-                propertiesFile->setValue("rightInstrumentNumber", programNumber);
+                propertiesFile->setValue(styleId + "_rightInstrumentNumber", programNumber);
                 propertiesFile->saveIfNeeded();
+            }
+            if (audioHandler != nullptr)
+            {
+                auto sfzFile = sfzManager.getSfzForStyleInstrument(styleId, programNumber);
+                audioHandler->loadSfz(sfzFile, 16);
             }
         }
 
@@ -2097,6 +2138,9 @@ bool MainComponent::openingDevicesForPlay()
             return false;
         }
     }
+
+
+
     int indexIN = this->MIDIDevice.getDeviceIndexIN();
     int indexOUT = this->MIDIDevice.getDeviceIndexOUT();
     bool result;
@@ -2121,14 +2165,38 @@ bool MainComponent::openingDevicesForPlay()
         }
         this->deviceOpenedIN = this->MIDIDevice.getDeviceIN();
     }
-    result = this->MIDIDevice.deviceOpenOUT(indexOUT);
-    if (!result)
+    int engineOption = 1; // default to External MIDI
+    if (propertiesFile)
+        engineOption = propertiesFile->getIntValue("EngineOptionIndex", 1);
+
+    if (engineOption == 1) // External MIDI
     {
-        this->MIDIDevice.deviceCloseIN();  
-        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open output device.", "OK");
-        return false;
+        DBG("EXTERNAL opened!");
+        result = this->MIDIDevice.deviceOpenOUT(indexOUT);
+        if (!result)
+        {
+            this->MIDIDevice.deviceCloseIN();  
+            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open output device.", "OK");
+            return false;
+        }
+        this->deviceOpenedOUT = this->MIDIDevice.getDeviceOUT();
     }
-    this->deviceOpenedOUT = this->MIDIDevice.getDeviceOUT();
+    else if (engineOption == 2) // Internal SFZ Synth
+    {
+        DBG("INTERNAL OPENED!");
+        int indexAudioOUT = this->MIDIDevice.getDeviceIndexAudioOUT();
+        result = this->MIDIDevice.deviceOpenAudioOUT(indexAudioOUT);
+        if (!result)
+        {
+            this->MIDIDevice.deviceCloseIN();
+            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open audio output device.", "OK");
+            return false;
+        }
+        if (audioHandler == nullptr)
+            audioHandler = std::make_unique<AudioHandler>(midiHandler);
+        this->MIDIDevice.getAudioDeviceManager().addAudioCallback(audioHandler.get());
+    }
+
     return true;
 }
 
