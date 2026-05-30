@@ -31,7 +31,7 @@
 #include "SoundEffectWindowComponent.h"
 #include "styleSettingsEntry.h"
 #include "SFZLibraryUI.h"
-
+#include "AudioHandler.h"
 /**
  * @class SmoothRotarySlider
  * @brief Custom rotary slider with smooth dragging behavior.
@@ -297,6 +297,7 @@ private:
     juce::Image playBackground;          ///< Background when playing
     juce::Image currentBackground;       ///< Currently displayed background
     juce::Label helpIcon;                ///< Help icon label
+    juce::Label openingAudioLabel;       ///< Loading overlay label
     juce::TooltipWindow tooltipWindow{ this, 200 }; ///< Tooltip manager
 
     std::weak_ptr<juce::MidiInput> deviceOpenedIN; ///< Currently opened MIDI input device
@@ -374,6 +375,7 @@ private:
 
     SFZLibraryManager sfzManager;
     std::unique_ptr<SFZLibraryUI> sfzLibraryUI;
+    std::unique_ptr<AudioHandler> audioHandler;
 
     //==========================================================================
     // Panels
