@@ -713,7 +713,10 @@ void MainComponent::setCallBacksForEffectWindow()
 
         if (!playButton.isVisible())
         {
-            MIDIDevice.sendMidiCC(currentChannel, ccNumber, value);
+            if (MIDIDevice.isOpenOUT())
+                MIDIDevice.sendMidiCC(currentChannel, ccNumber, value);
+            if (MIDIDevice.isOpenAudioOUT())
+                midiHandler.injectCC(currentChannel, ccNumber, value);
         }
 
     };
@@ -807,13 +810,16 @@ void MainComponent::setInitialValuesFromSettingsFileEffectWindow()
 
 void MainComponent::sendEffectsBeforePlaying()
 {
-    if (!MIDIDevice.isOpenOUT())
+    const bool hasOut   = MIDIDevice.isOpenOUT();
+    const bool hasAudio = MIDIDevice.isOpenAudioOUT();
+
+    if (!hasOut && !hasAudio)
         return;
 
     struct EffectCC
     {
         int ccNumber;
-        std::function<int(int)> getter; // int parameter = channel
+        std::function<int(int)> getter;
     };
 
     std::vector<EffectCC> effects = {
@@ -839,16 +845,17 @@ void MainComponent::sendEffectsBeforePlaying()
     { 95, [&](int ch) { return MIDIDevice.getRandomMod(ch); } }
     };
 
-    std::vector<int> channels = { 1, 16 };
-
-    for (int ch : channels)
+    for (int ch : { 1, 16 })
     {
         for (auto& effect : effects)
         {
-            MIDIDevice.sendMidiCC(ch, effect.ccNumber, effect.getter(ch));
+            const int value = effect.getter(ch);
+            if (hasOut)
+                MIDIDevice.sendMidiCC(ch, effect.ccNumber, value);
+            if (hasAudio)
+                midiHandler.injectCC(ch, effect.ccNumber, value);
         }
     }
-
 }
 
 void MainComponent::setCallBacksForOverlayWindow()
@@ -1434,7 +1441,7 @@ void MainComponent::displayInit()
     {
         loadEffectsFromFile(styleID);
 
-        if (MIDIDevice.isOpenOUT())
+        if (MIDIDevice.isOpenOUT() || MIDIDevice.isOpenAudioOUT())
             sendEffectsBeforePlaying();
     };
 }
@@ -1810,19 +1817,28 @@ void MainComponent::playButtonOnClick()
 
         display->setDeviceOutput(MIDIDevice.getDeviceOUT());
 
+        if (audioHandler != nullptr && display != nullptr)
+        {
+            display->setMidiInjectCallback([this](const juce::MidiMessage& msg) {
+                midiHandler.injectMidiMessage(msg);
+            });
+        }
+
         if (!keyboardInitialized)
         {
             keyBoardUIinit(MIDIDevice.get_minNote(), MIDIDevice.get_maxNote());
-            int leftProg = midiHandler.getProgramNumberLeftHand();
-            int rightProg = midiHandler.getProgramNumberRightHand();
+
+            auto styleId = display ? display->getStyleID() : "style_default";
+            int leftProg  = propertiesFile ? propertiesFile->getIntValue(styleId + "_leftInstrumentNumber",  0)
+                                           : midiHandler.getProgramNumberLeftHand();
+            int rightProg = propertiesFile ? propertiesFile->getIntValue(styleId + "_rightInstrumentNumber", 0)
+                                           : midiHandler.getProgramNumberRightHand();
 
             midiHandler.setProgramNumber(leftProg, "left");
             midiHandler.setProgramNumber(rightProg, "right");
 
             recordPlayer.setProgarmNumber(leftProg,"left");
             recordPlayer.setProgarmNumber(rightProg, "right");
-            
-            auto styleId = display ? display->getStyleID() : "style_default";
             if (audioHandler != nullptr)
             {
                 auto sfzFileLeft = sfzManager.getSfzForStyleInstrument(styleId, leftProg);
@@ -1830,6 +1846,16 @@ void MainComponent::playButtonOnClick()
 
                 auto sfzFileRight = sfzManager.getSfzForStyleInstrument(styleId, rightProg);
                 audioHandler->loadSfz(sfzFileRight, 16);
+
+                if (auto* tp = display->getTrackPlayer())
+                {
+                    int j = 0;
+                    for (const auto& track : tp->getCurrentTracks())
+                    {
+                        int ch = (track.type == TrackType::Percussion) ? 10 : (j++ + 2);
+                        audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, track.instrumentAssociated), ch);
+                    }
+                }
             }
         }
         else {
@@ -2193,7 +2219,17 @@ bool MainComponent::openingDevicesForPlay()
             return false;
         }
         if (audioHandler == nullptr)
+        {
             audioHandler = std::make_unique<AudioHandler>(midiHandler);
+            audioHandler->onSfzLoadStart = [this]() {
+                openingAudioLabel.setText("Configuring instrument...", juce::dontSendNotification);
+                openingAudioLabel.setVisible(true);
+            };
+            audioHandler->onSfzLoadComplete = [this]() {
+                openingAudioLabel.setVisible(false);
+                openingAudioLabel.setText("Opening Audio Device...", juce::dontSendNotification);
+            };
+        }
         this->MIDIDevice.getAudioDeviceManager().addAudioCallback(audioHandler.get());
     }
 

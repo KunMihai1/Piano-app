@@ -394,6 +394,9 @@ public:
 	/** @brief Turns off all currently active notes from the keyboard */
 	void allOffKeyboard();
 
+	void injectMidiMessage(const juce::MidiMessage& msg);
+	void injectCC(int channel, int ccNumber, int value);
+
 	/**
 	 * @brief Sets the instrument program (patch) number
 	 * @param toSetNumber Program number to set

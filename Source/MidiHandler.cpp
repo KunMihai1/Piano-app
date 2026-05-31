@@ -987,6 +987,17 @@ void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair
 	}
 }
 
+void MidiHandler::injectMidiMessage(const juce::MidiMessage& msg)
+{
+	const juce::ScopedLock lock(midiMutex);
+	incomingMidiMessages.addEvent(msg, 0);
+}
+
+void MidiHandler::injectCC(int channel, int ccNumber, int value)
+{
+	injectMidiMessage(juce::MidiMessage::controllerEvent(channel, ccNumber, juce::jlimit(0, 127, value)));
+}
+
 void MidiHandler::setPlayableRange(int nrKeys)
 {
 	if (nrKeys == 25)

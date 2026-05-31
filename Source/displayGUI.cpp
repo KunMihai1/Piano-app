@@ -400,6 +400,19 @@ void Display::setDeviceOutput(std::weak_ptr<juce::MidiOutput> devOutput)
         currentStyleComponent->setDeviceOutputCurrentStyle(devOutput);
 }
 
+void Display::setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb)
+{
+    if (currentStyleComponent)
+        currentStyleComponent->setMidiInjectCallback(std::move(cb));
+}
+
+MultipleTrackPlayer* Display::getTrackPlayer()
+{
+    if (currentStyleComponent)
+        return currentStyleComponent->getTrackPlayer();
+    return nullptr;
+}
+
 void Display::stoppingPlayer()
 {
     if (currentStyleComponent)
@@ -1705,6 +1718,12 @@ void CurrentStyleComponent::setDeviceOutputCurrentStyle(std::weak_ptr<juce::Midi
     this->outputDevice = newOutput;
     if (trackPlayer)
         trackPlayer->setDeviceOutputTrackPlayer(newOutput);
+}
+
+void CurrentStyleComponent::setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb)
+{
+    if (trackPlayer)
+        trackPlayer->onMidiMessage = std::move(cb);
 }
 
 void CurrentStyleComponent::applyChangesForOneTrack(TrackEntry& track)

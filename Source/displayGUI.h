@@ -552,6 +552,8 @@ public:
     /** @brief Returns a pointer to the internal track player instance. */
     MultipleTrackPlayer* getTrackPlayer();
 
+    void setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb);
+
     /**
      * @brief Synchronizes volume changes across all percussion tracks.
      * @param newVolume The new volume value to apply.
@@ -945,6 +947,9 @@ public:
 
     /** @brief Sets the MIDI output device */
     void setDeviceOutput(std::weak_ptr<juce::MidiOutput> devOutput);
+
+    void setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb);
+    MultipleTrackPlayer* getTrackPlayer();
 
     /** @brief Removes a track from all styles */
     void removeTrackFromAllStyles(const juce::Uuid& uuid);

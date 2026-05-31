@@ -62,10 +62,9 @@ void SFZLibraryManager::removeEntry(const juce::String& entryId)
                                       }),
                        data.library.end());
 
-    for (auto& styleMapping : data.styleMappings)
+    for (auto styleIt = data.styleMappings.begin(); styleIt != data.styleMappings.end();)
     {
-        auto& instrumentMap = styleMapping.second;
-
+        auto& instrumentMap = styleIt->second;
         for (auto it = instrumentMap.begin(); it != instrumentMap.end();)
         {
             if (it->second == entryId)
@@ -73,7 +72,23 @@ void SFZLibraryManager::removeEntry(const juce::String& entryId)
             else
                 ++it;
         }
+        if (instrumentMap.empty())
+            styleIt = data.styleMappings.erase(styleIt);
+        else
+            ++styleIt;
     }
+}
+
+void SFZLibraryManager::importMappingsFromStyle(const juce::String& sourceStyleId, const juce::String& targetStyleId)
+{
+    if (sourceStyleId == targetStyleId) return;
+
+    const auto sourceIt = data.styleMappings.find(sourceStyleId);
+    if (sourceIt == data.styleMappings.end()) return;
+
+    auto& targetMap = data.styleMappings[targetStyleId];
+    for (const auto& pair : sourceIt->second)
+        targetMap[pair.first] = pair.second;
 }
 
 void SFZLibraryManager::assignToStyleInstrument(const juce::String& styleId, int instrumentNumber, const juce::String& entryId)
