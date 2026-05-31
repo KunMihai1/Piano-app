@@ -88,10 +88,14 @@ void MultipleTrackPlayer::stop(bool shouldModify)
             });
     }
 
-    if (auto sharedPtrDev=outputDevice.lock())
+    auto sharedPtrDev = outputDevice.lock();
+    for (int channel = 1; channel <= 16; ++channel)
     {
-        for (int channel = 1; channel <= 16; ++channel)
-            sharedPtrDev->sendMessageNow(juce::MidiMessage::allNotesOff(channel));
+        auto msg = juce::MidiMessage::allNotesOff(channel);
+        if (sharedPtrDev)
+            sharedPtrDev->sendMessageNow(msg);
+        if (onMidiMessage)
+            onMidiMessage(msg);
     }
 
     if (shouldModify)
@@ -274,59 +278,60 @@ void MultipleTrackPlayer::removeSubjectTrackPlayerModifyListener(TrackPlayerList
 
 void MultipleTrackPlayer::hiResTimerCallback()
 {
-    if (auto midiOut = outputDevice.lock())
-    {
-        double now = juce::Time::getHighResolutionTicks() /
-            static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
-        double elapsed= now - startTime;  // seconds elapsed since start
+    auto midiOut = outputDevice.lock();
+    const bool hasMidiOut = midiOut != nullptr;
+    const bool hasInjectCallback = bool(onMidiMessage);
 
-        //need to add more complex logic and handling cases
-
-        currentElapsedTime = elapsed;
-
-        double rawBeatsElapsed = elapsed * (currentBPM / 60.0);
-
-
-        double beatsElapsed = elapsed * (currentBPM / 60.0);
-
-        juce::MessageManager::callAsync([this,beatsElapsed,elapsed]
-            {
-                onElapsedUpdate(beatsElapsed);
-                trackPlayerSubjects.notifyMidPlay(elapsed);
-            });
-
-
-        for (auto& track : tracks)
-        {
-            auto& sequence = filteredSequences[track.filteredSequenceIndex];
-            while (track.nextEventIndex < sequence.getNumEvents())
-            {
-                const auto& midiEvent = sequence.getEventPointer(track.nextEventIndex)->message;
-                double eventTime = midiEvent.getTimeStamp();
-
-                if (eventTime <= elapsed)
-                {
-                    midiOut->sendMessageNow(midiEvent); 
-                    track.nextEventIndex++;
-                }
-                else break;
-            }
-        }
-
-        bool allDone = std::all_of(tracks.begin(), tracks.end(),
-            [this](const TrackPlaybackData& t) {
-                return t.nextEventIndex >= filteredSequences[t.filteredSequenceIndex].getNumEvents();
-            });
-
-        if (allDone)
-        {
-            stop();
-            return;
-        }
-    }
-    else
+    if (!hasMidiOut && !hasInjectCallback)
     {
         stop();
         return;
     }
+
+    double now = juce::Time::getHighResolutionTicks() /
+        static_cast<double>(juce::Time::getHighResolutionTicksPerSecond());
+    double elapsed = now - startTime;
+
+    currentElapsedTime = elapsed;
+
+    double beatsElapsed = elapsed * (currentBPM / 60.0);
+
+    juce::MessageManager::callAsync([this, beatsElapsed, elapsed]
+        {
+            onElapsedUpdate(beatsElapsed);
+            trackPlayerSubjects.notifyMidPlay(elapsed);
+        });
+
+    for (auto& track : tracks)
+    {
+        auto& sequence = filteredSequences[track.filteredSequenceIndex];
+        while (track.nextEventIndex < sequence.getNumEvents())
+        {
+            const auto& midiEvent = sequence.getEventPointer(track.nextEventIndex)->message;
+            double eventTime = midiEvent.getTimeStamp();
+
+            if (eventTime <= elapsed)
+            {
+                if (hasMidiOut)
+                    midiOut->sendMessageNow(midiEvent);
+                if (hasInjectCallback)
+                    onMidiMessage(midiEvent);
+                track.nextEventIndex++;
+            }
+            else break;
+        }
+    }
+
+    bool allDone = std::all_of(tracks.begin(), tracks.end(),
+        [this](const TrackPlaybackData& t) {
+            return t.nextEventIndex >= filteredSequences[t.filteredSequenceIndex].getNumEvents();
+        });
+
+    if (allDone)
+        stop();
+}
+
+const std::vector<TrackEntry>& MultipleTrackPlayer::getCurrentTracks() const
+{
+    return currentTracks;
 }

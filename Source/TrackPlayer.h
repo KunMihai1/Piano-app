@@ -48,6 +48,7 @@ public:
      */
     std::function<void(double)> onElapsedUpdate;
     std::function<void()> onStopTriggerClickFromPlayer;
+    std::function<void(const juce::MidiMessage&)> onMidiMessage;
 
     /**
      * @brief Constructor.
@@ -120,6 +121,8 @@ public:
     void setLastSectionUsed(const StyleSection& s);
 
     void resetLastSectionUsed();
+
+    const std::vector<TrackEntry>& getCurrentTracks() const;
 
     void addSubjectTrackPlayerListener(TrackPlayerListener* l);
     void addSubjectTrackPlayerModifyListener(TrackPlayerListenerModifyStateObjects* l);

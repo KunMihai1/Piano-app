@@ -44,6 +44,7 @@ public:
 
     void assignToStyleInstrument(const juce::String& styleId, int instrumentNumber, const juce::String& entryId);
     void clearStyleInstrumentAssignment(const juce::String& styleId, int instrumentNumber);
+    void importMappingsFromStyle(const juce::String& sourceStyleId, const juce::String& targetStyleId);
 
     const SFZLibraryEntry* getEntryById(const juce::String& entryId) const;
     juce::File getSfzForStyleInstrument(const juce::String& styleId, int instrumentNumber) const;

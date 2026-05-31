@@ -12,8 +12,9 @@ public:
 
     std::function<void()> onClose;
     std::function<void()> onLibraryChanged;
-    std::function<juce::String()> getCurrentStyleId;  // returns empty string if no style selected
-    std::function<juce::String()> getCurrentStyleName; // returns empty string if no style selected
+    std::function<juce::String()> getCurrentStyleId;
+    std::function<juce::String()> getCurrentStyleName;
+    std::function<juce::String(const juce::String&)> getStyleNameForId; // optional: id → display name
 
     void paint(juce::Graphics& g) override;
     void resized() override;
@@ -24,15 +25,17 @@ public:
 private:
     void addFileButtonClicked();
     void removeFileButtonClicked();
+    void importConfigButtonClicked();
     void updateStatusLabel();
     void buildInstrumentList();
 
     SFZLibraryManager& manager;
     juce::ListBox libraryList;
-    juce::TextButton addFileButton{"Add SFZ File"};
-    juce::TextButton removeFileButton{"Remove File"};
-    juce::TextButton assignButton{"Assign to Style"};
-    juce::TextButton closeButton{"X"};
+    juce::TextButton addFileButton    { "Add SFZ File" };
+    juce::TextButton removeFileButton { "Remove File" };
+    juce::TextButton assignButton     { "Assign to Style" };
+    juce::TextButton importConfigButton { "Import Config" };
+    juce::TextButton closeButton      { "X" };
     juce::Label statusLabel;
     std::unique_ptr<juce::FileChooser> fileChooser;
     juce::StringArray instrumentList;
