@@ -47,10 +47,14 @@ void ChannelDSP::prepare(double sr, int blockSize)
     const int maxDelaySamples = static_cast<int>(sr * 0.5);
     delayLineL.assign(maxDelaySamples, 0.0f);
     delayLineR.assign(maxDelaySamples, 0.0f);
-    delayWritePos   = 0;
-    delayReadOffset = static_cast<int>(sr * 0.25);
-    tremoloPhase    = 0.0f;
-    randomModSmoothed = 0.0f;
+    delayWritePos      = 0;
+    delayReadOffset    = static_cast<int>(sr * 0.25);
+    tremoloPhase       = 0.0f;
+    tremoloPhaseInc    = juce::MathConstants<float>::twoPi * 5.0f / static_cast<float>(sr);
+    randomModSmoothed  = 0.0f;
+    filterCutoffCC     = 127;
+    filterResonanceCC  = 0;
+    distortionNormFactor = 1.0f;
 }
 
 void ChannelDSP::updateCC(int ccNumber, int value)
@@ -63,22 +67,30 @@ void ChannelDSP::updateCC(int ccNumber, int value)
             break;
 
         case 71: // resonance → filter Q
+            filterResonanceCC = value;
             filter.setResonance(0.5f + norm * 9.5f);
             break;
 
         case 74: // brightness → LP filter cutoff (100 Hz – 20 kHz, log)
         {
+            filterCutoffCC = value;
             const float hz = 100.0f * std::pow(200.0f, norm);
             filter.setCutoffFrequency(juce::jlimit(20.0f, 20000.0f, hz));
             break;
         }
 
         case 80: // distortion drive
+        {
             distortionDrive = norm;
+            const float drive = 1.0f + norm * 15.0f;
+            distortionNormFactor = 1.0f / std::tanh(drive);
             break;
+        }
 
         case 91: // reverb wet amount
             reverbMix = norm * 0.85f;
+            reverbParams.wetLevel = reverbMix;
+            reverb.setParameters(reverbParams);
             break;
 
         case 92: // tremolo depth
@@ -118,6 +130,8 @@ void ChannelDSP::process(juce::AudioBuffer<float>& buffer, int numSamples)
     float* right = buffer.getWritePointer(1);
 
     // --- LP filter (CC74 brightness + CC71 resonance) ---
+    // Skip entirely when both CCs are at neutral (CC74=127, CC71=0)
+    if (filterCutoffCC < 127 || filterResonanceCC > 0)
     {
         juce::dsp::AudioBlock<float> block(buffer.getArrayOfWritePointers(),
                                            (size_t)buffer.getNumChannels(),
@@ -128,12 +142,11 @@ void ChannelDSP::process(juce::AudioBuffer<float>& buffer, int numSamples)
     // --- Distortion (CC80) ---
     if (distortionDrive > 0.005f)
     {
-        const float drive      = 1.0f + distortionDrive * 15.0f;
-        const float normFactor = 1.0f / std::tanh(drive);
+        const float drive = 1.0f + distortionDrive * 15.0f;
         for (int i = 0; i < numSamples; ++i)
         {
-            left[i]  = std::tanh(left[i]  * drive) * normFactor;
-            right[i] = std::tanh(right[i] * drive) * normFactor;
+            left[i]  = std::tanh(left[i]  * drive) * distortionNormFactor;
+            right[i] = std::tanh(right[i] * drive) * distortionNormFactor;
         }
     }
 
@@ -148,24 +161,17 @@ void ChannelDSP::process(juce::AudioBuffer<float>& buffer, int numSamples)
 
     // --- Reverb (CC91) ---
     if (reverbMix > 0.005f)
-    {
-        reverbParams.wetLevel = reverbMix;
-        reverbParams.dryLevel = 1.0f;
-        reverb.setParameters(reverbParams);
         reverb.processStereo(left, right, numSamples);
-    }
 
     // --- Tremolo (CC92) — 5 Hz amplitude LFO ---
     if (tremoloDepth > 0.005f)
     {
-        const float phaseInc = juce::MathConstants<float>::twoPi * 5.0f
-                               / static_cast<float>(sampleRate);
         for (int i = 0; i < numSamples; ++i)
         {
             const float mod = 1.0f - tremoloDepth * 0.5f * (1.0f + std::sin(tremoloPhase));
             left[i]  *= mod;
             right[i] *= mod;
-            tremoloPhase += phaseInc;
+            tremoloPhase += tremoloPhaseInc;
             if (tremoloPhase >= juce::MathConstants<float>::twoPi)
                 tremoloPhase -= juce::MathConstants<float>::twoPi;
         }
@@ -215,6 +221,7 @@ AudioHandler::AudioHandler(MidiHandler& mh) : midiHandler(mh)
             sfzSynths[i].addVoice(new sfzero::Voice());
         channelGains[i] = 1.0f;
         channelPans[i]  = 0.5f;
+        channelHasSfz[i].store(false, std::memory_order_relaxed);
     }
 }
 
@@ -255,7 +262,8 @@ void AudioHandler::audioDeviceIOCallbackWithContext (const float* const* inputCh
     juce::MidiBuffer incomingMidi;
     midiHandler.getNextMidiBlock(incomingMidi, 0, numSamples);
 
-    // Update per-channel state from incoming CCs before rendering
+    // Update per-channel state from incoming CCs before rendering;
+    // also detect noteOns on channels with no SFZ loaded.
     for (const auto metadata : incomingMidi)
     {
         const auto msg = metadata.getMessage();
@@ -271,6 +279,24 @@ void AudioHandler::audioDeviceIOCallbackWithContext (const float* const* inputCh
                 else               channelDSP[ch].updateCC(cc, val);
             }
         }
+        else if (msg.isNoteOn() && onNoSfzForChannels)
+        {
+            const int ch = msg.getChannel() - 1;
+            if (ch >= 0 && ch < 16 && !channelHasSfz[ch].load(std::memory_order_relaxed))
+            {
+                noSfzChannelMask.fetch_or(1 << ch, std::memory_order_relaxed);
+                bool expected = false;
+                if (noSfzNotifyPending.compare_exchange_strong(expected, true))
+                {
+                    juce::MessageManager::callAsync([this]() {
+                        const int mask = noSfzChannelMask.exchange(0);
+                        noSfzNotifyPending.store(false);
+                        if (onNoSfzForChannels && mask != 0)
+                            onNoSfzForChannels(mask);
+                    });
+                }
+            }
+        }
     }
 
     // tempBuffer is always 2-channel; reuse its allocation if large enough
@@ -280,6 +306,9 @@ void AudioHandler::audioDeviceIOCallbackWithContext (const float* const* inputCh
 
     for (int channel = 1; channel <= 16; ++channel)
     {
+        if (!channelHasSfz[channel - 1].load(std::memory_order_acquire))
+            continue;
+
         juce::MidiBuffer channelMidi;
         for (const auto metadata : incomingMidi)
         {
@@ -315,6 +344,10 @@ void AudioHandler::loadSfz(const juce::File& sfzFile, int midiChannel)
     if (!sfzFile.existsAsFile() || midiChannel < 1 || midiChannel > 16)
         return;
 
+    if (sfzFile.getFullPathName() == loadedSfzPath[midiChannel - 1])
+        return;
+    loadedSfzPath[midiChannel - 1] = sfzFile.getFullPathName();
+
     ++pendingLoads;
     if (onSfzLoadStart)
         onSfzLoadStart();
@@ -326,6 +359,7 @@ void AudioHandler::loadSfz(const juce::File& sfzFile, int midiChannel)
         sound->loadSamples(&formatManager);
         sfzSynths[midiChannel - 1].clearSounds();
         sfzSynths[midiChannel - 1].addSound(sound);
+        channelHasSfz[midiChannel - 1].store(true, std::memory_order_release);
 
         if (--pendingLoads == 0)
             juce::MessageManager::callAsync([this]() {

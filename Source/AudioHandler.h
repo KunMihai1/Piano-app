@@ -15,15 +15,19 @@
 
 struct ChannelDSP
 {
-    float expression      = 1.0f;
-    float reverbMix       = 0.0f;
-    float chorusMix       = 0.0f;
-    float tremoloDepth    = 0.0f;
-    float tremoloPhase    = 0.0f;
-    float delayMix        = 0.0f;
-    float distortionDrive = 0.0f;
-    float randomModDepth  = 0.0f;
-    float randomModSmoothed = 0.0f;
+    float expression           = 1.0f;
+    float reverbMix            = 0.0f;
+    float chorusMix            = 0.0f;
+    float tremoloDepth         = 0.0f;
+    float tremoloPhase         = 0.0f;
+    float tremoloPhaseInc      = 0.0f;   // cached: 2π*5/sampleRate
+    float delayMix             = 0.0f;
+    float distortionDrive      = 0.0f;
+    float distortionNormFactor = 1.0f;   // cached: 1/tanh(drive)
+    float randomModDepth       = 0.0f;
+    float randomModSmoothed    = 0.0f;
+    int   filterCutoffCC       = 127;    // raw CC74 value; 127 = neutral (no filtering)
+    int   filterResonanceCC    = 0;      // raw CC71 value; 0 = neutral
 
     juce::dsp::StateVariableTPTFilter<float> filter;
     juce::Reverb                             reverb;
@@ -58,13 +62,20 @@ public:
 
     std::function<void()> onSfzLoadStart;
     std::function<void()> onSfzLoadComplete;
+    std::function<void(int channelMask)> onNoSfzForChannels;
 
 private:
-    std::atomic<int> pendingLoads { 0 };
+    std::atomic<int>  pendingLoads      { 0 };
+    std::atomic<int>  noSfzChannelMask  { 0 };
+    std::atomic<bool> noSfzNotifyPending { false };
+
     MidiHandler& midiHandler;
     sfzero::Synth sfzSynths[16];
     juce::AudioFormatManager formatManager;
     double currentSampleRate = 44100.0;
+
+    std::atomic<bool> channelHasSfz[16];
+    juce::String      loadedSfzPath[16]; // message-thread only
 
     juce::AudioBuffer<float> tempBuffer;
     float channelGains[16];

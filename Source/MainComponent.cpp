@@ -1439,10 +1439,39 @@ void MainComponent::displayInit()
 
     display->loadSettingsOnStyleChange = [this](const juce::String& styleID)
     {
-        loadEffectsFromFile(styleID);
+        loadSettings(styleID);
+
+        // Defer bounds update — Display calls readPlaybackSettingsFromProperties()
+        // AFTER this callback returns, so reading bounds here gives stale values.
+        juce::MessageManager::callAsync([this]() {
+            if (display)
+            {
+                midiHandler.set_start_end_notes(display->getStartNote(), display->getEndNote());
+                midiHandler.set_left_right_bounds(display->getLeftBound(), display->getRightBound());
+            }
+        });
 
         if (MIDIDevice.isOpenOUT() || MIDIDevice.isOpenAudioOUT())
             sendEffectsBeforePlaying();
+
+        if (audioHandler != nullptr && MIDIDevice.isOpenAudioOUT())
+        {
+            int leftProg  = propertiesFile ? propertiesFile->getIntValue(styleID + "_leftInstrumentNumber",  0) : 0;
+            int rightProg = propertiesFile ? propertiesFile->getIntValue(styleID + "_rightInstrumentNumber", 0) : 0;
+
+            audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleID, leftProg),  1);
+            audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleID, rightProg), 16);
+
+            if (auto* tp = display->getTrackPlayer())
+            {
+                int j = 0;
+                for (const auto& track : tp->getCurrentTracks())
+                {
+                    int ch = (track.type == TrackType::Percussion) ? 10 : (j++ + 2);
+                    audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleID, track.instrumentAssociated), ch);
+                }
+            }
+        }
     };
 }
 
@@ -2228,6 +2257,36 @@ bool MainComponent::openingDevicesForPlay()
             audioHandler->onSfzLoadComplete = [this]() {
                 openingAudioLabel.setVisible(false);
                 openingAudioLabel.setText("Opening Audio Device...", juce::dontSendNotification);
+            };
+            audioHandler->onNoSfzForChannels = [this](int channelMask) {
+                juce::String channels;
+                int count = 0;
+                for (int i = 0; i < 16; ++i)
+                {
+                    if (channelMask & (1 << i))
+                    {
+                        channels += juce::String(i + 1) + ", ";
+                        ++count;
+                    }
+                }
+                if (channels.isNotEmpty())
+                    channels = channels.dropLastCharacters(2);
+
+                juce::String msg = "No SFZ loaded for channel" + juce::String(count > 1 ? "s: " : ": ") + channels;
+
+                if (temporaryPopup)
+                {
+                    temporaryPopup->updateText(msg);
+                    temporaryPopup->restartTimer();
+                }
+                else
+                {
+                    temporaryPopup = std::make_unique<TemporaryMessage>(msg);
+                    headerPanel.addChildComponent(temporaryPopup.get());
+                    temporaryPopup->setBounds(getWidth() / 2 - 150, 10, 300, 30);
+                    temporaryPopup->setFinishedCallBack([this] { temporaryPopup.reset(); });
+                    temporaryPopup->setVisible(true);
+                }
             };
         }
         this->MIDIDevice.getAudioDeviceManager().addAudioCallback(audioHandler.get());
