@@ -35,6 +35,7 @@ public:
     std::function<void()> onWindowClosed;
     std::function<juce::String()> getCurrentStyleId;  // optional, set by owner
     std::function<juce::String()> getCurrentStyleName; // optional, set by owner
+    std::function<void(int engineOption)> onOutputEngineChanged; // fired when engine changes while playing
 
     /**
      * @brief Constructor.
