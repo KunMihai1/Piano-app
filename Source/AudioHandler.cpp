@@ -341,8 +341,22 @@ void AudioHandler::audioDeviceIOCallbackWithContext (const float* const* inputCh
 
 void AudioHandler::loadSfz(const juce::File& sfzFile, int midiChannel)
 {
-    if (!sfzFile.existsAsFile() || midiChannel < 1 || midiChannel > 16)
+    if (midiChannel < 1 || midiChannel > 16)
         return;
+
+    if (!sfzFile.existsAsFile())
+    {
+        // No SFZ mapped for this channel — silence it so the previous instrument
+        // doesn't keep playing when the new style has no mapping.
+        if (channelHasSfz[midiChannel - 1].load(std::memory_order_relaxed)
+            || loadedSfzPath[midiChannel - 1].isNotEmpty())
+        {
+            channelHasSfz[midiChannel - 1].store(false, std::memory_order_release);
+            sfzSynths[midiChannel - 1].clearSounds();
+            loadedSfzPath[midiChannel - 1] = juce::String();
+        }
+        return;
+    }
 
     if (sfzFile.getFullPathName() == loadedSfzPath[midiChannel - 1])
         return;
