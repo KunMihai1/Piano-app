@@ -1786,6 +1786,8 @@ void MainComponent::homeButtonOnClick()
 
     if (display && display->getNumTabs()==3)
         display->homeButtonInteraction();
+
+    grabKeyboardFocus();
 }
 
 void MainComponent::playButtonOnClick()
@@ -1884,12 +1886,14 @@ void MainComponent::playButtonOnClick()
 
             recordPlayer.setProgarmNumber(leftProg,"left");
             recordPlayer.setProgarmNumber(rightProg, "right");
-            loadSfzForCurrentStyle(styleId);
         }
         else {
             keyboard.setVisible(true);
             this->noteLayer->setVisible(true);
         }
+
+        if (MIDIDevice.isOpenAudioOUT())
+            loadSfzForCurrentStyle();
 
         if (this->keyListener.getIsKeyboardInput())
         {
