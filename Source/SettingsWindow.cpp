@@ -165,6 +165,8 @@ void MIDIWindow::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 		lastIndexEngineOption = comboBoxOutputEngineType.getSelectedId();
         if (propertyFile) { propertyFile->setValue("EngineOptionIndex", lastIndexEngineOption); propertyFile->saveIfNeeded(); }
 		switchBetweenEngineOptions(lastIndexEngineOption);
+        if (onOutputEngineChanged && isMidiDeviceOpen && isMidiDeviceOpen())
+            onOutputEngineChanged(lastIndexEngineOption);
     }
     else if(comboBoxThatHasChanged == &this->comboBoxAudioDevicesOUT)
     {
