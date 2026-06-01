@@ -930,84 +930,38 @@ void MainComponent::setCallBacksForOverlayWindow()
                 return {};
             };
 
+            midiWindow->onSfzLibraryChanged = [this]()
+            {
+                if (audioHandler == nullptr || !MIDIDevice.isOpenAudioOUT())
+                    return;
+                loadSfzForCurrentStyle();
+            };
+
             midiWindow->onOutputEngineChanged = [this](int engineOption)
             {
-                // Hot-swap output engine while playing.
-                if (this->MIDIDevice.isOpenOUT())
-                    this->MIDIDevice.deviceCloseOUT();
-                if (this->MIDIDevice.isOpenAudioOUT())
-                {
-                    if (audioHandler != nullptr)
-                        this->MIDIDevice.getAudioDeviceManager().removeAudioCallback(audioHandler.get());
-                    this->MIDIDevice.deviceCloseAudioOUT();
-                }
+                disconnectCurrentOutput();
 
                 if (engineOption == 1) // External MIDI
                 {
-                    if (!this->MIDIDevice.deviceOpenOUT(this->MIDIDevice.getDeviceIndexOUT()))
+                    if (!MIDIDevice.deviceOpenOUT(MIDIDevice.getDeviceIndexOUT()))
                     {
                         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open MIDI output device.", "OK");
                         return;
                     }
-                    this->deviceOpenedOUT = this->MIDIDevice.getDeviceOUT();
-                    if (display != nullptr)
-                    {
-                        loadSettings(display->getStyleID());
-                        midiHandler.set_start_end_notes(display->getStartNote(), display->getEndNote());
-                        midiHandler.set_left_right_bounds(display->getLeftBound(), display->getRightBound());
-                    }
-                    sendEffectsBeforePlaying();
+                    deviceOpenedOUT = MIDIDevice.getDeviceOUT();
                 }
                 else if (engineOption == 2) // Internal SFZ
                 {
-                    if (!this->MIDIDevice.deviceOpenAudioOUT(this->MIDIDevice.getDeviceIndexAudioOUT()))
+                    if (!MIDIDevice.deviceOpenAudioOUT(MIDIDevice.getDeviceIndexAudioOUT()))
                     {
                         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open audio output device.", "OK");
                         return;
                     }
-                    if (audioHandler == nullptr)
-                    {
-                        audioHandler = std::make_unique<AudioHandler>(midiHandler);
-                        audioHandler->onSfzLoadStart = [this]() {
-                            openingAudioLabel.setText("Configuring instrument...", juce::dontSendNotification);
-                            openingAudioLabel.setVisible(true);
-                        };
-                        audioHandler->onSfzLoadComplete = [this]() {
-                            openingAudioLabel.setVisible(false);
-                            openingAudioLabel.setText("Opening Audio Device...", juce::dontSendNotification);
-                        };
-                        audioHandler->onNoSfzForChannels = [this](int channelMask) {
-                            juce::String channels;
-                            int count = 0;
-                            for (int i = 0; i < 16; ++i)
-                                if (channelMask & (1 << i)) { channels += juce::String(i + 1) + ", "; ++count; }
-                            if (channels.isNotEmpty()) channels = channels.dropLastCharacters(2);
-                            juce::String msg = "No SFZ loaded for channel" + juce::String(count > 1 ? "s: " : ": ") + channels;
-                            if (temporaryPopup) { temporaryPopup->updateText(msg); temporaryPopup->restartTimer(); }
-                            else {
-                                temporaryPopup = std::make_unique<TemporaryMessage>(msg);
-                                headerPanel.addChildComponent(temporaryPopup.get());
-                                temporaryPopup->setBounds(getWidth() / 2 - 150, 10, 300, 30);
-                                temporaryPopup->setFinishedCallBack([this] { temporaryPopup.reset(); });
-                                temporaryPopup->setVisible(true);
-                            }
-                        };
-                    }
-                    this->MIDIDevice.getAudioDeviceManager().addAudioCallback(audioHandler.get());
-
-                    if (display != nullptr)
-                    {
-                        auto styleId = display->getStyleID();
-                        int leftProg  = propertiesFile ? propertiesFile->getIntValue(styleId + "_leftInstrumentNumber",  0) : 0;
-                        int rightProg = propertiesFile ? propertiesFile->getIntValue(styleId + "_rightInstrumentNumber", 0) : 0;
-                        audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, leftProg),  1);
-                        audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, rightProg), 16);
-                        loadSettings(styleId);
-                        midiHandler.set_start_end_notes(display->getStartNote(), display->getEndNote());
-                        midiHandler.set_left_right_bounds(display->getLeftBound(), display->getRightBound());
-                    }
-                    sendEffectsBeforePlaying();
+                    ensureAudioHandlerReady();
+                    loadSfzForCurrentStyle();
                 }
+
+                applyCurrentStyleToOutput();
             };
 
         }
@@ -1532,24 +1486,8 @@ void MainComponent::displayInit()
         if (MIDIDevice.isOpenOUT() || MIDIDevice.isOpenAudioOUT())
             sendEffectsBeforePlaying();
 
-        if (audioHandler != nullptr && MIDIDevice.isOpenAudioOUT())
-        {
-            int leftProg  = propertiesFile ? propertiesFile->getIntValue(styleID + "_leftInstrumentNumber",  0) : 0;
-            int rightProg = propertiesFile ? propertiesFile->getIntValue(styleID + "_rightInstrumentNumber", 0) : 0;
-
-            audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleID, leftProg),  1);
-            audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleID, rightProg), 16);
-
-            if (auto* tp = display->getTrackPlayer())
-            {
-                int j = 0;
-                for (const auto& track : tp->getCurrentTracks())
-                {
-                    int ch = (track.type == TrackType::Percussion) ? 10 : (j++ + 2);
-                    audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleID, track.instrumentAssociated), ch);
-                }
-            }
-        }
+        if (MIDIDevice.isOpenAudioOUT())
+            loadSfzForCurrentStyle(styleID);
     };
 }
 
@@ -1946,24 +1884,7 @@ void MainComponent::playButtonOnClick()
 
             recordPlayer.setProgarmNumber(leftProg,"left");
             recordPlayer.setProgarmNumber(rightProg, "right");
-            if (audioHandler != nullptr)
-            {
-                auto sfzFileLeft = sfzManager.getSfzForStyleInstrument(styleId, leftProg);
-                audioHandler->loadSfz(sfzFileLeft, 1);
-
-                auto sfzFileRight = sfzManager.getSfzForStyleInstrument(styleId, rightProg);
-                audioHandler->loadSfz(sfzFileRight, 16);
-
-                if (auto* tp = display->getTrackPlayer())
-                {
-                    int j = 0;
-                    for (const auto& track : tp->getCurrentTracks())
-                    {
-                        int ch = (track.type == TrackType::Percussion) ? 10 : (j++ + 2);
-                        audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, track.instrumentAssociated), ch);
-                    }
-                }
-            }
+            loadSfzForCurrentStyle(styleId);
         }
         else {
             keyboard.setVisible(true);
@@ -2253,6 +2174,82 @@ InstrumentTreeItem* MainComponent::createInstrumentItem(const juce::Image& img, 
     return item.release();
 }
 
+void MainComponent::disconnectCurrentOutput()
+{
+    if (MIDIDevice.isOpenOUT())
+        MIDIDevice.deviceCloseOUT();
+    if (MIDIDevice.isOpenAudioOUT())
+    {
+        if (audioHandler != nullptr)
+            MIDIDevice.getAudioDeviceManager().removeAudioCallback(audioHandler.get());
+        MIDIDevice.deviceCloseAudioOUT();
+    }
+}
+
+void MainComponent::ensureAudioHandlerReady()
+{
+    if (audioHandler == nullptr)
+    {
+        audioHandler = std::make_unique<AudioHandler>(midiHandler);
+        audioHandler->onSfzLoadStart = [this]() {
+            openingAudioLabel.setText("Configuring instrument...", juce::dontSendNotification);
+            openingAudioLabel.setVisible(true);
+        };
+        audioHandler->onSfzLoadComplete = [this]() {
+            openingAudioLabel.setVisible(false);
+            openingAudioLabel.setText("Opening Audio Device...", juce::dontSendNotification);
+        };
+        audioHandler->onNoSfzForChannels = [this](int channelMask) {
+            juce::String channels;
+            int count = 0;
+            for (int i = 0; i < 16; ++i)
+                if (channelMask & (1 << i)) { channels += juce::String(i + 1) + ", "; ++count; }
+            if (channels.isNotEmpty()) channels = channels.dropLastCharacters(2);
+            juce::String msg = "No SFZ loaded for channel" + juce::String(count > 1 ? "s: " : ": ") + channels;
+            if (temporaryPopup) { temporaryPopup->updateText(msg); temporaryPopup->restartTimer(); }
+            else {
+                temporaryPopup = std::make_unique<TemporaryMessage>(msg);
+                headerPanel.addChildComponent(temporaryPopup.get());
+                temporaryPopup->setBounds(getWidth() / 2 - 150, 10, 300, 30);
+                temporaryPopup->setFinishedCallBack([this] { temporaryPopup.reset(); });
+                temporaryPopup->setVisible(true);
+            }
+        };
+    }
+    MIDIDevice.getAudioDeviceManager().addAudioCallback(audioHandler.get());
+}
+
+void MainComponent::loadSfzForCurrentStyle(const juce::String& overrideStyleId)
+{
+    if (audioHandler == nullptr || display == nullptr)
+        return;
+    const juce::String styleId = overrideStyleId.isNotEmpty() ? overrideStyleId : display->getStyleID();
+    int leftProg  = propertiesFile ? propertiesFile->getIntValue(styleId + "_leftInstrumentNumber",  0) : 0;
+    int rightProg = propertiesFile ? propertiesFile->getIntValue(styleId + "_rightInstrumentNumber", 0) : 0;
+    audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, leftProg),  1);
+    audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, rightProg), 16);
+    if (auto* tp = display->getTrackPlayer())
+    {
+        int j = 0;
+        for (const auto& track : tp->getCurrentTracks())
+        {
+            int ch = (track.type == TrackType::Percussion) ? 10 : (j++ + 2);
+            audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, track.instrumentAssociated), ch);
+        }
+    }
+}
+
+void MainComponent::applyCurrentStyleToOutput()
+{
+    if (display != nullptr)
+    {
+        loadSettings(display->getStyleID());
+        midiHandler.set_start_end_notes(display->getStartNote(), display->getEndNote());
+        midiHandler.set_left_right_bounds(display->getLeftBound(), display->getRightBound());
+    }
+    sendEffectsBeforePlaying();
+}
+
 bool MainComponent::openingDevicesForPlay()
 {
     for (const auto& device : devicesIN)
@@ -2298,18 +2295,7 @@ bool MainComponent::openingDevicesForPlay()
         }
         this->deviceOpenedIN = this->MIDIDevice.getDeviceIN();
     }
-    // Disconnect any previously open output before opening a new one.
-    // This prevents double-registration of the audio callback when playing again
-    // after going Home, and stops the SFZ from continuing to play when switching
-    // from Internal SFZ to External MIDI.
-    if (this->MIDIDevice.isOpenOUT())
-        this->MIDIDevice.deviceCloseOUT();
-    if (this->MIDIDevice.isOpenAudioOUT())
-    {
-        if (audioHandler != nullptr)
-            this->MIDIDevice.getAudioDeviceManager().removeAudioCallback(audioHandler.get());
-        this->MIDIDevice.deviceCloseAudioOUT();
-    }
+    disconnectCurrentOutput();
 
     int engineOption = 1; // default to External MIDI
     if (propertiesFile)
@@ -2338,49 +2324,7 @@ bool MainComponent::openingDevicesForPlay()
             juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open audio output device.", "OK");
             return false;
         }
-        if (audioHandler == nullptr)
-        {
-            audioHandler = std::make_unique<AudioHandler>(midiHandler);
-            audioHandler->onSfzLoadStart = [this]() {
-                openingAudioLabel.setText("Configuring instrument...", juce::dontSendNotification);
-                openingAudioLabel.setVisible(true);
-            };
-            audioHandler->onSfzLoadComplete = [this]() {
-                openingAudioLabel.setVisible(false);
-                openingAudioLabel.setText("Opening Audio Device...", juce::dontSendNotification);
-            };
-            audioHandler->onNoSfzForChannels = [this](int channelMask) {
-                juce::String channels;
-                int count = 0;
-                for (int i = 0; i < 16; ++i)
-                {
-                    if (channelMask & (1 << i))
-                    {
-                        channels += juce::String(i + 1) + ", ";
-                        ++count;
-                    }
-                }
-                if (channels.isNotEmpty())
-                    channels = channels.dropLastCharacters(2);
-
-                juce::String msg = "No SFZ loaded for channel" + juce::String(count > 1 ? "s: " : ": ") + channels;
-
-                if (temporaryPopup)
-                {
-                    temporaryPopup->updateText(msg);
-                    temporaryPopup->restartTimer();
-                }
-                else
-                {
-                    temporaryPopup = std::make_unique<TemporaryMessage>(msg);
-                    headerPanel.addChildComponent(temporaryPopup.get());
-                    temporaryPopup->setBounds(getWidth() / 2 - 150, 10, 300, 30);
-                    temporaryPopup->setFinishedCallBack([this] { temporaryPopup.reset(); });
-                    temporaryPopup->setVisible(true);
-                }
-            };
-        }
-        this->MIDIDevice.getAudioDeviceManager().addAudioCallback(audioHandler.get());
+        ensureAudioHandlerReady();
     }
 
     return true;

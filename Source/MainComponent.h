@@ -207,6 +207,10 @@ private:
     void setInitialValuesFromSettingsFileEffectWindow();
 
     void sendEffectsBeforePlaying();
+    void disconnectCurrentOutput();
+    void ensureAudioHandlerReady();
+    void loadSfzForCurrentStyle(const juce::String& styleId = {});
+    void applyCurrentStyleToOutput();
 
     // UI toggles
     void toggleSettingsPanel();

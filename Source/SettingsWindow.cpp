@@ -426,6 +426,7 @@ void MIDIWindow::sfzButtonInit()
         sfzLibraryUI->onLibraryChanged = [this]()
         {
             sfzManager->save(IOHelper::getFile("SFZLibrary.json"));
+            if (onSfzLibraryChanged) onSfzLibraryChanged();
         };
     }
 
