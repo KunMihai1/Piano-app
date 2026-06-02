@@ -554,6 +554,9 @@ public:
 
     void setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb);
 
+    struct TrackChannelInstrument { int channel; int instrument; };
+    std::vector<TrackChannelInstrument> getTrackChannelInstruments() const;
+
     /**
      * @brief Synchronizes volume changes across all percussion tracks.
      * @param newVolume The new volume value to apply.
@@ -950,6 +953,7 @@ public:
 
     void setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb);
     MultipleTrackPlayer* getTrackPlayer();
+    std::vector<CurrentStyleComponent::TrackChannelInstrument> getTrackChannelInstruments() const;
 
     /** @brief Removes a track from all styles */
     void removeTrackFromAllStyles(const juce::Uuid& uuid);
@@ -1051,6 +1055,7 @@ private:
 
     std::weak_ptr<juce::MidiOutput> outputDevice; ///< MIDI output device
     juce::PropertiesFile* propertiesFile = nullptr; ///< Application properties file
+    std::function<void(const juce::MidiMessage&)> pendingMidiInjectCallback;
 
     std::unique_ptr<TrackListComponent> trackListComp; ///< Track selection component
     juce::var allStylesJsonVar; ///< Root JSON object storing all styles

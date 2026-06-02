@@ -249,6 +249,9 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
         tabComp->addTab(name, juce::Colour::fromRGB(10, 15, 10), currentStyleComponent.get(), false);
         created = true;
+
+        if (pendingMidiInjectCallback)
+            currentStyleComponent->setMidiInjectCallback(pendingMidiInjectCallback);
     }
     else
     {
@@ -402,6 +405,7 @@ void Display::setDeviceOutput(std::weak_ptr<juce::MidiOutput> devOutput)
 
 void Display::setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb)
 {
+    pendingMidiInjectCallback = cb;
     if (currentStyleComponent)
         currentStyleComponent->setMidiInjectCallback(std::move(cb));
 }
@@ -411,6 +415,13 @@ MultipleTrackPlayer* Display::getTrackPlayer()
     if (currentStyleComponent)
         return currentStyleComponent->getTrackPlayer();
     return nullptr;
+}
+
+std::vector<CurrentStyleComponent::TrackChannelInstrument> Display::getTrackChannelInstruments() const
+{
+    if (currentStyleComponent)
+        return currentStyleComponent->getTrackChannelInstruments();
+    return {};
 }
 
 void Display::stoppingPlayer()
@@ -1501,44 +1512,47 @@ void CurrentStyleComponent::startPlaying()
 
     std::vector<TrackEntry> selectedTracks;
 
-    if (auto midiOut=outputDevice.lock())
-    {
-        if (selectedID == 1)
-        {
-            for (const auto& tr : allTracks)
-            {
-                auto it = mapUuidToTrackEntry.find(tr->getUsedID());
-                if (it != mapUuidToTrackEntry.end() && it->second != nullptr)
-                {
-                    it->second->instrumentAssociated = tr->getInstrumentNumber();
-                    it->second->volumeAssociated = tr->getVolume();
-                    selectedTracks.push_back(*it->second);
-                }
-            }
-        }
-        else if (selectedID == 2)
-        {
-            if (lastSelectedTrack)
-            {
-                auto it = mapUuidToTrackEntry.find(lastSelectedTrack->getUsedID());
-                if (it != mapUuidToTrackEntry.end())
-                    selectedTracks.push_back(*it->second);
-            }
-        }
-        if (selectedTracks.empty())
-        {
-            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Playing tracks", "There are no tracks to play");
-            return;
-        }
-        trackPlayer->setTracks(selectedTracks);
+    const bool hasMidiOut     = outputDevice.lock() != nullptr;
+    const bool hasAudioInject = trackPlayer && bool(trackPlayer->onMidiMessage);
 
-        trackPlayer->syncPlaybackSettings();
-        trackPlayer->start();
-    }
-    else {
-        DBG("Output is null!");
+    if (!hasMidiOut && !hasAudioInject)
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Playing tracks", "No output device selected.");
         return;
     }
+
+    if (selectedID == 1)
+    {
+        for (const auto& tr : allTracks)
+        {
+            auto it = mapUuidToTrackEntry.find(tr->getUsedID());
+            if (it != mapUuidToTrackEntry.end() && it->second != nullptr)
+            {
+                it->second->instrumentAssociated = tr->getInstrumentNumber();
+                it->second->volumeAssociated = tr->getVolume();
+                selectedTracks.push_back(*it->second);
+            }
+        }
+    }
+    else if (selectedID == 2)
+    {
+        if (lastSelectedTrack)
+        {
+            auto it = mapUuidToTrackEntry.find(lastSelectedTrack->getUsedID());
+            if (it != mapUuidToTrackEntry.end())
+                selectedTracks.push_back(*it->second);
+        }
+    }
+
+    if (selectedTracks.empty())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Playing tracks", "There are no tracks to play");
+        return;
+    }
+
+    trackPlayer->setTracks(selectedTracks);
+    trackPlayer->syncPlaybackSettings();
+    trackPlayer->start();
 
 }
 
@@ -1870,6 +1884,14 @@ juce::OwnedArray<Track>& CurrentStyleComponent::getAllTracks()
 MultipleTrackPlayer* CurrentStyleComponent::getTrackPlayer()
 {
     return trackPlayer.get();
+}
+
+std::vector<CurrentStyleComponent::TrackChannelInstrument> CurrentStyleComponent::getTrackChannelInstruments() const
+{
+    std::vector<TrackChannelInstrument> result;
+    for (const auto* track : allTracks)
+        result.push_back({ track->getChannel(), track->getInstrumentNumber() });
+    return result;
 }
 
 void CurrentStyleComponent::syncPercussionTracksVolumeChange(double newVolume)

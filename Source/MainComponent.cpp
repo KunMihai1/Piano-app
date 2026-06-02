@@ -2196,6 +2196,11 @@ void MainComponent::ensureAudioHandlerReady()
             }
         };
     }
+    if (display != nullptr)
+        display->setMidiInjectCallback([this](const juce::MidiMessage& msg) {
+            midiHandler.injectMidiMessage(msg);
+        });
+
     MIDIDevice.getAudioDeviceManager().addAudioCallback(audioHandler.get());
 }
 
@@ -2208,15 +2213,8 @@ void MainComponent::loadSfzForCurrentStyle(const juce::String& overrideStyleId)
     int rightProg = propertiesFile ? propertiesFile->getIntValue(styleId + "_rightInstrumentNumber", 0) : 0;
     audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, leftProg),  1);
     audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, rightProg), 16);
-    if (auto* tp = display->getTrackPlayer())
-    {
-        int j = 0;
-        for (const auto& track : tp->getCurrentTracks())
-        {
-            int ch = (track.type == TrackType::Percussion) ? 10 : (j++ + 2);
-            audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, track.instrumentAssociated), ch);
-        }
-    }
+    for (const auto& t : display->getTrackChannelInstruments())
+        audioHandler->loadSfz(sfzManager.getSfzForStyleInstrument(styleId, t.instrument), t.channel);
 }
 
 void MainComponent::applyCurrentStyleToOutput()
