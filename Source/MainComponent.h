@@ -188,6 +188,8 @@ private:
 
     void applySettingsToChannel(const SoundSettings& s, int channel);
 
+    juce::String applyEffectCC(int ccNumber, int value, int channel);
+
     void getCurrentEffectDeviceIds(juce::String& VID, juce::String& PID);
 
     juce::String getCurrentEffectSettingsKey(const juce::String& styleID);
@@ -369,8 +371,6 @@ private:
     std::unique_ptr<OverlayComponent> overlayWindow=nullptr;
     std::unique_ptr<SoundEffectWindow> soundEffectWindow = nullptr;
     
-    std::mutex styleMutex;
-
     std::vector<Chord> myChordLibrary;
     std::vector<int> currentlyPlayingNotes;
 

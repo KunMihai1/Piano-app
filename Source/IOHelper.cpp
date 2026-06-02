@@ -616,6 +616,17 @@ void EffectSettingsIOHelper::saveEffectsStyle(juce::PropertySet* properties, con
     saveIfFileBacked(properties);
 }
 
+void EffectSettingsIOHelper::saveSingleEffect(juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel, const juce::String& key, int value)
+{
+    if (!properties) return;
+
+    const juce::String ch = (channel == 1) ? "First" : "Second";
+    const juce::String p = getStyleDeviceSettingsPrefix(styleID, VID, PID);
+
+    properties->setValue(p + key + ch, value);
+    saveIfFileBacked(properties);
+}
+
 SoundSettings EffectSettingsIOHelper::loadEffectsStyle(const juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel)
 {
     SoundSettings s;
