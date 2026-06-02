@@ -525,6 +525,35 @@ void MainComponent::applySettingsToChannel(const SoundSettings& s, int channel)
     MIDIDevice.setRandomMod(s.randomMod, channel);
 }
 
+juce::String MainComponent::applyEffectCC(int ccNumber, int value, int channel)
+{
+    switch (ccNumber)
+    {
+        case 74: MIDIDevice.setBrightness(value, channel);  return "brightness";
+        case 11: MIDIDevice.setExpression(value, channel);  return "expression";
+        case 93: MIDIDevice.setChorus(value, channel);      return "chorus";
+        case 71: MIDIDevice.setResonance(value, channel);   return "resonance";
+        case 64: MIDIDevice.setSustainToggle(value, channel); return "sustainToggle";
+
+        case 1:  MIDIDevice.setVibrato(value, channel);     return "vibrato";
+        case 73: MIDIDevice.setAttack(value, channel);      return "attack";
+        case 75: MIDIDevice.setDecay(value, channel);       return "decay";
+        case 72: MIDIDevice.setRelease(value, channel);     return "release";
+
+        case 7:  MIDIDevice.setVolume(value, channel);      return "volume";
+        case 91: MIDIDevice.setReverb(value, channel);      return "reverb";
+        case 94: MIDIDevice.setDelay(value, channel);       return "delay";
+        case 10: MIDIDevice.setPan(value, channel);         return "pan";
+
+        case 80: MIDIDevice.setDistortion(value, channel);  return "distortion";
+        case 76: MIDIDevice.setFilterTrack(value, channel); return "filterTrack";
+        case 92: MIDIDevice.setTremolo(value, channel);     return "tremolo";
+        case 95: MIDIDevice.setRandomMod(value, channel);   return "randomMod";
+
+        default: return {};
+    }
+}
+
 void MainComponent::getCurrentEffectDeviceIds(juce::String& VID, juce::String& PID)
 {
     if (display)
@@ -552,27 +581,18 @@ void MainComponent::loadEffectsFromFile(const juce::String& styleID)
     getCurrentEffectDeviceIds(VID, PID);
     const juce::String settingsKey = styleID + "." + makeDeviceSettingsKey(VID, PID);
 
+    auto it = styleSettingsMap.find(settingsKey);
+    if (it != styleSettingsMap.end())
     {
-        std::lock_guard<std::mutex> lock(styleMutex);
-        auto it = styleSettingsMap.find(settingsKey);
-
-        if (it != styleSettingsMap.end())
-        {
-            firstChannel = it->second.firstHand;
-            secondChannel = it->second.secondHand;
-            applySettingsToChannel(firstChannel, 1);
-            applySettingsToChannel(secondChannel, 16);
-            return;
-        }
+        applySettingsToChannel(it->second.firstHand, 1);
+        applySettingsToChannel(it->second.secondHand, 16);
+        return;
     }
 
     SoundSettings first = EffectSettingsIOHelper::loadEffectsStyle(propertiesFile, styleID, VID, PID, 1);
     SoundSettings second = EffectSettingsIOHelper::loadEffectsStyle(propertiesFile, styleID, VID, PID, 16);
 
-    {
-        std::lock_guard<std::mutex> lock(styleMutex);
-        styleSettingsMap[settingsKey] = StyleSettings{ first, second };
-    }
+    styleSettingsMap[settingsKey] = StyleSettings{ first, second };
 
     applySettingsToChannel(first, 1);
     applySettingsToChannel(second, 16);
@@ -658,58 +678,15 @@ void MainComponent::setCallBacksForEffectWindow()
         getCurrentEffectDeviceIds(VID, PID);
         const juce::String settingsKey = styleID + "." + makeDeviceSettingsKey(VID, PID);
 
-        juce::String key;
+        const juce::String key = applyEffectCC(ccNumber, value, currentChannel);
+        if (key.isEmpty())
+            return;
 
-        switch (ccNumber)
-        {
-            // Line 1 – Tone
-        case 74: key = "brightness"; MIDIDevice.setBrightness(value, currentChannel); break;
-        case 11: key = "expression"; MIDIDevice.setExpression(value, currentChannel); break;
-        case 93: key = "chorus"; MIDIDevice.setChorus(value, currentChannel); break;
-        case 71: key = "resonance"; MIDIDevice.setResonance(value, currentChannel); break;
-        case 64: key = "sustainToggle"; MIDIDevice.setSustainToggle(value, currentChannel); break;
+        StyleSettings& s = styleSettingsMap[settingsKey];
+        if (currentChannel == 1) s.firstHand.setValue(key, value);
+        else if (currentChannel == 16) s.secondHand.setValue(key, value);
 
-            // Line 2 – Envelope
-        case 1:  key = "vibrato"; MIDIDevice.setVibrato(value, currentChannel); break;
-        case 73: key = "attack"; MIDIDevice.setAttack(value, currentChannel); break;
-        case 75: key = "decay"; MIDIDevice.setDecay(value, currentChannel); break;
-        case 72: key = "release"; MIDIDevice.setRelease(value, currentChannel); break;
-
-            // Line 3 – Space
-        case 7:  key = "volume"; MIDIDevice.setVolume(value, currentChannel); break;
-        case 91: key = "reverb"; MIDIDevice.setReverb(value, currentChannel); break;
-        case 94: key = "delay"; MIDIDevice.setDelay(value, currentChannel); break;
-        case 10: key = "pan"; MIDIDevice.setPan(value, currentChannel); break;
-
-            // Line 4 – Modulation
-        case 80: key = "distortion"; MIDIDevice.setDistortion(value, currentChannel); break;
-        case 76: key = "filterTrack"; MIDIDevice.setFilterTrack(value, currentChannel); break;
-        case 92: key = "tremolo"; MIDIDevice.setTremolo(value, currentChannel); break;
-        case 95: key = "randomMod"; MIDIDevice.setRandomMod(value, currentChannel); break;
-
-        default: return;
-        }
-
-        {
-            std::lock_guard<std::mutex> lock(styleMutex);
-            StyleSettings& s = styleSettingsMap[settingsKey];
-
-            if (currentChannel == 1) s.firstHand.setValue(key, value);
-            else if (currentChannel == 16) s.secondHand.setValue(key, value);
-        }
-
-        // Channel suffix
-        if (currentChannel == 1)       key += "First" ;
-        else if (currentChannel == 16) key += "Second" ;
-
-        // FULL KEY with styleID and device prefix
-        key = settingsKey + "." + key;
-
-        if (propertiesFile)
-        {
-            propertiesFile->setValue(key, value);
-            propertiesFile->saveIfNeeded();
-        }
+        EffectSettingsIOHelper::saveSingleEffect(propertiesFile, styleID, VID, PID, currentChannel, key, value);
 
         if (!playButton.isVisible())
         {
@@ -718,7 +695,6 @@ void MainComponent::setCallBacksForEffectWindow()
             if (MIDIDevice.isOpenAudioOUT())
                 midiHandler.injectCC(currentChannel, ccNumber, value);
         }
-
     };
 
 
