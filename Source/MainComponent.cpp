@@ -1249,6 +1249,8 @@ void MainComponent::playButtonInit()
 void MainComponent::colourSelectorButtonInit()
 {
     colourSelectorButton.setButtonText("Particle colours");
+    colourSelectorButton.setLookAndFeel(&playScreenLAF);
+    colourSelectorButton.setColour(juce::TextButton::buttonColourId, AppColours::accent2);
     colourSelectorButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     colourSelectorButton.onClick = [this] {
@@ -1261,6 +1263,8 @@ void MainComponent::colourSelectorButtonInit()
 void MainComponent::instrumentSelectorButtonInit()
 {
     instrumentSelectorButton.setButtonText("Instruments");
+    instrumentSelectorButton.setLookAndFeel(&playScreenLAF);
+    instrumentSelectorButton.setColour(juce::TextButton::buttonColourId, AppColours::accent2);
     instrumentSelectorButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     instrumentSelectorButton.onClick = [this] {
@@ -1406,6 +1410,8 @@ void MainComponent::recordButtonsInit()
 void MainComponent::saveRecordingButtonInit()
 {
     saveRecordingButton.setButtonText("Save recording");
+    saveRecordingButton.setLookAndFeel(&playScreenLAF);
+    saveRecordingButton.setColour(juce::TextButton::buttonColourId, AppColours::accent2);
 
     saveRecordingButton.onClick = [this]{
         saveRecordingToFile();
@@ -1419,6 +1425,8 @@ void MainComponent::saveRecordingButtonInit()
 void MainComponent::playRecordingButtonInit()
 {
     playRecordingFileButton.setButtonText("Play file recording");
+    playRecordingFileButton.setLookAndFeel(&playScreenLAF);
+    playRecordingFileButton.setColour(juce::TextButton::buttonColourId, AppColours::accent2);
 
     playRecordingFileButton.onClick = [this] {
         playRecordingFromFile();
@@ -1555,6 +1563,8 @@ void MainComponent::headerPanelInit()
 void MainComponent::homeButtonInit()
 {
     homeButton.setButtonText("Home");
+    homeButton.setLookAndFeel(&playScreenLAF);
+    homeButton.setColour(juce::TextButton::buttonColourId, AppColours::accent2);
     homeButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     homeButton.onClick = [this] {
@@ -1695,6 +1705,8 @@ void MainComponent::annotationInit()
 void MainComponent::chordHelperButtonInit()
 {
     chordHelperButton.setButtonText("Chord helper");
+    chordHelperButton.setLookAndFeel(&playScreenLAF);
+    chordHelperButton.setColour(juce::TextButton::buttonColourId, AppColours::accent2);
     chordHelperButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
     chordHelperButton.onClick = [this]()
