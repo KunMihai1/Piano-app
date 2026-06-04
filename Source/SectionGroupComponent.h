@@ -12,6 +12,7 @@
 
 #include <JuceHeader.h>
 #include "CustomToolTip.h"
+#include "PlayScreenLookAndFeel.h"
 
 class SectionGroupComponent: public juce::Component {
 public:
@@ -36,6 +37,7 @@ public:
     juce::ToggleButton* getToggleButton();
 
 private:
+    PlayScreenLookAndFeel laf;
     juce::Label titleLabel;
     std::vector<std::unique_ptr<juce::TextButton>> buttons;
     std::unique_ptr<juce::ToggleButton> toggleButton;
