@@ -90,7 +90,7 @@ void SectionGroupComponent::resized()
         toDivideWith++;
 
     auto row = area;
-    int width = row.getWidth() / toDivideWith;
+    int width = juce::jmax(35, row.getWidth() / toDivideWith);
 
     for (int i = 0; i < count; i++)
     {

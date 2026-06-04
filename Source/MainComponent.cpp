@@ -268,7 +268,15 @@ void MainComponent::resized()
 
     //volumeKnob.setBounds(getWidth() / 2, 0, 70, 50);
 
-    display->setBounds((headerPanel.getWidth()-400)/2, 0, 400, 100);
+    // Sections (intros/endings) start right after playRecordingFileButton and need ~240px minimum.
+    // Push display rightward on narrow screens rather than collapsing the sections.
+    {
+        const int minSectionWidth = 240;
+        int sectionStart = playRecordingFileButton.getRight() + 10;
+        int displayX = juce::jmax(sectionStart + minSectionWidth + 5,
+                                   (headerPanel.getWidth() - 400) / 2);
+        display->setBounds(displayX, 0, 400, 100);
+    }
 
     if (noteLayer)
     {
