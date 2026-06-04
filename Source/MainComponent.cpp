@@ -2602,10 +2602,20 @@ void MainComponent::Panel::paint(juce::Graphics& g)
 
 void MainComponent::headerPanel::paint(juce::Graphics& g)
 {
-    juce::Colour startColour = juce::Colour(128, 0, 32);
-    juce::Colour endColour = juce::Colour(212, 175, 55); 
+    // Base dark fill
+    g.fillAll(AppColours::panelBg);
 
-    juce::ColourGradient gradient(startColour, 0, 0, endColour, 0, 50, false);
-    g.setGradientFill(gradient);
+    // Subtle purple gradient overlay (fades from top)
+    juce::ColourGradient overlay(AppColours::accent2.withAlpha(0.18f), 0.0f, 0.0f,
+                                 juce::Colours::transparentBlack, 0.0f, (float)getHeight(), false);
+    g.setGradientFill(overlay);
     g.fillAll();
+
+    // Top accent strip
+    g.setColour(AppColours::accent2);
+    g.fillRect(0, 0, getWidth(), 3);
+
+    // Bottom teal separator (horizon between controls and note area)
+    g.setColour(AppColours::accent3);
+    g.fillRect(0, getHeight() - 2, getWidth(), 2);
 }
