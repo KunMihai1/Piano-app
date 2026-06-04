@@ -2,17 +2,22 @@
 #include "InstrumentHandler.h"
 #include "MidiDevicesDB.h"
 
-MidiDevice::MidiDevice() : currentDeviceIDin { 0 }, currentDeviceIDout{ 0 }, identifier{ "" }, minNote{ 0 }, maxNote{ 127 } {
+MidiDevice::MidiDevice() : currentDeviceIDin{ 0 }, currentDeviceIDout{ 0 }, currentDeviceIDAudioOUT{ 0 }, identifier { "" }, minNote{ 0 }, maxNote{ 127 } {
 	this->currentDevicesIN.push_back("PC Keyboard");
 	styleSettings = std::make_unique<StyleSettings>();
 }
 
 MidiDevice::~MidiDevice()
 {
+	audioDeviceManager.closeAudioDevice();
+
 	this->CachedDevicesIN.clear();
 	this->currentDevicesIN.clear();
 	this->CachedDevicesOUT.clear();
 	this->currentDevicesOUT.clear();
+	this->CachedDevicesAudioOUT.clear();
+	this->currentDevicesAudioOUT.clear();
+	this->audioDeviceTypes.clear();
 	if (this -> currentDeviceUSEDin)
 	{
 		this->currentDeviceUSEDin->stop();
@@ -41,7 +46,7 @@ void MidiDevice::getAvailableDevicesMidiIN(std::vector<std::string>& devices)
 	if (devices.empty())
 	{
 		devices.clear();
-		devices.push_back("No devices found!");
+		devices.push_back("No MIDI INPUT devices found!");
 	}
 }
 
@@ -51,9 +56,22 @@ void MidiDevice::getAvailableDevicesMidiOUT(std::vector<std::string>& devices) {
 	if (devices.empty())
 	{
 		devices.clear();
-		devices.push_back("No devices found!");
+		devices.push_back("No MIDI OUTPUT devices found!");
 	}
 }
+
+void MidiDevice::getAvailableAudioDevicesOUT(std::vector<std::string>& devices)
+{
+	refreshDeviceList(2);
+	devices = currentDevicesAudioOUT;
+	if (devices.empty())
+	{
+		devices.clear();
+		devices.push_back("No AUDIO OUTPUT devices found!");
+	}
+}
+
+
 
 juce::String MidiDevice::getDeviceNameBasedOnIndex(int Index, int choice)
 {
@@ -136,6 +154,47 @@ void MidiDevice::refreshDeviceList(int choice)
 		}
 		else
 			this->devicesChange = false;
+	}
+	else if (choice == 2)
+	{
+		if (!audioDeviceTypesInitialized)
+		{
+			audioDeviceManager.createAudioDeviceTypes(audioDeviceTypes);
+			audioDeviceTypesInitialized = true;
+		}
+
+		std::vector<std::string> newDeviceNames;
+		std::vector<AudioOutputDeviceInfo> newDevices;
+
+		for (auto* deviceType : audioDeviceTypes)
+		{
+			if (deviceType == nullptr)
+				continue;
+
+			deviceType->scanForDevices();
+
+			const auto typeName = deviceType->getTypeName();
+			const auto outputNames = deviceType->getDeviceNames(false);
+
+			for (const auto& outputName : outputNames)
+			{
+				if (outputName.isEmpty())
+					continue;
+
+				newDevices.push_back({ typeName, outputName });
+				newDeviceNames.push_back((typeName + ": " + outputName).toStdString());
+			}
+		}
+
+		if (newDevices != this->CachedDevicesAudioOUT)
+		{
+			this->CachedDevicesAudioOUT = newDevices;
+			this->currentDevicesAudioOUT = newDeviceNames;
+			this->devicesChange = true;
+		}
+		else
+			this->devicesChange = false;
+
 	}
 }
 
@@ -268,6 +327,43 @@ bool MidiDevice::deviceOpenOUT(int DeviceIndex) {
 	return false;
 }
 
+bool MidiDevice::deviceOpenAudioOUT(int DeviceIndex)
+{
+	refreshDeviceList(2);
+
+	if (DeviceIndex < 0 || DeviceIndex >= this->CachedDevicesAudioOUT.size())
+	{
+		this->isdeviceOpenAudioOUT = false;
+		return false;
+	}
+
+	const auto& selectedDevice = this->CachedDevicesAudioOUT[DeviceIndex];
+
+	deviceCloseAudioOUT();
+
+	audioDeviceManager.setCurrentAudioDeviceType(selectedDevice.typeName, true);
+
+	juce::AudioDeviceManager::AudioDeviceSetup setup;
+	audioDeviceManager.getAudioDeviceSetup(setup);
+
+	setup.inputDeviceName = {};
+	setup.outputDeviceName = selectedDevice.deviceName;
+	setup.useDefaultInputChannels = false;
+	setup.useDefaultOutputChannels = true;
+
+	const auto result = audioDeviceManager.initialise(0, 2, nullptr, false, {}, &setup);
+
+	if (result.isNotEmpty() || audioDeviceManager.getCurrentAudioDevice() == nullptr)
+	{
+		this->isdeviceOpenAudioOUT = false;
+		return false;
+	}
+
+	this->currentDeviceIDAudioOUT = DeviceIndex;
+	this->isdeviceOpenAudioOUT = true;
+	return true;
+}
+
 bool MidiDevice::isOpenIN() const
 {
 	return this->isdeviceOpenIN;
@@ -276,6 +372,11 @@ bool MidiDevice::isOpenIN() const
 bool MidiDevice::isOpenOUT() const
 {
 	return this->isdeviceOpenOUT;
+}
+
+bool MidiDevice::isOpenAudioOUT() const
+{
+	return this->isdeviceOpenAudioOUT;
 }
 
 void MidiDevice::deviceCloseIN()
@@ -298,6 +399,12 @@ void MidiDevice::deviceCloseOUT()
 	}
 }
 
+void MidiDevice::deviceCloseAudioOUT()
+{
+	audioDeviceManager.closeAudioDevice();
+	isdeviceOpenAudioOUT = false;
+}
+
 int MidiDevice::getDeviceIndexIN() const
 {
 	return this->currentDeviceIDin;
@@ -313,6 +420,21 @@ int MidiDevice::getDeviceIndexOUT() const {
 
 void MidiDevice::setDeviceOUT(const int index) {
 	this->currentDeviceIDout = index;
+}
+
+void MidiDevice::setDeviceAudioOUT(const int index)
+{
+	this->currentDeviceIDAudioOUT = index;
+}
+
+int MidiDevice::getDeviceIndexAudioOUT() const
+{
+	return this->currentDeviceIDAudioOUT;
+}
+
+juce::AudioDeviceManager& MidiDevice::getAudioDeviceManager()
+{
+	return this->audioDeviceManager;
 }
 
 std::weak_ptr<juce::MidiInput> MidiDevice::getDeviceIN() const
@@ -707,32 +829,38 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	int ok = 0;
 	setCorrectChannelBasedOnHand(note);
 	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
+    
+	if (note != this->startNoteSetting && note!=this->endNoteSetting)
+	{
+		ok = 1;
+	}
+	else if(note==this->startNoteSetting)
+	{
+		if(onStartNoteSetting)
+			onStartNoteSetting();
+	}
+	else if (note == this->endNoteSetting)
+	{
+		if (onEndNoteSetting)
+			onEndNoteSetting();
+	}
+
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
-		//here we need to add and if the note received is by chance, start note or end note, do to the according things.
-		//DBG("The note is" + juce::String(note) + " the setting one is:" + juce::String(startNoteSetting));
-		if (note != this->startNoteSetting && note!=this->endNoteSetting)
+		if (ok)
 		{
-			ok = 1;
-
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
 			midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocity));
 		}
-		else if(note==this->startNoteSetting)
-		{
-			if(onStartNoteSetting)
-				onStartNoteSetting();
-		}
-		else if (note == this->endNoteSetting)
-		{
-			if (onEndNoteSetting)
-				onEndNoteSetting();
-		}
 	}
+
 	if (ok)
 	{
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocity));
+
+		const juce::ScopedLock lock(midiMutex);
+		incomingMidiMessages.addEvent(juce::MidiMessage::noteOn(channel, transposedNote, velocity), 0);
 	}
 }
 
@@ -746,6 +874,9 @@ void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
 	}
 	listeners.call(&MidiHandlerListener::noteOffReceived,note);
 	listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOff(channel, note));
+
+	const juce::ScopedLock lock(midiMutex);
+	incomingMidiMessages.addEvent(juce::MidiMessage::noteOff(channel, transposedNote, velocity), 0);
 } 
 
 void MidiHandler::allOffKeyboard()
@@ -854,6 +985,17 @@ void MidiHandler::applyInstrumentPreset(int programNumber, std::vector<std::pair
 		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::programChange(channel, programNumber));
 
 	}
+}
+
+void MidiHandler::injectMidiMessage(const juce::MidiMessage& msg)
+{
+	const juce::ScopedLock lock(midiMutex);
+	incomingMidiMessages.addEvent(msg, 0);
+}
+
+void MidiHandler::injectCC(int channel, int ccNumber, int value)
+{
+	injectMidiMessage(juce::MidiMessage::controllerEvent(channel, ccNumber, juce::jlimit(0, 127, value)));
 }
 
 void MidiHandler::setPlayableRange(int nrKeys)

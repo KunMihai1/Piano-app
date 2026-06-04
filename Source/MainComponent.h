@@ -30,7 +30,9 @@
 #include "PlaytimeTracker.h"
 #include "SoundEffectWindowComponent.h"
 #include "styleSettingsEntry.h"
-
+#include "SFZLibraryUI.h"
+#include "AudioHandler.h"
+#include "PlayScreenLookAndFeel.h"
 /**
  * @class SmoothRotarySlider
  * @brief Custom rotary slider with smooth dragging behavior.
@@ -137,6 +139,9 @@ public:
     /** @brief Paints the main window */
     void paint(juce::Graphics& g) override;
 
+    /** @brief Paints loading overlay on top of all children */
+    void paintOverChildren(juce::Graphics& g) override;
+
     void focusGained(juce::Component::FocusChangeType) override;
 
     void globalFocusChanged(juce::Component* focusedComponent) override;
@@ -187,6 +192,8 @@ private:
 
     void applySettingsToChannel(const SoundSettings& s, int channel);
 
+    juce::String applyEffectCC(int ccNumber, int value, int channel);
+
     void getCurrentEffectDeviceIds(juce::String& VID, juce::String& PID);
 
     juce::String getCurrentEffectSettingsKey(const juce::String& styleID);
@@ -206,6 +213,10 @@ private:
     void setInitialValuesFromSettingsFileEffectWindow();
 
     void sendEffectsBeforePlaying();
+    void disconnectCurrentOutput();
+    void ensureAudioHandlerReady();
+    void loadSfzForCurrentStyle(const juce::String& styleId = {});
+    void applyCurrentStyleToOutput();
 
     // UI toggles
     void toggleSettingsPanel();
@@ -292,10 +303,12 @@ private:
     juce::PropertiesFile* propertiesFile = nullptr; ///< Pointer to properties file
 
     CustomLookAndFeel customLookAndFeel; ///< Custom look and feel
+    PlayScreenLookAndFeel playScreenLAF;
     juce::Image cachedImageMainWindow;   ///< Cached main window image
     juce::Image playBackground;          ///< Background when playing
     juce::Image currentBackground;       ///< Currently displayed background
     juce::Label helpIcon;                ///< Help icon label
+    juce::Label openingAudioLabel;       ///< Loading overlay label
     juce::TooltipWindow tooltipWindow{ this, 200 }; ///< Tooltip manager
 
     std::weak_ptr<juce::MidiInput> deviceOpenedIN; ///< Currently opened MIDI input device
@@ -311,6 +324,7 @@ private:
 
     std::vector<std::string> devicesIN;  ///< List of input devices
     std::vector<std::string> devicesOUT; ///< List of output devices
+	std::vector<std::string> devicesAudioOUT; ///< List of audio output devices
 
     int last=-1, lastOfLast=-1;
 
@@ -362,13 +376,15 @@ private:
     std::unique_ptr<OverlayComponent> overlayWindow=nullptr;
     std::unique_ptr<SoundEffectWindow> soundEffectWindow = nullptr;
     
-    std::mutex styleMutex;
-
     std::vector<Chord> myChordLibrary;
     std::vector<int> currentlyPlayingNotes;
 
     std::unique_ptr<PlaytimeTracker> playtimeTracker;
     std::shared_ptr<SupabaseClient> client;
+
+    SFZLibraryManager sfzManager;
+    std::unique_ptr<SFZLibraryUI> sfzLibraryUI;
+    std::unique_ptr<AudioHandler> audioHandler;
 
     //==========================================================================
     // Panels

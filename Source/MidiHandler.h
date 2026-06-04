@@ -32,6 +32,8 @@ public:
 	 */
 	void getAvailableDevicesMidiOUT(std::vector<std::string>& devices);
 
+	void getAvailableAudioDevicesOUT(std::vector<std::string>& devices);
+
 	/**
 	 * @brief Gets a device name, based on its index in the list of devices
 	 * @param Index the index of the device 
@@ -64,6 +66,8 @@ public:
 	 */
 	bool deviceOpenOUT(int DeviceIndex);
 
+	bool deviceOpenAudioOUT(int DeviceIndex);
+
 	/**
 	 * @brief Checks if a MIDI input device is currently open
 	 * @return true if a device is open, false otherwise
@@ -76,12 +80,15 @@ public:
 	 */
 	bool isOpenOUT() const;
 
+	bool isOpenAudioOUT() const;
+
 	/** @brief Closes the currently open MIDI input device */
 	void deviceCloseIN();
 
 	/** @brief Closes the currently open MIDI output device */
 	void deviceCloseOUT();
 
+	void deviceCloseAudioOUT();
 
 	/**
 	 * @brief Gets the index of the currently selected MIDI input device
@@ -106,6 +113,12 @@ public:
 	 * @param index Index of the device to set as active
 	 */
 	void setDeviceOUT(const int index);
+
+	void setDeviceAudioOUT(const int index);
+
+	int getDeviceIndexAudioOUT() const;
+
+	juce::AudioDeviceManager& getAudioDeviceManager();
 
 	/**
 	 * @brief Gets the currently active MIDI input device as a weak pointer
@@ -262,6 +275,18 @@ public:
 
 private:
 	friend class MidiHandler;
+
+	struct AudioOutputDeviceInfo
+	{
+		juce::String typeName;
+		juce::String deviceName;
+
+		bool operator==(const AudioOutputDeviceInfo& other) const
+		{
+			return typeName == other.typeName && deviceName == other.deviceName;
+		}
+	};
+
 	void refreshDeviceList(int choice = 0);
 
 	void refreshDeviceListNew(std::vector<std::pair<juce::String,juce::String>>& vec, int choice=0);
@@ -273,8 +298,15 @@ private:
 	std::vector<std::string> currentDevicesOUT;
 	juce::Array<juce::MidiDeviceInfo> CachedDevicesOUT;
 
+	std::vector<std::string> currentDevicesAudioOUT;
+	std::vector<AudioOutputDeviceInfo> CachedDevicesAudioOUT;
+	juce::AudioDeviceManager audioDeviceManager;
+	juce::OwnedArray<juce::AudioIODeviceType> audioDeviceTypes;
+	bool audioDeviceTypesInitialized = false;
+
 	int currentDeviceIDin;
 	int currentDeviceIDout;
+	int currentDeviceIDAudioOUT;
 
 
 	std::shared_ptr<juce::MidiInput> currentDeviceUSEDin = nullptr;
@@ -284,6 +316,7 @@ private:
 	bool devicesChange = false;
 	bool isdeviceOpenIN = false;
 	bool isdeviceOpenOUT = false;
+	bool isdeviceOpenAudioOUT = false;
 
 	bool deviceCheckedForUpdateAtLeastOnce = false;
 	juce::String identifier;
@@ -360,6 +393,9 @@ public:
 
 	/** @brief Turns off all currently active notes from the keyboard */
 	void allOffKeyboard();
+
+	void injectMidiMessage(const juce::MidiMessage& msg);
+	void injectCC(int channel, int ccNumber, int value);
 
 	/**
 	 * @brief Sets the instrument program (patch) number

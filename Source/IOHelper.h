@@ -15,6 +15,7 @@
 #include "TrackEntry.h"
 #include "StyleSection.h"
 #include "PlayBackSettingsCustomComponent.h"
+#include "SFZlibrary.h"
 
 /**
  * @class IOHelper
@@ -152,5 +153,14 @@ class EffectSettingsIOHelper
 public:
     static void saveEffectsStyle(juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel, const SoundSettings& s);
 
+    static void saveSingleEffect(juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel, const juce::String& key, int value);
+
     static SoundSettings loadEffectsStyle(const juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel);
+};
+
+class SFZLibraryIOHelper
+{
+public:
+    static void saveToFile(const juce::File& file, const SFZLibraryData& data);
+    static void loadFromFile(const juce::File& file, SFZLibraryData& data);
 };
