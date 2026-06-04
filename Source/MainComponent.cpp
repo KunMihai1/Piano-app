@@ -1475,13 +1475,11 @@ void MainComponent::displayInit()
             openingAudioLabel.setText("Preparing style...", juce::dontSendNotification);
             openingAudioLabel.setVisible(true);
             loadSfzForCurrentStyle(styleID);
-            // Fallback hide: if no SFZ file actually changed, onSfzLoadComplete won't fire
-            juce::Timer::callAfterDelay(300,
-                [safeThis = juce::Component::SafePointer<MainComponent>(this)]()
-                {
-                    if (safeThis)
-                        safeThis->openingAudioLabel.setVisible(false);
-                });
+            // Fallback hide if no SFZ file actually changed (onSfzLoadComplete won't fire)
+            juce::Timer::callAfterDelay(300, [this]()
+            {
+                openingAudioLabel.setVisible(false);
+            });
         }
     };
 }
