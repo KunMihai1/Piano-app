@@ -22,6 +22,7 @@
 #include "TrackPlayerListener.h"
 #include "StyleSection.h"
 #include "DisplayListener.h"
+#include "PlayScreenLookAndFeel.h"
 
 /**
  * @class TrackListComponent
@@ -170,6 +171,8 @@ private:
 
     /** @brief Callback invoked when a user selects a track to play or edit. */
     std::function<void(int)> trackChosenCallBack;
+
+    PlayScreenLookAndFeel laf;
 
     /** @brief ListBox displaying folders or tracks. */
     juce::ListBox listBox;
@@ -812,6 +815,7 @@ private:
     /** @brief Populates the container with `StyleViewComponent`s based on `stylesNames`. */
     void populate();
 
+    PlayScreenLookAndFeel laf;
     juce::OwnedArray<StyleViewComponent> allStyles;  ///< All style components.
     std::function<void(const juce::String&)> onStyleClicked;  ///< Callback when a style is clicked.
     std::vector<juce::String> stylesNames;  ///< Names of all styles.
