@@ -35,7 +35,7 @@ MainComponent::MainComponent()
 
     loginWindowInitialize();
 
-    openingAudioLabel.setText("Opening Audio Device...", juce::dontSendNotification);
+    openingAudioLabel.setText("Preparing session...", juce::dontSendNotification);
     openingAudioLabel.setJustificationType(juce::Justification::centred);
     openingAudioLabel.setFont(juce::Font(24.0f, juce::Font::bold));
     openingAudioLabel.setColour(juce::Label::textColourId, juce::Colours::white);
@@ -1471,7 +1471,18 @@ void MainComponent::displayInit()
             sendEffectsBeforePlaying();
 
         if (MIDIDevice.isOpenAudioOUT())
+        {
+            openingAudioLabel.setText("Preparing style...", juce::dontSendNotification);
+            openingAudioLabel.setVisible(true);
             loadSfzForCurrentStyle(styleID);
+            // Fallback hide: if no SFZ file actually changed, onSfzLoadComplete won't fire
+            juce::Timer::callAfterDelay(300,
+                [safeThis = juce::Component::SafePointer<MainComponent>(this)]()
+                {
+                    if (safeThis)
+                        safeThis->openingAudioLabel.setVisible(false);
+                });
+        }
     };
 }
 
@@ -1485,8 +1496,9 @@ void MainComponent::toggleButtonInit()
         noteLayer->setSpawnParticleState(particleToggle.getToggleState());
     };
 
-    particleToggle.setColour(juce::ToggleButton::tickColourId, juce::Colours::green);
-    particleToggle.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colours::grey);
+    particleToggle.setColour(juce::ToggleButton::textColourId,        AppColours::titleText);
+    particleToggle.setColour(juce::ToggleButton::tickColourId,         AppColours::accent3);
+    particleToggle.setColour(juce::ToggleButton::tickDisabledColourId, AppColours::rowLabel);
 
     particleToggle.setToggleState(false,juce::dontSendNotification);
 
@@ -1581,8 +1593,9 @@ void MainComponent::toggleHandButtonsInit()
     leftHandInstrumentToggle.setButtonText("Left hand");
     leftHandInstrumentToggle.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
-    leftHandInstrumentToggle.setColour(juce::ToggleButton::tickColourId, juce::Colours::green);
-    leftHandInstrumentToggle.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colours::grey);
+    leftHandInstrumentToggle.setColour(juce::ToggleButton::textColourId,        AppColours::titleText);
+    leftHandInstrumentToggle.setColour(juce::ToggleButton::tickColourId,         AppColours::accent3);
+    leftHandInstrumentToggle.setColour(juce::ToggleButton::tickDisabledColourId, AppColours::rowLabel);
 
     leftHandInstrumentToggle.setToggleState(false,juce::dontSendNotification);
     headerPanel.addAndMakeVisible(leftHandInstrumentToggle);
@@ -1592,8 +1605,9 @@ void MainComponent::toggleHandButtonsInit()
     rightHandInstrumentToggle.setButtonText("Right hand");
     rightHandInstrumentToggle.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
-    rightHandInstrumentToggle.setColour(juce::ToggleButton::tickColourId, juce::Colours::green);
-    rightHandInstrumentToggle.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colours::grey);
+    rightHandInstrumentToggle.setColour(juce::ToggleButton::textColourId,        AppColours::titleText);
+    rightHandInstrumentToggle.setColour(juce::ToggleButton::tickColourId,         AppColours::accent3);
+    rightHandInstrumentToggle.setColour(juce::ToggleButton::tickDisabledColourId, AppColours::rowLabel);
 
     rightHandInstrumentToggle.setToggleState(false, juce::dontSendNotification);
     headerPanel.addAndMakeVisible(rightHandInstrumentToggle);
@@ -1684,8 +1698,9 @@ void MainComponent::annotationInit()
     noteNumbersAnnotation.setButtonText("Note annotation");
     noteNumbersAnnotation.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
-    noteNumbersAnnotation.setColour(juce::ToggleButton::tickColourId, juce::Colours::green);
-    noteNumbersAnnotation.setColour(juce::ToggleButton::tickDisabledColourId, juce::Colours::grey);
+    noteNumbersAnnotation.setColour(juce::ToggleButton::textColourId,        AppColours::titleText);
+    noteNumbersAnnotation.setColour(juce::ToggleButton::tickColourId,         AppColours::accent3);
+    noteNumbersAnnotation.setColour(juce::ToggleButton::tickDisabledColourId, AppColours::rowLabel);
 
     noteNumbersAnnotation.setToggleState(false, juce::dontSendNotification);
     headerPanel.addAndMakeVisible(noteNumbersAnnotation);
@@ -2184,12 +2199,12 @@ void MainComponent::ensureAudioHandlerReady()
     {
         audioHandler = std::make_unique<AudioHandler>(midiHandler);
         audioHandler->onSfzLoadStart = [this]() {
-            openingAudioLabel.setText("Configuring instrument...", juce::dontSendNotification);
+            openingAudioLabel.setText("Preparing style...", juce::dontSendNotification);
             openingAudioLabel.setVisible(true);
         };
         audioHandler->onSfzLoadComplete = [this]() {
             openingAudioLabel.setVisible(false);
-            openingAudioLabel.setText("Opening Audio Device...", juce::dontSendNotification);
+            openingAudioLabel.setText("Preparing session...", juce::dontSendNotification);
         };
         audioHandler->onNoSfzForChannels = [this](int channelMask) {
             juce::String channels;
