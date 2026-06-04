@@ -41,11 +41,11 @@ void StyleSectionComponent::applyChangeColour(juce::TextButton& button, bool act
 {
     if (activated)
     {
-        button.removeColour(juce::TextButton::buttonColourId);
+        button.setColour(juce::TextButton::buttonColourId, AppColours::accent2);
     }
     else
     {
-        button.setColour(juce::TextButton::buttonColourId, juce::Colours::green.withAlpha(0.8f));
+        button.setColour(juce::TextButton::buttonColourId, AppColours::accent3.withAlpha(0.85f));
     }
 
     button.repaint();
