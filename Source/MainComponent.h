@@ -139,6 +139,9 @@ public:
     /** @brief Paints the main window */
     void paint(juce::Graphics& g) override;
 
+    /** @brief Paints loading overlay on top of all children */
+    void paintOverChildren(juce::Graphics& g) override;
+
     void focusGained(juce::Component::FocusChangeType) override;
 
     void globalFocusChanged(juce::Component* focusedComponent) override;
