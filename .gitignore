@@ -42,3 +42,4 @@ Doxyfile
 /latex
 /modules/*
 !/modules/SFZero/
+/docs
