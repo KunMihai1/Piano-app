@@ -1100,7 +1100,7 @@ StyleViewComponent::StyleViewComponent(const juce::String& styleName)
 {
     label.setFont(juce::Font(18.0f, juce::Font::bold));
     label.setText(styleName, juce::dontSendNotification);
-    label.setColour(juce::Label::textColourId, juce::Colours::cyan);
+    label.setColour(juce::Label::textColourId, AppColours::accent3);
     label.setInterceptsMouseClicks(true, false);
     label.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
@@ -1243,6 +1243,8 @@ StylesListComponent::StylesListComponent(std::vector<juce::String> stylesNamesOu
     addAndMakeVisible(addButton);
 
     addButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
+    addButton.setLookAndFeel(&laf);
+    addButton.setColour(juce::TextButton::buttonColourId, AppColours::accent7);
 
     addButton.onClick = [this]()
     {
@@ -1276,20 +1278,16 @@ void StylesListComponent::resized()
 
 void StylesListComponent::paint(juce::Graphics& g)
 {
-    g.fillAll(juce::Colours::black);
-
+    g.fillAll(AppColours::panelBg);
 
     const int controlBarHeight = 24;
 
-    auto lightColor = juce::Colour::fromRGB(80, 80, 80);
-    auto darkColor = juce::Colour::fromRGB(40, 40, 40);
-
-    juce::ColourGradient gradient(lightColor, 0, 0, darkColor, 0, (float)controlBarHeight, false);
+    juce::ColourGradient gradient(AppColours::cardBg.brighter(0.05f), 0, 0,
+                                  AppColours::cardBg, 0, (float)controlBarHeight, false);
     g.setGradientFill(gradient);
     g.fillRect(0, 0, getWidth(), controlBarHeight);
 
-    auto borderColor = juce::Colours::darkgrey.withAlpha(0.3f);
-    g.setColour(borderColor);
+    g.setColour(AppColours::separator);
     g.drawLine(0.0f, (float)(controlBarHeight - 1), (float)getWidth(), (float)(controlBarHeight - 1), 1.0f);
 }
 
@@ -2884,6 +2882,15 @@ TrackListComponent::TrackListComponent(std::shared_ptr<std::deque<TrackEntry>> t
     removeButtonFolder.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     renameButtonFolder.setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
+    addButtonFolder.setLookAndFeel(&laf);
+    addButtonFolder.setColour(juce::TextButton::buttonColourId, AppColours::accent7);
+
+    removeButtonFolder.setLookAndFeel(&laf);
+    removeButtonFolder.setColour(juce::TextButton::buttonColourId, AppColours::accent6);
+
+    renameButtonFolder.setLookAndFeel(&laf);
+    renameButtonFolder.setColour(juce::TextButton::buttonColourId, AppColours::accent4);
+
     addButtonFolder.onClick = [this] {
         addToFolderList();
     };
@@ -2978,11 +2985,11 @@ void TrackListComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 void TrackListComponent::paintListBoxItem(int rowNumber, juce::Graphics& g, int width, int height, bool rowIsSelected)
 {
     if (rowIsSelected)
-        g.fillAll(juce::Colours::lightblue);
+        g.fillAll(AppColours::accent2.withAlpha(0.35f));
     else
-        g.fillAll(juce::Colours::white);
+        g.fillAll(AppColours::panelBg);
 
-    g.setColour(juce::Colours::black);
+    g.setColour(AppColours::titleText);
 
     juce::String label;
 
@@ -2999,7 +3006,7 @@ void TrackListComponent::paintListBoxItem(int rowNumber, juce::Graphics& g, int 
 
     g.drawText(label, 5, 0, width - 10, height, juce::Justification::centredLeft);
 
-    g.setColour(juce::Colours::lightgrey);
+    g.setColour(AppColours::separator);
     g.drawRect(0, 0, width, height, 1);
 }
 
@@ -3571,6 +3578,17 @@ void TrackListComponent::initializeTracksFromList()
     removeButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
     renameButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
 
+    backButton->setLookAndFeel(&laf);
+    backButton->setColour(juce::TextButton::buttonColourId, AppColours::accent2);
+
+    addButton->setLookAndFeel(&laf);
+    addButton->setColour(juce::TextButton::buttonColourId, AppColours::accent7);
+
+    removeButton->setLookAndFeel(&laf);
+    removeButton->setColour(juce::TextButton::buttonColourId, AppColours::accent6);
+
+    renameButton->setLookAndFeel(&laf);
+    renameButton->setColour(juce::TextButton::buttonColourId, AppColours::accent4);
 
     backButton->onClick = [this]() {
         backToFolderView();
