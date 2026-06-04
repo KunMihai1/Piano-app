@@ -616,6 +616,17 @@ void EffectSettingsIOHelper::saveEffectsStyle(juce::PropertySet* properties, con
     saveIfFileBacked(properties);
 }
 
+void EffectSettingsIOHelper::saveSingleEffect(juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel, const juce::String& key, int value)
+{
+    if (!properties) return;
+
+    const juce::String ch = (channel == 1) ? "First" : "Second";
+    const juce::String p = getStyleDeviceSettingsPrefix(styleID, VID, PID);
+
+    properties->setValue(p + key + ch, value);
+    saveIfFileBacked(properties);
+}
+
 SoundSettings EffectSettingsIOHelper::loadEffectsStyle(const juce::PropertySet* properties, const juce::String& styleID, const juce::String& VID, const juce::String& PID, int channel)
 {
     SoundSettings s;
@@ -647,4 +658,97 @@ SoundSettings EffectSettingsIOHelper::loadEffectsStyle(const juce::PropertySet* 
     s.randomMod = properties->getIntValue(p + "randomMod" + suffix, s.randomMod);
 
     return s;
+}
+
+void SFZLibraryIOHelper::saveToFile(const juce::File& file, const SFZLibraryData& data)
+{
+    auto* rootObj = new juce::DynamicObject();
+    juce::var rootVar(rootObj);
+
+    juce::Array<juce::var> libraryArray;
+    for (const auto& entry : data.library)
+    {
+        auto* entryObj = new juce::DynamicObject();
+        entryObj->setProperty("id", entry.id);
+        entryObj->setProperty("name", entry.name);
+        entryObj->setProperty("sfzPath", entry.sfzPath);
+        libraryArray.add(juce::var(entryObj));
+    }
+    rootObj->setProperty("library", libraryArray);
+
+    auto* mappingsObj = new juce::DynamicObject();
+    for (const auto& [styleId, instruments] : data.styleMappings)
+    {
+        auto* instObj = new juce::DynamicObject();
+        for (const auto& [instNum, entryId] : instruments)
+        {
+            instObj->setProperty(juce::String(instNum), entryId);
+        }
+        mappingsObj->setProperty(styleId, juce::var(instObj));
+    }
+    rootObj->setProperty("styleMappings", juce::var(mappingsObj));
+
+    juce::String jsonString = juce::JSON::toString(rootVar);
+    file.getParentDirectory().createDirectory();
+    file.replaceWithText(jsonString);
+}
+
+void SFZLibraryIOHelper::loadFromFile(const juce::File& file, SFZLibraryData& data)
+{
+    data.library.clear();
+    data.styleMappings.clear();
+
+    if (!file.existsAsFile())
+        return;
+
+    juce::String jsonString = file.loadFileAsString();
+    juce::var jsonVar = juce::JSON::parse(jsonString);
+
+    if (!jsonVar.isObject())
+        return;
+
+    auto* rootObj = jsonVar.getDynamicObject();
+    if (!rootObj)
+        return;
+
+    if (rootObj->hasProperty("library"))
+    {
+        auto libraryVar = rootObj->getProperty("library");
+        if (libraryVar.isArray())
+        {
+            auto* libraryArray = libraryVar.getArray();
+            for (const auto& entryVar : *libraryArray)
+            {
+                if (auto* entryObj = entryVar.getDynamicObject())
+                {
+                    SFZLibraryEntry entry;
+                    entry.id = entryObj->getProperty("id").toString();
+                    entry.name = entryObj->getProperty("name").toString();
+                    entry.sfzPath = entryObj->getProperty("sfzPath").toString();
+                    data.library.push_back(entry);
+                }
+            }
+        }
+    }
+
+    if (rootObj->hasProperty("styleMappings"))
+    {
+        auto mappingsVar = rootObj->getProperty("styleMappings");
+        if (auto* mappingsObj = mappingsVar.getDynamicObject())
+        {
+            for (auto& stylePair : mappingsObj->getProperties())
+            {
+                juce::String styleId = stylePair.name.toString();
+                if (auto* instObj = stylePair.value.getDynamicObject())
+                {
+                    for (auto& instPair : instObj->getProperties())
+                    {
+                        int instNum = instPair.name.toString().getIntValue();
+                        juce::String entryId = instPair.value.toString();
+                        data.styleMappings[styleId][instNum] = entryId;
+                    }
+                }
+            }
+        }
+    }
 }

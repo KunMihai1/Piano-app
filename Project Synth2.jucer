@@ -304,6 +304,11 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="w1MPTi" name="SFZlibrary.cpp" compile="1" resource="0" file="Source/SFZlibrary.cpp"/>
+      <FILE id="T3o6UR" name="SFZlibrary.h" compile="0" resource="0" file="Source/SFZlibrary.h"/>
+      <FILE id="euLojz" name="SFZLibraryUI.cpp" compile="1" resource="0"
+            file="Source/SFZLibraryUI.cpp"/>
+      <FILE id="LWelkc" name="SFZLibraryUI.h" compile="0" resource="0" file="Source/SFZLibraryUI.h"/>
       <FILE id="j3KJpG" name="styleSettingsEntry.h" compile="0" resource="0"
             file="Source/styleSettingsEntry.h"/>
       <FILE id="DspLsn" name="DisplayListener.h" compile="0" resource="0"
@@ -393,6 +398,20 @@
       <FILE id="PkpDN9" name="TrackPlayer.h" compile="0" resource="0" file="Source/TrackPlayer.h"/>
       <FILE id="HiLb6c" name="displayGUI.cpp" compile="1" resource="0" file="Source/displayGUI.cpp"/>
       <FILE id="ICOTvm" name="displayGUI.h" compile="0" resource="0" file="Source/displayGUI.h"/>
+      <FILE id="svCmp1" name="StyleViewComponent.cpp" compile="1" resource="0" file="Source/StyleViewComponent.cpp"/>
+      <FILE id="svCmp2" name="StyleViewComponent.h" compile="0" resource="0" file="Source/StyleViewComponent.h"/>
+      <FILE id="slCmp1" name="StylesListComponent.cpp" compile="1" resource="0" file="Source/StylesListComponent.cpp"/>
+      <FILE id="slCmp2" name="StylesListComponent.h" compile="0" resource="0" file="Source/StylesListComponent.h"/>
+      <FILE id="myTab1" name="MyTabbedComponent.cpp" compile="1" resource="0" file="Source/MyTabbedComponent.cpp"/>
+      <FILE id="myTab2" name="MyTabbedComponent.h" compile="0" resource="0" file="Source/MyTabbedComponent.h"/>
+      <FILE id="trCmp1" name="Track.cpp" compile="1" resource="0" file="Source/Track.cpp"/>
+      <FILE id="trCmp2" name="Track.h" compile="0" resource="0" file="Source/Track.h"/>
+      <FILE id="tlCmp1" name="TrackListComponent.cpp" compile="1" resource="0" file="Source/TrackListComponent.cpp"/>
+      <FILE id="tlCmp2" name="TrackListComponent.h" compile="0" resource="0" file="Source/TrackListComponent.h"/>
+      <FILE id="csCmp1" name="CurrentStyleComponent.cpp" compile="1" resource="0" file="Source/CurrentStyleComponent.cpp"/>
+      <FILE id="csCmp2" name="CurrentStyleComponent.h" compile="0" resource="0" file="Source/CurrentStyleComponent.h"/>
+      <FILE id="diCmp1" name="Display.cpp" compile="1" resource="0" file="Source/Display.cpp"/>
+      <FILE id="diCmp2" name="Display.h" compile="0" resource="0" file="Source/Display.h"/>
       <FILE id="z2Hsoc" name="MidiHandlerAbstractSubject.h" compile="0" resource="0"
             file="Source/MidiHandlerAbstractSubject.h"/>
       <FILE id="dExTT9" name="temporaryNotificationUI.cpp" compile="1" resource="0"
@@ -430,6 +449,8 @@
       <FILE id="J92BVY" name="MainComponent.h" compile="0" resource="0" file="Source/MainComponent.h"/>
       <FILE id="jn7l0T" name="MainComponent.cpp" compile="1" resource="0"
             file="Source/MainComponent.cpp"/>
+      <FILE id="audioH" name="AudioHandler.h" compile="0" resource="0" file="Source/AudioHandler.h"/>
+      <FILE id="audioC" name="AudioHandler.cpp" compile="1" resource="0" file="Source/AudioHandler.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>

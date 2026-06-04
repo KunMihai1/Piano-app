@@ -14,7 +14,7 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
 {
     addAndMakeVisible(titleLabel);
     titleLabel.setJustificationType(juce::Justification::centred);
-    titleLabel.setColour(juce::Label::textColourId, juce::Colours::white);
+    titleLabel.setColour(juce::Label::textColourId, AppColours::subtitleText);
 
     for (auto& name : buttonNames)
     {
@@ -22,6 +22,9 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
         btn->setButtonText(name);
         btn->setMouseCursor(juce::MouseCursor::PointingHandCursor);
         activationMap[name] = false;
+
+        btn->setLookAndFeel(&laf);
+        btn->setColour(juce::TextButton::buttonColourId, AppColours::accent2);
 
         addAndMakeVisible(*btn);
         buttons.push_back(std::move(btn));
@@ -62,6 +65,8 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
         auto btn = std::make_unique<juce::TextButton>("Break");
         btn->setButtonText("Break");
         btn->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+        btn->setLookAndFeel(&laf);
+        btn->setColour(juce::TextButton::buttonColourId, AppColours::accent2);
         addAndMakeVisible(*btn);
         buttons.push_back(std::move(btn));
     }
@@ -85,7 +90,7 @@ void SectionGroupComponent::resized()
         toDivideWith++;
 
     auto row = area;
-    int width = row.getWidth() / toDivideWith;
+    int width = juce::jmax(35, row.getWidth() / toDivideWith);
 
     for (int i = 0; i < count; i++)
     {
