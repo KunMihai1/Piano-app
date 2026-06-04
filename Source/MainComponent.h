@@ -32,6 +32,7 @@
 #include "styleSettingsEntry.h"
 #include "SFZLibraryUI.h"
 #include "AudioHandler.h"
+#include "PlayScreenLookAndFeel.h"
 /**
  * @class SmoothRotarySlider
  * @brief Custom rotary slider with smooth dragging behavior.
@@ -299,6 +300,7 @@ private:
     juce::PropertiesFile* propertiesFile = nullptr; ///< Pointer to properties file
 
     CustomLookAndFeel customLookAndFeel; ///< Custom look and feel
+    PlayScreenLookAndFeel playScreenLAF;
     juce::Image cachedImageMainWindow;   ///< Cached main window image
     juce::Image playBackground;          ///< Background when playing
     juce::Image currentBackground;       ///< Currently displayed background
