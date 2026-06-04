@@ -156,6 +156,21 @@ void MainComponent::paint(juce::Graphics& g)
     }
 }
 
+void MainComponent::paintOverChildren(juce::Graphics& g)
+{
+    if (!openingAudioLabel.isVisible())
+        return;
+
+    g.setColour(juce::Colours::black.withAlpha(0.75f));
+    g.fillAll();
+
+    g.setColour(juce::Colours::white);
+    g.setFont(juce::Font(24.0f, juce::Font::bold));
+    g.drawFittedText(openingAudioLabel.getText(),
+                     getLocalBounds().reduced(20),
+                     juce::Justification::centred, 1);
+}
+
 void MainComponent::focusGained(juce::Component::FocusChangeType)
 {
 
@@ -620,15 +635,11 @@ void MainComponent::playChordOnClick(const Chord& c)
 
     for (auto note : notes)
     {
-
-        juce::MidiMessage noteOn = juce::MidiMessage::noteOn(13, note, (juce::uint8)100); //Channels: 14,15 taken by record player  || 1,16 user playing || 2->7 and 10 tracks (some can be reused but it's 100% safe like this if we don't run out of channels
-        midiHandler.handleIncomingMidiMessage(nullptr, noteOn);
-
+        midiHandler.handleIncomingMidiMessage(nullptr, juce::MidiMessage::noteOn(1, note, (juce::uint8)100));
 
         juce::Timer::callAfterDelay(500, [this, note]() {
-            juce::MidiMessage noteOff = juce::MidiMessage::noteOff(13, note);
-            midiHandler.handleIncomingMidiMessage(nullptr, noteOff);
-            });
+            midiHandler.handleIncomingMidiMessage(nullptr, juce::MidiMessage::noteOff(1, note));
+        });
     }
 }
 
@@ -1348,6 +1359,22 @@ void MainComponent::recordButtonsInit()
         midiHandler.setProgramNumber(midiHandler.getProgramNumberRightHand(), "right");
     };
 
+    recordPlayer.onSfzMessage = [this](const juce::MidiMessage& msg)
+    {
+        if (audioHandler == nullptr || !MIDIDevice.isOpenAudioOUT())
+            return;
+
+        // Stored events use channels 14/15 (remapped from 1/16 at record time).
+        // Remap back so the SFZ synth — which has instruments on 1 and 16 — renders them.
+        int ch = msg.getChannel();
+        int sfzCh = (ch == 14) ? 1 : (ch == 15 ? 16 : ch);
+
+        if (msg.isNoteOn())
+            midiHandler.injectMidiMessage(juce::MidiMessage::noteOn(sfzCh, msg.getNoteNumber(), msg.getVelocity()));
+        else if (msg.isNoteOff())
+            midiHandler.injectMidiMessage(juce::MidiMessage::noteOff(sfzCh, msg.getNoteNumber()));
+    };
+
     recordPlayer.notifyFunction = [&]()
     {
         if (temporaryPopup)
@@ -1474,11 +1501,13 @@ void MainComponent::displayInit()
         {
             openingAudioLabel.setText("Preparing style...", juce::dontSendNotification);
             openingAudioLabel.setVisible(true);
+            repaint();
             loadSfzForCurrentStyle(styleID);
             // Fallback hide if no SFZ file actually changed (onSfzLoadComplete won't fire)
             juce::Timer::callAfterDelay(300, [this]()
             {
                 openingAudioLabel.setVisible(false);
+                repaint();
             });
         }
     };
@@ -2199,10 +2228,12 @@ void MainComponent::ensureAudioHandlerReady()
         audioHandler->onSfzLoadStart = [this]() {
             openingAudioLabel.setText("Preparing style...", juce::dontSendNotification);
             openingAudioLabel.setVisible(true);
+            repaint();
         };
         audioHandler->onSfzLoadComplete = [this]() {
             openingAudioLabel.setVisible(false);
             openingAudioLabel.setText("Preparing session...", juce::dontSendNotification);
+            repaint();
         };
         audioHandler->onNoSfzForChannels = [this](int channelMask) {
             juce::String channels;
@@ -2639,8 +2670,4 @@ void MainComponent::headerPanel::paint(juce::Graphics& g)
     // Top accent strip
     g.setColour(AppColours::accent2);
     g.fillRect(0, 0, getWidth(), 3);
-
-    // Bottom teal separator (horizon between controls and note area)
-    g.setColour(AppColours::accent3);
-    g.fillRect(0, getHeight() - 2, getWidth(), 2);
 }

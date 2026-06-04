@@ -136,6 +136,9 @@ void MidiRecordPlayer::timerCallback()
 
             if (auto midiOutShared = midiOutputDevice.lock())
                 midiOutShared->sendMessageNow(ev.message);
+
+            if (onSfzMessage)
+                onSfzMessage(ev.message);
         }
 
         if (nextEventIndex >= allEventsPlayed.size())
@@ -159,6 +162,9 @@ void MidiRecordPlayer::timerCallback()
 
             if (auto midiOutShared = midiOutputDevice.lock())
                 midiOutShared->sendMessageNow(ev.message);
+
+            if (onSfzMessage)
+                onSfzMessage(ev.message);
         }
 
         if (nextEventFileIndex >= allEventsPlayedFile.size())

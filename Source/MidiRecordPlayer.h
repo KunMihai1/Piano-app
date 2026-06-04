@@ -40,6 +40,9 @@ public:
     /** Callback to apply presets when starting recording */
     std::function<void()> applyPresetFunction;
 
+    /** Callback invoked for each playback event so the SFZ synth can render it */
+    std::function<void(const juce::MidiMessage&)> onSfzMessage;
+
     /** @brief Default constructor  */
     MidiRecordPlayer();
 
