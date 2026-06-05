@@ -103,6 +103,9 @@ void ArrangerEngine::stop()
     playing.store (false);
     sendAllNotesOff();
     scheduler.reset();
+    playheadBeats = 0.0;
+    if (onElapsedBeats)   // reset the beat bar to the downbeat, like the classic player does
+        juce::MessageManager::callAsync ([this] { if (onElapsedBeats) onElapsedBeats (0.0); });
 }
 
 void ArrangerEngine::hiResTimerCallback()

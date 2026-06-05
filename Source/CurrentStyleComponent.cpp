@@ -56,8 +56,8 @@ void CurrentStyleComponent::startPlaying()
     {
         // Phase 1: fixed 4/4; real time-signature wiring is Phase 2.
         ArrangerStyle style = ArrangerPatternBuilder::buildSingleSectionStyle(selectedTracks, 4, 4);
-        arrangerEngine->setBpm(currentTempo);
         arrangerEngine->setStyle(style);
+        arrangerEngine->setBpm(currentTempo);   // user's tempo slider wins over the style's original tempo
         arrangerEngine->start();
         return;
     }
