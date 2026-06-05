@@ -32,6 +32,17 @@ public:
             expectEquals ((int) style.sections[0].tracks[0].pattern.size(), 1);
             expect (style.sections[0].tracks[0].partType == ArrangerPartType::Bass);
         }
+
+        beginTest ("schema v2 and after-complete defaults");
+        {
+            expectEquals (ARRANGER_SCHEMA_VERSION, 2);
+
+            ArrangerSection s;
+            expect (s.afterComplete == ArrangerAfterComplete::Loop); // sections loop unless told otherwise
+
+            s.afterComplete = ArrangerAfterComplete::Stop;
+            expect (s.afterComplete == ArrangerAfterComplete::Stop);
+        }
     }
 };
 

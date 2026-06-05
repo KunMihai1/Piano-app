@@ -3,13 +3,17 @@
 #include <vector>
 
 /** Schema version for arranger styles, bumped when the model changes. */
-static constexpr int ARRANGER_SCHEMA_VERSION = 1;
+static constexpr int ARRANGER_SCHEMA_VERSION = 2;
 
 /** Musical role of a track (drives transposition behaviour in later phases). */
 enum class ArrangerPartType { Drum, Perc, Bass, Acc };
 
 /** Style-element type (the section buttons). */
 enum class ArrangerSectionType { Intro, Variation, Fill, Break, Ending, CountIn };
+
+/** What a section does when its own length elapses: loop forever, fall through to
+    the return variation (Intro/Fill), or stop playback (Ending). */
+enum class ArrangerAfterComplete { Loop, FallThrough, Stop };
 
 /** One timestamped MIDI event, positioned in beats within its section's loop. */
 struct TimedBeatEvent
@@ -41,6 +45,7 @@ struct ArrangerSection
     juce::String name;
     ArrangerSectionType type = ArrangerSectionType::Variation;
     int lengthBars = 1;                    // this section's own loop length
+    ArrangerAfterComplete afterComplete = ArrangerAfterComplete::Loop; // Phase 2 transport rule
     std::vector<ArrangerTrack> tracks;
 };
 
