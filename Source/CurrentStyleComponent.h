@@ -2,6 +2,7 @@
 #include <JuceHeader.h>
 #include "Track.h"
 #include "TrackPlayer.h"
+#include "Arranger/ArrangerEngine.h"
 #include "TrackPlayerListener.h"
 #include "StyleSection.h"
 #include "CustomBeatBar.h"
@@ -178,6 +179,10 @@ public:
     /** @brief Returns a pointer to the internal track player instance. */
     MultipleTrackPlayer* getTrackPlayer();
 
+    /** Enable/disable Arranger mode (vs classic linear playback). */
+    void setArrangerModeEnabled(bool shouldEnable);
+    bool isArrangerModeEnabled() const { return arrangerModeEnabled; }
+
     void setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb);
 
     struct TrackChannelInstrument { int channel; int instrument; };
@@ -246,6 +251,8 @@ private:
 
     std::weak_ptr<juce::MidiOutput> outputDevice;           ///< MIDI output device used for playback.
     std::unique_ptr<MultipleTrackPlayer> trackPlayer = nullptr; ///< Handles multi-track playback.
+    std::unique_ptr<ArrangerEngine> arrangerEngine = nullptr;   ///< Arranger-mode looping engine (parallel to trackPlayer).
+    bool arrangerModeEnabled = false;                           ///< When true, play/stop route to arrangerEngine.
     std::unordered_map<juce::Uuid, TrackEntry*>& mapUuidToTrackEntry; ///< Global map of all track entries.
     Track* lastSelectedTrack = nullptr;                     ///< Last track selected by the user.
     std::weak_ptr<std::vector<StyleSection>> sections;

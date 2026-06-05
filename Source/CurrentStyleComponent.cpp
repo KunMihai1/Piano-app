@@ -1,5 +1,6 @@
 #include "displayGUI.h"
 #include "CustomTableContainer.h"
+#include "Arranger/ArrangerPatternBuilder.h"
 
 void CurrentStyleComponent::startPlaying()
 {
@@ -51,6 +52,16 @@ void CurrentStyleComponent::startPlaying()
         return;
     }
 
+    if (arrangerModeEnabled)
+    {
+        // Phase 1: fixed 4/4; real time-signature wiring is Phase 2.
+        ArrangerStyle style = ArrangerPatternBuilder::buildSingleSectionStyle(selectedTracks, 4, 4);
+        arrangerEngine->setBpm(currentTempo);
+        arrangerEngine->setStyle(style);
+        arrangerEngine->start();
+        return;
+    }
+
     trackPlayer->setTracks(selectedTracks);
     trackPlayer->syncPlaybackSettings();
     trackPlayer->start();
@@ -84,6 +95,12 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     trackPlayer->onElapsedUpdate = [this](double ElapsedBeats)
     {
         customBeatBar.setCurrentBeatsElapsed(ElapsedBeats);
+    };
+
+    arrangerEngine = std::make_unique<ArrangerEngine>(outputDevice);
+    arrangerEngine->onElapsedBeats = [this](double elapsedBeats)
+    {
+        customBeatBar.setCurrentBeatsElapsed(elapsedBeats);
     };
 
     startPlayingTracks.onClick = [this]
@@ -214,8 +231,29 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
 
 void CurrentStyleComponent::stopPlaying(bool shouldModify)
 {
+    if (arrangerModeEnabled)
+    {
+        if (arrangerEngine)
+            arrangerEngine->stop();
+        return;
+    }
+
     if (trackPlayer)
         trackPlayer->stop(shouldModify);
+}
+
+void CurrentStyleComponent::setArrangerModeEnabled(bool shouldEnable)
+{
+    if (arrangerModeEnabled == shouldEnable)
+        return;
+
+    stopPlaying(false);          // stop whichever engine is currently active
+    if (arrangerEngine)
+        arrangerEngine->stop();
+
+    arrangerModeEnabled = shouldEnable;
+    isPlaying = false;
+    customBeatBar.repaint();
 }
 
 double CurrentStyleComponent::getTempo()
@@ -233,12 +271,16 @@ void CurrentStyleComponent::setDeviceOutputCurrentStyle(std::weak_ptr<juce::Midi
     this->outputDevice = newOutput;
     if (trackPlayer)
         trackPlayer->setDeviceOutputTrackPlayer(newOutput);
+    if (arrangerEngine)
+        arrangerEngine->setDeviceOutput(newOutput);
 }
 
 void CurrentStyleComponent::setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb)
 {
     if (trackPlayer)
-        trackPlayer->onMidiMessage = std::move(cb);
+        trackPlayer->onMidiMessage = cb;
+    if (arrangerEngine)
+        arrangerEngine->onMidiMessage = cb;
 }
 
 void CurrentStyleComponent::applyChangesForOneTrack(TrackEntry& track)
