@@ -23,46 +23,42 @@ public:
     //==============================================================================
     void initialise(const juce::String& commandLine) override
     {
-        // This method is where you should put your application's initialisation code..
-        int pass = 0;
-        int fail = 0;
-        int total = 0;
-
-        /*
-        if (commandLine.contains("--run-tests"))
+        if (commandLine.contains ("--run-tests"))
         {
             juce::UnitTestRunner runner;
+            runner.setAssertOnFailure (false);
 
-            if (commandLine.contains("--unit-tests"))
-                runner.runTestsInCategory("Unit");
-            else if (commandLine.contains("--integration-tests"))
-                runner.runTestsInCategory("Integration");
-            else if (commandLine.contains("--integration-api-tests"))
-                runner.runTestsInCategory("Integration-api");
+            if (commandLine.contains ("--arranger-tests"))
+                runner.runTestsInCategory ("Arranger");
+            else if (commandLine.contains ("--unit-tests"))
+                runner.runTestsInCategory ("Unit");
+            else if (commandLine.contains ("--integration-tests"))
+                runner.runTestsInCategory ("Integration");
             else
                 runner.runAllTests();
 
+            int pass = 0, fail = 0;
+            juce::StringArray lines;
             for (int i = 0; i < runner.getNumResults(); ++i)
             {
-                auto* result = runner.getResult(i);
-                pass += result->passes;
-                fail += result->failures;
-                DBG("Test: " + result->unitTestName
-                    + " - Passes: " + juce::String(result->passes)
-                    + " Failures: " + juce::String(result->failures));
+                auto* r = runner.getResult (i);
+                pass += r->passes;
+                fail += r->failures;
+                lines.add (r->unitTestName + " | passes: " + juce::String (r->passes)
+                           + " | failures: " + juce::String (r->failures));
+                for (auto& m : r->messages)
+                    if (m.isNotEmpty()) lines.add ("    " + m);
             }
-            
-            total = pass + fail;
-            
-            if (total > 0)
-                DBG("The pass percentage is:" + juce::String(static_cast<double>((100 * pass) / total)) + "%");
-            else DBG("the pass percentage is: 100% since there are no tests");
-            quit();  
+            lines.add ("TOTAL | passes: " + juce::String (pass) + " | failures: " + juce::String (fail));
+
+            juce::File::getCurrentWorkingDirectory()
+                .getChildFile ("test-results.txt")
+                .replaceWithText (lines.joinIntoString ("\n"));
+
+            setApplicationReturnValue (fail);
+            quit();
             return;
-            
         }
-        */
-        
 
         mainWindow.reset(new MainWindow(getApplicationName()));
     }

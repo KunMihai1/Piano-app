@@ -43,3 +43,4 @@ Doxyfile
 /modules/*
 !/modules/SFZero/
 /docs
+test-results.txt
