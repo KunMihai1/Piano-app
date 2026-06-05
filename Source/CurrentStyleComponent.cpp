@@ -55,7 +55,7 @@ void CurrentStyleComponent::startPlaying()
     if (arrangerModeEnabled)
     {
         // Phase 1: fixed 4/4; real time-signature wiring is Phase 2.
-        ArrangerStyle style = ArrangerPatternBuilder::buildSingleSectionStyle(selectedTracks, 4, 4, currentTempo);
+        ArrangerStyle style = ArrangerPatternBuilder::buildDemoMultiSectionStyle(selectedTracks, 4, 4, currentTempo);
         arrangerEngine->setStyle(style);
         arrangerEngine->setBpm(currentTempo);   // user's tempo slider wins over the style's original tempo
         arrangerEngine->start();
@@ -646,32 +646,75 @@ bool CurrentStyleComponent::getIsPlaying()
     return isPlaying;
 }
 
+namespace
+{
+    void routeSectionToArranger (ArrangerEngine* engine, ArrangerSectionType type, const juce::String& name)
+    {
+        if (engine == nullptr)
+            return;
+        if (engine->isPlaying())
+            engine->queueSection (type, name);
+        else
+            engine->selectStartSection (type, name);
+    }
+}
+
 void CurrentStyleComponent::handleIntroCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (arrangerModeEnabled)
+    {
+        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Intro, name);
+        return;
+    }
+
     if (trackPlayer)
         trackPlayer->setLastSectionUsed(section.at(name));
 }
 
 void CurrentStyleComponent::handleEndingCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (arrangerModeEnabled)
+    {
+        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Ending, name);
+        return;
+    }
+
     if (trackPlayer)
         trackPlayer->setLastSectionUsed(section.at(name));
 }
 
 void CurrentStyleComponent::handleVarCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (arrangerModeEnabled)
+    {
+        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Variation, name);
+        return;
+    }
+
     if (trackPlayer)
         trackPlayer->setLastSectionUsed(section.at(name));
 }
 
 void CurrentStyleComponent::handleFillCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (arrangerModeEnabled)
+    {
+        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Fill, name);
+        return;
+    }
+
     if (trackPlayer)
         trackPlayer->setLastSectionUsed(section.at(name));
 }
 
 void CurrentStyleComponent::handleBreakCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
+    if (arrangerModeEnabled)
+    {
+        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Break, name);
+        return;
+    }
+
     if (trackPlayer)
         trackPlayer->setLastSectionUsed(section.at(name));
 }
