@@ -58,6 +58,24 @@ void ArrangerEngine::sendAllNotesOff()
         dispatch (juce::MidiMessage::allNotesOff (ch));
 }
 
+void ArrangerEngine::sendInstrumentSetup()
+{
+    // Mirror MultipleTrackPlayer::syncPlaybackSettings: select each track's instrument and
+    // set its channel volume, so the arranger doesn't play everything as the default sound.
+    // Drum channel (10) gets no program change (its kit is fixed). The SFZ engine ignores
+    // program-change but honours CC7 volume, and an external MIDI synth honours both.
+    if (style.sections.empty())
+        return;
+
+    for (const auto& tr : style.sections.front().tracks)
+    {
+        if (tr.instrument >= 0 && tr.channel != 10)
+            dispatch (juce::MidiMessage::programChange (tr.channel, tr.instrument));
+
+        dispatch (juce::MidiMessage::controllerEvent (tr.channel, 7, juce::jlimit (0, 127, (int) tr.volume)));
+    }
+}
+
 void ArrangerEngine::renderRange (double fromBeats, double toBeats)
 {
     auto events = scheduler.advance (fromBeats, toBeats);
@@ -71,6 +89,7 @@ void ArrangerEngine::start()
         return;
 
     scheduler.reset();
+    sendInstrumentSetup();   // select instruments + volumes before the first notes play
     playheadBeats = 0.0;
     lastNowSeconds = (double) juce::Time::getHighResolutionTicks()
                      / (double) juce::Time::getHighResolutionTicksPerSecond();

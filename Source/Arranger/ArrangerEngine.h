@@ -34,6 +34,7 @@ private:
     void hiResTimerCallback() override;
     void dispatch (const juce::MidiMessage& m);
     void sendAllNotesOff();
+    void sendInstrumentSetup();   // program-change + volume per channel, like the classic player
     void rebuildScheduler();
 
     std::weak_ptr<juce::MidiOutput> outputDevice;
