@@ -44,3 +44,4 @@ Doxyfile
 !/modules/SFZero/
 /docs
 test-results.txt
+*.log
