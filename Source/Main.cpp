@@ -23,7 +23,6 @@ public:
     //==============================================================================
     void initialise(const juce::String& commandLine) override
     {
-        /*
         if (commandLine.contains ("--run-tests"))
         {
             juce::UnitTestRunner runner;
@@ -60,7 +59,6 @@ public:
             quit();
             return;
         }
-        */
 
         mainWindow.reset(new MainWindow(getApplicationName()));
     }
