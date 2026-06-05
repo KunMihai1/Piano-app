@@ -93,32 +93,44 @@ namespace ArrangerPatternBuilder
         var.type = ArrangerSectionType::Variation;
         var.afterComplete = ArrangerAfterComplete::Loop;
 
-        ArrangerSection intro = var;
+        // Slice a range of whole bars out of a cloned section and rebase to beat 0. Keeps the
+        // throwaway demo Intro/Fill/Ending short so the transport (intro-once, fill-once,
+        // ending-once-then-stop) is observable instead of replaying the whole-song Variation
+        // loop. Lengths are a compromise until Phase 3 supplies real per-section phrases.
+        auto sliceBars = [bpb] (ArrangerSection sec, double startBeats, int numBars) -> ArrangerSection
+        {
+            const int    bars     = juce::jmax (1, numBars);
+            const double endBeats = startBeats + (double) bars * bpb;
+            for (auto& tr : sec.tracks)
+            {
+                std::vector<TimedBeatEvent> sliced;
+                for (const auto& ev : tr.pattern)
+                    if (ev.beats >= startBeats - 1e-9 && ev.beats < endBeats - 1e-9)
+                        sliced.push_back ({ ev.beats - startBeats, ev.message });
+                tr.pattern = std::move (sliced);
+            }
+            sec.lengthBars = bars;
+            return sec;
+        };
+
+        const int    endingBars   = juce::jmin (4, loopBars);                  // a short wind-down
+        const double lastBarStart = (double) (loopBars - 1)          * bpb;
+        const double endingStart  = (double) (loopBars - endingBars) * bpb;
+
+        ArrangerSection intro = sliceBars (var, 0.0, 1);                 // first bar -> lead-in
         intro.id = "intro_1"; intro.name = "Intro 1";
         intro.type = ArrangerSectionType::Intro;
         intro.afterComplete = ArrangerAfterComplete::FallThrough;
 
-        ArrangerSection ending = var;
-        ending.id = "ending_1"; ending.name = "Ending 1";
-        ending.type = ArrangerSectionType::Ending;
-        ending.afterComplete = ArrangerAfterComplete::Stop;
-
-        ArrangerSection fill = var;
+        ArrangerSection fill = sliceBars (var, lastBarStart, 1);         // last bar -> fill accent
         fill.id = "fill_1"; fill.name = "Fill 1";
         fill.type = ArrangerSectionType::Fill;
         fill.afterComplete = ArrangerAfterComplete::FallThrough;
-        fill.lengthBars = 1;
-        {
-            const double lastBarStart = (double) (loopBars - 1) * bpb;
-            for (auto& tr : fill.tracks)
-            {
-                std::vector<TimedBeatEvent> sliced;
-                for (const auto& ev : tr.pattern)
-                    if (ev.beats >= lastBarStart - 1e-9)
-                        sliced.push_back ({ ev.beats - lastBarStart, ev.message });
-                tr.pattern = std::move (sliced);
-            }
-        }
+
+        ArrangerSection ending = sliceBars (var, endingStart, endingBars); // last few bars -> wind-down, then stop
+        ending.id = "ending_1"; ending.name = "Ending 1";
+        ending.type = ArrangerSectionType::Ending;
+        ending.afterComplete = ArrangerAfterComplete::Stop;
 
         style.sections.push_back (std::move (intro));
         style.sections.push_back (std::move (var));

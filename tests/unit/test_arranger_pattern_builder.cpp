@@ -112,7 +112,12 @@ public:
             expect (style.sections[2].afterComplete == ArrangerAfterComplete::FallThrough); // fill
             expect (style.sections[3].afterComplete == ArrangerAfterComplete::Stop);        // ending
 
-            expectEquals (style.sections[2].lengthBars, 1); // fill is exactly one bar
+            // Intro and Fill are one-bar slices; Ending is the last min(4, loopBars) bars; Variation is the full loop.
+            // perc note-off at 5.5s -> 11 beats @120 -> 3 bars, so the Variation (and the ending window) span 3 bars.
+            expectEquals (style.sections[1].lengthBars, 3); // variation = full loop
+            expectEquals (style.sections[0].lengthBars, 1); // intro is one bar
+            expectEquals (style.sections[2].lengthBars, 1); // fill is one bar
+            expectEquals (style.sections[3].lengthBars, 3); // ending = last min(4, loopBars) = 3 bars
 
             // Variation keeps the Phase-1 channel mapping: melodic -> 2, perc -> 10.
             expectEquals (style.sections[1].tracks[0].channel, 2);
