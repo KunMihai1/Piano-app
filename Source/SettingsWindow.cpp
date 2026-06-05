@@ -332,6 +332,9 @@ void MIDIWindow::setBounds_components()
     const int buttonX = (settingsPanel.getWidth() - buttonW) / 2;
 
     sfzLibraryButton.setBounds(buttonX, y, buttonW, buttonH);
+
+    y += buttonH + 14;
+    arrangerModeToggle.setBounds(pad, y, 320, rowH);
 }
 
 void MIDIWindow::panelInit()
@@ -457,6 +460,16 @@ void MIDIWindow::allInit()
     panelInit();
     devicesCBinit();
     outputEngineCBinit();
+
+    settingsPanel.addAndMakeVisible(arrangerModeToggle);
+    arrangerModeToggle.setToggleState(propertyFile != nullptr && propertyFile->getBoolValue("ArrangerModeEnabled", false),
+                                      juce::dontSendNotification);
+    arrangerModeToggle.onClick = [this]()
+    {
+        const bool on = arrangerModeToggle.getToggleState();
+        if (propertyFile != nullptr) { propertyFile->setValue("ArrangerModeEnabled", on); propertyFile->saveIfNeeded(); }
+        if (onArrangerModeChanged) onArrangerModeChanged(on);
+    };
 	sfzButtonInit();
 }
 

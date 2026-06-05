@@ -36,6 +36,7 @@ public:
     std::function<juce::String()> getCurrentStyleId;  // optional, set by owner
     std::function<juce::String()> getCurrentStyleName; // optional, set by owner
     std::function<void(int engineOption)> onOutputEngineChanged; // fired when engine changes while playing
+    std::function<void(bool)> onArrangerModeChanged;             // fired when the Classic/Arranger toggle changes
     std::function<void()> onSfzLibraryChanged;                  // fired when SFZ mappings are imported/changed
 
     /**
@@ -145,6 +146,7 @@ private:
     juce::ComboBox comboBoxDevicesIN;         /**< ComboBox for selecting MIDI input devices */
     juce::ComboBox comboBoxDevicesOUT;        /**< ComboBox for selecting MIDI output devices */
     juce::ComboBox comboBoxOutputEngineType;  /**< ComboBox for selecting audio output engine type */
+    juce::ToggleButton arrangerModeToggle { "Arranger mode (loop accompaniment)" }; /**< Classic vs Arranger playback */
 	juce::ComboBox comboBoxAudioDevicesOUT;       /**< ComboBox for selecting audio output devices */
     juce::Label midiDevicesLabelIN;           /**< Label for input devices */
     juce::Label midiDevicesLabelOUT;          /**< Label for output devices */

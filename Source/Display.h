@@ -99,6 +99,10 @@ public:
     void setDeviceOutput(std::weak_ptr<juce::MidiOutput> devOutput);
 
     void setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb);
+
+    /** Enable/disable Arranger mode on the active style component (remembered across re-creation). */
+    void setArrangerModeEnabled(bool shouldEnable);
+
     MultipleTrackPlayer* getTrackPlayer();
     std::vector<CurrentStyleComponent::TrackChannelInstrument> getTrackChannelInstruments() const;
 
@@ -203,6 +207,7 @@ private:
     std::weak_ptr<juce::MidiOutput> outputDevice; ///< MIDI output device
     juce::PropertiesFile* propertiesFile = nullptr; ///< Application properties file
     std::function<void(const juce::MidiMessage&)> pendingMidiInjectCallback;
+    bool arrangerModeEnabled = false;   ///< Remembered Arranger-mode state, applied when a style component is created.
 
     std::unique_ptr<TrackListComponent> trackListComp; ///< Track selection component
     juce::var allStylesJsonVar; ///< Root JSON object storing all styles

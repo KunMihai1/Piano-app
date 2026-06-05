@@ -240,6 +240,8 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
         if (pendingMidiInjectCallback)
             currentStyleComponent->setMidiInjectCallback(pendingMidiInjectCallback);
+
+        currentStyleComponent->setArrangerModeEnabled(arrangerModeEnabled);
     }
     else
     {
@@ -396,6 +398,13 @@ void Display::setMidiInjectCallback(std::function<void(const juce::MidiMessage&)
     pendingMidiInjectCallback = cb;
     if (currentStyleComponent)
         currentStyleComponent->setMidiInjectCallback(std::move(cb));
+}
+
+void Display::setArrangerModeEnabled(bool shouldEnable)
+{
+    arrangerModeEnabled = shouldEnable;
+    if (currentStyleComponent)
+        currentStyleComponent->setArrangerModeEnabled(shouldEnable);
 }
 
 MultipleTrackPlayer* Display::getTrackPlayer()

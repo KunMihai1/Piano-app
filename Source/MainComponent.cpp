@@ -932,6 +932,12 @@ void MainComponent::setCallBacksForOverlayWindow()
                 loadSfzForCurrentStyle();
             };
 
+            midiWindow->onArrangerModeChanged = [this](bool enabled)
+            {
+                if (display != nullptr)
+                    display->setArrangerModeEnabled(enabled);
+            };
+
             midiWindow->onOutputEngineChanged = [this](int engineOption)
             {
                 disconnectCurrentOutput();
@@ -1908,6 +1914,9 @@ void MainComponent::playButtonOnClick()
                 midiHandler.injectMidiMessage(msg);
             });
         }
+
+        if (display != nullptr && propertiesFile != nullptr)
+            display->setArrangerModeEnabled(propertiesFile->getBoolValue("ArrangerModeEnabled", false));
 
         if (!keyboardInitialized)
         {
