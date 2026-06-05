@@ -950,6 +950,15 @@ void MainComponent::setCallBacksForOverlayWindow()
                         return;
                     }
                     deviceOpenedOUT = MIDIDevice.getDeviceOUT();
+
+                    if (display != nullptr)
+                    {
+                        // Route style/arranger playback to the MIDI device and stop sending to the
+                        // (now closed) SFZ sampler. Mirrors the Play-button wiring path; without this,
+                        // switching engine mid-session leaves the players with a stale output -> silence.
+                        display->setMidiInjectCallback(nullptr);
+                        display->setDeviceOutput(MIDIDevice.getDeviceOUT());
+                    }
                 }
                 else if (engineOption == 2) // Internal SFZ
                 {
@@ -958,8 +967,11 @@ void MainComponent::setCallBacksForOverlayWindow()
                         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::InfoIcon, "ERROR", "Failed to open audio output device.", "OK");
                         return;
                     }
-                    ensureAudioHandlerReady();
+                    ensureAudioHandlerReady();   // re-wires the SFZ inject callback into the players
                     loadSfzForCurrentStyle();
+
+                    if (display != nullptr)
+                        display->setDeviceOutput({});   // stop sending to the (now closed) MIDI device
                 }
 
                 applyCurrentStyleToOutput();
@@ -2496,63 +2508,26 @@ void MainComponent::handleIntro(const juce::String& name)
 
 void MainComponent::handleEnding(const juce::String& name)
 {
-    if (name == "Ending 1")
-    {
-
-    }
-    else if (name == "Ending 2")
-    {
-
-    }
-    else if (name == "Ending 3")
-    {
-
-    }
+    if (display)
+        display->handleEndingDisplay(name);
 }
 
 void MainComponent::handleVar(const juce::String& name)
 {
-    if (name == "Var 1")
-    {
-
-    }
-    else if (name == "Var 2")
-    {
-
-    }
-    else if (name == "Var 3")
-    {
-
-    }
-    else if (name == "Var 4")
-    {
-
-    }
+    if (display)
+        display->handleVarDisplay(name);
 }
 
 void MainComponent::handleFill(const juce::String& name)
 {
-    if (name == "Fill 1")
-    {
-
-    }
-    else if (name == "Fill 2")
-    {
-
-    }
-    else if (name == "Fill 3")
-    {
-
-    }
-    else if (name == "Fill 4")
-    {
-
-    }
+    if (display)
+        display->handleFillDisplay(name);
 }
 
 void MainComponent::handleBreak(const juce::String& name)
 {
-
+    if (display)
+        display->handleBreakDisplay(name);
 }
 
 void MainComponent::initializeOverlay()
