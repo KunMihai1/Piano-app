@@ -24,6 +24,43 @@ public:
         return style;
     }
 
+    // Two one-bar variations on channel 2. Variation 1 holds a note across the bar
+    // (no note-off) so a section switch must flush it; Variation 2 plays a short note.
+    static ArrangerStyle makeTwoVarStyle()
+    {
+        ArrangerTrack v1; v1.channel = 2; v1.partType = ArrangerPartType::Acc;
+        v1.pattern = { { 0.0, juce::MidiMessage::noteOn (2, 60, (juce::uint8) 100) } }; // held
+        ArrangerSection s1; s1.id = "var_1"; s1.name = "Variation 1";
+        s1.type = ArrangerSectionType::Variation; s1.lengthBars = 1; s1.tracks.push_back (v1);
+
+        ArrangerTrack v2; v2.channel = 2; v2.partType = ArrangerPartType::Acc;
+        v2.pattern = { { 0.0, juce::MidiMessage::noteOn  (2, 67, (juce::uint8) 100) },
+                       { 0.5, juce::MidiMessage::noteOff (2, 67) } };
+        ArrangerSection s2; s2.id = "var_2"; s2.name = "Variation 2";
+        s2.type = ArrangerSectionType::Variation; s2.lengthBars = 1; s2.tracks.push_back (v2);
+
+        ArrangerStyle st; st.timeSigNum = 4; st.timeSigDenom = 4; st.originalTempo = 120.0;
+        st.sections.push_back (s1); st.sections.push_back (s2);
+        return st;
+    }
+
+    static ArrangerStyle makeEndingStyle()
+    {
+        ArrangerTrack v; v.channel = 2; v.partType = ArrangerPartType::Acc;
+        v.pattern = { { 0.0, juce::MidiMessage::noteOn  (2, 60, (juce::uint8) 100) },
+                      { 0.5, juce::MidiMessage::noteOff (2, 60) } };
+        ArrangerSection var; var.id = "var_1"; var.name = "Variation 1";
+        var.type = ArrangerSectionType::Variation; var.lengthBars = 1; var.tracks.push_back (v);
+
+        ArrangerSection end; end.id = "ending_1"; end.name = "Ending 1";
+        end.type = ArrangerSectionType::Ending; end.lengthBars = 1;
+        end.afterComplete = ArrangerAfterComplete::Stop; end.tracks.push_back (v);
+
+        ArrangerStyle st; st.timeSigNum = 4; st.timeSigDenom = 4; st.originalTempo = 120.0;
+        st.sections.push_back (var); st.sections.push_back (end);
+        return st;
+    }
+
     void runTest() override
     {
         beginTest ("renderRange dispatches scheduled events through onMidiMessage");
@@ -60,6 +97,64 @@ public:
             engine.stop();
             expect (! engine.isPlaying());
             expect (noteOffCount >= 1);
+        }
+
+        beginTest ("queueSection switches active section only after the bar boundary");
+        {
+            ArrangerEngine engine (std::weak_ptr<juce::MidiOutput>{});
+            engine.setStyle (makeTwoVarStyle());
+            engine.queueSection (ArrangerSectionType::Variation, "Variation 2");
+
+            expectEquals (engine.getActiveSectionIndex(), 0);
+            engine.renderRange (0.0, 2.0);                    // no boundary yet
+            expectEquals (engine.getActiveSectionIndex(), 0);
+            engine.renderRange (2.0, 5.0);                    // crosses beat 4
+            expectEquals (engine.getActiveSectionIndex(), 1);
+        }
+
+        beginTest ("a section swap flushes the outgoing section's held note (no hung notes)");
+        {
+            ArrangerEngine engine (std::weak_ptr<juce::MidiOutput>{});
+            std::vector<juce::MidiMessage> captured;
+            engine.onMidiMessage = [&] (const juce::MidiMessage& m) { captured.push_back (m); };
+
+            engine.setStyle (makeTwoVarStyle());
+            engine.queueSection (ArrangerSectionType::Variation, "Variation 2");
+            engine.renderRange (0.0, 1.0);   // Variation 1 note 60 on (held)
+            engine.renderRange (1.0, 5.0);   // boundary -> swap to Variation 2
+
+            int offIdx = -1, onIdx = -1;
+            for (int i = 0; i < (int) captured.size(); ++i)
+            {
+                if (captured[i].isNoteOff() && captured[i].getNoteNumber() == 60) offIdx = i;
+                if (captured[i].isNoteOn()  && captured[i].getNoteNumber() == 67 && onIdx < 0) onIdx = i;
+            }
+            expect (offIdx >= 0);            // held note 60 was closed at the swap
+            expect (onIdx  >= 0);            // Variation 2 note 67 started
+            expect (offIdx < onIdx);         // closed before the new section sounded
+        }
+
+        beginTest ("an Ending completing silences output (all-notes-off)");
+        {
+            ArrangerEngine engine (std::weak_ptr<juce::MidiOutput>{});
+            int allNotesOff = 0;
+            engine.onMidiMessage = [&] (const juce::MidiMessage& m)
+            {
+                if (m.isAllNotesOff()) ++allNotesOff;
+            };
+            engine.setStyle (makeEndingStyle());
+            engine.queueSection (ArrangerSectionType::Ending, "Ending 1");
+            engine.renderRange (0.0, 5.0);   // enter ending at beat 4
+            engine.renderRange (5.0, 9.0);   // ending completes at beat 8 -> stop
+            expect (allNotesOff >= 1);
+        }
+
+        beginTest ("selectStartSection makes start begin on the chosen section");
+        {
+            ArrangerEngine engine (std::weak_ptr<juce::MidiOutput>{});
+            engine.setStyle (makeTwoVarStyle());
+            engine.selectStartSection (ArrangerSectionType::Variation, "Variation 2");
+            expectEquals (engine.peekPendingStartIndex(), 1);
         }
     }
 };

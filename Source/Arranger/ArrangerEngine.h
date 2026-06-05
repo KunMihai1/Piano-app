@@ -2,7 +2,9 @@
 #include <JuceHeader.h>
 #include "ArrangerModel.h"
 #include "ArrangerScheduler.h"
+#include "ArrangerSectionSequencer.h"
 #include <atomic>
+#include <vector>
 
 /**
  * Real-time arranger playback: loops the active section of a style to MIDI-out and/or
@@ -21,6 +23,14 @@ public:
     void setStyle (ArrangerStyle newStyle);   // builds the scheduler from section 0
     void setBpm (double bpm);
 
+    /** Queue a section change (applied at the next bar boundary while playing). */
+    void queueSection (ArrangerSectionType type, const juce::String& name);
+    /** Choose which section a subsequent start() begins on (used while stopped). */
+    void selectStartSection (ArrangerSectionType type, const juce::String& name);
+
+    int getActiveSectionIndex() const;
+    int peekPendingStartIndex() const { return pendingStartIndex; } // test seam
+
     void start();
     void stop();
     bool isPlaying() const { return playing.load(); }
@@ -35,11 +45,18 @@ private:
     void dispatch (const juce::MidiMessage& m);
     void sendAllNotesOff();
     void sendInstrumentSetup();   // program-change + volume per channel, like the classic player
-    void rebuildScheduler();
+    void rebuildFromStyle();
+    void updateActiveLoopLength();
+    void haltAudio();             // silence + reset state, WITHOUT stopping the timer
+    int  indexOfSection (ArrangerSectionType type, const juce::String& name) const;
 
     std::weak_ptr<juce::MidiOutput> outputDevice;
     ArrangerStyle style;
-    ArrangerScheduler scheduler;
+    std::vector<ArrangerScheduler> schedulers;       // one per section
+    ArrangerSectionSequencer       sequencer;
+    int  currentSchedulerIndex = -1;                 // which scheduler is currently sounding
+    int  pendingStartIndex     = -1;                 // section start() should begin on (-1 = default)
+    bool timerShouldStop       = false;              // set on the timer thread, honoured on the msg thread
 
     double currentBpm = 120.0;
     double loopLengthBeats = 0.0;

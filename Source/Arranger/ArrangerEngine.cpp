@@ -18,30 +18,73 @@ void ArrangerEngine::setBpm (double bpm)
     if (bpm > 0.0) currentBpm = bpm;
 }
 
-void ArrangerEngine::rebuildScheduler()
+void ArrangerEngine::rebuildFromStyle()
 {
-    std::vector<TimedBeatEvent> merged;
-    double bars = 1.0;
+    schedulers.clear();
+    const double bpb = ArrangerTime::beatsPerBar (style.timeSigNum, style.timeSigDenom);
 
-    if (! style.sections.empty())
+    for (const auto& sec : style.sections)
     {
-        const auto& sec = style.sections.front();
-        bars = (double) juce::jmax (1, sec.lengthBars);
+        std::vector<TimedBeatEvent> merged;
         for (const auto& tr : sec.tracks)
             for (const auto& ev : tr.pattern)
                 merged.push_back (ev);
+
+        const double bars = (double) juce::jmax (1, sec.lengthBars);
+        ArrangerScheduler s;
+        s.setLoop (std::move (merged), bars * bpb);
+        schedulers.push_back (std::move (s));
     }
 
+    sequencer.setStyle (style);
+    currentSchedulerIndex = -1;
+    updateActiveLoopLength();
+}
+
+void ArrangerEngine::updateActiveLoopLength()
+{
+    if (style.sections.empty())
+    {
+        loopLengthBeats = 0.0;
+        return;
+    }
     const double bpb = ArrangerTime::beatsPerBar (style.timeSigNum, style.timeSigDenom);
-    loopLengthBeats = bars * bpb;
-    scheduler.setLoop (std::move (merged), loopLengthBeats);
+    const int idx = juce::jlimit (0, (int) style.sections.size() - 1, sequencer.getActiveIndex());
+    loopLengthBeats = (double) juce::jmax (1, style.sections[idx].lengthBars) * bpb;
+}
+
+int ArrangerEngine::indexOfSection (ArrangerSectionType type, const juce::String& name) const
+{
+    int firstOfType = -1, nameMatch = -1;
+    for (int i = 0; i < (int) style.sections.size(); ++i)
+    {
+        if (style.sections[i].type != type) continue;
+        if (firstOfType < 0) firstOfType = i;
+        if (style.sections[i].name == name) nameMatch = i;
+    }
+    return (nameMatch >= 0) ? nameMatch : firstOfType;
+}
+
+int ArrangerEngine::getActiveSectionIndex() const
+{
+    return sequencer.getActiveIndex();
+}
+
+void ArrangerEngine::queueSection (ArrangerSectionType type, const juce::String& name)
+{
+    sequencer.queue (type, name);
+}
+
+void ArrangerEngine::selectStartSection (ArrangerSectionType type, const juce::String& name)
+{
+    pendingStartIndex = indexOfSection (type, name);
 }
 
 void ArrangerEngine::setStyle (ArrangerStyle newStyle)
 {
     style = std::move (newStyle);
     if (style.originalTempo > 0.0) currentBpm = style.originalTempo;
-    rebuildScheduler();
+    rebuildFromStyle();
 }
 
 void ArrangerEngine::dispatch (const juce::MidiMessage& m)
@@ -60,35 +103,71 @@ void ArrangerEngine::sendAllNotesOff()
 
 void ArrangerEngine::sendInstrumentSetup()
 {
-    // Mirror MultipleTrackPlayer::syncPlaybackSettings: select each track's instrument and
-    // set its channel volume, so the arranger doesn't play everything as the default sound.
-    // Drum channel (10) gets no program change (its kit is fixed). The SFZ engine ignores
-    // program-change but honours CC7 volume, and an external MIDI synth honours both.
-    if (style.sections.empty())
-        return;
+    // Select each track's instrument + channel volume across all sections, so any section
+    // we switch to already has the right sound. Drum channel (10) keeps its fixed kit. The
+    // SFZ engine ignores program-change but honours CC7 volume; an external synth honours both.
+    for (const auto& sec : style.sections)
+        for (const auto& tr : sec.tracks)
+        {
+            if (tr.instrument >= 0 && tr.channel != 10)
+                dispatch (juce::MidiMessage::programChange (tr.channel, tr.instrument));
 
-    for (const auto& tr : style.sections.front().tracks)
-    {
-        if (tr.instrument >= 0 && tr.channel != 10)
-            dispatch (juce::MidiMessage::programChange (tr.channel, tr.instrument));
-
-        dispatch (juce::MidiMessage::controllerEvent (tr.channel, 7, juce::jlimit (0, 127, (int) tr.volume)));
-    }
+            dispatch (juce::MidiMessage::controllerEvent (tr.channel, 7, juce::jlimit (0, 127, (int) tr.volume)));
+        }
 }
 
 void ArrangerEngine::renderRange (double fromBeats, double toBeats)
 {
-    auto events = scheduler.advance (fromBeats, toBeats);
-    for (auto& e : events)
-        dispatch (e.message);
+    if (schedulers.empty())
+        return;
+
+    SequencerStep step = sequencer.advance (fromBeats, toBeats);
+
+    for (const auto& seg : step.segments)
+    {
+        if (seg.sectionIndex != currentSchedulerIndex)
+        {
+            // Flush the outgoing section's hung notes, then reset both sides so the
+            // incoming section enters clean at its own bar 0.
+            if (currentSchedulerIndex >= 0 && currentSchedulerIndex < (int) schedulers.size())
+            {
+                for (auto& e : schedulers[currentSchedulerIndex].flushActiveNotes (0.0))
+                    dispatch (e.message);
+                schedulers[currentSchedulerIndex].reset();
+            }
+            currentSchedulerIndex = seg.sectionIndex;
+            if (currentSchedulerIndex >= 0 && currentSchedulerIndex < (int) schedulers.size())
+                schedulers[currentSchedulerIndex].reset();
+        }
+
+        if (seg.sectionIndex >= 0 && seg.sectionIndex < (int) schedulers.size())
+            for (auto& e : schedulers[seg.sectionIndex].advance (seg.localFromBeats, seg.localToBeats))
+                dispatch (e.message);
+    }
+
+    if (step.stopRequested)
+    {
+        haltAudio();            // silence + reset, but do not touch the timer here
+        timerShouldStop = true; // the timer callback will stop the timer on the message thread
+        return;
+    }
+
+    updateActiveLoopLength();
 }
 
 void ArrangerEngine::start()
 {
-    if (loopLengthBeats <= 0.0)
+    if (schedulers.empty() || loopLengthBeats <= 0.0)
         return;
 
-    scheduler.reset();
+    for (auto& s : schedulers) s.reset();
+    sequencer.reset();
+    if (pendingStartIndex >= 0)
+        sequencer.startAt (pendingStartIndex);
+    pendingStartIndex = -1;
+    currentSchedulerIndex = -1;
+    timerShouldStop = false;
+
     sendInstrumentSetup();   // select instruments + volumes before the first notes play
     playheadBeats = 0.0;
     lastNowSeconds = (double) juce::Time::getHighResolutionTicks()
@@ -99,10 +178,18 @@ void ArrangerEngine::start()
 
 void ArrangerEngine::stop()
 {
-    stopTimer();
+    stopTimer();   // only safe off the timer thread; the Ending path defers this via callAsync
+    haltAudio();
+}
+
+void ArrangerEngine::haltAudio()
+{
     playing.store (false);
     sendAllNotesOff();
-    scheduler.reset();
+    for (auto& s : schedulers) s.reset();
+    sequencer.reset();
+    currentSchedulerIndex = -1;
+    pendingStartIndex = -1;
     playheadBeats = 0.0;
     if (onElapsedBeats)   // reset the beat bar to the downbeat, like the classic player does
         juce::MessageManager::callAsync ([this] { if (onElapsedBeats) onElapsedBeats (0.0); });
@@ -110,6 +197,9 @@ void ArrangerEngine::stop()
 
 void ArrangerEngine::hiResTimerCallback()
 {
+    if (! playing.load())
+        return;
+
     // Accumulate beats from the per-tick wall-clock delta so that a BPM change mid-playback
     // changes the rate going forward without jumping the musical position.
     const double now = (double) juce::Time::getHighResolutionTicks()
@@ -123,6 +213,13 @@ void ArrangerEngine::hiResTimerCallback()
 
     renderRange (from, to);
     playheadBeats = to;
+
+    if (timerShouldStop)
+    {
+        timerShouldStop = false;
+        juce::MessageManager::callAsync ([this] { stop(); }); // stopTimer() safely off the timer thread
+        return;
+    }
 
     if (onElapsedBeats)
     {
