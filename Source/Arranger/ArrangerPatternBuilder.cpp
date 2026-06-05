@@ -70,4 +70,60 @@ namespace ArrangerPatternBuilder
         style.sections.push_back (std::move (section));
         return style;
     }
+
+    ArrangerStyle buildDemoMultiSectionStyle (const std::vector<TrackEntry>& tracks,
+                                              int timeSigNum, int timeSigDenom,
+                                              double referenceBpm)
+    {
+        ArrangerStyle base = buildSingleSectionStyle (tracks, timeSigNum, timeSigDenom, referenceBpm);
+
+        ArrangerStyle style;
+        style.timeSigNum    = timeSigNum;
+        style.timeSigDenom  = timeSigDenom;
+        style.originalTempo = base.originalTempo;
+
+        if (base.sections.empty())
+            return style;
+
+        const double bpb     = ArrangerTime::beatsPerBar (timeSigNum, timeSigDenom);
+        ArrangerSection var  = base.sections.front();     // the full loop, correct channels/length
+        const int loopBars   = juce::jmax (1, var.lengthBars);
+
+        var.id = "var_1"; var.name = "Variation 1";
+        var.type = ArrangerSectionType::Variation;
+        var.afterComplete = ArrangerAfterComplete::Loop;
+
+        ArrangerSection intro = var;
+        intro.id = "intro_1"; intro.name = "Intro 1";
+        intro.type = ArrangerSectionType::Intro;
+        intro.afterComplete = ArrangerAfterComplete::FallThrough;
+
+        ArrangerSection ending = var;
+        ending.id = "ending_1"; ending.name = "Ending 1";
+        ending.type = ArrangerSectionType::Ending;
+        ending.afterComplete = ArrangerAfterComplete::Stop;
+
+        ArrangerSection fill = var;
+        fill.id = "fill_1"; fill.name = "Fill 1";
+        fill.type = ArrangerSectionType::Fill;
+        fill.afterComplete = ArrangerAfterComplete::FallThrough;
+        fill.lengthBars = 1;
+        {
+            const double lastBarStart = (double) (loopBars - 1) * bpb;
+            for (auto& tr : fill.tracks)
+            {
+                std::vector<TimedBeatEvent> sliced;
+                for (const auto& ev : tr.pattern)
+                    if (ev.beats >= lastBarStart - 1e-9)
+                        sliced.push_back ({ ev.beats - lastBarStart, ev.message });
+                tr.pattern = std::move (sliced);
+            }
+        }
+
+        style.sections.push_back (std::move (intro));
+        style.sections.push_back (std::move (var));
+        style.sections.push_back (std::move (fill));
+        style.sections.push_back (std::move (ending));
+        return style;
+    }
 }

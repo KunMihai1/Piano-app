@@ -18,4 +18,12 @@ namespace ArrangerPatternBuilder
     ArrangerStyle buildSingleSectionStyle (const std::vector<TrackEntry>& tracks,
                                            int timeSigNum, int timeSigDenom,
                                            double referenceBpm);
+
+    /** Phase-2 demo: derive Intro/Variation/Fill/Ending from the single loop produced by
+        buildSingleSectionStyle. Transport rules are real (one-shot vs loop); distinct
+        per-section audio is Phase 3. Fill = the loop's last bar. Order: Intro, Variation,
+        Fill, Ending (the engine defaults to the first Variation). */
+    ArrangerStyle buildDemoMultiSectionStyle (const std::vector<TrackEntry>& tracks,
+                                              int timeSigNum, int timeSigDenom,
+                                              double referenceBpm);
 }

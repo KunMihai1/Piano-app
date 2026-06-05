@@ -79,6 +79,64 @@ public:
             ArrangerStyle style = ArrangerPatternBuilder::buildSingleSectionStyle (tracks, 4, 4, 0.0);
             expectEquals (style.sections[0].lengthBars, 1);
         }
+
+        beginTest ("demo multi-section style: four sections with the right transport rules");
+        {
+            // melodic note ends at 2.0s -> 4 beats @120 -> 1 bar; perc hit later -> 2 bars.
+            TrackEntry melodic;
+            melodic.type = TrackType::Melodic;
+            melodic.originalBPM = 120.0;
+            melodic.sequence.addEvent (juce::MidiMessage::noteOn  (1, 60, (juce::uint8) 100), 0.0);
+            melodic.sequence.addEvent (juce::MidiMessage::noteOff (1, 60), 2.0);
+
+            TrackEntry perc;
+            perc.type = TrackType::Percussion;
+            perc.originalBPM = 120.0;
+            perc.sequence.addEvent (juce::MidiMessage::noteOn  (1, 36, (juce::uint8) 100), 5.0); // 10 beats -> bar 3 area
+            perc.sequence.addEvent (juce::MidiMessage::noteOff (1, 36), 5.5);
+
+            std::vector<TrackEntry> tracks { melodic, perc };
+            ArrangerStyle style = ArrangerPatternBuilder::buildDemoMultiSectionStyle (tracks, 4, 4, 120.0);
+
+            expectEquals (style.schemaVersion, 2);
+            expectEquals ((int) style.sections.size(), 4);
+
+            // order: Intro, Variation, Fill, Ending
+            expect (style.sections[0].type == ArrangerSectionType::Intro);
+            expect (style.sections[1].type == ArrangerSectionType::Variation);
+            expect (style.sections[2].type == ArrangerSectionType::Fill);
+            expect (style.sections[3].type == ArrangerSectionType::Ending);
+
+            expect (style.sections[0].afterComplete == ArrangerAfterComplete::FallThrough); // intro
+            expect (style.sections[1].afterComplete == ArrangerAfterComplete::Loop);        // variation
+            expect (style.sections[2].afterComplete == ArrangerAfterComplete::FallThrough); // fill
+            expect (style.sections[3].afterComplete == ArrangerAfterComplete::Stop);        // ending
+
+            expectEquals (style.sections[2].lengthBars, 1); // fill is exactly one bar
+
+            // Variation keeps the Phase-1 channel mapping: melodic -> 2, perc -> 10.
+            expectEquals (style.sections[1].tracks[0].channel, 2);
+            expectEquals (style.sections[1].tracks[1].channel, 10);
+        }
+
+        beginTest ("fill slices the loop's last bar and rebases it to beat 0");
+        {
+            // single 2-bar loop: a melodic hit in the last bar (beat ~6) must reappear in the fill near beat 2.
+            TrackEntry t;
+            t.type = TrackType::Melodic;
+            t.originalBPM = 120.0;
+            t.sequence.addEvent (juce::MidiMessage::noteOn  (1, 72, (juce::uint8) 100), 3.0); // 6 beats @120 -> bar 2
+            t.sequence.addEvent (juce::MidiMessage::noteOff (1, 72), 3.5);
+
+            std::vector<TrackEntry> tracks { t };
+            ArrangerStyle style = ArrangerPatternBuilder::buildDemoMultiSectionStyle (tracks, 4, 4, 120.0);
+
+            expectEquals (style.sections[1].lengthBars, 2);          // variation is 2 bars
+            auto& fillTrack = style.sections[2].tracks[0];
+            expect (! fillTrack.pattern.empty());
+            // event at beat 6 in a 2-bar (8-beat) loop -> fill (last bar starts at beat 4) -> beat 2.
+            expectWithinAbsoluteError (fillTrack.pattern.front().beats, 2.0, 1e-9);
+        }
     }
 };
 
