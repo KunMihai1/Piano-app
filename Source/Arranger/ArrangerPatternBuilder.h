@@ -12,8 +12,10 @@ namespace ArrangerPatternBuilder
                                                  double referenceBpm, int channel);
 
     /** Wrap the selected tracks as one looped section. Channels: perc->10, melodic->2,3,4,…
-        Loop length = longest track rounded up to whole bars. originalTempo from the first
-        track's originalBPM (fallback 120). */
+        Loop length = longest track rounded up to whole bars.
+        `referenceBpm` MUST be the tempo `TrackEntry::sequence` is currently scaled to
+        (i.e. the live playback tempo) so beat positions line up with the bar grid. */
     ArrangerStyle buildSingleSectionStyle (const std::vector<TrackEntry>& tracks,
-                                           int timeSigNum, int timeSigDenom);
+                                           int timeSigNum, int timeSigDenom,
+                                           double referenceBpm);
 }

@@ -52,7 +52,7 @@ public:
             perc.sequence.addEvent (juce::MidiMessage::noteOff (1, 36), 3.0);
 
             std::vector<TrackEntry> tracks { melodic, perc };
-            ArrangerStyle style = ArrangerPatternBuilder::buildSingleSectionStyle (tracks, 4, 4);
+            ArrangerStyle style = ArrangerPatternBuilder::buildSingleSectionStyle (tracks, 4, 4, 120.0);
 
             expectEquals ((int) style.sections.size(), 1);
             auto& sec = style.sections[0];
@@ -76,7 +76,7 @@ public:
             t.sequence.addEvent (juce::MidiMessage::noteOn  (1, 60, (juce::uint8) 100), 0.0);
             t.sequence.addEvent (juce::MidiMessage::noteOff (1, 60), 2.0); // 2s -> 4 beats @120
             std::vector<TrackEntry> tracks { t };
-            ArrangerStyle style = ArrangerPatternBuilder::buildSingleSectionStyle (tracks, 4, 4);
+            ArrangerStyle style = ArrangerPatternBuilder::buildSingleSectionStyle (tracks, 4, 4, 0.0);
             expectEquals (style.sections[0].lengthBars, 1);
         }
     }

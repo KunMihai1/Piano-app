@@ -24,13 +24,16 @@ namespace ArrangerPatternBuilder
     }
 
     ArrangerStyle buildSingleSectionStyle (const std::vector<TrackEntry>& tracks,
-                                           int timeSigNum, int timeSigDenom)
+                                           int timeSigNum, int timeSigDenom,
+                                           double referenceBpm)
     {
+        if (referenceBpm <= 0.0)
+            referenceBpm = 120.0;
+
         ArrangerStyle style;
         style.timeSigNum = timeSigNum;
         style.timeSigDenom = timeSigDenom;
-        if (! tracks.empty())
-            style.originalTempo = tracks.front().originalBPM > 0.0 ? tracks.front().originalBPM : 120.0;
+        style.originalTempo = referenceBpm;
 
         const double bpb = ArrangerTime::beatsPerBar (timeSigNum, timeSigDenom);
 
@@ -44,7 +47,6 @@ namespace ArrangerPatternBuilder
 
         for (const auto& te : tracks)
         {
-            const double refBpm = te.originalBPM > 0.0 ? te.originalBPM : 120.0;
             const bool isPerc = (te.type == TrackType::Percussion);
             const int channel = isPerc ? 10 : melodicChannel++;
 
@@ -55,7 +57,8 @@ namespace ArrangerPatternBuilder
             at.instrument = te.instrumentAssociated;
             at.channel = channel;
             at.volume = te.volumeAssociated;
-            at.pattern = buildBeatEvents (te.sequence, refBpm, channel);
+            // te.sequence is already scaled to referenceBpm's timebase, so convert with referenceBpm.
+            at.pattern = buildBeatEvents (te.sequence, referenceBpm, channel);
 
             double lastBeat = at.pattern.empty() ? 0.0 : at.pattern.back().beats;
             maxBars = std::max (maxBars, ArrangerTime::barsForBeats (lastBeat, bpb));

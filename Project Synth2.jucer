@@ -29,6 +29,11 @@
               file="tests/unit/test_settings_window.cpp"/>
         <FILE id="gNfg2Z" name="test_validator_ui.cpp" compile="1" resource="0"
               file="tests/unit/test_validator_ui.cpp"/>
+        <FILE id="arrTs0" name="test_arranger_model.cpp" compile="1" resource="0" file="tests/unit/test_arranger_model.cpp"/>
+        <FILE id="arrTs1" name="test_arranger_time.cpp" compile="1" resource="0" file="tests/unit/test_arranger_time.cpp"/>
+        <FILE id="arrTs2" name="test_arranger_scheduler.cpp" compile="1" resource="0" file="tests/unit/test_arranger_scheduler.cpp"/>
+        <FILE id="arrTs3" name="test_arranger_pattern_builder.cpp" compile="1" resource="0" file="tests/unit/test_arranger_pattern_builder.cpp"/>
+        <FILE id="arrTs4" name="test_arranger_engine.cpp" compile="1" resource="0" file="tests/unit/test_arranger_engine.cpp"/>
       </GROUP>
       <GROUP id="{B2C3D4E5-5555-6666-7777-888899990000}" name="Integration">
         <FILE id="HwMdDv" name="test_midi_device_hw.cpp" compile="1" resource="0"
@@ -304,6 +309,15 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
+      <FILE id="arrMd1" name="ArrangerModel.h" compile="0" resource="0" file="Source/Arranger/ArrangerModel.h"/>
+      <FILE id="arrTm1" name="ArrangerTime.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerTime.cpp"/>
+      <FILE id="arrTm2" name="ArrangerTime.h" compile="0" resource="0" file="Source/Arranger/ArrangerTime.h"/>
+      <FILE id="arrSc1" name="ArrangerScheduler.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerScheduler.cpp"/>
+      <FILE id="arrSc2" name="ArrangerScheduler.h" compile="0" resource="0" file="Source/Arranger/ArrangerScheduler.h"/>
+      <FILE id="arrPb1" name="ArrangerPatternBuilder.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerPatternBuilder.cpp"/>
+      <FILE id="arrPb2" name="ArrangerPatternBuilder.h" compile="0" resource="0" file="Source/Arranger/ArrangerPatternBuilder.h"/>
+      <FILE id="arrEn1" name="ArrangerEngine.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerEngine.cpp"/>
+      <FILE id="arrEn2" name="ArrangerEngine.h" compile="0" resource="0" file="Source/Arranger/ArrangerEngine.h"/>
       <FILE id="w1MPTi" name="SFZlibrary.cpp" compile="1" resource="0" file="Source/SFZlibrary.cpp"/>
       <FILE id="T3o6UR" name="SFZlibrary.h" compile="0" resource="0" file="Source/SFZlibrary.h"/>
       <FILE id="euLojz" name="SFZLibraryUI.cpp" compile="1" resource="0"
