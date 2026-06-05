@@ -16,6 +16,15 @@ void ArrangerScheduler::reset()
     activeNotes.clear();
 }
 
+std::vector<EmittedEvent> ArrangerScheduler::flushActiveNotes (double atBeats)
+{
+    std::vector<EmittedEvent> result;
+    for (const auto& key : activeNotes)
+        result.push_back ({ atBeats, juce::MidiMessage::noteOff (key.first, key.second) });
+    activeNotes.clear();
+    return result;
+}
+
 void ArrangerScheduler::trackActiveNote (const juce::MidiMessage& m)
 {
     const auto key = std::make_pair (m.getChannel(), m.getNoteNumber());

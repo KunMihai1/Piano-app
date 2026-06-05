@@ -24,6 +24,10 @@ public:
     void setLoop (std::vector<TimedBeatEvent> events, double loopLengthBeats);
     void reset();   // forget which notes are currently sounding
 
+    /** Emit note-offs for every currently-sounding note (used when switching sections
+        mid-loop, where the normal loop-seam close would not fire). Clears active-note state. */
+    std::vector<EmittedEvent> flushActiveNotes (double atBeats);
+
     /** Advance the monotonic playhead from `fromBeats` to `toBeats` (from <= to). */
     std::vector<EmittedEvent> advance (double fromBeats, double toBeats);
 

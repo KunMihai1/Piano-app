@@ -78,6 +78,23 @@ public:
             for (auto& e : out) if (e.message.isNoteOn() && e.message.getNoteNumber() == 36) ++kickOns;
             expectEquals (kickOns, 2);
         }
+
+        beginTest ("flushActiveNotes closes sounding notes and then nothing");
+        {
+            ArrangerScheduler s;
+            // A held note on at beat 0 with no note-off in the bar.
+            s.setLoop ({ { 0.0, juce::MidiMessage::noteOn (3, 64, (juce::uint8) 100) } }, 4.0);
+            s.advance (0.0, 1.0);                 // turns (3,64) on
+
+            auto flushed = s.flushActiveNotes (1.0);
+            expectEquals ((int) flushed.size(), 1);
+            expect (flushed[0].message.isNoteOff());
+            expectEquals (flushed[0].message.getChannel(), 3);
+            expectEquals (flushed[0].message.getNoteNumber(), 64);
+
+            auto again = s.flushActiveNotes (1.0); // nothing left to close
+            expectEquals ((int) again.size(), 0);
+        }
     }
 };
 
