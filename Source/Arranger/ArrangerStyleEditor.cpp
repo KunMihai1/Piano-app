@@ -17,7 +17,8 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
     addAndMakeVisible (nameEditor);
     nameLabel.setColour (juce::Label::textColourId, juce::Colours::white);
     nameEditor.setText ("New configuration", juce::dontSendNotification);
-    for (auto* b : { &addIntroBtn, &addFillBtn, &addEndingBtn, &previewBtn, &stopBtn, &saveBtn, &closeBtn })
+    for (auto* b : { &addIntroBtn, &addVariationBtn, &addFillBtn, &addBreakBtn, &addEndingBtn,
+                     &removeBtn, &previewBtn, &stopBtn, &saveBtn, &closeBtn })
         addAndMakeVisible (b);
 
     timeline.onWindowsChanged = [this] (const std::vector<SectionWindow>& w)
@@ -33,9 +34,12 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
             engine.queueSection (windows[(size_t) idx].type, windows[(size_t) idx].name);
     };
 
-    addIntroBtn.onClick  = [this] { addSectionOfType (ArrangerSectionType::Intro); };
-    addFillBtn.onClick   = [this] { addSectionOfType (ArrangerSectionType::Fill); };
-    addEndingBtn.onClick = [this] { addSectionOfType (ArrangerSectionType::Ending); };
+    addIntroBtn.onClick     = [this] { addSectionOfType (ArrangerSectionType::Intro); };
+    addVariationBtn.onClick = [this] { addSectionOfType (ArrangerSectionType::Variation); };
+    addFillBtn.onClick      = [this] { addSectionOfType (ArrangerSectionType::Fill); };
+    addBreakBtn.onClick     = [this] { addSectionOfType (ArrangerSectionType::Break); };
+    addEndingBtn.onClick    = [this] { addSectionOfType (ArrangerSectionType::Ending); };
+    removeBtn.onClick       = [this] { removeSelectedSection(); };
     previewBtn.onClick   = [this] { rebuildPreview(); engine.setBpm (referenceBpm); engine.start(); };
     stopBtn.onClick      = [this] { engine.stop(); };
     saveBtn.onClick      = [this] { requestSave(); };
@@ -104,6 +108,7 @@ void ArrangerStyleEditor::loadFromFile (const ArrangerStyleFile& f)
     windows = f.sections;
     if (windows.empty())
         windows = ArrangerDefaults::defaultWindowsForBars (1);
+    renumberSectionsByType();   // ensure unique per-type names (older files had them all as "<type> 1")
 
     recomputeTotalBars();
     timeline.setTotalBars (totalBars);
@@ -139,9 +144,49 @@ void ArrangerStyleEditor::addSectionOfType (ArrangerSectionType type)
     w.lengthBars = juce::jmin (type == ArrangerSectionType::Fill ? 1 : 2, totalBars);
     w.afterComplete = (type == ArrangerSectionType::Ending) ? ArrangerAfterComplete::Stop
                                                             : ArrangerAfterComplete::FallThrough;
-    w.name = ArrangerEnums::toString (type) + " 1";
+
+    // Unique, stable per-type name (max existing + 1) so the section is identifiable and the engine
+    // can jump to this exact one (it resolves by type + name). Stable across removals (gaps are fine).
+    int maxN = 0;
+    for (const auto& existing : windows)
+        if (existing.type == type)
+            maxN = juce::jmax (maxN, existing.name.fromLastOccurrenceOf (" ", false, false).getIntValue());
+    w.name = ArrangerEnums::toString (type) + " " + juce::String (maxN + 1);
+
     windows.push_back (w);
     timeline.setWindows (windows);
+    rebuildPreview();
+}
+
+void ArrangerStyleEditor::renumberSectionsByType()
+{
+    // Give every section a unique per-type number in list order (fixes legacy files where they were
+    // all "<type> 1" and so couldn't be told apart or individually targeted).
+    for (size_t i = 0; i < windows.size(); ++i)
+    {
+        int n = 0;
+        for (size_t j = 0; j <= i; ++j)
+            if (windows[j].type == windows[i].type)
+                ++n;
+        windows[i].name = ArrangerEnums::toString (windows[i].type) + " " + juce::String (n);
+    }
+}
+
+void ArrangerStyleEditor::removeSelectedSection()
+{
+    const int idx = timeline.getSelectedIndex();
+    if (idx < 0 || idx >= (int) windows.size())
+    {
+        juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::InfoIcon,
+            "Remove section", "Click a section on the timeline to select it first.");
+        return;
+    }
+
+    windows.erase (windows.begin() + idx);
+    recomputeTotalBars();
+    timeline.setTotalBars (totalBars);
+    timeline.setWindows (windows);   // also clears the now-stale selection
+    layoutTimeline();
     rebuildPreview();
 }
 
@@ -209,7 +254,8 @@ void ArrangerStyleEditor::resized()
     nameLabel.setBounds (top.removeFromLeft (50));
     nameEditor.setBounds (top.removeFromLeft (180).reduced (0, 2));
     top.removeFromLeft (8);
-    for (auto* b : { &addIntroBtn, &addFillBtn, &addEndingBtn, &previewBtn, &stopBtn, &saveBtn, &closeBtn })
+    for (auto* b : { &addIntroBtn, &addVariationBtn, &addFillBtn, &addBreakBtn, &addEndingBtn,
+                     &removeBtn, &previewBtn, &stopBtn, &saveBtn, &closeBtn })
         b->setBounds (top.removeFromLeft (84).reduced (2));
 
     area.removeFromTop (6);

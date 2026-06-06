@@ -286,6 +286,12 @@ void CurrentStyleComponent::setArrangerModeEnabled(bool shouldEnable)
     }
 }
 
+void CurrentStyleComponent::setArrangerAutoFillEnabled(bool enabled)
+{
+    if (arrangerEngine)
+        arrangerEngine->setAutoFillEnabled(enabled);
+}
+
 void CurrentStyleComponent::restoreEngineBeatBar()
 {
     if (arrangerEngine)

@@ -36,6 +36,10 @@ public:
         next bar boundary. Last call before the boundary wins. False if no such section. */
     bool queue (ArrangerSectionType type, const juce::String& name);
 
+    /** When enabled, queuing a Variation while a Variation plays inserts a matching Fill
+        (Fill N for Variation N, else any Fill) as a one-bar transition into the new variation. */
+    void setAutoFillEnabled (bool enabled) { autoFillEnabled = enabled; }
+
     /** Advance the monotonic playhead from `fromBeats` to `toBeats` (from <= to). */
     SequencerStep advance (double fromBeats, double toBeats);
 
@@ -63,4 +67,6 @@ private:
     double activeStartAbs = 0.0;   // absolute beat where the active section began
     int    pendingIndex   = -1;    // queued target, -1 = none
     bool   stopped        = false;
+    bool   autoFillEnabled   = false; // insert a Fill when switching variations
+    int    fillReturnOverride = -1;   // variation to land on after an auto-fill (-1 = normal fill return)
 };

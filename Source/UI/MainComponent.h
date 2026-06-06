@@ -297,6 +297,14 @@ private:
 
     void initializeOverlay();
 
+    /** Show/hide the centered loading label. While shown, the OpenGL note layer is hidden so the
+        label isn't covered by it (the GL layer renders on top of normal painting), then restored. */
+    void setLoadingOverlayVisible(bool show, const juce::String& text = {});
+
+    /** Show/hide the in-app ESC menu overlay. While shown, the note layer + keyboard are hidden so
+        the overlay (painted the normal way) is on top of the GL layer, then restored on close. */
+    void setOverlayMenuVisible(bool show);
+
     //==========================================================================
     // Member variables
     juce::ApplicationProperties appProperties; ///< Application properties manager
@@ -332,6 +340,12 @@ private:
     bool midiWindowShouldBeVisible = false;
     bool overlayShouldBeVisible = false;
     bool soundEffecttWindowShouldBeVisible = false;
+
+    // Saved scene-layer visibility so overlays can hide the GL note layer (+ keyboard) and restore it.
+    bool loadingOverlayActive = false;          ///< Loading label currently using the hide-note-layer path
+    bool noteLayerVisibleBeforeLabel = false;   ///< Note-layer visibility to restore after the loading label
+    bool noteLayerVisibleBeforeMenu = false;    ///< Note-layer visibility to restore after the ESC menu
+    bool keyboardVisibleBeforeMenu = false;     ///< Keyboard visibility to restore after the ESC menu
     // UI buttons and toggles
     juce::TextButton settingsButton{ "Settings" };
     juce::TextButton midiButton{ "MIDI Settings" };

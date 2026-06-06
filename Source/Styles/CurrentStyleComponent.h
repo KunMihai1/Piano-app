@@ -185,6 +185,9 @@ public:
     void setArrangerModeEnabled(bool shouldEnable);
     bool isArrangerModeEnabled() const { return arrangerModeEnabled; }
 
+    /** Enable/disable Auto Fill on variation switches (forwarded to the arranger engine). */
+    void setArrangerAutoFillEnabled(bool enabled);
+
     void setMidiInjectCallback(std::function<void(const juce::MidiMessage&)> cb);
 
     struct TrackChannelInstrument { int channel; int instrument; };

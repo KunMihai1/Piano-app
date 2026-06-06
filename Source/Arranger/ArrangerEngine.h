@@ -28,6 +28,9 @@ public:
     /** Choose which section a subsequent start() begins on (used while stopped). */
     void selectStartSection (ArrangerSectionType type, const juce::String& name);
 
+    /** Enable/disable Auto Fill on variation switches (delegates to the sequencer). */
+    void setAutoFillEnabled (bool enabled) { sequencer.setAutoFillEnabled (enabled); }
+
     int getActiveSectionIndex() const;
     int peekPendingStartIndex() const { return pendingStartIndex; } // test seam
 

@@ -48,6 +48,9 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
                 else
                     toggleToolTip->setNewText("Enable Auto Fill");
             }
+
+            if (onToggleChanged)
+                onToggleChanged(toggleButton->getToggleState());
         };
 
         addAndMakeVisible(toggleButton.get());

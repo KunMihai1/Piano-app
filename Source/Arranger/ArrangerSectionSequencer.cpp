@@ -23,14 +23,21 @@ int ArrangerSectionSequencer::firstVariationIndex() const
 
 int ArrangerSectionSequencer::findSection (ArrangerSectionType type, const juce::String& name) const
 {
-    int firstOfType = -1, nameMatch = -1;
+    // Live buttons send labels like "Var 2" / "Break"; editor sections are "Variation 2" / "Break 1".
+    // Match by type + trailing number so the prefixes don't have to be identical; fall back to the
+    // first section of the type (e.g. a single Break addressed as "Break").
+    const int wantNum = name.getTrailingIntValue();   // "Var 2" -> 2, "Break" -> 0
+    int firstOfType = -1, exactName = -1, numMatch = -1;
     for (int i = 0; i < (int) sections.size(); ++i)
     {
         if (sections[i].type != type) continue;
         if (firstOfType < 0) firstOfType = i;
-        if (sections[i].name == name) nameMatch = i;
+        if (sections[i].name == name) exactName = i;
+        if (wantNum > 0 && sections[i].name.getTrailingIntValue() == wantNum) numMatch = i;
     }
-    return (nameMatch >= 0) ? nameMatch : firstOfType;
+    if (exactName >= 0) return exactName;
+    if (numMatch  >= 0) return numMatch;
+    return firstOfType;
 }
 
 void ArrangerSectionSequencer::reset()
@@ -40,6 +47,7 @@ void ArrangerSectionSequencer::reset()
     activeStartAbs = 0.0;
     pendingIndex   = -1;
     stopped        = false;
+    fillReturnOverride = -1;
 }
 
 void ArrangerSectionSequencer::startAt (int sectionIndex)
@@ -50,13 +58,33 @@ void ArrangerSectionSequencer::startAt (int sectionIndex)
     activeStartAbs = 0.0;
     pendingIndex   = -1;
     stopped        = false;
+    fillReturnOverride = -1;
 }
 
 bool ArrangerSectionSequencer::queue (ArrangerSectionType type, const juce::String& name)
 {
     const int target = findSection (type, name);
     if (target < 0) return false;
-    pendingIndex = target;
+
+    // Auto Fill: when switching from one Variation to another, insert a matching Fill (Fill N for
+    // Variation N, else any Fill) as a one-bar transition that then lands on the new variation.
+    if (autoFillEnabled
+        && type == ArrangerSectionType::Variation
+        && target != activeIndex
+        && activeIndex >= 0 && activeIndex < (int) sections.size()
+        && sections[activeIndex].type == ArrangerSectionType::Variation)
+    {
+        const int fill = findSection (ArrangerSectionType::Fill, name);  // matches the trailing number
+        if (fill >= 0)
+        {
+            pendingIndex       = fill;
+            fillReturnOverride = target;
+            return true;
+        }
+    }
+
+    pendingIndex       = target;
+    fillReturnOverride = -1;
     return true;
 }
 
@@ -66,13 +94,17 @@ void ArrangerSectionSequencer::applyBoundary (double boundaryAbs, SequencerStep&
     if (pendingIndex >= 0)
     {
         const int from = activeIndex;
-        if (sections[pendingIndex].type == ArrangerSectionType::Fill)
+        if (sections[pendingIndex].type == ArrangerSectionType::Fill
+            || sections[pendingIndex].type == ArrangerSectionType::Break)
         {
-            // Remember the variation/break to return to after the fill.
-            if (sections[from].type == ArrangerSectionType::Variation
-                || sections[from].type == ArrangerSectionType::Break)
+            if (fillReturnOverride >= 0)
+                returnIndex = fillReturnOverride;   // auto-fill: land on the NEW variation after the fill
+            // Otherwise remember the variation to return to after the fill/break one-shot completes.
+            else if (sections[from].type == ArrangerSectionType::Variation
+                     || sections[from].type == ArrangerSectionType::Break)
                 returnIndex = from;
         }
+        fillReturnOverride = -1;
         activeIndex    = pendingIndex;
         pendingIndex   = -1;
         activeStartAbs = boundaryAbs;

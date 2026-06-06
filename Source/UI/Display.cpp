@@ -242,6 +242,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
             currentStyleComponent->setMidiInjectCallback(pendingMidiInjectCallback);
 
         currentStyleComponent->setArrangerModeEnabled(arrangerModeEnabled);
+        currentStyleComponent->setArrangerAutoFillEnabled(arrangerAutoFillEnabled);
     }
     else
     {
@@ -405,6 +406,13 @@ void Display::setArrangerModeEnabled(bool shouldEnable)
     arrangerModeEnabled = shouldEnable;
     if (currentStyleComponent)
         currentStyleComponent->setArrangerModeEnabled(shouldEnable);
+}
+
+void Display::setArrangerAutoFillEnabled(bool enabled)
+{
+    arrangerAutoFillEnabled = enabled;
+    if (currentStyleComponent)
+        currentStyleComponent->setArrangerAutoFillEnabled(enabled);
 }
 
 MultipleTrackPlayer* Display::getTrackPlayer()

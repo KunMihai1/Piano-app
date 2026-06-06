@@ -16,6 +16,9 @@
 
 class SectionGroupComponent: public juce::Component {
 public:
+    /** Fired when the group's toggle (e.g. Auto Fill) changes, with its new state. */
+    std::function<void(bool)> onToggleChanged;
+
     SectionGroupComponent(const juce::String& title, const std::vector<juce::String>& buttonNames, bool toggleButton=false);
 
     void resized() override;

@@ -41,6 +41,8 @@ private:
     void finishSave (const juce::File& target);   // write (renaming the source if needed)
     void rebuildPreview();          // build style from current state and engine.setStyle
     void addSectionOfType (ArrangerSectionType type);
+    void removeSelectedSection();   // remove the section currently selected on the timeline
+    void renumberSectionsByType();  // assign unique per-type names (Intro 1, Intro 2, ...)
     void recomputeTotalBars();      // longest source track / furthest window, in whole bars
     void layoutTimeline();          // size the (scrollable) timeline to totalBars * kPixelsPerBar
 
@@ -50,9 +52,9 @@ private:
 
     juce::Label      nameLabel { {}, "Name:" };
     juce::TextEditor nameEditor;
-    juce::TextButton addIntroBtn { "Add Intro" }, addFillBtn { "Add Fill" },
-                     addEndingBtn { "Add Ending" }, previewBtn { "Preview" },
-                     stopBtn { "Stop" }, saveBtn { "Save" }, closeBtn { "Close" };
+    juce::TextButton addIntroBtn { "Add Intro" }, addVariationBtn { "Add Var" }, addFillBtn { "Add Fill" },
+                     addBreakBtn { "Add Break" }, addEndingBtn { "Add Ending" }, removeBtn { "Remove" },
+                     previewBtn { "Preview" }, stopBtn { "Stop" }, saveBtn { "Save" }, closeBtn { "Close" };
 
     std::vector<SourceTrackFile> sourceTracks;
     std::vector<SectionWindow>   windows;

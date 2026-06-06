@@ -7,11 +7,14 @@
 
 /** Bar ruler with draggable/resizable colored section regions. Holds a copy of the
     windows; emits a callback whenever they change. Knows nothing about files or the engine. */
-class ArrangerTimelineComponent : public juce::Component
+class ArrangerTimelineComponent : public juce::Component, public juce::TooltipClient
 {
 public:
     std::function<void (const std::vector<SectionWindow>&)> onWindowsChanged;
     std::function<void (int sectionIndex)> onSectionSelected;
+
+    /** Tooltip naming the section under the mouse (e.g. "Intro 1  (bars 1-2)"). */
+    juce::String getTooltip() override;
 
     void setTotalBars (int bars);
     void setWindows (const std::vector<SectionWindow>& windows);

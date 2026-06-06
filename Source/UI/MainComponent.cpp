@@ -161,7 +161,6 @@ void MainComponent::paintOverChildren(juce::Graphics& g)
     if (!openingAudioLabel.isVisible())
         return;
 
-    DBG("[overlay] paintOverChildren: drawing overlay");
     g.setColour(juce::Colours::black.withAlpha(0.75f));
     g.fillAll();
 
@@ -178,10 +177,7 @@ void MainComponent::paintOverChildren(juce::Graphics& g)
         pendingPlayInit = false;
         juce::MessageManager::callAsync([this]
         {
-            DBG("[overlay] work start; label visible=" << (int) openingAudioLabel.isVisible());
-            const auto t0 = juce::Time::getMillisecondCounter();
             playButtonOnClick();
-            DBG("[overlay] work done in " << (int) (juce::Time::getMillisecondCounter() - t0) << " ms; hiding");
             openingAudioLabel.setVisible(false);
         });
     }
@@ -210,9 +206,7 @@ void MainComponent::globalFocusChanged(juce::Component* focusedComponent)
                 // After the delay, check if the app truly lost foreground.
                 if (!juce::Process::isForegroundProcess())
                 {
-                    if (safeThis->overlayWindow)
-                        safeThis->overlayWindow->setVisible(false);
-
+                    // overlayWindow is an in-app child now, so it isn't toggled on app focus loss.
                     if (safeThis->midiWindow)
                         safeThis->midiWindow->setVisible(false);
 
@@ -227,9 +221,7 @@ void MainComponent::globalFocusChanged(juce::Component* focusedComponent)
         // actually hidden (e.g. after alt-tab away). During normal
         // within-app focus transitions nothing was hidden, so this
         // branch does nothing, avoiding any native-window side effects.
-        if (overlayWindow && !overlayWindow->isVisible() && overlayShouldBeVisible)
-            overlayWindow->setVisible(true);
-
+        // (overlayWindow is an in-app child now and isn't restored here.)
         if (midiWindow && !midiWindow->isVisible() && midiWindowShouldBeVisible)
             midiWindow->setVisible(true);
 
@@ -244,6 +236,8 @@ void MainComponent::resized()
     // If you add any child components, this is where you should
     // update their positions.
     openingAudioLabel.setBounds(getLocalBounds());
+    if (overlayWindow)
+        overlayWindow->setBounds(getLocalBounds());
     int buttonWidth = getWidth() / 16;
     int buttonHeight = getHeight() / 24;
     int x = (int)(getWidth() * 0.5 - getWidth() * 0.175);
@@ -339,22 +333,15 @@ bool MainComponent::keyPressed(const juce::KeyPress& key, juce::Component*)
 
         if (!overlayWindow->isVisible())
         {
-            
             overlayShouldBeVisible = true;
-            overlayWindow->setVisible(true);
-            overlayWindow->toFront(false);
-
+            setOverlayMenuVisible(true);
         }
         else
         {
-
             if (overlayWindow->onRequestClose)
                 overlayWindow->onRequestClose();
             else
-            {
-                overlayShouldBeVisible = false;
-                overlayWindow->setVisible(false);
-            }
+                setOverlayMenuVisible(false);
         }
     }
 
@@ -873,11 +860,8 @@ void MainComponent::setCallBacksForOverlayWindow()
 {
     overlayWindow->onRequestClose = [this]()
     {
-        if (overlayWindow)
-        {
-            overlayShouldBeVisible = false;
-            overlayWindow->setVisible(false);
-        }
+        overlayShouldBeVisible = false;
+        setOverlayMenuVisible(false);
     };
 
     overlayWindow->setWindowFlag = [this]()
@@ -1299,7 +1283,6 @@ void MainComponent::playButtonInit()
         // overlay before blocking is unreliable, so instead we just show the overlay and let it
         // paint normally; paintOverChildren() kicks off the blocking init once it has actually
         // drawn (pendingPlayInit). That guarantees the overlay is on screen before we block.
-        DBG("[overlay] onClick: setVisible(true)");
         pendingPlayInit = true;
         openingAudioLabel.setVisible(true);
         repaint();
@@ -1550,15 +1533,12 @@ void MainComponent::displayInit()
 
         if (MIDIDevice.isOpenAudioOUT())
         {
-            openingAudioLabel.setText("Preparing style...", juce::dontSendNotification);
-            openingAudioLabel.setVisible(true);
-            repaint();
+            setLoadingOverlayVisible(true, "Preparing style...");
             loadSfzForCurrentStyle(styleID);
             // Fallback hide if no SFZ file actually changed (onSfzLoadComplete won't fire)
             juce::Timer::callAfterDelay(300, [this]()
             {
-                openingAudioLabel.setVisible(false);
-                repaint();
+                setLoadingOverlayVisible(false);
             });
         }
     };
@@ -1751,6 +1731,15 @@ void MainComponent::sectionsInit()
 
     variationsFills = std::make_unique<StyleSectionComponent>(std::vector<juce::String>{"Variations", "Fills"},
         std::vector<std::vector<juce::String>>{ {"Var 1", "Var 2", "Var 3", "Var 4"}, {"Fill 1", "Fill 2", "Fill 3", "Fill 4"}}, callbacksVarFillBreak);
+
+    // Wire the Auto Fill toggle (lives on the "Variations" group) to the arranger engine.
+    for (auto* group : variationsFills->getSectionGroups())
+        if (group->getToggleButton() != nullptr)
+            group->onToggleChanged = [this](bool on)
+            {
+                if (display)
+                    display->setArrangerAutoFillEnabled(on);
+            };
 
     
     introsEndings->undoLastClickedForOtherGroupSections = [this]()
@@ -2280,14 +2269,11 @@ void MainComponent::ensureAudioHandlerReady()
     {
         audioHandler = std::make_unique<AudioHandler>(midiHandler);
         audioHandler->onSfzLoadStart = [this]() {
-            openingAudioLabel.setText("Preparing style...", juce::dontSendNotification);
-            openingAudioLabel.setVisible(true);
-            repaint();
+            setLoadingOverlayVisible(true, "Preparing style...");
         };
         audioHandler->onSfzLoadComplete = [this]() {
-            openingAudioLabel.setVisible(false);
+            setLoadingOverlayVisible(false);
             openingAudioLabel.setText("Preparing session...", juce::dontSendNotification);
-            repaint();
         };
         audioHandler->onNoSfzForChannels = [this](int channelMask) {
             juce::String channels;
@@ -2557,29 +2543,77 @@ void MainComponent::handleBreak(const juce::String& name)
 
 void MainComponent::initializeOverlay()
 {
+    // In-app child (not a top-level/OS window): it dies with the app, so a crash can't leave a
+    // stuck window behind. It's hidden until ESC; setOverlayMenuVisible() hides the GL note layer
+    // while it's up so it isn't covered. Bounds are set in resized().
     overlayWindow = std::make_unique<OverlayComponent>();
-    auto topLevel = getTopLevelComponent();
-    juce::Rectangle<int> screenBounds = topLevel->getScreenBounds();
-
-    overlayWindow->setBounds(screenBounds);
+    addChildComponent(*overlayWindow);
     overlayWindow->setAlwaysOnTop(true);
     overlayWindow->setOpaque(false);
 
     overlayShouldBeVisible = false;
 
-
-    overlayWindow->addToDesktop(
-        juce::ComponentPeer::windowIsTemporary
-        | juce::ComponentPeer::windowHasDropShadow,
-        nullptr);
-
     setCallBacksForOverlayWindow();
 
-    overlayWindow->setVisible(true);  
-    overlayWindow->repaint();          
-    overlayWindow->setVisible(false);
-
     loadEffectsFromFile();
+}
+
+void MainComponent::setLoadingOverlayVisible(bool show, const juce::String& text)
+{
+    if (show)
+    {
+        if (text.isNotEmpty())
+            openingAudioLabel.setText(text, juce::dontSendNotification);
+
+        // The GL note layer renders on top of normal painting, so it would cover the centered
+        // label. Remember its visibility once, then hide it for the duration of the load.
+        if (! loadingOverlayActive)
+        {
+            noteLayerVisibleBeforeLabel = (noteLayer && noteLayer->isVisible());
+            loadingOverlayActive = true;
+        }
+        if (noteLayer) noteLayer->setVisible(false);
+        openingAudioLabel.setVisible(true);
+    }
+    else
+    {
+        openingAudioLabel.setVisible(false);
+        if (loadingOverlayActive && noteLayer)
+            noteLayer->setVisible(noteLayerVisibleBeforeLabel);
+        loadingOverlayActive = false;
+    }
+    repaint();
+}
+
+void MainComponent::setOverlayMenuVisible(bool show)
+{
+    if (overlayWindow == nullptr)
+        return;
+
+    if (show)
+    {
+        overlayWindow->setBounds(getLocalBounds());
+        // Hide the GL note layer (would cover the overlay) and the keyboard, remembering both.
+        noteLayerVisibleBeforeMenu = (noteLayer && noteLayer->isVisible());
+        keyboardVisibleBeforeMenu  = keyboard.isVisible();
+        if (noteLayer) noteLayer->setVisible(false);
+        keyboard.setVisible(false);
+
+        overlayWindow->setVisible(true);
+        overlayWindow->toFront(true);
+        overlayWindow->grabKeyboardFocus();
+    }
+    else
+    {
+        overlayWindow->setVisible(false);
+        if (noteLayer)
+        {
+            noteLayer->resetState();   // clear leftover falling/active notes so we return to a clean screen
+            noteLayer->setVisible(noteLayerVisibleBeforeMenu);
+        }
+        keyboard.setVisible(keyboardVisibleBeforeMenu);
+        grabKeyboardFocus();   // so ESC/keys keep working after the menu closes
+    }
 }
 
 SmoothRotarySlider::SmoothRotarySlider()

@@ -34,8 +34,32 @@ juce::Colour ArrangerTimelineComponent::colourForType (ArrangerSectionType t) co
 }
 
 void ArrangerTimelineComponent::setTotalBars (int bars)     { totalBars = juce::jmax (1, bars); repaint(); }
-void ArrangerTimelineComponent::setWindows (const std::vector<SectionWindow>& w) { windows = w; repaint(); }
+void ArrangerTimelineComponent::setWindows (const std::vector<SectionWindow>& w)
+{
+    windows = w;
+    if (selectedIndex >= (int) windows.size())   // a removed/shrunk list can leave a stale selection
+        selectedIndex = -1;
+    repaint();
+}
 void ArrangerTimelineComponent::setPlayheadBar (double bar) { playheadBar = bar; repaint(); }
+
+juce::String ArrangerTimelineComponent::getTooltip()
+{
+    const auto pos = getMouseXYRelative();
+    const auto L = layout();
+    const int regionTop = 18, regionH = getHeight() - 26;
+    for (int i = (int) windows.size() - 1; i >= 0; --i)   // topmost (last drawn) first
+    {
+        auto r = regionBounds (windows[i].startBar, windows[i].lengthBars, L, regionH).withY (regionTop);
+        if (r.contains (pos))
+        {
+            const int endBar = windows[i].startBar + windows[i].lengthBars - 1;
+            return windows[i].name + "  (bars " + juce::String (windows[i].startBar)
+                 + "-" + juce::String (endBar) + ")";
+        }
+    }
+    return {};
+}
 
 void ArrangerTimelineComponent::paint (juce::Graphics& g)
 {
