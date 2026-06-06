@@ -38,6 +38,12 @@ public:
      */
     static juce::File getFile(const juce::String& name);
 
+    /**
+     * @brief Returns the folder holding saved arranger *.style configurations,
+     *        nested inside the app's data folder (Piano Synth2/ArrangerStyles).
+     */
+    static juce::File getArrangerStylesFolder();
+
 private:
 };
 

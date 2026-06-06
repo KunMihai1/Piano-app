@@ -161,6 +161,7 @@ void MainComponent::paintOverChildren(juce::Graphics& g)
     if (!openingAudioLabel.isVisible())
         return;
 
+    DBG("[overlay] paintOverChildren: drawing overlay");
     g.setColour(juce::Colours::black.withAlpha(0.75f));
     g.fillAll();
 
@@ -169,6 +170,21 @@ void MainComponent::paintOverChildren(juce::Graphics& g)
     g.drawFittedText(openingAudioLabel.getText(),
                      getLocalBounds().reduced(20),
                      juce::Justification::centred, 1);
+
+    // The overlay is now actually on screen: run the deferred blocking init exactly once,
+    // after this paint completes (callAsync keeps us out of the paint call itself).
+    if (pendingPlayInit)
+    {
+        pendingPlayInit = false;
+        juce::MessageManager::callAsync([this]
+        {
+            DBG("[overlay] work start; label visible=" << (int) openingAudioLabel.isVisible());
+            const auto t0 = juce::Time::getMillisecondCounter();
+            playButtonOnClick();
+            DBG("[overlay] work done in " << (int) (juce::Time::getMillisecondCounter() - t0) << " ms; hiding");
+            openingAudioLabel.setVisible(false);
+        });
+    }
 }
 
 void MainComponent::focusGained(juce::Component::FocusChangeType)
@@ -1273,11 +1289,20 @@ void MainComponent::playButtonInit()
     playButton.setColour(juce::TextButton::buttonColourId, juce::Colours::transparentBlack);
     playButton.setMouseCursor(juce::MouseCursor::PointingHandCursor);
     playButton.onClick = [this] {
+        // playButtonOnClick() opens devices + loads SFZ samples synchronously and blocks the
+        // message thread, so the "Preparing session..." overlay must be on screen *before* it runs.
+        // setVisible() only queues a repaint, and the old fixed delay raced it (overlay showed only
+        // sometimes). Force the paint now, then yield to the message loop via callAsync so the frame
+        // is actually presented to the screen before we block the thread with the heavy init.
+        // playButtonOnClick() opens devices + loads SFZ samples synchronously and blocks the
+        // message thread. With an OpenGL context in the window, forcing a synchronous paint of the
+        // overlay before blocking is unreliable, so instead we just show the overlay and let it
+        // paint normally; paintOverChildren() kicks off the blocking init once it has actually
+        // drawn (pendingPlayInit). That guarantees the overlay is on screen before we block.
+        DBG("[overlay] onClick: setVisible(true)");
+        pendingPlayInit = true;
         openingAudioLabel.setVisible(true);
-        juce::Timer::callAfterDelay(50, [this]() {
-            playButtonOnClick();
-            openingAudioLabel.setVisible(false);
-        });
+        repaint();
     };
     addAndMakeVisible(this->playButton);
     playButton.setVisible(false);

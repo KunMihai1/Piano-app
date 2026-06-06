@@ -70,9 +70,13 @@ public:
 
         beginTest ("loading a missing file fails gracefully");
         {
+            // Use a non-existent ABSOLUTE path: juce::File asserts on relative paths.
+            auto missing = juce::File::getSpecialLocation (juce::File::tempDirectory)
+                               .getChildFile ("arranger-style-does-not-exist-9d3f.style");
+            missing.deleteFile();
+
             ArrangerStyleFile loaded; juce::String err;
-            const bool ok = ArrangerStyleIOHelper::loadFromFile (
-                juce::File ("does-not-exist.style"), loaded, err);
+            const bool ok = ArrangerStyleIOHelper::loadFromFile (missing, loaded, err);
             expect (! ok);
             expect (err.isNotEmpty());
         }

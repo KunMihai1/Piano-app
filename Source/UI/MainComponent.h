@@ -309,6 +309,7 @@ private:
     juce::Image currentBackground;       ///< Currently displayed background
     juce::Label helpIcon;                ///< Help icon label
     juce::Label openingAudioLabel;       ///< Loading overlay label
+    bool pendingPlayInit = false;        ///< Set on Play click; the blocking init runs once the overlay has actually painted
     juce::TooltipWindow tooltipWindow{ this, 200 }; ///< Tooltip manager
 
     std::weak_ptr<juce::MidiInput> deviceOpenedIN; ///< Currently opened MIDI input device

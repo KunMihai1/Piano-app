@@ -58,6 +58,7 @@ void ArrangerStyleIOHelper::saveToFile (const juce::File& file, const ArrangerSt
     for (const auto& s : style.sections) sections.add (sectionToVar (s));
     root->setProperty ("sections", sections);
 
+    file.getParentDirectory().createDirectory();   // getFolder() doesn't create it
     file.replaceWithText (juce::JSON::toString (var (root), true));
 }
 

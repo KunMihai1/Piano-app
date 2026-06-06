@@ -3,6 +3,8 @@
 #include "Track.h"
 #include "TrackPlayer.h"
 #include "Arranger/ArrangerEngine.h"
+#include "Arranger/ArrangerStyleEditor.h"
+#include "Arranger/ArrangerStyleListComponent.h"
 #include "TrackPlayerListener.h"
 #include "StyleSection.h"
 #include "CustomBeatBar.h"
@@ -253,6 +255,33 @@ private:
     std::unique_ptr<MultipleTrackPlayer> trackPlayer = nullptr; ///< Handles multi-track playback.
     std::unique_ptr<ArrangerEngine> arrangerEngine = nullptr;   ///< Arranger-mode looping engine (parallel to trackPlayer).
     bool arrangerModeEnabled = false;                           ///< When true, play/stop route to arrangerEngine.
+
+    // --- Phase 3: self-contained style authoring (opened from the play-settings dropdown) ---
+    ArrangerStyleListComponent arrangerStyleList;                ///< Full-bounds browser of saved *.style files.
+    std::unique_ptr<ArrangerStyleEditor> arrangerStyleEditor;    ///< Full-bounds authoring overlay (lazy).
+
+    bool          hasActiveArrangerConfig = false;              ///< When set, Start + section buttons use activeArrangerConfig.
+    ArrangerStyle activeArrangerConfig;                         ///< The loaded/saved configuration in effect (vs. a demo from live tracks).
+    juce::String  activeArrangerConfigName;                     ///< File name (no ext) of the active config; persisted so the style reopens with it selected.
+    int           lastPlayModeId = 1;                           ///< Live-track play mode: 1 = all tracks, 2 = solo. Survives menu-action picks.
+
+    /** Load a .style file and build a runtime style; returns false on failure (showing an error
+        unless showError is false, e.g. silent restore during loadJson). */
+    bool buildConfigFromFile (const juce::File& f, ArrangerStyle& out, bool showError = true);
+    /** Rebuild the play-settings dropdown (adds the active-config row when present) and tick the active entry. */
+    void rebuildPlaySettingsItems();
+
+    /** Gather the style's current tracks (instrument/volume synced) to seed the editor. */
+    std::vector<TrackEntry> collectSelectedTracks();
+    void showStyleList (bool shouldShow);
+    void openStyleEditorNew();
+    void openStyleEditorFromFile (const juce::File& f);
+    void loadStyleFileIntoEngine (const juce::File& f);
+    void closeStyleEditor();
+    /** Re-point the engine's elapsed-beats callback at our beat bar (the editor hijacks it). */
+    void restoreEngineBeatBar();
+    /** Parent an authoring overlay to the top-level window so it fills the whole screen. */
+    void presentOverlay (juce::Component& c);
     std::unordered_map<juce::Uuid, TrackEntry*>& mapUuidToTrackEntry; ///< Global map of all track entries.
     Track* lastSelectedTrack = nullptr;                     ///< Last track selected by the user.
     std::weak_ptr<std::vector<StyleSection>> sections;

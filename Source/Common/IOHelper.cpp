@@ -45,6 +45,11 @@ juce::File IOHelper::getFile(const juce::String& name)
      return appDataFolder.getChildFile(name);
 }
 
+juce::File IOHelper::getArrangerStylesFolder()
+{
+    return getFile("ArrangerStyles");   // Piano Synth2/ArrangerStyles
+}
+
 void TrackIOHelper::saveToFile(const juce::File& file, const std::unordered_map<juce::String, std::deque<TrackEntry>>& groupedTracks)
 {
     juce::Array<juce::var> foldersArray;
