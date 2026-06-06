@@ -45,3 +45,7 @@ Doxyfile
 /docs
 test-results.txt
 *.log
+.superpowers/
+
+# Local-only Obsidian wiki (never push)
+Piano-Wiki/
