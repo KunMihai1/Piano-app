@@ -1,6 +1,7 @@
 #include <juce_core/juce_core.h>
 #include <juce_audio_basics/juce_audio_basics.h>
 #include "Arranger/ArrangerPatternBuilder.h"
+#include "Arranger/ArrangerStyleFile.h"
 #include "TrackEntry.h"
 
 class ArrangerPatternBuilderTest : public juce::UnitTest
@@ -141,6 +142,80 @@ public:
             expect (! fillTrack.pattern.empty());
             // event at beat 6 in a 2-bar (8-beat) loop -> fill (last bar starts at beat 4) -> beat 2.
             expectWithinAbsoluteError (fillTrack.pattern.front().beats, 2.0, 1e-9);
+        }
+
+        beginTest ("buildStyleFromWindows slices real windows and rebases to beat 0");
+        {
+            // One melodic source track. 4/4 -> 1 bar = 4 beats.
+            // Put a note at beat 0 (bar 1) and a note at beat 8 (bar 3).
+            SourceTrackFile t;
+            t.id = "t1"; t.name = "Keys"; t.partType = ArrangerPartType::Acc;
+            t.channel = 2; t.instrument = 0; t.volume = 100.0;
+            t.events.push_back ({ 0.0, juce::MidiMessage::noteOn  (2, 60, (juce::uint8) 100) });
+            t.events.push_back ({ 0.5, juce::MidiMessage::noteOff (2, 60) });
+            t.events.push_back ({ 8.0, juce::MidiMessage::noteOn  (2, 67, (juce::uint8) 100) }); // bar 3
+            t.events.push_back ({ 8.5, juce::MidiMessage::noteOff (2, 67) });
+
+            std::vector<SourceTrackFile> tracks { t };
+
+            SectionWindow intro;
+            intro.id = "intro_1"; intro.name = "Intro 1"; intro.type = ArrangerSectionType::Intro;
+            intro.startBar = 1; intro.lengthBars = 1; intro.afterComplete = ArrangerAfterComplete::FallThrough;
+
+            SectionWindow var;
+            var.id = "var_1"; var.name = "Variation 1"; var.type = ArrangerSectionType::Variation;
+            var.startBar = 3; var.lengthBars = 1; var.afterComplete = ArrangerAfterComplete::Loop;
+
+            std::vector<SectionWindow> windows { intro, var };
+
+            ArrangerStyle style = ArrangerPatternBuilder::buildStyleFromWindows (tracks, windows, 4, 4, 120.0);
+
+            expectEquals ((int) style.sections.size(), 2);
+            expect (style.sections[0].type == ArrangerSectionType::Intro);
+            expect (style.sections[1].type == ArrangerSectionType::Variation);
+
+            // Intro = bar 1: the beat-0 note stays at beat 0.
+            expectEquals ((int) style.sections[0].tracks.size(), 1);
+            expect (! style.sections[0].tracks[0].pattern.empty());
+            expectWithinAbsoluteError (style.sections[0].tracks[0].pattern.front().beats, 0.0, 1e-9);
+            expectEquals (style.sections[0].lengthBars, 1);
+
+            // Variation = bar 3 (starts at beat 8): the beat-8 note rebases to beat 0.
+            expect (! style.sections[1].tracks[0].pattern.empty());
+            expectWithinAbsoluteError (style.sections[1].tracks[0].pattern.front().beats, 0.0, 1e-9);
+            expectEquals (style.sections[1].tracks[0].pattern.front().message.getNoteNumber(), 67);
+        }
+
+        beginTest ("buildStyleFromWindows preserves per-track channel and afterComplete");
+        {
+            SourceTrackFile drums;
+            drums.id = "d"; drums.partType = ArrangerPartType::Drum; drums.channel = 10;
+            drums.events.push_back ({ 0.0, juce::MidiMessage::noteOn  (10, 36, (juce::uint8) 100) });
+            drums.events.push_back ({ 0.5, juce::MidiMessage::noteOff (10, 36) });
+
+            SectionWindow ending;
+            ending.id = "end"; ending.type = ArrangerSectionType::Ending;
+            ending.startBar = 1; ending.lengthBars = 1; ending.afterComplete = ArrangerAfterComplete::Stop;
+
+            ArrangerStyle style = ArrangerPatternBuilder::buildStyleFromWindows ({ drums }, { ending }, 4, 4, 120.0);
+            expectEquals (style.sections[0].tracks[0].channel, 10);
+            expect (style.sections[0].afterComplete == ArrangerAfterComplete::Stop);
+        }
+
+        beginTest ("buildStyleFromFile copies metadata and builds sections");
+        {
+            ArrangerStyleFile f;
+            f.name = "X"; f.originalTempo = 100.0; f.timeSigNum = 4; f.timeSigDenom = 4;
+            SourceTrackFile t; t.channel = 2;
+            t.events.push_back ({ 0.0, juce::MidiMessage::noteOn  (2, 60, (juce::uint8) 100) });
+            t.events.push_back ({ 0.5, juce::MidiMessage::noteOff (2, 60) });
+            f.sourceTracks.push_back (t);
+            SectionWindow w; w.type = ArrangerSectionType::Variation; w.startBar = 1; w.lengthBars = 1;
+            f.sections.push_back (w);
+
+            ArrangerStyle style = ArrangerPatternBuilder::buildStyleFromFile (f);
+            expectWithinAbsoluteError (style.originalTempo, 100.0, 1e-9);
+            expectEquals ((int) style.sections.size(), 1);
         }
     }
 };
