@@ -15,11 +15,13 @@ class ArrangerStyleEditor : public juce::Component,
 public:
     /** Fired when the user dismisses the editor (Close button). */
     std::function<void()> onClose;
-    /** Fired after a successful save, with the written file (host can refresh a list). */
-    std::function<void (const juce::File&)> onSaved;
-    /** Supplies the app's current recording as source tracks at the given reference tempo, for the
-        "Update Tracks" action. Set by the host; if unset, Update Tracks is a no-op. */
-    std::function<std::vector<SourceTrackFile> (double referenceBpm)> onRequestCurrentTracks;
+    /** Fired after a successful save, with the written file AND the freshly-built engine style, so the
+        host can refresh the active config WITHOUT re-parsing the file (which would re-freeze the UI). */
+    std::function<void (const juce::File&, const ArrangerStyle&)> onSaved;
+    /** Supplies the app's current recording as raw track entries for the "Update Tracks" action. Set
+        by the host; if unset, Update Tracks is a no-op. Returned raw so the heavy event-building can
+        happen on the editor's background thread. */
+    std::function<std::vector<TrackEntry>()> onRequestCurrentTracks;
 
     explicit ArrangerStyleEditor (ArrangerEngine& engineToPreviewWith);
 
@@ -36,13 +38,16 @@ public:
 
     /** Build the current ArrangerStyleFile from editor state (source tracks + windows). */
     ArrangerStyleFile toStyleFile() const;
+    /** Build the engine-ready style from current editor state (same build rebuildPreview uses). */
+    ArrangerStyle buildStyle() const;
 
     void resized() override;
     void paint (juce::Graphics& g) override;
 
 private:
     void requestSave();             // validate name, confirm on collision, then finishSave
-    void finishSave (const juce::File& target);   // write (renaming the source if needed)
+    void finishSave (const juce::File& target);   // serialize + write off-thread, then refresh on the message thread
+    void setBusy (bool busy, const juce::String& text = {});  // show/hide the in-editor "working" overlay + gate buttons
     void rebuildPreview();          // build style from current state and engine.setStyle
     void addSectionOfType (ArrangerSectionType type);
     void updateTracksFromRecording();  // replace source tracks with the app's current recording, keep sections, overwrite file
@@ -62,6 +67,8 @@ private:
                      addBreakBtn { "Add Break" }, addEndingBtn { "Add Ending" }, removeBtn { "Remove" },
                      previewBtn { "Preview" }, stopBtn { "Stop" }, updateTracksBtn { "Update Tracks" },
                      saveBtn { "Save" }, closeBtn { "Close" };
+
+    juce::Label busyOverlay;   // full-screen dim + centered label shown while save/update runs off-thread
 
     std::vector<SourceTrackFile> sourceTracks;
     std::vector<SectionWindow>   windows;

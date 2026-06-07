@@ -58,6 +58,10 @@ public:
         closes. The host hides the OpenGL note layer while true (it would punch through the overlay). */
     std::function<void(bool)> onAuthoringOverlayVisible;
 
+    /** Shows/hides the app's full-screen "working" overlay during off-thread load operations (the
+        editor's own save/update overlay is internal). Routed host-side to MainComponent's overlay. */
+    std::function<void(bool show, const juce::String& text)> onBusy;
+
     /** Fired when the arranger engine's active section changes (or it stops), so the host can
         highlight the matching live section button. sectionIndex < 0 means nothing is active. */
     std::function<void(int sectionIndex, ArrangerSectionType type, juce::String name)> onArrangerSectionChanged;
@@ -292,6 +296,10 @@ private:
     void openStyleEditorNew();
     void openStyleEditorFromFile (const juce::File& f);
     void loadStyleFileIntoEngine (const juce::File& f);
+    /** Wire the standard editor callbacks (close / current-tracks / saved) onto arrangerStyleEditor. */
+    void configureEditorCallbacks();
+    /** Make a loaded/built style the active arranger configuration and refresh the UI selection. */
+    void applyActiveConfig (const juce::File& f, const ArrangerStyle& s);
     void closeStyleEditor();
     /** Re-point the engine's elapsed-beats callback at our beat bar (the editor hijacks it). */
     void restoreEngineBeatBar();

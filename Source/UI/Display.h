@@ -109,6 +109,9 @@ public:
     /** Forwarded from the style component: true while an authoring overlay is shown (host hides the GL note layer). */
     std::function<void(bool)> onArrangerOverlayVisible;
 
+    /** Forwarded from the style component: show/hide the app's "working" overlay during off-thread loads. */
+    std::function<void(bool show, const juce::String& text)> onArrangerBusy;
+
     /** Forwarded from the style component: the arranger's active section changed (or it stopped, idx<0),
         so the host can highlight the matching live section button. */
     std::function<void(int sectionIndex, ArrangerSectionType type, juce::String name)> onArrangerSectionChanged;

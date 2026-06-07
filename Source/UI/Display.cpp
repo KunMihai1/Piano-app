@@ -265,6 +265,12 @@ void Display::showCurrentStyleTab(const juce::String& name)
             onArrangerOverlayVisible(visible);
     };
 
+    currentStyleComponent->onBusy = [this](bool show, const juce::String& text)
+    {
+        if (onArrangerBusy)
+            onArrangerBusy(show, text);
+    };
+
     currentStyleComponent->onArrangerSectionChanged = [this](int idx, ArrangerSectionType type, juce::String name)
     {
         if (onArrangerSectionChanged)

@@ -1520,6 +1520,11 @@ void MainComponent::displayInit()
         setArrangerOverlaySceneHidden(visible);
     };
 
+    display->onArrangerBusy = [this](bool show, const juce::String& text)
+    {
+        setLoadingOverlayVisible(show, text);
+    };
+
     display->onArrangerSectionChanged = [this](int idx, ArrangerSectionType type, juce::String name)
     {
         highlightArrangerSection(idx, type, name);

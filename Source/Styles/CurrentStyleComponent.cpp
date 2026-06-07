@@ -405,65 +405,68 @@ void CurrentStyleComponent::openStyleEditorNew()
     }
 
     arrangerStyleEditor = std::make_unique<ArrangerStyleEditor>(*arrangerEngine);
-    arrangerStyleEditor->onClose = [this] { closeStyleEditor(); };
-    // Update Tracks pulls the app's current recording (instrument/volume synced from the sliders),
-    // built at the editor's reference tempo so it shares the config's timebase.
-    arrangerStyleEditor->onRequestCurrentTracks = [this] (double referenceBpm)
-    {
-        return ArrangerSourceBuilder::fromTrackEntries (collectSelectedTracks(), referenceBpm);
-    };
-    arrangerStyleEditor->onSaved = [this] (const juce::File& f)
-    {
-        arrangerStyleList.refresh();
-        ArrangerStyle s;
-        if (buildConfigFromFile(f, s))
-        {
-            activeArrangerConfig     = s;
-            hasActiveArrangerConfig  = true;
-            activeArrangerConfigName = f.getFileNameWithoutExtension();
-            rebuildPlaySettingsItems();
-            arrangerStyleList.setActiveConfigName(activeArrangerConfigName);
-            if (anyTrackChanged) anyTrackChanged();   // persist the selection to allStyles.json
-        }
-    };
+    configureEditorCallbacks();
     presentOverlay(*arrangerStyleEditor);
     arrangerStyleEditor->loadRecording(tracks, currentTempo, 4, 4, juce::String()); // default generic config name
 }
 
-void CurrentStyleComponent::openStyleEditorFromFile(const juce::File& f)
+void CurrentStyleComponent::configureEditorCallbacks()
 {
-    ArrangerStyleFile sf; juce::String err;
-    if (! ArrangerStyleIOHelper::loadFromFile(f, sf, err))
-    {
-        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Section configuration", err);
+    if (! arrangerStyleEditor)
         return;
-    }
 
-    arrangerStyleEditor = std::make_unique<ArrangerStyleEditor>(*arrangerEngine);
     arrangerStyleEditor->onClose = [this] { closeStyleEditor(); };
-    // Update Tracks pulls the app's current recording (instrument/volume synced from the sliders),
-    // built at the editor's reference tempo so it shares the config's timebase.
-    arrangerStyleEditor->onRequestCurrentTracks = [this] (double referenceBpm)
-    {
-        return ArrangerSourceBuilder::fromTrackEntries (collectSelectedTracks(), referenceBpm);
-    };
-    arrangerStyleEditor->onSaved = [this] (const juce::File& f)
+    // Update Tracks pulls the app's current recording (instrument/volume synced from the sliders) as
+    // raw entries; the editor builds + writes them on its own background thread.
+    arrangerStyleEditor->onRequestCurrentTracks = [this] { return collectSelectedTracks(); };
+    // Refresh the active config from the style the editor already built (no file re-parse -> no freeze).
+    arrangerStyleEditor->onSaved = [this] (const juce::File& f, const ArrangerStyle& s)
     {
         arrangerStyleList.refresh();
-        ArrangerStyle s;
-        if (buildConfigFromFile(f, s))
-        {
-            activeArrangerConfig     = s;
-            hasActiveArrangerConfig  = true;
-            activeArrangerConfigName = f.getFileNameWithoutExtension();
-            rebuildPlaySettingsItems();
-            arrangerStyleList.setActiveConfigName(activeArrangerConfigName);
-            if (anyTrackChanged) anyTrackChanged();   // persist the selection to allStyles.json
-        }
+        applyActiveConfig(f, s);
     };
-    presentOverlay(*arrangerStyleEditor);
-    arrangerStyleEditor->loadFromFile(sf);
-    arrangerStyleEditor->setSourceFile(f);   // so Save renames this file instead of duplicating it
+}
+
+void CurrentStyleComponent::applyActiveConfig(const juce::File& f, const ArrangerStyle& s)
+{
+    activeArrangerConfig     = s;          // this configuration is now what Start + section buttons use
+    hasActiveArrangerConfig  = true;
+    activeArrangerConfigName = f.getFileNameWithoutExtension();
+    rebuildPlaySettingsItems();
+    arrangerStyleList.setActiveConfigName(activeArrangerConfigName);
+    if (anyTrackChanged) anyTrackChanged();   // persist the selection to allStyles.json
+}
+
+void CurrentStyleComponent::openStyleEditorFromFile(const juce::File& f)
+{
+    // Parse the (large) file off the message thread so the UI doesn't freeze; show the app overlay
+    // meanwhile. Build the editor + present it back on the message thread once parsing is done.
+    if (onBusy) onBusy(true, "Loading configuration...");
+    juce::Component::SafePointer<CurrentStyleComponent> safe(this);
+
+    juce::Thread::launch([safe, f]
+    {
+        auto sf = std::make_shared<ArrangerStyleFile>();
+        juce::String err;
+        const bool ok = ArrangerStyleIOHelper::loadFromFile(f, *sf, err);
+
+        juce::MessageManager::callAsync([safe, f, sf, ok, err]
+        {
+            if (safe == nullptr)
+                return;
+            if (safe->onBusy) safe->onBusy(false, {});
+            if (! ok)
+            {
+                juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Section configuration", err);
+                return;
+            }
+            safe->arrangerStyleEditor = std::make_unique<ArrangerStyleEditor>(*safe->arrangerEngine);
+            safe->configureEditorCallbacks();
+            safe->presentOverlay(*safe->arrangerStyleEditor);
+            safe->arrangerStyleEditor->loadFromFile(*sf);
+            safe->arrangerStyleEditor->setSourceFile(f);   // so Save renames this file instead of duplicating it
+        });
+    });
 }
 
 bool CurrentStyleComponent::buildConfigFromFile(const juce::File& f, ArrangerStyle& out, bool showError)
@@ -481,22 +484,35 @@ bool CurrentStyleComponent::buildConfigFromFile(const juce::File& f, ArrangerSty
 
 void CurrentStyleComponent::loadStyleFileIntoEngine(const juce::File& f)
 {
-    ArrangerStyle s;
-    if (! buildConfigFromFile(f, s))
-        return;
+    // Parse the (large) file off the message thread (the hex-decode of every event is what froze the
+    // UI); show the app overlay meanwhile. Build + apply back on the message thread when it's done.
+    if (onBusy) onBusy(true, "Loading configuration...");
+    juce::Component::SafePointer<CurrentStyleComponent> safe(this);
 
-    activeArrangerConfig     = s;          // this configuration is now what Start + section buttons use
-    hasActiveArrangerConfig  = true;
-    activeArrangerConfigName = f.getFileNameWithoutExtension();
-    rebuildPlaySettingsItems();
-    arrangerStyleList.setActiveConfigName(activeArrangerConfigName);   // mark it active in the browser
-    if (anyTrackChanged) anyTrackChanged();   // persist the selection to allStyles.json so it survives a restart
-
-    if (arrangerEngine)
+    juce::Thread::launch([safe, f]
     {
-        arrangerEngine->setStyle(s);        // prime the engine, but don't start:
-        arrangerEngine->setBpm(currentTempo); // Load only makes it active; the user presses Start to play.
-    }
+        auto sf = std::make_shared<ArrangerStyleFile>();
+        juce::String err;
+        const bool ok = ArrangerStyleIOHelper::loadFromFile(f, *sf, err);
+
+        juce::MessageManager::callAsync([safe, f, sf, ok]
+        {
+            if (safe == nullptr)
+                return;
+            if (safe->onBusy) safe->onBusy(false, {});
+            if (! ok)
+                return;
+
+            ArrangerStyle s = ArrangerPatternBuilder::buildStyleFromFile(*sf);
+            safe->applyActiveConfig(f, s);   // this configuration is now what Start + section buttons use
+
+            if (safe->arrangerEngine)
+            {
+                safe->arrangerEngine->setStyle(s);          // prime the engine, but don't start:
+                safe->arrangerEngine->setBpm(safe->currentTempo); // Load only makes it active; user presses Start to play.
+            }
+        });
+    });
 }
 
 void CurrentStyleComponent::closeStyleEditor()

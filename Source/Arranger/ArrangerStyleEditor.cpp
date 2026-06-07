@@ -25,6 +25,15 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
 
     updateTracksBtn.setEnabled (false);   // only meaningful when editing an existing saved config
 
+    // Full-screen "working" overlay, styled like the app's "Preparing style..." overlay. Eats mouse
+    // clicks so nothing behind it can be triggered while a save/update runs on the background thread.
+    busyOverlay.setJustificationType (juce::Justification::centred);
+    busyOverlay.setFont (juce::Font (24.0f, juce::Font::bold));
+    busyOverlay.setColour (juce::Label::textColourId, juce::Colours::white);
+    busyOverlay.setColour (juce::Label::backgroundColourId, juce::Colours::black.withAlpha (0.7f));
+    busyOverlay.setInterceptsMouseClicks (true, true);
+    addChildComponent (busyOverlay);   // hidden until setBusy(true)
+
     timeline.onWindowsChanged = [this] (const std::vector<SectionWindow>& w)
     {
         windows = w;
@@ -156,11 +165,36 @@ ArrangerStyleFile ArrangerStyleEditor::toStyleFile() const
     return f;
 }
 
+ArrangerStyle ArrangerStyleEditor::buildStyle() const
+{
+    return ArrangerPatternBuilder::buildStyleFromWindows (
+        sourceTracks, windows, timeSigNum, timeSigDenom, referenceBpm);
+}
+
 void ArrangerStyleEditor::rebuildPreview()
 {
-    auto style = ArrangerPatternBuilder::buildStyleFromWindows (
-        sourceTracks, windows, timeSigNum, timeSigDenom, referenceBpm);
-    engine.setStyle (style);
+    engine.setStyle (buildStyle());
+}
+
+void ArrangerStyleEditor::setBusy (bool busy, const juce::String& text)
+{
+    if (busy)
+    {
+        busyOverlay.setText (text, juce::dontSendNotification);
+        busyOverlay.setBounds (getLocalBounds());
+        busyOverlay.setVisible (true);
+        busyOverlay.toFront (false);
+    }
+    else
+    {
+        busyOverlay.setVisible (false);
+    }
+
+    // Gate the controls so nothing can be triggered (or the editor closed) mid-operation.
+    for (auto* b : { &addIntroBtn, &addVariationBtn, &addFillBtn, &addBreakBtn, &addEndingBtn,
+                     &removeBtn, &previewBtn, &stopBtn, &saveBtn, &closeBtn })
+        b->setEnabled (! busy);
+    updateTracksBtn.setEnabled (! busy && loadedFile.existsAsFile());
 }
 
 void ArrangerStyleEditor::addSectionOfType (ArrangerSectionType type)
@@ -213,22 +247,54 @@ void ArrangerStyleEditor::updateTracksFromRecording()
             if (result != 1)   // 1 = Update, 0 = Cancel
                 return;
 
-            auto newTracks = onRequestCurrentTracks (referenceBpm);
-            if (newTracks.empty())
+            auto rawTracks = onRequestCurrentTracks();   // raw entries (with sequences), copied on the message thread
+            if (rawTracks.empty())
             {
                 juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::InfoIcon,
                     "Update tracks", "No recorded tracks to import.");
                 return;
             }
 
-            sourceTracks = std::move (newTracks);   // sections (windows) are intentionally untouched
-            recomputeTotalBars();
-            timeline.setTotalBars (totalBars);
-            timeline.setWindows (windows);
-            layoutTimeline();
-            rebuildPreview();
+            setBusy (true, "Updating tracks...");
 
-            finishSave (loadedFile);   // overwrite the same file: keeps name + style id
+            // Build the new source events + serialize + write entirely on a background thread (all of
+            // that is the heavy part), then apply to the editor/engine back on the message thread. The
+            // sections (windows) are intentionally untouched. SafePointer guards a closed editor.
+            auto tracks = std::make_shared<std::vector<TrackEntry>> (std::move (rawTracks));
+            auto file   = std::make_shared<ArrangerStyleFile> (toStyleFile());   // metadata + current windows
+            const juce::File target = loadedFile;
+            const double      refBpm = referenceBpm;
+            juce::Component::SafePointer<ArrangerStyleEditor> safe (this);
+
+            juce::Thread::launch ([safe, tracks, file, target, refBpm]
+            {
+                file->sourceTracks = ArrangerSourceBuilder::fromTrackEntries (*tracks, refBpm);
+                ArrangerStyleIOHelper::saveToFile (target, *file);
+                const bool ok = target.existsAsFile();
+                auto applied = std::make_shared<std::vector<SourceTrackFile>> (file->sourceTracks);
+
+                juce::MessageManager::callAsync ([safe, applied, target, ok]
+                {
+                    if (safe == nullptr)
+                        return;
+                    safe->setBusy (false);
+                    if (! ok)
+                    {
+                        juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::WarningIcon,
+                            "Update tracks", "Failed to write " + target.getFullPathName());
+                        return;
+                    }
+                    safe->sourceTracks = std::move (*applied);
+                    safe->recomputeTotalBars();
+                    safe->timeline.setTotalBars (safe->totalBars);
+                    safe->timeline.setWindows (safe->windows);
+                    safe->layoutTimeline();
+                    safe->rebuildPreview();
+                    if (safe->onSaved) safe->onSaved (target, safe->buildStyle());
+                    juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::InfoIcon,
+                        "Update tracks", "Tracks updated: " + target.getFileName());
+                });
+            });
         }));
 }
 
@@ -293,24 +359,41 @@ void ArrangerStyleEditor::requestSave()
 
 void ArrangerStyleEditor::finishSave (const juce::File& target)
 {
-    ArrangerStyleIOHelper::saveToFile (target, toStyleFile());
-    if (! target.existsAsFile())
+    setBusy (true, "Saving configuration...");
+
+    // Snapshot the editor state on the message thread, then serialize + write on a background thread
+    // (the hex-encoding of every event + disk write is what froze the UI). Come back to the message
+    // thread to update state + show the result. SafePointer guards against the editor being gone.
+    auto data = std::make_shared<ArrangerStyleFile> (toStyleFile());
+    const bool   willRename = loadedFile.existsAsFile() && loadedFile != target;
+    const juce::File oldFile = loadedFile;
+    juce::Component::SafePointer<ArrangerStyleEditor> safe (this);
+
+    juce::Thread::launch ([safe, target, data, willRename, oldFile]
     {
-        juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::WarningIcon,
-            "Save configuration", "Failed to write " + target.getFullPathName());
-        return;
-    }
+        ArrangerStyleIOHelper::saveToFile (target, *data);
+        const bool ok = target.existsAsFile();
+        if (ok && willRename)
+            oldFile.deleteFile();   // opened from a different file: don't leave a duplicate
 
-    // Rename: if opened from a different file, remove the old one so we don't leave a duplicate.
-    const bool renamed = loadedFile.existsAsFile() && loadedFile != target;
-    if (renamed)
-        loadedFile.deleteFile();
-
-    loadedFile = target;
-
-    if (onSaved) onSaved (target);
-    juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::InfoIcon,
-        "Save configuration", (renamed ? "Renamed to: " : "Saved: ") + target.getFileName());
+        juce::MessageManager::callAsync ([safe, target, ok, willRename]
+        {
+            if (safe == nullptr)
+                return;
+            safe->setBusy (false);
+            if (! ok)
+            {
+                juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::WarningIcon,
+                    "Save configuration", "Failed to write " + target.getFullPathName());
+                return;
+            }
+            safe->loadedFile = target;
+            safe->updateTracksBtn.setEnabled (true);   // there is now a file to update
+            if (safe->onSaved) safe->onSaved (target, safe->buildStyle());
+            juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::InfoIcon,
+                "Save configuration", (willRename ? "Renamed to: " : "Saved: ") + target.getFileName());
+        });
+    });
 }
 
 void ArrangerStyleEditor::paint (juce::Graphics& g)
@@ -335,6 +418,9 @@ void ArrangerStyleEditor::resized()
     area.removeFromTop (6);
     timelineViewport.setBounds (area);
     layoutTimeline();
+
+    if (busyOverlay.isVisible())
+        busyOverlay.setBounds (getLocalBounds());
 }
 
 void ArrangerStyleEditor::scrollBarMoved (juce::ScrollBar*, double)
