@@ -497,6 +497,8 @@ int MidiDevice::getBrightness(int channel) const
 		return this->styleSettings->firstHand.brightness;
 	else if (channel == 16)
 		return this->styleSettings->secondHand.brightness;
+
+	return 50.0;
 }
 
 void MidiDevice::setExpression(const int rValue, int channel)
@@ -513,6 +515,8 @@ int MidiDevice::getExpression(int channel) const
 		return this->styleSettings->firstHand.expression;
 	else if (channel == 16)
 		return this->styleSettings->secondHand.expression;
+
+	return 50.0;
 }
 
 void MidiDevice::setChorus(const int rValue, int channel)
@@ -529,6 +533,8 @@ int MidiDevice::getChorus(int channel) const
 		return this->styleSettings->firstHand.chorus;
 	else if (channel == 16)
 		return this->styleSettings->secondHand.chorus;
+
+	return 50.0;
 }
 
 void MidiDevice::setResonance(const int rValue, int channel)
@@ -545,6 +551,8 @@ int MidiDevice::getResonance(int channel) const
 		return this->styleSettings->firstHand.resonance;
 	else if (channel == 16)
 		return this->styleSettings->secondHand.resonance;
+
+	return 50.0;
 }
 
 void MidiDevice::setSustainToggle(const bool rValue, int channel)
@@ -561,6 +569,8 @@ bool MidiDevice::getSustainToggle(int channel) const
 		return this->styleSettings->firstHand.sustainToggle;
 	else if (channel == 16)
 		return this->styleSettings->secondHand.sustainToggle;
+
+	return 1;
 }
 
 

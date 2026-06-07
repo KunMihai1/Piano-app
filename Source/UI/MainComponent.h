@@ -297,6 +297,26 @@ private:
 
     void initializeOverlay();
 
+    /** Show/hide the centered loading label. While shown, the OpenGL note layer is hidden so the
+        label isn't covered by it (the GL layer renders on top of normal painting), then restored. */
+    void setLoadingOverlayVisible(bool show, const juce::String& text = {});
+
+    /** Show/hide the in-app ESC menu overlay. While shown, the note layer + keyboard are hidden so
+        the overlay (painted the normal way) is on top of the GL layer, then restored on close. */
+    void setOverlayMenuVisible(bool show);
+
+    /** Hide/restore the GL note layer while an arranger authoring overlay (style browser/editor) is
+        shown — otherwise the GL layer renders through the middle of that full-screen overlay. */
+    void setArrangerOverlaySceneHidden(bool hidden);
+
+    /** Highlight the live section button matching the arranger's active section (idx<0 clears all).
+        Driven by the engine so the lit button always matches what is actually sounding. */
+    void highlightArrangerSection(int sectionIndex, ArrangerSectionType type, const juce::String& name);
+
+    /** Switch the section buttons between engine-driven highlight (arranger mode) and the classic
+        click-toggle highlight. Clears any highlight when turning engine-driven off. */
+    void setSectionButtonsEngineDriven(bool engineDriven);
+
     //==========================================================================
     // Member variables
     juce::ApplicationProperties appProperties; ///< Application properties manager
@@ -309,6 +329,7 @@ private:
     juce::Image currentBackground;       ///< Currently displayed background
     juce::Label helpIcon;                ///< Help icon label
     juce::Label openingAudioLabel;       ///< Loading overlay label
+    bool pendingPlayInit = false;        ///< Set on Play click; the blocking init runs once the overlay has actually painted
     juce::TooltipWindow tooltipWindow{ this, 200 }; ///< Tooltip manager
 
     std::weak_ptr<juce::MidiInput> deviceOpenedIN; ///< Currently opened MIDI input device
@@ -331,6 +352,14 @@ private:
     bool midiWindowShouldBeVisible = false;
     bool overlayShouldBeVisible = false;
     bool soundEffecttWindowShouldBeVisible = false;
+
+    // Saved scene-layer visibility so overlays can hide the GL note layer (+ keyboard) and restore it.
+    bool loadingOverlayActive = false;          ///< Loading label currently using the hide-note-layer path
+    bool noteLayerVisibleBeforeLabel = false;   ///< Note-layer visibility to restore after the loading label
+    bool noteLayerVisibleBeforeMenu = false;    ///< Note-layer visibility to restore after the ESC menu
+    bool keyboardVisibleBeforeMenu = false;     ///< Keyboard visibility to restore after the ESC menu
+    bool sceneHiddenForArrangerOverlay = false; ///< True while the arranger authoring overlay hides the note layer
+    bool noteLayerVisibleBeforeArranger = false;///< Note-layer visibility to restore after the arranger overlay
     // UI buttons and toggles
     juce::TextButton settingsButton{ "Settings" };
     juce::TextButton midiButton{ "MIDI Settings" };

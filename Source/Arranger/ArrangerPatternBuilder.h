@@ -1,6 +1,7 @@
 #pragma once
 #include <JuceHeader.h>
 #include "ArrangerModel.h"
+#include "ArrangerStyleFile.h"
 #include "TrackEntry.h"
 #include <vector>
 
@@ -26,4 +27,17 @@ namespace ArrangerPatternBuilder
     ArrangerStyle buildDemoMultiSectionStyle (const std::vector<TrackEntry>& tracks,
                                               int timeSigNum, int timeSigDenom,
                                               double referenceBpm);
+
+    /** Slice whole bars out of a section and rebase events to beat 0. Public so both the
+        demo builder and the window builder share one implementation. */
+    ArrangerSection sliceSection (const ArrangerSection& src, double startBeats, int numBars, double beatsPerBar);
+
+    /** Build a runtime ArrangerStyle from source tracks + explicit bar-window sections. */
+    ArrangerStyle buildStyleFromWindows (const std::vector<SourceTrackFile>& sourceTracks,
+                                         const std::vector<SectionWindow>& windows,
+                                         int timeSigNum, int timeSigDenom,
+                                         double referenceBpm);
+
+    /** Convenience: build a runtime ArrangerStyle straight from a loaded style file. */
+    ArrangerStyle buildStyleFromFile (const ArrangerStyleFile& file);
 }

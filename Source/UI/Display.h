@@ -103,6 +103,16 @@ public:
     /** Enable/disable Arranger mode on the active style component (remembered across re-creation). */
     void setArrangerModeEnabled(bool shouldEnable);
 
+    /** Enable/disable Auto Fill on variation switches (remembered across re-creation). */
+    void setArrangerAutoFillEnabled(bool enabled);
+
+    /** Forwarded from the style component: true while an authoring overlay is shown (host hides the GL note layer). */
+    std::function<void(bool)> onArrangerOverlayVisible;
+
+    /** Forwarded from the style component: the arranger's active section changed (or it stopped, idx<0),
+        so the host can highlight the matching live section button. */
+    std::function<void(int sectionIndex, ArrangerSectionType type, juce::String name)> onArrangerSectionChanged;
+
     MultipleTrackPlayer* getTrackPlayer();
     std::vector<CurrentStyleComponent::TrackChannelInstrument> getTrackChannelInstruments() const;
 
@@ -208,6 +218,7 @@ private:
     juce::PropertiesFile* propertiesFile = nullptr; ///< Application properties file
     std::function<void(const juce::MidiMessage&)> pendingMidiInjectCallback;
     bool arrangerModeEnabled = false;   ///< Remembered Arranger-mode state, applied when a style component is created.
+    bool arrangerAutoFillEnabled = false;   ///< Remembered Auto Fill state, applied when a style component is created.
 
     std::unique_ptr<TrackListComponent> trackListComp; ///< Track selection component
     juce::var allStylesJsonVar; ///< Root JSON object storing all styles

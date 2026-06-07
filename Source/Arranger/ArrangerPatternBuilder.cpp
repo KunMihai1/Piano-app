@@ -1,4 +1,5 @@
 #include "ArrangerPatternBuilder.h"
+#include "ArrangerStyleFile.h"
 #include "ArrangerTime.h"
 #include <algorithm>
 
@@ -93,41 +94,25 @@ namespace ArrangerPatternBuilder
         var.type = ArrangerSectionType::Variation;
         var.afterComplete = ArrangerAfterComplete::Loop;
 
-        // Slice a range of whole bars out of a cloned section and rebase to beat 0. Keeps the
-        // throwaway demo Intro/Fill/Ending short so the transport (intro-once, fill-once,
-        // ending-once-then-stop) is observable instead of replaying the whole-song Variation
-        // loop. Lengths are a compromise until Phase 3 supplies real per-section phrases.
-        auto sliceBars = [bpb] (ArrangerSection sec, double startBeats, int numBars) -> ArrangerSection
-        {
-            const int    bars     = juce::jmax (1, numBars);
-            const double endBeats = startBeats + (double) bars * bpb;
-            for (auto& tr : sec.tracks)
-            {
-                std::vector<TimedBeatEvent> sliced;
-                for (const auto& ev : tr.pattern)
-                    if (ev.beats >= startBeats - 1e-9 && ev.beats < endBeats - 1e-9)
-                        sliced.push_back ({ ev.beats - startBeats, ev.message });
-                tr.pattern = std::move (sliced);
-            }
-            sec.lengthBars = bars;
-            return sec;
-        };
-
+        // Slice a range of whole bars out of a cloned section and rebase to beat 0 (shared
+        // sliceSection). Keeps the throwaway demo Intro/Fill/Ending short so the transport
+        // (intro-once, fill-once, ending-once-then-stop) is observable instead of replaying the
+        // whole-song Variation loop. Lengths are a compromise until Phase 3 supplies real phrases.
         const int    endingBars   = juce::jmin (4, loopBars);                  // a short wind-down
         const double lastBarStart = (double) (loopBars - 1)          * bpb;
         const double endingStart  = (double) (loopBars - endingBars) * bpb;
 
-        ArrangerSection intro = sliceBars (var, 0.0, 1);                 // first bar -> lead-in
+        ArrangerSection intro = sliceSection (var, 0.0, 1, bpb);              // first bar -> lead-in
         intro.id = "intro_1"; intro.name = "Intro 1";
         intro.type = ArrangerSectionType::Intro;
         intro.afterComplete = ArrangerAfterComplete::FallThrough;
 
-        ArrangerSection fill = sliceBars (var, lastBarStart, 1);         // last bar -> fill accent
+        ArrangerSection fill = sliceSection (var, lastBarStart, 1, bpb);      // last bar -> fill accent
         fill.id = "fill_1"; fill.name = "Fill 1";
         fill.type = ArrangerSectionType::Fill;
         fill.afterComplete = ArrangerAfterComplete::FallThrough;
 
-        ArrangerSection ending = sliceBars (var, endingStart, endingBars); // last few bars -> wind-down, then stop
+        ArrangerSection ending = sliceSection (var, endingStart, endingBars, bpb); // last few bars -> wind-down, then stop
         ending.id = "ending_1"; ending.name = "Ending 1";
         ending.type = ArrangerSectionType::Ending;
         ending.afterComplete = ArrangerAfterComplete::Stop;
@@ -136,6 +121,72 @@ namespace ArrangerPatternBuilder
         style.sections.push_back (std::move (var));
         style.sections.push_back (std::move (fill));
         style.sections.push_back (std::move (ending));
+        return style;
+    }
+
+    ArrangerSection sliceSection (const ArrangerSection& src,
+                                  double startBeats, int numBars, double beatsPerBar)
+    {
+        ArrangerSection sec = src;
+        const int    bars     = juce::jmax (1, numBars);
+        const double endBeats = startBeats + (double) bars * beatsPerBar;
+        for (auto& tr : sec.tracks)
+        {
+            std::vector<TimedBeatEvent> sliced;
+            for (const auto& ev : tr.pattern)
+                if (ev.beats >= startBeats - 1e-9 && ev.beats < endBeats - 1e-9)
+                    sliced.push_back ({ ev.beats - startBeats, ev.message });
+            tr.pattern = std::move (sliced);
+        }
+        sec.lengthBars = bars;
+        return sec;
+    }
+
+    ArrangerStyle buildStyleFromWindows (const std::vector<SourceTrackFile>& sourceTracks,
+                                         const std::vector<SectionWindow>& windows,
+                                         int timeSigNum, int timeSigDenom,
+                                         double referenceBpm)
+    {
+        if (referenceBpm <= 0.0) referenceBpm = 120.0;
+
+        ArrangerStyle style;
+        style.timeSigNum    = timeSigNum;
+        style.timeSigDenom  = timeSigDenom;
+        style.originalTempo = referenceBpm;
+
+        const double bpb = ArrangerTime::beatsPerBar (timeSigNum, timeSigDenom);
+
+        // Master section = every source track as one full-length ArrangerTrack.
+        ArrangerSection master;
+        for (const auto& st : sourceTracks)
+        {
+            ArrangerTrack at;
+            at.id = st.id; at.name = st.name; at.partType = st.partType;
+            at.instrument = st.instrument; at.channel = st.channel; at.volume = st.volume;
+            at.pattern = st.events;
+            master.tracks.push_back (std::move (at));
+        }
+
+        for (const auto& w : windows)
+        {
+            const double startBeats = (double) (juce::jmax (1, w.startBar) - 1) * bpb;
+            ArrangerSection sec = sliceSection (master, startBeats, juce::jmax (1, w.lengthBars), bpb);
+            sec.id            = w.id;
+            sec.name          = w.name;
+            sec.type          = w.type;
+            sec.afterComplete = w.afterComplete;
+            style.sections.push_back (std::move (sec));
+        }
+
+        return style;
+    }
+
+    ArrangerStyle buildStyleFromFile (const ArrangerStyleFile& file)
+    {
+        ArrangerStyle style = buildStyleFromWindows (file.sourceTracks, file.sections,
+                                                     file.timeSigNum, file.timeSigDenom, file.originalTempo);
+        style.id   = file.id;
+        style.name = file.name;
         return style;
     }
 }

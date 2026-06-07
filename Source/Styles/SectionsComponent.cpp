@@ -79,6 +79,32 @@ juce::OwnedArray<SectionGroupComponent>& StyleSectionComponent::getSectionGroups
     return this->sectionGroups;
 }
 
+void StyleSectionComponent::setHighlightedButton(const juce::String& buttonName)
+{
+    juce::TextButton*                       found    = nullptr;
+    std::unordered_map<juce::String, bool>* foundMap = nullptr;
+
+    for (auto* group : sectionGroups)
+    {
+        auto& activationMap = group->getActivationMap();
+        for (auto& button : group->getButtons())
+        {
+            const bool match = buttonName.isNotEmpty()
+                            && button->getButtonText().equalsIgnoreCase(buttonName);
+
+            // applyChangeColour(btn, activated): activated==true -> accent2 (idle), false -> accent3
+            // (the pressed/active look). So pass !match to render the active button as accent3.
+            applyChangeColour(*button, ! match);
+            activationMap[button->getButtonText()] = match;
+
+            if (match) { found = button.get(); foundMap = &activationMap; }
+        }
+    }
+
+    lastClickedButton = found;       // keep the click-system's "current" pointer consistent
+    lastActivationMap = foundMap;
+}
+
 void StyleSectionComponent::assignCallBacks()
 {
     for (auto* group : sectionGroups)
@@ -96,6 +122,15 @@ void StyleSectionComponent::assignCallBacks()
                 auto& activationMap = group->getActivationMap();
                 button->onClick = [callbackCopy, buttonText, this, btnPtr, &activationMap]()
                 {
+                    // Arranger mode: don't self-highlight on click. Just route to the engine; the
+                    // engine's active-section callback drives the highlight so it always matches what
+                    // is actually sounding (e.g. Var 2 click -> Fill lights, then Var 2 when it lands).
+                    if (engineDrivenHighlight)
+                    {
+                        callbackCopy();
+                        return;
+                    }
+
                     if (undoLastClickedForOtherGroupSections)
                         undoLastClickedForOtherGroupSections();
                     if (lastClickedButton && lastActivationMap && lastClickedButton!=btnPtr)

@@ -72,7 +72,12 @@ int ArrangerEngine::getActiveSectionIndex() const
 
 void ArrangerEngine::queueSection (ArrangerSectionType type, const juce::String& name)
 {
-    sequencer.queue (type, name);
+    // Called from the message thread. Hand the request to the timer thread instead of touching the
+    // sequencer directly (it's advanced on the timer thread; a direct write here is a data race).
+    const juce::ScopedLock sl (requestLock);
+    requestedType    = type;
+    requestedName    = name;
+    hasQueuedRequest = true;
 }
 
 void ArrangerEngine::selectStartSection (ArrangerSectionType type, const juce::String& name)
@@ -121,6 +126,18 @@ void ArrangerEngine::renderRange (double fromBeats, double toBeats)
     if (schedulers.empty())
         return;
 
+    // Apply any UI-queued section switch before advancing. Done here (not only in the timer callback)
+    // so the request is honoured whether we're driven by the timer or by a direct renderRange call
+    // (e.g. unit tests). The lock guards the request fields; sequencer mutation stays on this thread.
+    {
+        const juce::ScopedLock sl (requestLock);
+        if (hasQueuedRequest)
+        {
+            sequencer.queue (requestedType, requestedName);
+            hasQueuedRequest = false;
+        }
+    }
+
     SequencerStep step = sequencer.advance (fromBeats, toBeats);
 
     for (const auto& seg : step.segments)
@@ -166,6 +183,7 @@ void ArrangerEngine::start()
         sequencer.startAt (pendingStartIndex);
     pendingStartIndex = -1;
     currentSchedulerIndex = -1;
+    lastReportedSectionIndex = -1;   // so the first tick reports the starting section
     timerShouldStop = false;
 
     sendInstrumentSetup();   // select instruments + volumes before the first notes play
@@ -184,15 +202,44 @@ void ArrangerEngine::stop()
 
 void ArrangerEngine::haltAudio()
 {
-    playing.store (false);
+    const bool wasPlaying = playing.exchange (false);
     sendAllNotesOff();
     for (auto& s : schedulers) s.reset();
     sequencer.reset();
     currentSchedulerIndex = -1;
     pendingStartIndex = -1;
     playheadBeats = 0.0;
+    lastReportedSectionIndex = -1;
     if (onElapsedBeats)   // reset the beat bar to the downbeat, like the classic player does
         juce::MessageManager::callAsync ([this] { if (onElapsedBeats) onElapsedBeats (0.0); });
+
+    // Only when we were actually playing: re-arm the first variation (sequencer.reset() landed on it)
+    // and tell the UI we stopped, so the buttons clear the Ending and the beat bar leaves its play state.
+    if (wasPlaying)
+    {
+        notifyActiveSection (true);
+        if (onStoppedItself)
+            juce::MessageManager::callAsync ([this] { if (onStoppedItself) onStoppedItself(); });
+    }
+}
+
+void ArrangerEngine::notifyActiveSection (bool force)
+{
+    const int idx = sequencer.getActiveIndex();
+    if (! force && idx == lastReportedSectionIndex)
+        return;
+    lastReportedSectionIndex = idx;
+
+    ArrangerSectionType type = ArrangerSectionType::Variation;
+    juce::String name;
+    if (idx >= 0 && idx < (int) style.sections.size())
+    {
+        type = style.sections[(size_t) idx].type;
+        name = style.sections[(size_t) idx].name;
+    }
+    if (onActiveSectionChanged)
+        juce::MessageManager::callAsync ([this, idx, type, name]
+            { if (onActiveSectionChanged) onActiveSectionChanged (idx, type, name); });
 }
 
 void ArrangerEngine::hiResTimerCallback()
@@ -207,12 +254,15 @@ void ArrangerEngine::hiResTimerCallback()
     const double deltaSeconds = now - lastNowSeconds;
     lastNowSeconds = now;
 
+    // (A UI-queued section switch is drained inside renderRange, below.)
     const double deltaBeats = ArrangerTime::secondsToBeats (deltaSeconds, currentBpm);
     const double from = playheadBeats;
     const double to   = playheadBeats + deltaBeats;
 
     renderRange (from, to);
     playheadBeats = to;
+
+    notifyActiveSection (false);   // highlight the live button for the section now sounding
 
     if (timerShouldStop)
     {

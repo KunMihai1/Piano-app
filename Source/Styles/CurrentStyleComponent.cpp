@@ -1,14 +1,12 @@
 #include "displayGUI.h"
 #include "CustomTableContainer.h"
 #include "Arranger/ArrangerPatternBuilder.h"
+#include "Arranger/ArrangerStyleIOHelper.h"
+#include "IOHelper.h"
 
 void CurrentStyleComponent::startPlaying()
 {
-    int selectedID = playSettingsTracks.getSelectedId();
-    if (selectedID == 3)
-        selectedID = 1; //if the keybinds tab is selected, move it to the default one, (first one=play all tracks)
-
-    playSettingsTracks.setSelectedId(selectedID);
+    int selectedID = lastPlayModeId;   // 1 = all tracks, 2 = solo; the active-config path below ignores this
 
     stopPlaying(false);
 
@@ -20,6 +18,16 @@ void CurrentStyleComponent::startPlaying()
     if (!hasMidiOut && !hasAudioInject)
     {
         juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Playing tracks", "No output device selected.");
+        return;
+    }
+
+    // Arranger mode with a loaded/saved configuration: play it directly (self-contained,
+    // so it doesn't need the live tracks). No active config -> fall through to the demo below.
+    if (arrangerModeEnabled && hasActiveArrangerConfig)
+    {
+        arrangerEngine->setStyle(activeArrangerConfig);
+        arrangerEngine->setBpm(currentTempo);
+        arrangerEngine->start();
         return;
     }
 
@@ -77,12 +85,8 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     addAndMakeVisible(nameOfStyle);
 
     playSettingsTracks.setMouseCursor(juce::MouseCursor::PointingHandCursor);
-
-    playSettingsTracks.addItem("All tracks", 1);
-    playSettingsTracks.addItem("Solo track(last selected)", 2);
-    playSettingsTracks.addItem("Settings",3);
-    playSettingsTracks.setSelectedId(1);
     playSettingsTracks.addListener(this);
+    rebuildPlaySettingsItems();   // All tracks / Solo / [active config] / --- / Section Configurations / Settings
 
     addAndMakeVisible(playSettingsTracks);
     addAndMakeVisible(startPlayingTracks);
@@ -102,6 +106,41 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     {
         customBeatBar.setCurrentBeatsElapsed(elapsedBeats);
     };
+
+    // Live section-button highlight follows the engine's actual active section.
+    arrangerEngine->onActiveSectionChanged = [this](int idx, ArrangerSectionType type, juce::String name)
+    {
+        if (onArrangerSectionChanged)
+            onArrangerSectionChanged(idx, type, name);
+    };
+
+    // Engine stopped itself (an Ending finished): drop the playing state so the beat bar leaves its
+    // play colour (first beat goes back to the idle/yellow downbeat).
+    arrangerEngine->onStoppedItself = [this]()
+    {
+        isPlaying = false;
+        customBeatBar.setCurrentBeatsElapsed(0.0);
+        customBeatBar.repaint();
+    };
+
+    // Phase 3: arranger-style authoring overlay (opened from the play-settings dropdown).
+    addChildComponent(arrangerStyleList);
+    arrangerStyleList.onCreateNew  = [this] { openStyleEditorNew(); };
+    arrangerStyleList.onEditStyle  = [this] (const juce::File& f) { openStyleEditorFromFile(f); };
+    arrangerStyleList.onLoadStyle  = [this] (const juce::File& f) { loadStyleFileIntoEngine(f); showStyleList(false); };
+    arrangerStyleList.onDeleteStyle = [this] (const juce::File& f)
+    {
+        // If the deleted file was this style's active configuration, clear + persist that.
+        if (hasActiveArrangerConfig && activeArrangerConfigName == f.getFileNameWithoutExtension())
+        {
+            hasActiveArrangerConfig  = false;
+            activeArrangerConfigName = {};
+            rebuildPlaySettingsItems();
+            arrangerStyleList.setActiveConfigName(juce::String());
+            if (anyTrackChanged) anyTrackChanged();
+        }
+    };
+    arrangerStyleList.onClose      = [this] { showStyleList(false); };
 
     startPlayingTracks.onClick = [this]
     {
@@ -254,6 +293,191 @@ void CurrentStyleComponent::setArrangerModeEnabled(bool shouldEnable)
     arrangerModeEnabled = shouldEnable;
     isPlaying = false;
     customBeatBar.repaint();
+
+    if (! shouldEnable)
+    {
+        showStyleList(false);
+        arrangerStyleEditor.reset();
+        restoreEngineBeatBar();
+    }
+}
+
+void CurrentStyleComponent::setArrangerAutoFillEnabled(bool enabled)
+{
+    if (arrangerEngine)
+        arrangerEngine->setAutoFillEnabled(enabled);
+}
+
+void CurrentStyleComponent::restoreEngineBeatBar()
+{
+    if (arrangerEngine)
+        arrangerEngine->onElapsedBeats = [this](double elapsedBeats)
+        {
+            customBeatBar.setCurrentBeatsElapsed(elapsedBeats);
+        };
+}
+
+std::vector<TrackEntry> CurrentStyleComponent::collectSelectedTracks()
+{
+    std::vector<TrackEntry> selected;
+    for (const auto& tr : allTracks)
+    {
+        auto it = mapUuidToTrackEntry.find(tr->getUsedID());
+        if (it != mapUuidToTrackEntry.end() && it->second != nullptr)
+        {
+            it->second->instrumentAssociated = tr->getInstrumentNumber();
+            it->second->volumeAssociated     = tr->getVolume();
+            selected.push_back(*it->second);
+        }
+    }
+    return selected;
+}
+
+void CurrentStyleComponent::presentOverlay(juce::Component& c)
+{
+    // Authoring (browser/editor) is a separate mode from live performance and shares the single
+    // ArrangerEngine. Stop any live playback before showing the overlay so the editor's preview
+    // doesn't inherit/fight the live engine state (which made entering edit show a stale section
+    // and fire a queued Ending on close).
+    if (arrangerEngine && arrangerEngine->isPlaying())
+    {
+        arrangerEngine->stop();
+        isPlaying = false;
+        customBeatBar.setCurrentBeatsElapsed(0.0);
+        customBeatBar.repaint();
+    }
+
+    // Authoring overlays are full-screen; tell the host to hide the GL note layer (it renders on
+    // top of normal painting and would otherwise show through the middle of the overlay).
+    if (onAuthoringOverlayVisible) onAuthoringOverlayVisible(true);
+
+    auto* top = getTopLevelComponent();
+    if (top == nullptr)
+        top = this;
+    top->addAndMakeVisible(c);
+    c.setBounds(top->getLocalBounds());
+    c.toFront(true);
+}
+
+void CurrentStyleComponent::showStyleList(bool shouldShow)
+{
+    if (shouldShow)
+    {
+        arrangerStyleList.refresh();
+        arrangerStyleList.setActiveConfigName(hasActiveArrangerConfig ? activeArrangerConfigName : juce::String());
+        presentOverlay(arrangerStyleList);
+    }
+    else
+    {
+        arrangerStyleList.setVisible(false);
+        if (onAuthoringOverlayVisible) onAuthoringOverlayVisible(false);   // restore the note layer
+    }
+}
+
+void CurrentStyleComponent::openStyleEditorNew()
+{
+    auto tracks = collectSelectedTracks();
+    if (tracks.empty())
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon,
+            "Section configuration", "Record or add some tracks first.");
+        return;
+    }
+
+    arrangerStyleEditor = std::make_unique<ArrangerStyleEditor>(*arrangerEngine);
+    arrangerStyleEditor->onClose = [this] { closeStyleEditor(); };
+    arrangerStyleEditor->onSaved = [this] (const juce::File& f)
+    {
+        arrangerStyleList.refresh();
+        ArrangerStyle s;
+        if (buildConfigFromFile(f, s))
+        {
+            activeArrangerConfig     = s;
+            hasActiveArrangerConfig  = true;
+            activeArrangerConfigName = f.getFileNameWithoutExtension();
+            rebuildPlaySettingsItems();
+            arrangerStyleList.setActiveConfigName(activeArrangerConfigName);
+            if (anyTrackChanged) anyTrackChanged();   // persist the selection to allStyles.json
+        }
+    };
+    presentOverlay(*arrangerStyleEditor);
+    arrangerStyleEditor->loadRecording(tracks, currentTempo, 4, 4, juce::String()); // default generic config name
+}
+
+void CurrentStyleComponent::openStyleEditorFromFile(const juce::File& f)
+{
+    ArrangerStyleFile sf; juce::String err;
+    if (! ArrangerStyleIOHelper::loadFromFile(f, sf, err))
+    {
+        juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Section configuration", err);
+        return;
+    }
+
+    arrangerStyleEditor = std::make_unique<ArrangerStyleEditor>(*arrangerEngine);
+    arrangerStyleEditor->onClose = [this] { closeStyleEditor(); };
+    arrangerStyleEditor->onSaved = [this] (const juce::File& f)
+    {
+        arrangerStyleList.refresh();
+        ArrangerStyle s;
+        if (buildConfigFromFile(f, s))
+        {
+            activeArrangerConfig     = s;
+            hasActiveArrangerConfig  = true;
+            activeArrangerConfigName = f.getFileNameWithoutExtension();
+            rebuildPlaySettingsItems();
+            arrangerStyleList.setActiveConfigName(activeArrangerConfigName);
+            if (anyTrackChanged) anyTrackChanged();   // persist the selection to allStyles.json
+        }
+    };
+    presentOverlay(*arrangerStyleEditor);
+    arrangerStyleEditor->loadFromFile(sf);
+    arrangerStyleEditor->setSourceFile(f);   // so Save renames this file instead of duplicating it
+}
+
+bool CurrentStyleComponent::buildConfigFromFile(const juce::File& f, ArrangerStyle& out, bool showError)
+{
+    ArrangerStyleFile sf; juce::String err;
+    if (! ArrangerStyleIOHelper::loadFromFile(f, sf, err))
+    {
+        if (showError)
+            juce::AlertWindow::showMessageBoxAsync(juce::AlertWindow::WarningIcon, "Section configuration", err);
+        return false;
+    }
+    out = ArrangerPatternBuilder::buildStyleFromFile(sf);
+    return true;
+}
+
+void CurrentStyleComponent::loadStyleFileIntoEngine(const juce::File& f)
+{
+    ArrangerStyle s;
+    if (! buildConfigFromFile(f, s))
+        return;
+
+    activeArrangerConfig     = s;          // this configuration is now what Start + section buttons use
+    hasActiveArrangerConfig  = true;
+    activeArrangerConfigName = f.getFileNameWithoutExtension();
+    rebuildPlaySettingsItems();
+    arrangerStyleList.setActiveConfigName(activeArrangerConfigName);   // mark it active in the browser
+    if (anyTrackChanged) anyTrackChanged();   // persist the selection to allStyles.json so it survives a restart
+
+    if (arrangerEngine)
+    {
+        arrangerEngine->setStyle(s);        // prime the engine, but don't start:
+        arrangerEngine->setBpm(currentTempo); // Load only makes it active; the user presses Start to play.
+    }
+}
+
+void CurrentStyleComponent::closeStyleEditor()
+{
+    if (arrangerEngine)
+        arrangerEngine->stop();
+    isPlaying = false;
+    customBeatBar.repaint();
+    arrangerStyleEditor.reset();
+    restoreEngineBeatBar();
+    arrangerStyleList.refresh();
+    arrangerStyleList.setActiveConfigName(hasActiveArrangerConfig ? activeArrangerConfigName : juce::String());
+    presentOverlay(arrangerStyleList);   // return to the browser the editor was opened from
 }
 
 double CurrentStyleComponent::getTempo()
@@ -625,20 +849,56 @@ void CurrentStyleComponent::mouseDown(const juce::MouseEvent& ev)
 
 void CurrentStyleComponent::comboBoxChanged(juce::ComboBox* comboBoxThatHasChanged)
 {
-    if (comboBoxThatHasChanged == &playSettingsTracks)
+    if (comboBoxThatHasChanged != &playSettingsTracks)
+        return;
+
+    const int id = playSettingsTracks.getSelectedId();
+
+    if (id == 1 || id == 2)            // live-track play mode -> also means "play from live tracks"
     {
-        int id = playSettingsTracks.getSelectedId();
-        if (id == 3)
+        lastPlayModeId = id;
+        if (hasActiveArrangerConfig)   // choosing live tracks clears the active configuration
         {
-            keybindTabStarting();
-            playSettingsTracks.setSelectedId(1);
+            hasActiveArrangerConfig  = false;
+            activeArrangerConfigName = {};
+            rebuildPlaySettingsItems();
+            arrangerStyleList.setActiveConfigName(juce::String());   // drop the marker in the browser
+            if (anyTrackChanged) anyTrackChanged();   // persist the cleared selection to allStyles.json
         }
     }
+    else if (id == 4)                  // action: open the config browser; keep the tick on the play mode
+    {
+        showStyleList(true);
+        playSettingsTracks.setSelectedId(lastPlayModeId, juce::dontSendNotification);
+    }
+    else if (id == 3)                  // action: open the settings/keybinds tab
+    {
+        keybindTabStarting();
+        playSettingsTracks.setSelectedId(lastPlayModeId, juce::dontSendNotification);
+    }
+}
+
+void CurrentStyleComponent::rebuildPlaySettingsItems()
+{
+    // The active configuration is no longer shown here: it lives in the Section
+    // Configurations browser (marked active). This dropdown is play-mode + actions only.
+    playSettingsTracks.clear(juce::dontSendNotification);
+    playSettingsTracks.addItem("All tracks", 1);
+    playSettingsTracks.addItem("Solo track(last selected)", 2);
+    playSettingsTracks.addSeparator();
+    playSettingsTracks.addItem("Section Configurations", 4);   // opens the config browser/editor overlay
+    playSettingsTracks.addItem("Settings", 3);
+
+    playSettingsTracks.setSelectedId(lastPlayModeId, juce::dontSendNotification);
+
+    playSettingsTracks.setTooltip("Play mode - manage configurations in Section Configurations");
 }
 
 void CurrentStyleComponent::comboBoxChangeIndex(int Index)
 {
-    playSettingsTracks.setSelectedItemIndex(Index);
+    // Visual play-mode reset (e.g. on Home). Does not touch the active arranger configuration.
+    lastPlayModeId = (Index == 1 ? 2 : 1);
+    playSettingsTracks.setSelectedId(lastPlayModeId, juce::dontSendNotification);
 }
 
 bool CurrentStyleComponent::getIsPlaying()
@@ -783,6 +1043,9 @@ void CurrentStyleComponent::resized()
             static_cast<int>(height)
             ));
     }
+
+    // Phase 3 authoring overlays are parented to the top-level window (full screen),
+    // so they are sized in presentOverlay(), not here.
 }
 
 
@@ -800,6 +1063,11 @@ void CurrentStyleComponent::updateObjects()
 
 CurrentStyleComponent::~CurrentStyleComponent()
 {
+    // Tear down the authoring editor before the engine: it holds a callback into the engine.
+    if (arrangerEngine)
+        arrangerEngine->stop();
+    arrangerStyleEditor.reset();
+
     if (trackPlayer)
     {
         for (auto& track : allTracks)
@@ -849,6 +1117,9 @@ juce::DynamicObject* CurrentStyleComponent::getJson() const
     styleObj->setProperty("BPM", currentTempo);
     styleObj->setProperty("StyleID", styleID);
 
+    if (hasActiveArrangerConfig && activeArrangerConfigName.isNotEmpty())
+        styleObj->setProperty("arrangerConfig", activeArrangerConfigName);   // remembered selection
+
     juce::Array<juce::var> tracksArray;
 
     for (auto* track : allTracks)
@@ -874,6 +1145,34 @@ void CurrentStyleComponent::loadJson(const juce::var& styleVar)
     updateName(obj->getProperty("name").toString());
     setTempo(static_cast<double>(obj->getProperty("BPM")));
     setStyleID(obj->getProperty("StyleID").toString());
+
+    // Restore the remembered section configuration: selected (primed), not auto-playing.
+    // Silent + graceful if the .style was since deleted/renamed (falls back to live tracks).
+    {
+        // Configuration selection is strictly per-style. This component is reused across
+        // style tabs, so drop any config carried over from the previously-shown style
+        // before restoring this style's own (if it has one).
+        hasActiveArrangerConfig  = false;
+        activeArrangerConfig     = {};
+        activeArrangerConfigName = {};
+
+        const auto cfgName = obj->getProperty("arrangerConfig").toString();
+        if (cfgName.isNotEmpty())
+        {
+            auto file = IOHelper::getArrangerStylesFolder().getChildFile(cfgName + ".style");
+            ArrangerStyle s;
+            if (buildConfigFromFile(file, s, false))
+            {
+                activeArrangerConfig     = s;
+                hasActiveArrangerConfig  = true;
+                activeArrangerConfigName = cfgName;
+                if (arrangerEngine) { arrangerEngine->setStyle(s); arrangerEngine->setBpm(currentTempo); }
+            }
+        }
+
+        rebuildPlaySettingsItems();
+        arrangerStyleList.setActiveConfigName(hasActiveArrangerConfig ? activeArrangerConfigName : juce::String());
+    }
 
     auto tracksVar = obj->getProperty("tracks");
 

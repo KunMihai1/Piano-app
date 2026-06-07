@@ -32,11 +32,21 @@ public:
 
     juce::OwnedArray<SectionGroupComponent>& getSectionGroups();
 
+    /** When true, button clicks only fire their callback (route to the engine) and do NOT toggle their
+        own highlight — the highlight is set externally via setHighlightedButton from the engine's
+        actual active section. Used in arranger mode so the lit button is always 100% accurate. */
+    void setEngineDrivenHighlight(bool shouldBeEngineDriven) { engineDrivenHighlight = shouldBeEngineDriven; }
+
+    /** Highlight exactly the button whose text matches `buttonName` (case-insensitive), clearing any
+        other highlight in this component. Empty string clears all. Does not fire callbacks. */
+    void setHighlightedButton(const juce::String& buttonName);
+
 private:
     juce::OwnedArray<SectionGroupComponent> sectionGroups;
     const std::unordered_map<juce::String, std::function<void()>>& callbacks;
     juce::TextButton* lastClickedButton=nullptr;
     std::unordered_map<juce::String, bool>* lastActivationMap=nullptr;
+    bool engineDrivenHighlight=false;
 
     void assignCallBacks();
 };
