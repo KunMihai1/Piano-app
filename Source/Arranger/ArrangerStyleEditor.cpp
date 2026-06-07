@@ -6,12 +6,14 @@
 #include "ArrangerEnums.h"
 #include "ArrangerTime.h"
 #include "IOHelper.h"
+#include <cmath>
 
 ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
 {
     timelineViewport.setViewedComponent (&timeline, false);
     timelineViewport.setScrollBarsShown (false, true);   // horizontal only
     timelineViewport.setScrollBarThickness (12);
+    timelineViewport.getHorizontalScrollBar().addListener (this);  // detect manual scroll
     addAndMakeVisible (timelineViewport);
     addAndMakeVisible (nameLabel);
     addAndMakeVisible (nameEditor);
@@ -40,25 +42,46 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
     addBreakBtn.onClick     = [this] { addSectionOfType (ArrangerSectionType::Break); };
     addEndingBtn.onClick    = [this] { addSectionOfType (ArrangerSectionType::Ending); };
     removeBtn.onClick       = [this] { removeSelectedSection(); };
-    previewBtn.onClick   = [this] { rebuildPreview(); engine.setBpm (referenceBpm); engine.start(); };
+    previewBtn.onClick   = [this] { followPlayhead = true; rebuildPreview(); engine.setBpm (referenceBpm); engine.start(); };
     stopBtn.onClick      = [this] { engine.stop(); };
     saveBtn.onClick      = [this] { requestSave(); };
     closeBtn.onClick = [this] { engine.stop(); if (onClose) onClose(); };
 
-    engine.onElapsedBeats = [this] (double beats)   // always marshalled to the message thread
+    engine.onElapsedBeats = [this] (double /*globalBeats*/)   // always marshalled to the message thread
     {
         const double bpb = ArrangerTime::beatsPerBar (timeSigNum, timeSigDenom);
-        const double bar = 1.0 + beats / juce::jmax (1.0, bpb);
+
+        // Show the arrow at the *active section's* position, not the global monotonic playhead, so a
+        // jump (e.g. to the Ending) moves the arrow into that section's bars. A looping section wraps
+        // its local beats within its own length so the arrow loops inside its window.
+        const int    secIdx     = engine.getActiveSectionIndex();
+        const double localBeats = juce::jmax (0.0, engine.getActiveSectionLocalBeats());
+        double bar;
+        if (secIdx >= 0 && secIdx < (int) windows.size())
+        {
+            const auto&  w          = windows[(size_t) secIdx];
+            const double secLenBeats = (double) juce::jmax (1, w.lengthBars) * bpb;
+            const double wrapped     = secLenBeats > 0.0 ? std::fmod (localBeats, secLenBeats) : 0.0;
+            bar = (double) w.startBar + wrapped / juce::jmax (1.0, bpb);
+        }
+        else
+        {
+            bar = 1.0 + localBeats / juce::jmax (1.0, bpb);
+        }
         timeline.setPlayheadBar (bar);
 
         // Auto-follow: keep the playhead in view, scrolling the viewport when it nears an edge.
+        // Suspended once the user scrolls manually (so they can navigate to a far section); press
+        // Preview to re-arm it.
         const int px    = timeline.xForBar (bar);
         const int viewX = timelineViewport.getViewPositionX();
         const int vw    = timelineViewport.getViewWidth();
-        if (vw > 0 && (px < viewX + 48 || px > viewX + vw - 48))
+        if (followPlayhead && vw > 0 && (px < viewX + 48 || px > viewX + vw - 48))
         {
             const int maxX = juce::jmax (0, timeline.getWidth() - vw);
+            programmaticScroll = true;   // our own scroll: don't treat it as a manual one
             timelineViewport.setViewPosition (juce::jlimit (0, maxX, px - vw / 2), 0);
+            programmaticScroll = false;
         }
     };
 }
@@ -261,6 +284,14 @@ void ArrangerStyleEditor::resized()
     area.removeFromTop (6);
     timelineViewport.setBounds (area);
     layoutTimeline();
+}
+
+void ArrangerStyleEditor::scrollBarMoved (juce::ScrollBar*, double)
+{
+    // A scroll the user initiated (not our auto-follow) suspends following so they can navigate
+    // freely to a far section. Pressing Preview re-arms it.
+    if (! programmaticScroll)
+        followPlayhead = false;
 }
 
 void ArrangerStyleEditor::layoutTimeline()

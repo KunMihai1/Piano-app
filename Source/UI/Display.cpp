@@ -259,6 +259,18 @@ void Display::showCurrentStyleTab(const juce::String& name)
         updateStyleInJson(name);
     };
 
+    currentStyleComponent->onAuthoringOverlayVisible = [this](bool visible)
+    {
+        if (onArrangerOverlayVisible)
+            onArrangerOverlayVisible(visible);
+    };
+
+    currentStyleComponent->onArrangerSectionChanged = [this](int idx, ArrangerSectionType type, juce::String name)
+    {
+        if (onArrangerSectionChanged)
+            onArrangerSectionChanged(idx, type, name);
+    };
+
     currentStyleComponent->tabExsitsCallback = [this](const juce::String& name)
     {
         return this->existsTab(name);

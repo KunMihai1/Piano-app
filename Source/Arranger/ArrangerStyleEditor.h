@@ -9,7 +9,8 @@
 
 /** Authoring screen: turns a recording + timeline edits into a saved .style file,
     with live preview through a shared ArrangerEngine. Hosted as an overlay. */
-class ArrangerStyleEditor : public juce::Component
+class ArrangerStyleEditor : public juce::Component,
+                            private juce::ScrollBar::Listener
 {
 public:
     /** Fired when the user dismisses the editor (Close button). */
@@ -45,6 +46,7 @@ private:
     void renumberSectionsByType();  // assign unique per-type names (Intro 1, Intro 2, ...)
     void recomputeTotalBars();      // longest source track / furthest window, in whole bars
     void layoutTimeline();          // size the (scrollable) timeline to totalBars * kPixelsPerBar
+    void scrollBarMoved (juce::ScrollBar*, double newRangeStart) override;  // detect manual scroll
 
     ArrangerEngine& engine;
     juce::Viewport  timelineViewport;          // horizontal scroll for many bars
@@ -64,4 +66,6 @@ private:
     int    timeSigNum = 4, timeSigDenom = 4;
     int    totalBars  = 1;
     juce::String styleId = juce::Uuid().toString();
+    bool   followPlayhead     = true;   // auto-scroll the viewport to keep the playhead in view
+    bool   programmaticScroll = false;  // true while WE move the viewport (so it isn't seen as manual)
 };

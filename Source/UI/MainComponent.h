@@ -305,6 +305,18 @@ private:
         the overlay (painted the normal way) is on top of the GL layer, then restored on close. */
     void setOverlayMenuVisible(bool show);
 
+    /** Hide/restore the GL note layer while an arranger authoring overlay (style browser/editor) is
+        shown — otherwise the GL layer renders through the middle of that full-screen overlay. */
+    void setArrangerOverlaySceneHidden(bool hidden);
+
+    /** Highlight the live section button matching the arranger's active section (idx<0 clears all).
+        Driven by the engine so the lit button always matches what is actually sounding. */
+    void highlightArrangerSection(int sectionIndex, ArrangerSectionType type, const juce::String& name);
+
+    /** Switch the section buttons between engine-driven highlight (arranger mode) and the classic
+        click-toggle highlight. Clears any highlight when turning engine-driven off. */
+    void setSectionButtonsEngineDriven(bool engineDriven);
+
     //==========================================================================
     // Member variables
     juce::ApplicationProperties appProperties; ///< Application properties manager
@@ -346,6 +358,8 @@ private:
     bool noteLayerVisibleBeforeLabel = false;   ///< Note-layer visibility to restore after the loading label
     bool noteLayerVisibleBeforeMenu = false;    ///< Note-layer visibility to restore after the ESC menu
     bool keyboardVisibleBeforeMenu = false;     ///< Keyboard visibility to restore after the ESC menu
+    bool sceneHiddenForArrangerOverlay = false; ///< True while the arranger authoring overlay hides the note layer
+    bool noteLayerVisibleBeforeArranger = false;///< Note-layer visibility to restore after the arranger overlay
     // UI buttons and toggles
     juce::TextButton settingsButton{ "Settings" };
     juce::TextButton midiButton{ "MIDI Settings" };

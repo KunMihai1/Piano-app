@@ -115,6 +115,7 @@ void ArrangerTimelineComponent::mouseDown (const juce::MouseEvent& e)
     const int regionTop = 18, regionH = getHeight() - 26;
     selectedIndex = -1;
     dragMode = Hit::None;
+    windowsChangedByDrag = false;   // a bare click (no drag) must NOT rebuild the style
 
     for (int i = (int) windows.size() - 1; i >= 0; --i)
     {
@@ -144,6 +145,7 @@ void ArrangerTimelineComponent::mouseDrag (const juce::MouseEvent& e)
     const auto L = layout();
     auto& w = windows[selectedIndex];
 
+    const int oldStart = w.startBar, oldLen = w.lengthBars;   // detect a *real* edit (not jitter)
     const int barUnderCursor = xToSnappedBar ((double) e.x, L);
 
     if (dragMode == Hit::Body)
@@ -163,6 +165,12 @@ void ArrangerTimelineComponent::mouseDrag (const juce::MouseEvent& e)
         w.lengthBars = newEnd - w.startBar;
     }
 
+    // Only count this gesture as a window edit if a bar value actually moved. Sub-bar mouse jitter
+    // during a plain click leaves the snapped values unchanged -> stays a "click to jump", not an edit
+    // (an edit triggers rebuildPreview, which resets the sequencer and would drop a queued switch).
+    if (w.startBar != oldStart || w.lengthBars != oldLen)
+        windowsChangedByDrag = true;
+
     // Drag near a viewport edge -> scroll horizontally to follow.
     if (auto* vp = findParentComponentOfClass<juce::Viewport>())
     {
@@ -176,7 +184,10 @@ void ArrangerTimelineComponent::mouseDrag (const juce::MouseEvent& e)
 void ArrangerTimelineComponent::mouseUp (const juce::MouseEvent&)
 {
     juce::Desktop::getInstance().beginDragAutoRepeat (0);   // stop the auto-scroll repeat
-    if (dragMode != Hit::None && onWindowsChanged)
+    // Only rebuild the style if a real drag edited the windows. A bare click is a "jump to section"
+    // gesture (it queues a switch); rebuilding here would reset the sequencer and drop that switch.
+    if (windowsChangedByDrag && onWindowsChanged)
         onWindowsChanged (windows);
     dragMode = Hit::None;
+    windowsChangedByDrag = false;
 }

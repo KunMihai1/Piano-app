@@ -47,4 +47,5 @@ private:
     ArrangerTimelineGeometry::Hit dragMode = ArrangerTimelineGeometry::Hit::None;
     int  dragGrabOffsetBars = 0;   // bars between the grab point and the region start (body drag)
     int  dragStartLenValue = 1;
+    bool windowsChangedByDrag = false;  // true once a drag actually moved/resized a window this gesture
 };

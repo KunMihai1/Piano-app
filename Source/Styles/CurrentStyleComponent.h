@@ -54,6 +54,14 @@ public:
     /** @brief Callback triggered when switching to the keybinds tab. */
     std::function<void()> keybindTabStarting;
 
+    /** Fired true when an authoring overlay (style browser/editor) is shown, false when it fully
+        closes. The host hides the OpenGL note layer while true (it would punch through the overlay). */
+    std::function<void(bool)> onAuthoringOverlayVisible;
+
+    /** Fired when the arranger engine's active section changes (or it stops), so the host can
+        highlight the matching live section button. sectionIndex < 0 means nothing is active. */
+    std::function<void(int sectionIndex, ArrangerSectionType type, juce::String name)> onArrangerSectionChanged;
+
     //==============================================================================
     /**
      * @brief Constructs the CurrentStyleComponent.

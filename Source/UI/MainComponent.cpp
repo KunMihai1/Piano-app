@@ -936,6 +936,7 @@ void MainComponent::setCallBacksForOverlayWindow()
             {
                 if (display != nullptr)
                     display->setArrangerModeEnabled(enabled);
+                setSectionButtonsEngineDriven(enabled);
             };
 
             midiWindow->onOutputEngineChanged = [this](int engineOption)
@@ -1514,6 +1515,16 @@ void MainComponent::displayInit()
     headerPanel.addAndMakeVisible(display.get());
     display->setVisible(false);
 
+    display->onArrangerOverlayVisible = [this](bool visible)
+    {
+        setArrangerOverlaySceneHidden(visible);
+    };
+
+    display->onArrangerSectionChanged = [this](int idx, ArrangerSectionType type, juce::String name)
+    {
+        highlightArrangerSection(idx, type, name);
+    };
+
     display->loadSettingsOnStyleChange = [this](const juce::String& styleID)
     {
         loadSettings(styleID);
@@ -1739,6 +1750,11 @@ void MainComponent::sectionsInit()
             {
                 if (display)
                     display->setArrangerAutoFillEnabled(on);
+                if (propertiesFile != nullptr)   // remember the choice across restarts (app-wide)
+                {
+                    propertiesFile->setValue("ArrangerAutoFillEnabled", on);
+                    propertiesFile->saveIfNeeded();
+                }
             };
 
     
@@ -1942,7 +1958,20 @@ void MainComponent::playButtonOnClick()
         }
 
         if (display != nullptr && propertiesFile != nullptr)
-            display->setArrangerModeEnabled(propertiesFile->getBoolValue("ArrangerModeEnabled", false));
+        {
+            const bool arrangerOn = propertiesFile->getBoolValue("ArrangerModeEnabled", false);
+            display->setArrangerModeEnabled(arrangerOn);
+            setSectionButtonsEngineDriven(arrangerOn);
+
+            // Restore the remembered Auto Fill choice (app-wide, not per style): apply to the engine
+            // and reflect the tick in the toggle button.
+            const bool autoFillOn = propertiesFile->getBoolValue("ArrangerAutoFillEnabled", false);
+            display->setArrangerAutoFillEnabled(autoFillOn);
+            if (variationsFills != nullptr)
+                for (auto* group : variationsFills->getSectionGroups())
+                    if (auto* toggle = group->getToggleButton())
+                        toggle->setToggleState(autoFillOn, juce::dontSendNotification);
+        }
 
         if (!keyboardInitialized)
         {
@@ -2583,6 +2612,79 @@ void MainComponent::setLoadingOverlayVisible(bool show, const juce::String& text
         loadingOverlayActive = false;
     }
     repaint();
+}
+
+void MainComponent::setArrangerOverlaySceneHidden(bool hidden)
+{
+    if (hidden == sceneHiddenForArrangerOverlay)
+        return;                                  // guard re-entrancy (browser->editor presents twice)
+    sceneHiddenForArrangerOverlay = hidden;
+
+    if (hidden)
+    {
+        noteLayerVisibleBeforeArranger = (noteLayer && noteLayer->isVisible());
+        if (noteLayer) noteLayer->setVisible(false);   // would render through the full-screen overlay
+    }
+    else if (noteLayer)
+    {
+        noteLayer->setVisible(noteLayerVisibleBeforeArranger);
+        noteLayer->resetState();                 // don't return to stale frozen notes
+    }
+}
+
+void MainComponent::highlightArrangerSection(int sectionIndex, ArrangerSectionType type, const juce::String& name)
+{
+    if (!variationsFills || !introsEndings)
+        return;
+
+    if (sectionIndex < 0)   // nothing active (stopped before first play): clear both groups
+    {
+        variationsFills->setHighlightedButton({});
+        introsEndings->setHighlightedButton({});
+        return;
+    }
+
+    // Map the engine section (e.g. "Variation 2"/"Ending 1") to its live button label by type + number.
+    const int    n = juce::jmax(1, name.getTrailingIntValue());
+    juce::String buttonName;
+    bool         inVariationsFills = true;
+    switch (type)
+    {
+        case ArrangerSectionType::Variation: buttonName = "Var "    + juce::String(n); break;
+        case ArrangerSectionType::Fill:      buttonName = "Fill "   + juce::String(n); break;
+        case ArrangerSectionType::Break:     buttonName = "Break";                     break;
+        case ArrangerSectionType::Intro:     buttonName = "Intro "  + juce::String(n); inVariationsFills = false; break;
+        case ArrangerSectionType::Ending:    buttonName = "Ending " + juce::String(n); inVariationsFills = false; break;
+        case ArrangerSectionType::CountIn:   variationsFills->setHighlightedButton({});
+                                             introsEndings->setHighlightedButton({});
+                                             return;
+    }
+
+    // Highlight in the owning group; clear the other so only one button is ever lit.
+    if (inVariationsFills)
+    {
+        variationsFills->setHighlightedButton(buttonName);
+        introsEndings->setHighlightedButton({});
+    }
+    else
+    {
+        introsEndings->setHighlightedButton(buttonName);
+        variationsFills->setHighlightedButton({});
+    }
+}
+
+void MainComponent::setSectionButtonsEngineDriven(bool engineDriven)
+{
+    if (variationsFills)
+    {
+        variationsFills->setEngineDrivenHighlight(engineDriven);
+        if (!engineDriven) variationsFills->setHighlightedButton({});
+    }
+    if (introsEndings)
+    {
+        introsEndings->setEngineDrivenHighlight(engineDriven);
+        if (!engineDriven) introsEndings->setHighlightedButton({});
+    }
 }
 
 void MainComponent::setOverlayMenuVisible(bool show)

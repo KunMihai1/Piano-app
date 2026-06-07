@@ -16,6 +16,13 @@ public:
     std::function<void (const juce::MidiMessage&)> onMidiMessage; // SFZ inject
     std::function<void (double)> onElapsedBeats;                  // for the beat bar
 
+    /** Fired (on the message thread) whenever the active section changes, so the live section
+        buttons can highlight the one that's actually sounding. sectionIndex<0 means none. */
+    std::function<void (int sectionIndex, ArrangerSectionType type, juce::String name)> onActiveSectionChanged;
+    /** Fired (on the message thread) when the engine stops itself (an Ending completed), so the UI
+        can drop its "playing" state (reset the beat bar, etc.). Not fired for a no-op stop. */
+    std::function<void()> onStoppedItself;
+
     explicit ArrangerEngine (std::weak_ptr<juce::MidiOutput> out);
     ~ArrangerEngine() override;
 
@@ -34,6 +41,11 @@ public:
     int getActiveSectionIndex() const;
     int peekPendingStartIndex() const { return pendingStartIndex; } // test seam
 
+    /** Beats elapsed within the currently-active section (monotonic playhead minus the section's
+        start). For the editor's section-relative playhead arrow; read on the message thread, so a
+        sub-tick-stale value is fine. */
+    double getActiveSectionLocalBeats() const { return playheadBeats - sequencer.getActiveStartAbs(); }
+
     void start();
     void stop();
     bool isPlaying() const { return playing.load(); }
@@ -51,6 +63,7 @@ private:
     void rebuildFromStyle();
     void updateActiveLoopLength();
     void haltAudio();             // silence + reset state, WITHOUT stopping the timer
+    void notifyActiveSection (bool force);   // tell the UI which section is active (on change, or forced)
     int  indexOfSection (ArrangerSectionType type, const juce::String& name) const;
 
     std::weak_ptr<juce::MidiOutput> outputDevice;
@@ -59,7 +72,15 @@ private:
     ArrangerSectionSequencer       sequencer;
     int  currentSchedulerIndex = -1;                 // which scheduler is currently sounding
     int  pendingStartIndex     = -1;                 // section start() should begin on (-1 = default)
+    int  lastReportedSectionIndex = -1;              // last index sent to onActiveSectionChanged
     bool timerShouldStop       = false;              // set on the timer thread, honoured on the msg thread
+
+    // Section-switch request: set on the message thread (UI click/button), applied on the timer
+    // thread at the top of each callback so all sequencer mutation stays single-threaded.
+    juce::CriticalSection requestLock;
+    ArrangerSectionType   requestedType = ArrangerSectionType::Variation;
+    juce::String          requestedName;
+    bool                  hasQueuedRequest = false;
 
     double currentBpm = 120.0;
     double loopLengthBeats = 0.0;

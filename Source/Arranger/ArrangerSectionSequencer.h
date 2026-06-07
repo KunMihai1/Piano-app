@@ -45,6 +45,7 @@ public:
 
     int    getActiveIndex() const { return activeIndex; }
     double getBeatsPerBar() const { return beatsPerBar; }
+    double getActiveStartAbs() const { return activeStartAbs; }  // abs beat the active section began on
 
 private:
     struct Info

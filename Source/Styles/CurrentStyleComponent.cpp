@@ -107,6 +107,22 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
         customBeatBar.setCurrentBeatsElapsed(elapsedBeats);
     };
 
+    // Live section-button highlight follows the engine's actual active section.
+    arrangerEngine->onActiveSectionChanged = [this](int idx, ArrangerSectionType type, juce::String name)
+    {
+        if (onArrangerSectionChanged)
+            onArrangerSectionChanged(idx, type, name);
+    };
+
+    // Engine stopped itself (an Ending finished): drop the playing state so the beat bar leaves its
+    // play colour (first beat goes back to the idle/yellow downbeat).
+    arrangerEngine->onStoppedItself = [this]()
+    {
+        isPlaying = false;
+        customBeatBar.setCurrentBeatsElapsed(0.0);
+        customBeatBar.repaint();
+    };
+
     // Phase 3: arranger-style authoring overlay (opened from the play-settings dropdown).
     addChildComponent(arrangerStyleList);
     arrangerStyleList.onCreateNew  = [this] { openStyleEditorNew(); };
@@ -319,6 +335,22 @@ std::vector<TrackEntry> CurrentStyleComponent::collectSelectedTracks()
 
 void CurrentStyleComponent::presentOverlay(juce::Component& c)
 {
+    // Authoring (browser/editor) is a separate mode from live performance and shares the single
+    // ArrangerEngine. Stop any live playback before showing the overlay so the editor's preview
+    // doesn't inherit/fight the live engine state (which made entering edit show a stale section
+    // and fire a queued Ending on close).
+    if (arrangerEngine && arrangerEngine->isPlaying())
+    {
+        arrangerEngine->stop();
+        isPlaying = false;
+        customBeatBar.setCurrentBeatsElapsed(0.0);
+        customBeatBar.repaint();
+    }
+
+    // Authoring overlays are full-screen; tell the host to hide the GL note layer (it renders on
+    // top of normal painting and would otherwise show through the middle of the overlay).
+    if (onAuthoringOverlayVisible) onAuthoringOverlayVisible(true);
+
     auto* top = getTopLevelComponent();
     if (top == nullptr)
         top = this;
@@ -338,6 +370,7 @@ void CurrentStyleComponent::showStyleList(bool shouldShow)
     else
     {
         arrangerStyleList.setVisible(false);
+        if (onAuthoringOverlayVisible) onAuthoringOverlayVisible(false);   // restore the note layer
     }
 }
 
