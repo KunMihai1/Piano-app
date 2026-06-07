@@ -1552,6 +1552,19 @@ void MainComponent::displayInit()
                 setLoadingOverlayVisible(false);
             });
         }
+        else if (MIDIDevice.isOpenOUT())
+        {
+            // External MIDI has no SFZ to stream and fires no load-complete event,
+            // but mirror the internal "Preparing style..." overlay so switching styles
+            // feels identical. Effects/CCs were just pushed to the device above; keep
+            // the overlay up briefly (matching the SFZ fallback) so the swap reads as
+            // deliberate, then hide on a timed delay.
+            setLoadingOverlayVisible(true, "Preparing style...");
+            juce::Timer::callAfterDelay(300, [this]()
+            {
+                setLoadingOverlayVisible(false);
+            });
+        }
     };
 }
 

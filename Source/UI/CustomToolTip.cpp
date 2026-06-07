@@ -19,7 +19,7 @@ CustomToolTip::CustomToolTip(const juce::String& text)
     label.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(label);
 
-    int textWidth = label.getFont().getStringWidth(text);
+    int textWidth = juce::GlyphArrangement::getStringWidthInt(label.getFont(), text);
     int textHeight = (int)label.getFont().getHeight();
 
     int padding = 5;

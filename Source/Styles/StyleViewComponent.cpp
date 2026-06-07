@@ -17,7 +17,7 @@ StyleViewComponent::StyleViewComponent(const juce::String& styleName)
 void StyleViewComponent::resized()
 {
     auto font = label.getFont();
-    int textWidth = static_cast<int>(font.getStringWidth(label.getText()));
+    int textWidth = juce::GlyphArrangement::getStringWidthInt(font, label.getText());
     int textHeight = static_cast<int>(font.getHeight());
 
     label.setBounds(10, 10, textWidth + 10, textHeight + 6);

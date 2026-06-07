@@ -54,7 +54,7 @@ void InstrumentTreeItem::paintItem(juce::Graphics& g, int width, int height)
 int InstrumentTreeItem::getItemWidth() const
 {
     juce::Font font;
-    int textWidth = font.getStringWidth(instrumentName);
+    int textWidth = juce::GlyphArrangement::getStringWidthInt(font, instrumentName);
     int padding = 12;
     return textWidth + padding;
 }
