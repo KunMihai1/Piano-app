@@ -280,6 +280,9 @@ private:
     juce::String  activeArrangerConfigName;                     ///< File name (no ext) of the active config; persisted so the style reopens with it selected.
     int           lastPlayModeId = 1;                           ///< Live-track play mode: 1 = all tracks, 2 = solo. Survives menu-action picks.
 
+    ArrangerSectionType pendingStartType = ArrangerSectionType::Variation;  ///< Section Start begins on (chosen pre-play).
+    juce::String        pendingStartName = "Variation 1";                   ///< ...defaults to Variation 1, highlighted while stopped.
+
     /** Load a .style file and build a runtime style; returns false on failure (showing an error
         unless showError is false, e.g. silent restore during loadJson). */
     bool buildConfigFromFile (const juce::File& f, ArrangerStyle& out, bool showError = true);
@@ -300,6 +303,11 @@ private:
     void configureEditorCallbacks();
     /** Make a loaded/built style the active arranger configuration and refresh the UI selection. */
     void applyActiveConfig (const juce::File& f, const ArrangerStyle& s);
+    /** Section-button click in arranger mode: queue the switch if playing, else arm + highlight it as
+        the section Start will begin on. */
+    void selectOrQueueSection (ArrangerSectionType type, const juce::String& name);
+    /** Highlight (and arm on the engine) the section Start will begin on, while stopped. */
+    void highlightPendingStartSection();
     void closeStyleEditor();
     /** Re-point the engine's elapsed-beats callback at our beat bar (the editor hijacks it). */
     void restoreEngineBeatBar();

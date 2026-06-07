@@ -55,14 +55,17 @@ void ArrangerEngine::updateActiveLoopLength()
 
 int ArrangerEngine::indexOfSection (ArrangerSectionType type, const juce::String& name) const
 {
-    int firstOfType = -1, nameMatch = -1;
+    // Match by type + trailing number (like the sequencer's findSection), so the live button labels
+    // ("Var 2") resolve to the matching section ("Variation 2") even though the strings differ.
+    const int wantN = name.getTrailingIntValue();
+    int firstOfType = -1, numMatch = -1;
     for (int i = 0; i < (int) style.sections.size(); ++i)
     {
         if (style.sections[i].type != type) continue;
         if (firstOfType < 0) firstOfType = i;
-        if (style.sections[i].name == name) nameMatch = i;
+        if (style.sections[i].name.getTrailingIntValue() == wantN) numMatch = i;
     }
-    return (nameMatch >= 0) ? nameMatch : firstOfType;
+    return (numMatch >= 0) ? numMatch : firstOfType;
 }
 
 int ArrangerEngine::getActiveSectionIndex() const

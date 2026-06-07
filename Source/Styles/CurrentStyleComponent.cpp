@@ -33,6 +33,7 @@ void CurrentStyleComponent::startPlaying()
         applyLiveTrackVolumes(cfg);
         arrangerEngine->setStyle(cfg);
         arrangerEngine->setBpm(currentTempo);
+        arrangerEngine->selectStartSection(pendingStartType, pendingStartName);  // begin on the chosen start (stopPlaying cleared it)
         arrangerEngine->start();
         return;
     }
@@ -72,6 +73,7 @@ void CurrentStyleComponent::startPlaying()
         ArrangerStyle style = ArrangerPatternBuilder::buildDemoMultiSectionStyle(selectedTracks, 4, 4, currentTempo);
         arrangerEngine->setStyle(style);
         arrangerEngine->setBpm(currentTempo);   // user's tempo slider wins over the style's original tempo
+        arrangerEngine->selectStartSection(pendingStartType, pendingStartName);  // begin on the chosen start
         arrangerEngine->start();
         return;
     }
@@ -127,6 +129,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
         isPlaying = false;
         customBeatBar.setCurrentBeatsElapsed(0.0);
         customBeatBar.repaint();
+        highlightPendingStartSection();   // back to the chosen start (Var 1 by default)
     };
 
     // Phase 3: arranger-style authoring overlay (opened from the play-settings dropdown).
@@ -158,6 +161,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     {
         isPlaying = false;
         stopPlaying();
+        highlightPendingStartSection();   // back to the chosen start (Var 1 by default)
     };
 
     customBeatBar.isPlayingCheck = [this]()
@@ -306,6 +310,10 @@ void CurrentStyleComponent::setArrangerModeEnabled(bool shouldEnable)
         arrangerStyleEditor.reset();
         restoreEngineBeatBar();
     }
+    else
+    {
+        highlightPendingStartSection();   // show the armed start section (Var 1 by default)
+    }
 }
 
 void CurrentStyleComponent::setArrangerAutoFillEnabled(bool enabled)
@@ -435,6 +443,12 @@ void CurrentStyleComponent::applyActiveConfig(const juce::File& f, const Arrange
     rebuildPlaySettingsItems();
     arrangerStyleList.setActiveConfigName(activeArrangerConfigName);
     if (anyTrackChanged) anyTrackChanged();   // persist the selection to allStyles.json
+
+    // A freshly-loaded config starts armed on Variation 1 (highlighted); the user can pick another
+    // start section before pressing Start.
+    pendingStartType = ArrangerSectionType::Variation;
+    pendingStartName = "Variation 1";
+    highlightPendingStartSection();
 }
 
 void CurrentStyleComponent::openStyleEditorFromFile(const juce::File& f)
@@ -954,24 +968,42 @@ bool CurrentStyleComponent::getIsPlaying()
     return isPlaying;
 }
 
-namespace
+void CurrentStyleComponent::selectOrQueueSection (ArrangerSectionType type, const juce::String& name)
 {
-    void routeSectionToArranger (ArrangerEngine* engine, ArrangerSectionType type, const juce::String& name)
+    if (arrangerEngine == nullptr)
+        return;
+
+    if (arrangerEngine->isPlaying())
     {
-        if (engine == nullptr)
-            return;
-        if (engine->isPlaying())
-            engine->queueSection (type, name);
-        else
-            engine->selectStartSection (type, name);
+        arrangerEngine->queueSection (type, name);   // switch at the next bar line
+        return;
     }
+
+    // Stopped: this becomes the section Start will begin on. Remember it (Start re-applies it because
+    // stopPlaying() clears the engine's pending index), arm the engine, and light the chosen button.
+    pendingStartType = type;
+    pendingStartName = name;
+    arrangerEngine->selectStartSection (type, name);
+    if (onArrangerSectionChanged)
+        onArrangerSectionChanged (0, type, name);    // idx>=0 -> highlight by type + name
+}
+
+void CurrentStyleComponent::highlightPendingStartSection()
+{
+    // Show (and arm) the section Start will begin on, e.g. Var 1 by default, while stopped.
+    if (! arrangerModeEnabled || arrangerEngine == nullptr || arrangerEngine->isPlaying())
+        return;
+
+    arrangerEngine->selectStartSection (pendingStartType, pendingStartName);
+    if (onArrangerSectionChanged)
+        onArrangerSectionChanged (0, pendingStartType, pendingStartName);
 }
 
 void CurrentStyleComponent::handleIntroCurrentStyle(const juce::String& name, const std::unordered_map<juce::String, StyleSection>& section)
 {
     if (arrangerModeEnabled)
     {
-        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Intro, name);
+        selectOrQueueSection(ArrangerSectionType::Intro, name);
         return;
     }
 
@@ -983,7 +1015,7 @@ void CurrentStyleComponent::handleEndingCurrentStyle(const juce::String& name, c
 {
     if (arrangerModeEnabled)
     {
-        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Ending, name);
+        selectOrQueueSection(ArrangerSectionType::Ending, name);
         return;
     }
 
@@ -995,7 +1027,7 @@ void CurrentStyleComponent::handleVarCurrentStyle(const juce::String& name, cons
 {
     if (arrangerModeEnabled)
     {
-        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Variation, name);
+        selectOrQueueSection(ArrangerSectionType::Variation, name);
         return;
     }
 
@@ -1007,7 +1039,7 @@ void CurrentStyleComponent::handleFillCurrentStyle(const juce::String& name, con
 {
     if (arrangerModeEnabled)
     {
-        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Fill, name);
+        selectOrQueueSection(ArrangerSectionType::Fill, name);
         return;
     }
 
@@ -1019,7 +1051,7 @@ void CurrentStyleComponent::handleBreakCurrentStyle(const juce::String& name, co
 {
     if (arrangerModeEnabled)
     {
-        routeSectionToArranger(arrangerEngine.get(), ArrangerSectionType::Break, name);
+        selectOrQueueSection(ArrangerSectionType::Break, name);
         return;
     }
 
