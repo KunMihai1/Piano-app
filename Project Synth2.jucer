@@ -29,19 +29,32 @@
               file="tests/unit/test_settings_window.cpp"/>
         <FILE id="gNfg2Z" name="test_validator_ui.cpp" compile="1" resource="0"
               file="tests/unit/test_validator_ui.cpp"/>
-        <FILE id="arrTs0" name="test_arranger_model.cpp" compile="1" resource="0" file="tests/unit/test_arranger_model.cpp"/>
-        <FILE id="arrTs1" name="test_arranger_time.cpp" compile="1" resource="0" file="tests/unit/test_arranger_time.cpp"/>
-        <FILE id="arrTs2" name="test_arranger_scheduler.cpp" compile="1" resource="0" file="tests/unit/test_arranger_scheduler.cpp"/>
-        <FILE id="arrTs3" name="test_arranger_pattern_builder.cpp" compile="1" resource="0" file="tests/unit/test_arranger_pattern_builder.cpp"/>
-        <FILE id="arrTs4" name="test_arranger_engine.cpp" compile="1" resource="0" file="tests/unit/test_arranger_engine.cpp"/>
-        <FILE id="arrTs5" name="test_arranger_section_sequencer.cpp" compile="1" resource="0" file="tests/unit/test_arranger_section_sequencer.cpp"/>
-        <FILE id="arrTs6" name="test_arranger_enums.cpp" compile="1" resource="0" file="tests/unit/test_arranger_enums.cpp"/>
-        <FILE id="arrTs7" name="test_arranger_midi_hex.cpp" compile="1" resource="0" file="tests/unit/test_arranger_midi_hex.cpp"/>
-        <FILE id="arrTs8" name="test_arranger_style_io.cpp" compile="1" resource="0" file="tests/unit/test_arranger_style_io.cpp"/>
-        <FILE id="arrTs9" name="test_arranger_channels.cpp" compile="1" resource="0" file="tests/unit/test_arranger_channels.cpp"/>
-        <FILE id="arrTsA" name="test_arranger_timeline_geometry.cpp" compile="1" resource="0" file="tests/unit/test_arranger_timeline_geometry.cpp"/>
-        <FILE id="arrTsB" name="test_arranger_source_builder.cpp" compile="1" resource="0" file="tests/unit/test_arranger_source_builder.cpp"/>
-        <FILE id="arrTsC" name="test_arranger_defaults.cpp" compile="1" resource="0" file="tests/unit/test_arranger_defaults.cpp"/>
+        <FILE id="arrTs0" name="test_arranger_model.cpp" compile="1" resource="0"
+              file="tests/unit/test_arranger_model.cpp"/>
+        <FILE id="arrTs1" name="test_arranger_time.cpp" compile="1" resource="0"
+              file="tests/unit/test_arranger_time.cpp"/>
+        <FILE id="arrTs2" name="test_arranger_scheduler.cpp" compile="1" resource="0"
+              file="tests/unit/test_arranger_scheduler.cpp"/>
+        <FILE id="arrTs3" name="test_arranger_pattern_builder.cpp" compile="1"
+              resource="0" file="tests/unit/test_arranger_pattern_builder.cpp"/>
+        <FILE id="arrTs4" name="test_arranger_engine.cpp" compile="1" resource="0"
+              file="tests/unit/test_arranger_engine.cpp"/>
+        <FILE id="arrTs5" name="test_arranger_section_sequencer.cpp" compile="1"
+              resource="0" file="tests/unit/test_arranger_section_sequencer.cpp"/>
+        <FILE id="arrTs6" name="test_arranger_enums.cpp" compile="1" resource="0"
+              file="tests/unit/test_arranger_enums.cpp"/>
+        <FILE id="arrTs7" name="test_arranger_midi_hex.cpp" compile="1" resource="0"
+              file="tests/unit/test_arranger_midi_hex.cpp"/>
+        <FILE id="arrTs8" name="test_arranger_style_io.cpp" compile="1" resource="0"
+              file="tests/unit/test_arranger_style_io.cpp"/>
+        <FILE id="arrTs9" name="test_arranger_channels.cpp" compile="1" resource="0"
+              file="tests/unit/test_arranger_channels.cpp"/>
+        <FILE id="arrTsA" name="test_arranger_timeline_geometry.cpp" compile="1"
+              resource="0" file="tests/unit/test_arranger_timeline_geometry.cpp"/>
+        <FILE id="arrTsB" name="test_arranger_source_builder.cpp" compile="1"
+              resource="0" file="tests/unit/test_arranger_source_builder.cpp"/>
+        <FILE id="arrTsC" name="test_arranger_defaults.cpp" compile="1" resource="0"
+              file="tests/unit/test_arranger_defaults.cpp"/>
       </GROUP>
       <GROUP id="{B2C3D4E5-5555-6666-7777-888899990000}" name="Integration">
         <FILE id="HwMdDv" name="test_midi_device_hw.cpp" compile="1" resource="0"
@@ -317,183 +330,238 @@
             xcodeResource="0"/>
     </GROUP>
     <GROUP id="{77180095-A5AE-9575-2B89-DCC21B51B797}" name="Source">
-      <FILE id="arrMd1" name="ArrangerModel.h" compile="0" resource="0" file="Source/Arranger/ArrangerModel.h"/>
-      <FILE id="arrTm1" name="ArrangerTime.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerTime.cpp"/>
-      <FILE id="arrTm2" name="ArrangerTime.h" compile="0" resource="0" file="Source/Arranger/ArrangerTime.h"/>
-      <FILE id="arrSc1" name="ArrangerScheduler.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerScheduler.cpp"/>
-      <FILE id="arrSc2" name="ArrangerScheduler.h" compile="0" resource="0" file="Source/Arranger/ArrangerScheduler.h"/>
-      <FILE id="arrPb1" name="ArrangerPatternBuilder.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerPatternBuilder.cpp"/>
-      <FILE id="arrPb2" name="ArrangerPatternBuilder.h" compile="0" resource="0" file="Source/Arranger/ArrangerPatternBuilder.h"/>
-      <FILE id="arrEn1" name="ArrangerEngine.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerEngine.cpp"/>
-      <FILE id="arrEn2" name="ArrangerEngine.h" compile="0" resource="0" file="Source/Arranger/ArrangerEngine.h"/>
-      <FILE id="arrSq1" name="ArrangerSectionSequencer.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerSectionSequencer.cpp"/>
-      <FILE id="arrSq2" name="ArrangerSectionSequencer.h" compile="0" resource="0" file="Source/Arranger/ArrangerSectionSequencer.h"/>
-      <FILE id="arrEnm1" name="ArrangerEnums.h" compile="0" resource="0" file="Source/Arranger/ArrangerEnums.h"/>
-      <FILE id="arrHex1" name="ArrangerMidiHex.h" compile="0" resource="0" file="Source/Arranger/ArrangerMidiHex.h"/>
-      <FILE id="arrSf1" name="ArrangerStyleFile.h" compile="0" resource="0" file="Source/Arranger/ArrangerStyleFile.h"/>
-      <FILE id="arrIo1" name="ArrangerStyleIOHelper.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerStyleIOHelper.cpp"/>
-      <FILE id="arrIo2" name="ArrangerStyleIOHelper.h" compile="0" resource="0" file="Source/Arranger/ArrangerStyleIOHelper.h"/>
-      <FILE id="arrCh1" name="ArrangerChannels.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerChannels.cpp"/>
-      <FILE id="arrCh2" name="ArrangerChannels.h" compile="0" resource="0" file="Source/Arranger/ArrangerChannels.h"/>
-      <FILE id="arrTg1" name="ArrangerTimelineGeometry.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerTimelineGeometry.cpp"/>
-      <FILE id="arrTg2" name="ArrangerTimelineGeometry.h" compile="0" resource="0" file="Source/Arranger/ArrangerTimelineGeometry.h"/>
-      <FILE id="arrSb1" name="ArrangerSourceBuilder.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerSourceBuilder.cpp"/>
-      <FILE id="arrSb2" name="ArrangerSourceBuilder.h" compile="0" resource="0" file="Source/Arranger/ArrangerSourceBuilder.h"/>
-      <FILE id="arrDf1" name="ArrangerDefaults.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerDefaults.cpp"/>
-      <FILE id="arrDf2" name="ArrangerDefaults.h" compile="0" resource="0" file="Source/Arranger/ArrangerDefaults.h"/>
-      <FILE id="arrTc1" name="ArrangerTimelineComponent.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerTimelineComponent.cpp"/>
-      <FILE id="arrTc2" name="ArrangerTimelineComponent.h" compile="0" resource="0" file="Source/Arranger/ArrangerTimelineComponent.h"/>
-      <FILE id="arrEd1" name="ArrangerStyleEditor.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerStyleEditor.cpp"/>
-      <FILE id="arrEd2" name="ArrangerStyleEditor.h" compile="0" resource="0" file="Source/Arranger/ArrangerStyleEditor.h"/>
-      <FILE id="arrLs1" name="ArrangerStyleListComponent.cpp" compile="1" resource="0" file="Source/Arranger/ArrangerStyleListComponent.cpp"/>
-      <FILE id="arrLs2" name="ArrangerStyleListComponent.h" compile="0" resource="0" file="Source/Arranger/ArrangerStyleListComponent.h"/>
-      <FILE id="w1MPTi" name="SFZlibrary.cpp" compile="1" resource="0" file="Source/Audio/SFZlibrary.cpp"/>
-      <FILE id="T3o6UR" name="SFZlibrary.h" compile="0" resource="0" file="Source/Audio/SFZlibrary.h"/>
-      <FILE id="euLojz" name="SFZLibraryUI.cpp" compile="1" resource="0"
-            file="Source/Audio/SFZLibraryUI.cpp"/>
-      <FILE id="LWelkc" name="SFZLibraryUI.h" compile="0" resource="0" file="Source/Audio/SFZLibraryUI.h"/>
-      <FILE id="j3KJpG" name="styleSettingsEntry.h" compile="0" resource="0"
-            file="Source/Styles/styleSettingsEntry.h"/>
-      <FILE id="DspLsn" name="DisplayListener.h" compile="0" resource="0"
-            file="Source/Common/DisplayListener.h"/>
-      <FILE id="ksM2Lf" name="AppColours.h" compile="0" resource="0" file="Source/Common/AppColours.h"/>
-      <FILE id="DXD47A" name="SoundEffectWindowComponent.cpp" compile="1"
-            resource="0" file="Source/UI/SoundEffectWindowComponent.cpp"/>
-      <FILE id="HppmMB" name="SoundEffectWindowComponent.h" compile="0" resource="0"
-            file="Source/UI/SoundEffectWindowComponent.h"/>
-      <FILE id="G3Jvlk" name="FileSystemInterface.h" compile="0" resource="0"
-            file="Source/Common/FileSystemInterface.h"/>
-      <FILE id="oLjKCa" name="SupabaseClient.cpp" compile="1" resource="0"
-            file="Source/Backend/SupabaseClient.cpp"/>
-      <FILE id="Ia73LG" name="SupabaseClient.h" compile="0" resource="0"
-            file="Source/Backend/SupabaseClient.h"/>
-      <FILE id="GK2TpN" name="PlaytimeTracker.cpp" compile="1" resource="0"
-            file="Source/Backend/PlaytimeTracker.cpp"/>
-      <FILE id="N6kpnC" name="PlaytimeTracker.h" compile="0" resource="0"
-            file="Source/Backend/PlaytimeTracker.h"/>
-      <FILE id="mkAugQ" name="LoginComponent.cpp" compile="1" resource="0"
-            file="Source/Backend/LoginComponent.cpp"/>
-      <FILE id="zwA8tf" name="LoginComponent.h" compile="0" resource="0"
-            file="Source/Backend/LoginComponent.h"/>
-      <FILE id="C9tx49" name="chordBrowser.cpp" compile="1" resource="0"
-            file="Source/UI/chordBrowser.cpp"/>
-      <FILE id="QbNjqy" name="chordBrowser.h" compile="0" resource="0" file="Source/UI/chordBrowser.h"/>
-      <FILE id="olzhBP" name="OverlayComponent.cpp" compile="1" resource="0"
-            file="Source/UI/OverlayComponent.cpp"/>
-      <FILE id="Fbo82v" name="OverlayComponent.h" compile="0" resource="0"
-            file="Source/UI/OverlayComponent.h"/>
-      <FILE id="w5pNZR" name="SectionsComponent.cpp" compile="1" resource="0"
-            file="Source/Styles/SectionsComponent.cpp"/>
-      <FILE id="cdnTwl" name="SectionsComponent.h" compile="0" resource="0"
-            file="Source/Styles/SectionsComponent.h"/>
-      <FILE id="WsgI1I" name="SectionGroupComponent.cpp" compile="1" resource="0"
-            file="Source/Styles/SectionGroupComponent.cpp"/>
-      <FILE id="pWsxuG" name="SectionGroupComponent.h" compile="0" resource="0"
-            file="Source/Styles/SectionGroupComponent.h"/>
-      <FILE id="u2nDST" name="StyleSection.h" compile="0" resource="0" file="Source/Styles/StyleSection.h"/>
-      <FILE id="ZSMmrT" name="addDeviceWindow.cpp" compile="1" resource="0"
-            file="Source/Backend/addDeviceWindow.cpp"/>
-      <FILE id="vh8BuR" name="addDeviceWindow.h" compile="0" resource="0"
-            file="Source/Backend/addDeviceWindow.h"/>
-      <FILE id="VWVIRr" name="HelperFunctions.cpp" compile="1" resource="0"
-            file="Source/Common/HelperFunctions.cpp"/>
-      <FILE id="J64Aky" name="HelperFunctions.h" compile="0" resource="0"
-            file="Source/Common/HelperFunctions.h"/>
-      <FILE id="nMJduY" name="PlayBackSettingsCustomComponent.cpp" compile="1"
-            resource="0" file="Source/UI/PlayBackSettingsCustomComponent.cpp"/>
-      <FILE id="K0OsRB" name="PlayBackSettingsCustomComponent.h" compile="0"
-            resource="0" file="Source/UI/PlayBackSettingsCustomComponent.h"/>
-      <FILE id="CkPnSg" name="TrackPlayerListener.h" compile="0" resource="0"
-            file="Source/Playback/TrackPlayerListener.h"/>
-      <FILE id="BpF6r2" name="ValidatorUI.cpp" compile="1" resource="0" file="Source/Backend/ValidatorUI.cpp"/>
-      <FILE id="pBoiRK" name="ValidatorUI.h" compile="0" resource="0" file="Source/Backend/ValidatorUI.h"/>
-      <FILE id="K2Xsjg" name="SelectableLabel.cpp" compile="1" resource="0"
-            file="Source/UI/SelectableLabel.cpp"/>
-      <FILE id="cazbKc" name="SelectableLabel.h" compile="0" resource="0"
-            file="Source/UI/SelectableLabel.h"/>
-      <FILE id="uwICeF" name="CustomTableContainer.cpp" compile="1" resource="0"
-            file="Source/UI/CustomTableContainer.cpp"/>
-      <FILE id="m1agKm" name="IOHelper.cpp" compile="1" resource="0" file="Source/Common/IOHelper.cpp"/>
-      <FILE id="A1Vj1F" name="IOHelper.h" compile="0" resource="0" file="Source/Common/IOHelper.h"/>
-      <FILE id="NpdkDy" name="CustomTableContainer.h" compile="0" resource="0"
-            file="Source/UI/CustomTableContainer.h"/>
-      <FILE id="hpLtHh" name="MidiNotesTableModel.cpp" compile="1" resource="0"
-            file="Source/Playback/MidiNotesTableModel.cpp"/>
-      <FILE id="sxVQU6" name="MidiNotesTableModel.h" compile="0" resource="0"
-            file="Source/Playback/MidiNotesTableModel.h"/>
-      <FILE id="Fob7bQ" name="CustomBeatBar.cpp" compile="1" resource="0"
-            file="Source/UI/CustomBeatBar.cpp"/>
-      <FILE id="HsJERr" name="CustomBeatBar.h" compile="0" resource="0" file="Source/UI/CustomBeatBar.h"/>
-      <FILE id="hH5yKh" name="trackListComponentListener.h" compile="0" resource="0"
-            file="Source/Playback/trackListComponentListener.h"/>
-      <FILE id="rm0gSJ" name="SubjectInterface.h" compile="0" resource="0"
-            file="Source/Common/SubjectInterface.h"/>
-      <FILE id="zfMrzS" name="TrackListener.h" compile="0" resource="0" file="Source/Playback/TrackListener.h"/>
-      <FILE id="xDGyFE" name="CustomToolTip.cpp" compile="1" resource="0"
-            file="Source/UI/CustomToolTip.cpp"/>
-      <FILE id="vCYJ2n" name="CustomToolTip.h" compile="0" resource="0" file="Source/UI/CustomToolTip.h"/>
-      <FILE id="jDbj4E" name="InstrumentChooser.cpp" compile="1" resource="0"
-            file="Source/UI/InstrumentChooser.cpp"/>
-      <FILE id="qNR2FG" name="InstrumentChooser.h" compile="0" resource="0"
-            file="Source/UI/InstrumentChooser.h"/>
-      <FILE id="k5GJ5O" name="TrackEntry.h" compile="0" resource="0" file="Source/Playback/TrackEntry.h"/>
-      <FILE id="dxeclC" name="TrackPlayer.cpp" compile="1" resource="0" file="Source/Playback/TrackPlayer.cpp"/>
-      <FILE id="PkpDN9" name="TrackPlayer.h" compile="0" resource="0" file="Source/Playback/TrackPlayer.h"/>
-      <FILE id="HiLb6c" name="displayGUI.cpp" compile="1" resource="0" file="Source/UI/displayGUI.cpp"/>
-      <FILE id="ICOTvm" name="displayGUI.h" compile="0" resource="0" file="Source/UI/displayGUI.h"/>
-      <FILE id="svCmp1" name="StyleViewComponent.cpp" compile="1" resource="0" file="Source/Styles/StyleViewComponent.cpp"/>
-      <FILE id="svCmp2" name="StyleViewComponent.h" compile="0" resource="0" file="Source/Styles/StyleViewComponent.h"/>
-      <FILE id="slCmp1" name="StylesListComponent.cpp" compile="1" resource="0" file="Source/Styles/StylesListComponent.cpp"/>
-      <FILE id="slCmp2" name="StylesListComponent.h" compile="0" resource="0" file="Source/Styles/StylesListComponent.h"/>
-      <FILE id="myTab1" name="MyTabbedComponent.cpp" compile="1" resource="0" file="Source/UI/MyTabbedComponent.cpp"/>
-      <FILE id="myTab2" name="MyTabbedComponent.h" compile="0" resource="0" file="Source/UI/MyTabbedComponent.h"/>
-      <FILE id="trCmp1" name="Track.cpp" compile="1" resource="0" file="Source/Playback/Track.cpp"/>
-      <FILE id="trCmp2" name="Track.h" compile="0" resource="0" file="Source/Playback/Track.h"/>
-      <FILE id="tlCmp1" name="TrackListComponent.cpp" compile="1" resource="0" file="Source/Playback/TrackListComponent.cpp"/>
-      <FILE id="tlCmp2" name="TrackListComponent.h" compile="0" resource="0" file="Source/Playback/TrackListComponent.h"/>
-      <FILE id="csCmp1" name="CurrentStyleComponent.cpp" compile="1" resource="0" file="Source/Styles/CurrentStyleComponent.cpp"/>
-      <FILE id="csCmp2" name="CurrentStyleComponent.h" compile="0" resource="0" file="Source/Styles/CurrentStyleComponent.h"/>
-      <FILE id="diCmp1" name="Display.cpp" compile="1" resource="0" file="Source/UI/Display.cpp"/>
-      <FILE id="diCmp2" name="Display.h" compile="0" resource="0" file="Source/UI/Display.h"/>
-      <FILE id="z2Hsoc" name="MidiHandlerAbstractSubject.h" compile="0" resource="0"
-            file="Source/Midi/MidiHandlerAbstractSubject.h"/>
-      <FILE id="dExTT9" name="temporaryNotificationUI.cpp" compile="1" resource="0"
-            file="Source/UI/temporaryNotificationUI.cpp"/>
-      <FILE id="t6Fzqa" name="temporaryNotificationUI.h" compile="0" resource="0"
-            file="Source/UI/temporaryNotificationUI.h"/>
-      <FILE id="YVVyRr" name="MidiRecordPlayer.cpp" compile="1" resource="0"
-            file="Source/Midi/MidiRecordPlayer.cpp"/>
-      <FILE id="b1cjyA" name="MidiRecordPlayer.h" compile="0" resource="0"
-            file="Source/Midi/MidiRecordPlayer.h"/>
-      <FILE id="T77ubi" name="InstrumentTreeItem.cpp" compile="1" resource="0"
-            file="Source/UI/InstrumentTreeItem.cpp"/>
-      <FILE id="YlXHVG" name="InstrumentTreeItem.h" compile="0" resource="0"
-            file="Source/UI/InstrumentTreeItem.h"/>
-      <FILE id="ZZkI5J" name="keyListener.cpp" compile="1" resource="0" file="Source/Midi/keyListener.cpp"/>
-      <FILE id="VuWhA6" name="keyListener.h" compile="0" resource="0" file="Source/Midi/keyListener.h"/>
-      <FILE id="iqvpAW" name="NoteLayer.cpp" compile="1" resource="0" file="Source/UI/NoteLayer.cpp"/>
-      <FILE id="cFN9eI" name="NoteLayer.h" compile="0" resource="0" file="Source/UI/NoteLayer.h"/>
-      <FILE id="XnnPrB" name="InstrumentHandler.cpp" compile="1" resource="0"
-            file="Source/Midi/InstrumentHandler.cpp"/>
-      <FILE id="UMmTJT" name="InstrumentHandler.h" compile="0" resource="0"
-            file="Source/Midi/InstrumentHandler.h"/>
-      <FILE id="gevnkJ" name="MidiDevicesDB.cpp" compile="1" resource="0"
-            file="Source/Midi/MidiDevicesDB.cpp"/>
-      <FILE id="QnlFvU" name="KeyboardUI.cpp" compile="1" resource="0" file="Source/UI/KeyboardUI.cpp"/>
-      <FILE id="HtNlxP" name="KeyboardUI.h" compile="0" resource="0" file="Source/UI/KeyboardUI.h"/>
-      <FILE id="IoBJ9L" name="MidiDevicesDB.h" compile="0" resource="0" file="Source/Midi/MidiDevicesDB.h"/>
-      <FILE id="r3G7fK" name="MidiHandler.h" compile="0" resource="0" file="Source/Midi/MidiHandler.h"/>
-      <FILE id="MsdNwG" name="SettingsWindow.cpp" compile="1" resource="0"
-            file="Source/UI/SettingsWindow.cpp"/>
+      <GROUP id="{8049D2A6-E1D0-07F8-2FCC-1E03FA9B8200}" name="UI">
+        <FILE id="OQf8Oe" name="SettingsWindow.h" compile="0" resource="0"
+              file="Source/UI/SettingsWindow.h"/>
+        <FILE id="J92BVY" name="MainComponent.h" compile="0" resource="0" file="Source/UI/MainComponent.h"/>
+        <FILE id="jn7l0T" name="MainComponent.cpp" compile="1" resource="0"
+              file="Source/UI/MainComponent.cpp"/>
+        <FILE id="DXD47A" name="SoundEffectWindowComponent.cpp" compile="1"
+              resource="0" file="Source/UI/SoundEffectWindowComponent.cpp"/>
+        <FILE id="HppmMB" name="SoundEffectWindowComponent.h" compile="0" resource="0"
+              file="Source/UI/SoundEffectWindowComponent.h"/>
+        <FILE id="C9tx49" name="chordBrowser.cpp" compile="1" resource="0"
+              file="Source/UI/chordBrowser.cpp"/>
+        <FILE id="QbNjqy" name="chordBrowser.h" compile="0" resource="0" file="Source/UI/chordBrowser.h"/>
+        <FILE id="olzhBP" name="OverlayComponent.cpp" compile="1" resource="0"
+              file="Source/UI/OverlayComponent.cpp"/>
+        <FILE id="Fbo82v" name="OverlayComponent.h" compile="0" resource="0"
+              file="Source/UI/OverlayComponent.h"/>
+        <FILE id="nMJduY" name="PlayBackSettingsCustomComponent.cpp" compile="1"
+              resource="0" file="Source/UI/PlayBackSettingsCustomComponent.cpp"/>
+        <FILE id="K0OsRB" name="PlayBackSettingsCustomComponent.h" compile="0"
+              resource="0" file="Source/UI/PlayBackSettingsCustomComponent.h"/>
+        <FILE id="K2Xsjg" name="SelectableLabel.cpp" compile="1" resource="0"
+              file="Source/UI/SelectableLabel.cpp"/>
+        <FILE id="cazbKc" name="SelectableLabel.h" compile="0" resource="0"
+              file="Source/UI/SelectableLabel.h"/>
+        <FILE id="uwICeF" name="CustomTableContainer.cpp" compile="1" resource="0"
+              file="Source/UI/CustomTableContainer.cpp"/>
+        <FILE id="NpdkDy" name="CustomTableContainer.h" compile="0" resource="0"
+              file="Source/UI/CustomTableContainer.h"/>
+        <FILE id="Fob7bQ" name="CustomBeatBar.cpp" compile="1" resource="0"
+              file="Source/UI/CustomBeatBar.cpp"/>
+        <FILE id="HsJERr" name="CustomBeatBar.h" compile="0" resource="0" file="Source/UI/CustomBeatBar.h"/>
+        <FILE id="rm0gSJ" name="SubjectInterface.h" compile="0" resource="0"
+              file="Source/Common/SubjectInterface.h"/>
+        <FILE id="xDGyFE" name="CustomToolTip.cpp" compile="1" resource="0"
+              file="Source/UI/CustomToolTip.cpp"/>
+        <FILE id="vCYJ2n" name="CustomToolTip.h" compile="0" resource="0" file="Source/UI/CustomToolTip.h"/>
+        <FILE id="jDbj4E" name="InstrumentChooser.cpp" compile="1" resource="0"
+              file="Source/UI/InstrumentChooser.cpp"/>
+        <FILE id="qNR2FG" name="InstrumentChooser.h" compile="0" resource="0"
+              file="Source/UI/InstrumentChooser.h"/>
+        <FILE id="HiLb6c" name="displayGUI.cpp" compile="1" resource="0" file="Source/UI/displayGUI.cpp"/>
+        <FILE id="ICOTvm" name="displayGUI.h" compile="0" resource="0" file="Source/UI/displayGUI.h"/>
+        <FILE id="myTab1" name="MyTabbedComponent.cpp" compile="1" resource="0"
+              file="Source/UI/MyTabbedComponent.cpp"/>
+        <FILE id="myTab2" name="MyTabbedComponent.h" compile="0" resource="0"
+              file="Source/UI/MyTabbedComponent.h"/>
+        <FILE id="diCmp1" name="Display.cpp" compile="1" resource="0" file="Source/UI/Display.cpp"/>
+        <FILE id="diCmp2" name="Display.h" compile="0" resource="0" file="Source/UI/Display.h"/>
+        <FILE id="dExTT9" name="temporaryNotificationUI.cpp" compile="1" resource="0"
+              file="Source/UI/temporaryNotificationUI.cpp"/>
+        <FILE id="t6Fzqa" name="temporaryNotificationUI.h" compile="0" resource="0"
+              file="Source/UI/temporaryNotificationUI.h"/>
+        <FILE id="T77ubi" name="InstrumentTreeItem.cpp" compile="1" resource="0"
+              file="Source/UI/InstrumentTreeItem.cpp"/>
+        <FILE id="YlXHVG" name="InstrumentTreeItem.h" compile="0" resource="0"
+              file="Source/UI/InstrumentTreeItem.h"/>
+        <FILE id="iqvpAW" name="NoteLayer.cpp" compile="1" resource="0" file="Source/UI/NoteLayer.cpp"/>
+        <FILE id="cFN9eI" name="NoteLayer.h" compile="0" resource="0" file="Source/UI/NoteLayer.h"/>
+        <FILE id="QnlFvU" name="KeyboardUI.cpp" compile="1" resource="0" file="Source/UI/KeyboardUI.cpp"/>
+        <FILE id="HtNlxP" name="KeyboardUI.h" compile="0" resource="0" file="Source/UI/KeyboardUI.h"/>
+        <FILE id="MsdNwG" name="SettingsWindow.cpp" compile="1" resource="0"
+              file="Source/UI/SettingsWindow.cpp"/>
+      </GROUP>
+      <GROUP id="{D6BA8CED-DAAE-EC1B-B4D6-2D416B6732F8}" name="Styles">
+        <FILE id="w5pNZR" name="SectionsComponent.cpp" compile="1" resource="0"
+              file="Source/Styles/SectionsComponent.cpp"/>
+        <FILE id="WsgI1I" name="SectionGroupComponent.cpp" compile="1" resource="0"
+              file="Source/Styles/SectionGroupComponent.cpp"/>
+        <FILE id="pWsxuG" name="SectionGroupComponent.h" compile="0" resource="0"
+              file="Source/Styles/SectionGroupComponent.h"/>
+        <FILE id="cdnTwl" name="SectionsComponent.h" compile="0" resource="0"
+              file="Source/Styles/SectionsComponent.h"/>
+        <FILE id="svCmp1" name="StyleViewComponent.cpp" compile="1" resource="0"
+              file="Source/Styles/StyleViewComponent.cpp"/>
+        <FILE id="svCmp2" name="StyleViewComponent.h" compile="0" resource="0"
+              file="Source/Styles/StyleViewComponent.h"/>
+        <FILE id="slCmp1" name="StylesListComponent.cpp" compile="1" resource="0"
+              file="Source/Styles/StylesListComponent.cpp"/>
+        <FILE id="slCmp2" name="StylesListComponent.h" compile="0" resource="0"
+              file="Source/Styles/StylesListComponent.h"/>
+        <FILE id="csCmp1" name="CurrentStyleComponent.cpp" compile="1" resource="0"
+              file="Source/Styles/CurrentStyleComponent.cpp"/>
+        <FILE id="csCmp2" name="CurrentStyleComponent.h" compile="0" resource="0"
+              file="Source/Styles/CurrentStyleComponent.h"/>
+        <FILE id="u2nDST" name="StyleSection.h" compile="0" resource="0" file="Source/Styles/StyleSection.h"/>
+        <FILE id="j3KJpG" name="styleSettingsEntry.h" compile="0" resource="0"
+              file="Source/Styles/styleSettingsEntry.h"/>
+      </GROUP>
+      <GROUP id="{45DC58B9-9546-FF2B-682C-390F5BD846CD}" name="Playback">
+        <FILE id="tlCmp2" name="TrackListComponent.h" compile="0" resource="0"
+              file="Source/Playback/TrackListComponent.h"/>
+        <FILE id="hpLtHh" name="MidiNotesTableModel.cpp" compile="1" resource="0"
+              file="Source/Playback/MidiNotesTableModel.cpp"/>
+        <FILE id="trCmp1" name="Track.cpp" compile="1" resource="0" file="Source/Playback/Track.cpp"/>
+        <FILE id="trCmp2" name="Track.h" compile="0" resource="0" file="Source/Playback/Track.h"/>
+        <FILE id="hH5yKh" name="trackListComponentListener.h" compile="0" resource="0"
+              file="Source/Playback/trackListComponentListener.h"/>
+        <FILE id="tlCmp1" name="TrackListComponent.cpp" compile="1" resource="0"
+              file="Source/Playback/TrackListComponent.cpp"/>
+        <FILE id="k5GJ5O" name="TrackEntry.h" compile="0" resource="0" file="Source/Playback/TrackEntry.h"/>
+        <FILE id="zfMrzS" name="TrackListener.h" compile="0" resource="0" file="Source/Playback/TrackListener.h"/>
+        <FILE id="dxeclC" name="TrackPlayer.cpp" compile="1" resource="0" file="Source/Playback/TrackPlayer.cpp"/>
+        <FILE id="PkpDN9" name="TrackPlayer.h" compile="0" resource="0" file="Source/Playback/TrackPlayer.h"/>
+        <FILE id="sxVQU6" name="MidiNotesTableModel.h" compile="0" resource="0"
+              file="Source/Playback/MidiNotesTableModel.h"/>
+        <FILE id="CkPnSg" name="TrackPlayerListener.h" compile="0" resource="0"
+              file="Source/Playback/TrackPlayerListener.h"/>
+      </GROUP>
+      <GROUP id="{DEAAC901-19DC-0356-DCD4-EEDEAC2710B0}" name="Midi">
+        <FILE id="YVVyRr" name="MidiRecordPlayer.cpp" compile="1" resource="0"
+              file="Source/Midi/MidiRecordPlayer.cpp"/>
+        <FILE id="ZZkI5J" name="keyListener.cpp" compile="1" resource="0" file="Source/Midi/keyListener.cpp"/>
+        <FILE id="gevnkJ" name="MidiDevicesDB.cpp" compile="1" resource="0"
+              file="Source/Midi/MidiDevicesDB.cpp"/>
+        <FILE id="IoBJ9L" name="MidiDevicesDB.h" compile="0" resource="0" file="Source/Midi/MidiDevicesDB.h"/>
+        <FILE id="VuWhA6" name="keyListener.h" compile="0" resource="0" file="Source/Midi/keyListener.h"/>
+        <FILE id="b1cjyA" name="MidiRecordPlayer.h" compile="0" resource="0"
+              file="Source/Midi/MidiRecordPlayer.h"/>
+        <FILE id="z2Hsoc" name="MidiHandlerAbstractSubject.h" compile="0" resource="0"
+              file="Source/Midi/MidiHandlerAbstractSubject.h"/>
+        <FILE id="XnnPrB" name="InstrumentHandler.cpp" compile="1" resource="0"
+              file="Source/Midi/InstrumentHandler.cpp"/>
+        <FILE id="UMmTJT" name="InstrumentHandler.h" compile="0" resource="0"
+              file="Source/Midi/InstrumentHandler.h"/>
+        <FILE id="r3G7fK" name="MidiHandler.h" compile="0" resource="0" file="Source/Midi/MidiHandler.h"/>
+        <FILE id="raiann" name="MidiHandler.cpp" compile="1" resource="0" file="Source/Midi/MidiHandler.cpp"/>
+      </GROUP>
+      <GROUP id="{746EC635-C856-A053-E4DB-ACC95221A01C}" name="Common">
+        <FILE id="DspLsn" name="DisplayListener.h" compile="0" resource="0"
+              file="Source/Common/DisplayListener.h"/>
+        <FILE id="VWVIRr" name="HelperFunctions.cpp" compile="1" resource="0"
+              file="Source/Common/HelperFunctions.cpp"/>
+        <FILE id="G3Jvlk" name="FileSystemInterface.h" compile="0" resource="0"
+              file="Source/Common/FileSystemInterface.h"/>
+        <FILE id="J64Aky" name="HelperFunctions.h" compile="0" resource="0"
+              file="Source/Common/HelperFunctions.h"/>
+        <FILE id="m1agKm" name="IOHelper.cpp" compile="1" resource="0" file="Source/Common/IOHelper.cpp"/>
+        <FILE id="A1Vj1F" name="IOHelper.h" compile="0" resource="0" file="Source/Common/IOHelper.h"/>
+        <FILE id="ksM2Lf" name="AppColours.h" compile="0" resource="0" file="Source/Common/AppColours.h"/>
+      </GROUP>
+      <GROUP id="{97468C97-C8B8-FE6B-B732-D2090CCDFF2A}" name="Backend">
+        <FILE id="mkAugQ" name="LoginComponent.cpp" compile="1" resource="0"
+              file="Source/Backend/LoginComponent.cpp"/>
+        <FILE id="GK2TpN" name="PlaytimeTracker.cpp" compile="1" resource="0"
+              file="Source/Backend/PlaytimeTracker.cpp"/>
+        <FILE id="N6kpnC" name="PlaytimeTracker.h" compile="0" resource="0"
+              file="Source/Backend/PlaytimeTracker.h"/>
+        <FILE id="zwA8tf" name="LoginComponent.h" compile="0" resource="0"
+              file="Source/Backend/LoginComponent.h"/>
+        <FILE id="BpF6r2" name="ValidatorUI.cpp" compile="1" resource="0" file="Source/Backend/ValidatorUI.cpp"/>
+        <FILE id="pBoiRK" name="ValidatorUI.h" compile="0" resource="0" file="Source/Backend/ValidatorUI.h"/>
+        <FILE id="ZSMmrT" name="addDeviceWindow.cpp" compile="1" resource="0"
+              file="Source/Backend/addDeviceWindow.cpp"/>
+        <FILE id="oLjKCa" name="SupabaseClient.cpp" compile="1" resource="0"
+              file="Source/Backend/SupabaseClient.cpp"/>
+        <FILE id="Ia73LG" name="SupabaseClient.h" compile="0" resource="0"
+              file="Source/Backend/SupabaseClient.h"/>
+        <FILE id="vh8BuR" name="addDeviceWindow.h" compile="0" resource="0"
+              file="Source/Backend/addDeviceWindow.h"/>
+      </GROUP>
+      <GROUP id="{C868CC58-753F-3A93-F3C4-A82217AD83AF}" name="Audio">
+        <FILE id="w1MPTi" name="SFZlibrary.cpp" compile="1" resource="0" file="Source/Audio/SFZlibrary.cpp"/>
+        <FILE id="audioH" name="AudioHandler.h" compile="0" resource="0" file="Source/Audio/AudioHandler.h"/>
+        <FILE id="audioC" name="AudioHandler.cpp" compile="1" resource="0"
+              file="Source/Audio/AudioHandler.cpp"/>
+        <FILE id="T3o6UR" name="SFZlibrary.h" compile="0" resource="0" file="Source/Audio/SFZlibrary.h"/>
+        <FILE id="euLojz" name="SFZLibraryUI.cpp" compile="1" resource="0"
+              file="Source/Audio/SFZLibraryUI.cpp"/>
+        <FILE id="LWelkc" name="SFZLibraryUI.h" compile="0" resource="0" file="Source/Audio/SFZLibraryUI.h"/>
+      </GROUP>
+      <GROUP id="{7332A212-C4D8-254D-C290-089FB8F723D8}" name="Arranger">
+        <FILE id="arrMd1" name="ArrangerModel.h" compile="0" resource="0" file="Source/Arranger/ArrangerModel.h"/>
+        <FILE id="arrTm1" name="ArrangerTime.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerTime.cpp"/>
+        <FILE id="arrTm2" name="ArrangerTime.h" compile="0" resource="0" file="Source/Arranger/ArrangerTime.h"/>
+        <FILE id="arrSc1" name="ArrangerScheduler.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerScheduler.cpp"/>
+        <FILE id="arrSc2" name="ArrangerScheduler.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerScheduler.h"/>
+        <FILE id="arrPb1" name="ArrangerPatternBuilder.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerPatternBuilder.cpp"/>
+        <FILE id="arrPb2" name="ArrangerPatternBuilder.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerPatternBuilder.h"/>
+        <FILE id="arrEn1" name="ArrangerEngine.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerEngine.cpp"/>
+        <FILE id="arrEn2" name="ArrangerEngine.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerEngine.h"/>
+        <FILE id="arrSq1" name="ArrangerSectionSequencer.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerSectionSequencer.cpp"/>
+        <FILE id="arrSq2" name="ArrangerSectionSequencer.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerSectionSequencer.h"/>
+        <FILE id="arrEnm1" name="ArrangerEnums.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerEnums.h"/>
+        <FILE id="arrHex1" name="ArrangerMidiHex.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerMidiHex.h"/>
+        <FILE id="arrSf1" name="ArrangerStyleFile.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerStyleFile.h"/>
+        <FILE id="arrIo1" name="ArrangerStyleIOHelper.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerStyleIOHelper.cpp"/>
+        <FILE id="arrIo2" name="ArrangerStyleIOHelper.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerStyleIOHelper.h"/>
+        <FILE id="arrCh1" name="ArrangerChannels.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerChannels.cpp"/>
+        <FILE id="arrCh2" name="ArrangerChannels.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerChannels.h"/>
+        <FILE id="arrTg1" name="ArrangerTimelineGeometry.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerTimelineGeometry.cpp"/>
+        <FILE id="arrTg2" name="ArrangerTimelineGeometry.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerTimelineGeometry.h"/>
+        <FILE id="arrSb1" name="ArrangerSourceBuilder.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerSourceBuilder.cpp"/>
+        <FILE id="arrSb2" name="ArrangerSourceBuilder.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerSourceBuilder.h"/>
+        <FILE id="arrDf1" name="ArrangerDefaults.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerDefaults.cpp"/>
+        <FILE id="arrDf2" name="ArrangerDefaults.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerDefaults.h"/>
+        <FILE id="arrTc1" name="ArrangerTimelineComponent.cpp" compile="1"
+              resource="0" file="Source/Arranger/ArrangerTimelineComponent.cpp"/>
+        <FILE id="arrTc2" name="ArrangerTimelineComponent.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerTimelineComponent.h"/>
+        <FILE id="arrEd1" name="ArrangerStyleEditor.cpp" compile="1" resource="0"
+              file="Source/Arranger/ArrangerStyleEditor.cpp"/>
+        <FILE id="arrEd2" name="ArrangerStyleEditor.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerStyleEditor.h"/>
+        <FILE id="arrLs1" name="ArrangerStyleListComponent.cpp" compile="1"
+              resource="0" file="Source/Arranger/ArrangerStyleListComponent.cpp"/>
+        <FILE id="arrLs2" name="ArrangerStyleListComponent.h" compile="0" resource="0"
+              file="Source/Arranger/ArrangerStyleListComponent.h"/>
+      </GROUP>
       <FILE id="HfIBRO" name="Main.cpp" compile="1" resource="0" file="Source/Main.cpp"/>
-      <FILE id="OQf8Oe" name="SettingsWindow.h" compile="0" resource="0"
-            file="Source/UI/SettingsWindow.h"/>
-      <FILE id="raiann" name="MidiHandler.cpp" compile="1" resource="0" file="Source/Midi/MidiHandler.cpp"/>
-      <FILE id="J92BVY" name="MainComponent.h" compile="0" resource="0" file="Source/UI/MainComponent.h"/>
-      <FILE id="jn7l0T" name="MainComponent.cpp" compile="1" resource="0"
-            file="Source/UI/MainComponent.cpp"/>
-      <FILE id="audioH" name="AudioHandler.h" compile="0" resource="0" file="Source/Audio/AudioHandler.h"/>
-      <FILE id="audioC" name="AudioHandler.cpp" compile="1" resource="0" file="Source/Audio/AudioHandler.cpp"/>
     </GROUP>
   </MAINGROUP>
   <MODULES>
