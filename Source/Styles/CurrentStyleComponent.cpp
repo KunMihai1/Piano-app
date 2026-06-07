@@ -1,6 +1,7 @@
 #include "displayGUI.h"
 #include "CustomTableContainer.h"
 #include "Arranger/ArrangerPatternBuilder.h"
+#include "Arranger/ArrangerSourceBuilder.h"
 #include "Arranger/ArrangerStyleIOHelper.h"
 #include "IOHelper.h"
 
@@ -25,7 +26,12 @@ void CurrentStyleComponent::startPlaying()
     // so it doesn't need the live tracks). No active config -> fall through to the demo below.
     if (arrangerModeEnabled && hasActiveArrangerConfig)
     {
-        arrangerEngine->setStyle(activeArrangerConfig);
+        // Live volume sliders win over the volumes baked into the saved config: copy the config and
+        // overlay each track's current on-screen slider value (matched by UUID) so a slider change
+        // is heard on the next Start. Tracks with no live match keep their saved volume.
+        ArrangerStyle cfg = activeArrangerConfig;
+        applyLiveTrackVolumes(cfg);
+        arrangerEngine->setStyle(cfg);
         arrangerEngine->setBpm(currentTempo);
         arrangerEngine->start();
         return;
@@ -333,6 +339,20 @@ std::vector<TrackEntry> CurrentStyleComponent::collectSelectedTracks()
     return selected;
 }
 
+void CurrentStyleComponent::applyLiveTrackVolumes(ArrangerStyle& style) const
+{
+    // allTracks and the config's tracks are both small (a handful each), so a direct nested match
+    // by UUID is fine and avoids needing a hash for juce::String.
+    for (auto& section : style.sections)
+        for (auto& track : section.tracks)
+            for (const auto* live : allTracks)
+                if (live != nullptr && live->getUsedID().toString() == track.id)
+                {
+                    track.volume = live->getVolume();
+                    break;
+                }
+}
+
 void CurrentStyleComponent::presentOverlay(juce::Component& c)
 {
     // Authoring (browser/editor) is a separate mode from live performance and shares the single
@@ -386,6 +406,12 @@ void CurrentStyleComponent::openStyleEditorNew()
 
     arrangerStyleEditor = std::make_unique<ArrangerStyleEditor>(*arrangerEngine);
     arrangerStyleEditor->onClose = [this] { closeStyleEditor(); };
+    // Update Tracks pulls the app's current recording (instrument/volume synced from the sliders),
+    // built at the editor's reference tempo so it shares the config's timebase.
+    arrangerStyleEditor->onRequestCurrentTracks = [this] (double referenceBpm)
+    {
+        return ArrangerSourceBuilder::fromTrackEntries (collectSelectedTracks(), referenceBpm);
+    };
     arrangerStyleEditor->onSaved = [this] (const juce::File& f)
     {
         arrangerStyleList.refresh();
@@ -415,6 +441,12 @@ void CurrentStyleComponent::openStyleEditorFromFile(const juce::File& f)
 
     arrangerStyleEditor = std::make_unique<ArrangerStyleEditor>(*arrangerEngine);
     arrangerStyleEditor->onClose = [this] { closeStyleEditor(); };
+    // Update Tracks pulls the app's current recording (instrument/volume synced from the sliders),
+    // built at the editor's reference tempo so it shares the config's timebase.
+    arrangerStyleEditor->onRequestCurrentTracks = [this] (double referenceBpm)
+    {
+        return ArrangerSourceBuilder::fromTrackEntries (collectSelectedTracks(), referenceBpm);
+    };
     arrangerStyleEditor->onSaved = [this] (const juce::File& f)
     {
         arrangerStyleList.refresh();

@@ -17,6 +17,9 @@ public:
     std::function<void()> onClose;
     /** Fired after a successful save, with the written file (host can refresh a list). */
     std::function<void (const juce::File&)> onSaved;
+    /** Supplies the app's current recording as source tracks at the given reference tempo, for the
+        "Update Tracks" action. Set by the host; if unset, Update Tracks is a no-op. */
+    std::function<std::vector<SourceTrackFile> (double referenceBpm)> onRequestCurrentTracks;
 
     explicit ArrangerStyleEditor (ArrangerEngine& engineToPreviewWith);
 
@@ -29,7 +32,7 @@ public:
 
     /** Remember the on-disk file this editor was opened from, so Save renames it (rather
         than leaving a duplicate) when the name changes. Leave unset for a brand-new config. */
-    void setSourceFile (const juce::File& f) { loadedFile = f; }
+    void setSourceFile (const juce::File& f) { loadedFile = f; updateTracksBtn.setEnabled (f.existsAsFile()); }
 
     /** Build the current ArrangerStyleFile from editor state (source tracks + windows). */
     ArrangerStyleFile toStyleFile() const;
@@ -42,6 +45,7 @@ private:
     void finishSave (const juce::File& target);   // write (renaming the source if needed)
     void rebuildPreview();          // build style from current state and engine.setStyle
     void addSectionOfType (ArrangerSectionType type);
+    void updateTracksFromRecording();  // replace source tracks with the app's current recording, keep sections, overwrite file
     void removeSelectedSection();   // remove the section currently selected on the timeline
     void renumberSectionsByType();  // assign unique per-type names (Intro 1, Intro 2, ...)
     void recomputeTotalBars();      // longest source track / furthest window, in whole bars
@@ -56,7 +60,8 @@ private:
     juce::TextEditor nameEditor;
     juce::TextButton addIntroBtn { "Add Intro" }, addVariationBtn { "Add Var" }, addFillBtn { "Add Fill" },
                      addBreakBtn { "Add Break" }, addEndingBtn { "Add Ending" }, removeBtn { "Remove" },
-                     previewBtn { "Preview" }, stopBtn { "Stop" }, saveBtn { "Save" }, closeBtn { "Close" };
+                     previewBtn { "Preview" }, stopBtn { "Stop" }, updateTracksBtn { "Update Tracks" },
+                     saveBtn { "Save" }, closeBtn { "Close" };
 
     std::vector<SourceTrackFile> sourceTracks;
     std::vector<SectionWindow>   windows;

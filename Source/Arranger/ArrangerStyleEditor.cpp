@@ -20,8 +20,10 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
     nameLabel.setColour (juce::Label::textColourId, juce::Colours::white);
     nameEditor.setText ("New configuration", juce::dontSendNotification);
     for (auto* b : { &addIntroBtn, &addVariationBtn, &addFillBtn, &addBreakBtn, &addEndingBtn,
-                     &removeBtn, &previewBtn, &stopBtn, &saveBtn, &closeBtn })
+                     &removeBtn, &previewBtn, &stopBtn, &updateTracksBtn, &saveBtn, &closeBtn })
         addAndMakeVisible (b);
+
+    updateTracksBtn.setEnabled (false);   // only meaningful when editing an existing saved config
 
     timeline.onWindowsChanged = [this] (const std::vector<SectionWindow>& w)
     {
@@ -44,6 +46,7 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
     removeBtn.onClick       = [this] { removeSelectedSection(); };
     previewBtn.onClick   = [this] { followPlayhead = true; rebuildPreview(); engine.setBpm (referenceBpm); engine.start(); };
     stopBtn.onClick      = [this] { engine.stop(); };
+    updateTracksBtn.onClick = [this] { updateTracksFromRecording(); };
     saveBtn.onClick      = [this] { requestSave(); };
     closeBtn.onClick = [this] { engine.stop(); if (onClose) onClose(); };
 
@@ -109,6 +112,8 @@ void ArrangerStyleEditor::loadRecording (const std::vector<TrackEntry>& tracks, 
     nameEditor.setText (name, juce::dontSendNotification);
     styleId = juce::Uuid().toString();
 
+    updateTracksBtn.setEnabled (false);   // brand-new config: nothing on disk to update yet
+
     sourceTracks = ArrangerSourceBuilder::fromTrackEntries (tracks, referenceBpm);
     windows = ArrangerDefaults::defaultWindowsForBars (1);
     recomputeTotalBars();
@@ -163,8 +168,12 @@ void ArrangerStyleEditor::addSectionOfType (ArrangerSectionType type)
     SectionWindow w;
     w.id = juce::Uuid().toString();
     w.type = type;
-    w.startBar = 1;
-    w.lengthBars = juce::jmin (type == ArrangerSectionType::Fill ? 1 : 2, totalBars);
+    // Drop the new section where the user is currently looking (the bar at the timeline viewport's
+    // left edge), not back at bar 1. Clamp to the valid range, and trim its length so it stays in bounds.
+    const int viewBar = timeline.barForX (timelineViewport.getViewPositionX());
+    w.startBar = juce::jlimit (1, juce::jmax (1, totalBars), viewBar);
+    const int desiredLen = (type == ArrangerSectionType::Fill ? 1 : 2);
+    w.lengthBars = juce::jmin (desiredLen, juce::jmax (1, totalBars - w.startBar + 1));
     w.afterComplete = (type == ArrangerSectionType::Ending) ? ArrangerAfterComplete::Stop
                                                             : ArrangerAfterComplete::FallThrough;
 
@@ -179,6 +188,48 @@ void ArrangerStyleEditor::addSectionOfType (ArrangerSectionType type)
     windows.push_back (w);
     timeline.setWindows (windows);
     rebuildPreview();
+}
+
+void ArrangerStyleEditor::updateTracksFromRecording()
+{
+    // Replace the configuration's recorded notes with the app's current recording while keeping the
+    // sections (Intro/Variation/Fill/...) exactly as they are, then overwrite the saved .style.
+    if (! loadedFile.existsAsFile())
+    {
+        juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::InfoIcon,
+            "Update tracks", "Save this configuration first, then Update Tracks can replace its notes.");
+        return;
+    }
+    if (! onRequestCurrentTracks)
+        return;
+
+    juce::AlertWindow::showOkCancelBox (juce::AlertWindow::WarningIcon,
+        "Update tracks",
+        "Replace the tracks of \"" + name + "\" with the current recording and overwrite the saved "
+        "configuration?\nYour sections (intros/variations/fills) stay as they are.",
+        "Update", "Cancel", this,
+        juce::ModalCallbackFunction::create ([this] (int result)
+        {
+            if (result != 1)   // 1 = Update, 0 = Cancel
+                return;
+
+            auto newTracks = onRequestCurrentTracks (referenceBpm);
+            if (newTracks.empty())
+            {
+                juce::AlertWindow::showMessageBoxAsync (juce::AlertWindow::InfoIcon,
+                    "Update tracks", "No recorded tracks to import.");
+                return;
+            }
+
+            sourceTracks = std::move (newTracks);   // sections (windows) are intentionally untouched
+            recomputeTotalBars();
+            timeline.setTotalBars (totalBars);
+            timeline.setWindows (windows);
+            layoutTimeline();
+            rebuildPreview();
+
+            finishSave (loadedFile);   // overwrite the same file: keeps name + style id
+        }));
 }
 
 void ArrangerStyleEditor::renumberSectionsByType()
@@ -278,7 +329,7 @@ void ArrangerStyleEditor::resized()
     nameEditor.setBounds (top.removeFromLeft (180).reduced (0, 2));
     top.removeFromLeft (8);
     for (auto* b : { &addIntroBtn, &addVariationBtn, &addFillBtn, &addBreakBtn, &addEndingBtn,
-                     &removeBtn, &previewBtn, &stopBtn, &saveBtn, &closeBtn })
+                     &removeBtn, &previewBtn, &stopBtn, &updateTracksBtn, &saveBtn, &closeBtn })
         b->setBounds (top.removeFromLeft (84).reduced (2));
 
     area.removeFromTop (6);

@@ -284,6 +284,10 @@ private:
 
     /** Gather the style's current tracks (instrument/volume synced) to seed the editor. */
     std::vector<TrackEntry> collectSelectedTracks();
+    /** Overlay each live track's current slider volume onto the matching config track (by UUID),
+        so live sliders win over the volumes baked into a saved configuration. Tracks with no live
+        match keep their saved volume. */
+    void applyLiveTrackVolumes (ArrangerStyle& style) const;
     void showStyleList (bool shouldShow);
     void openStyleEditorNew();
     void openStyleEditorFromFile (const juce::File& f);

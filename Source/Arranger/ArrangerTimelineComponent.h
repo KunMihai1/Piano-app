@@ -28,6 +28,7 @@ public:
     static constexpr int kPixelsPerBar = 56;
     int getPreferredWidth() const;     // marginPx*2 + totalBars * kPixelsPerBar
     int xForBar (double bar) const;    // pixel x of a (fractional, 1-based) bar in this component
+    int barForX (int x) const;         // nearest 1-based bar line at a pixel x (inverse of xForBar)
 
     void paint (juce::Graphics& g) override;
     void mouseDown (const juce::MouseEvent& e) override;

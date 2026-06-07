@@ -19,6 +19,11 @@ int ArrangerTimelineComponent::xForBar (double bar) const
     return (int) std::lround (barToX (bar, layout()));
 }
 
+int ArrangerTimelineComponent::barForX (int x) const
+{
+    return ArrangerTimelineGeometry::xToSnappedBar ((double) x, layout());
+}
+
 juce::Colour ArrangerTimelineComponent::colourForType (ArrangerSectionType t) const
 {
     switch (t)
