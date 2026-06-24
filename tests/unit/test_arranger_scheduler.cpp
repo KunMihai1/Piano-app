@@ -95,6 +95,34 @@ public:
             auto again = s.flushActiveNotes (1.0); // nothing left to close
             expectEquals ((int) again.size(), 0);
         }
+
+        beginTest ("part tag flows from setLoop to the emitted note-on AND its seam note-off");
+        {
+            ArrangerScheduler s;
+            std::vector<TimedBeatEvent> evs { { 0.0, juce::MidiMessage::noteOn (2, 60, (juce::uint8) 90) } };
+            std::vector<PartKind> parts { PartKind::Acc };
+            s.setLoop (evs, parts, 4.0);
+
+            auto on = s.advance (0.0, 1.0);
+            expectEquals ((int) on.size(), 1);
+            expect (on[0].part == PartKind::Acc);
+
+            auto seam = s.advance (3.5, 4.5);   // crosses seam -> synthetic note-off
+            bool foundOff = false;
+            for (auto& e : seam)
+                if (e.message.isNoteOff() && e.message.getNoteNumber() == 60)
+                    { foundOff = true; expect (e.part == PartKind::Acc); }
+            expect (foundOff);
+        }
+
+        beginTest ("legacy 2-arg setLoop marks events Fixed (non-transposable)");
+        {
+            ArrangerScheduler s;
+            s.setLoop ({ { 0.0, juce::MidiMessage::noteOn (2, 60, (juce::uint8) 90) } }, 4.0);
+            auto on = s.advance (0.0, 1.0);
+            expectEquals ((int) on.size(), 1);
+            expect (on[0].part == PartKind::Fixed);
+        }
     }
 };
 

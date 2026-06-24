@@ -61,6 +61,35 @@ public:
         return st;
     }
 
+    // One section: an Acc track (ch2, note 60) + a Drum track (ch10, note 36), both short.
+    static ArrangerStyle makeAccAndDrumStyle()
+    {
+        ArrangerTrack acc; acc.channel = 2; acc.partType = ArrangerPartType::Acc;
+        acc.pattern = { { 0.0, juce::MidiMessage::noteOn  (2, 60, (juce::uint8) 100) },
+                        { 0.5, juce::MidiMessage::noteOff (2, 60) } };
+        ArrangerTrack drum; drum.channel = 10; drum.partType = ArrangerPartType::Drum;
+        drum.pattern = { { 0.0, juce::MidiMessage::noteOn  (10, 36, (juce::uint8) 100) },
+                         { 0.5, juce::MidiMessage::noteOff (10, 36) } };
+        ArrangerSection s; s.id = "var_1"; s.name = "Variation 1";
+        s.type = ArrangerSectionType::Variation; s.lengthBars = 1;
+        s.tracks.push_back (acc); s.tracks.push_back (drum);
+        ArrangerStyle st; st.timeSigNum = 4; st.timeSigDenom = 4; st.originalTempo = 120.0;
+        st.sections.push_back (s);
+        return st;
+    }
+
+    // One section: an Acc track holding note 60 across the bar (no note-off) -> closed at the seam.
+    static ArrangerStyle makeAccHeldNoteStyle()
+    {
+        ArrangerTrack acc; acc.channel = 2; acc.partType = ArrangerPartType::Acc;
+        acc.pattern = { { 0.0, juce::MidiMessage::noteOn (2, 60, (juce::uint8) 100) } };
+        ArrangerSection s; s.id = "var_1"; s.name = "Variation 1";
+        s.type = ArrangerSectionType::Variation; s.lengthBars = 1; s.tracks.push_back (acc);
+        ArrangerStyle st; st.timeSigNum = 4; st.timeSigDenom = 4; st.originalTempo = 120.0;
+        st.sections.push_back (s);
+        return st;
+    }
+
     void runTest() override
     {
         beginTest ("renderRange dispatches scheduled events through onMidiMessage");
@@ -155,6 +184,50 @@ public:
             engine.setStyle (makeTwoVarStyle());
             engine.selectStartSection (ArrangerSectionType::Variation, "Variation 2");
             expectEquals (engine.peekPendingStartIndex(), 1);
+        }
+
+        beginTest ("active chord transposes Acc notes but leaves Drum notes unchanged");
+        {
+            ArrangerEngine engine (std::weak_ptr<juce::MidiOutput>{});
+            std::vector<juce::MidiMessage> captured;
+            engine.onMidiMessage = [&] (const juce::MidiMessage& m) { captured.push_back (m); };
+
+            engine.setStyle (makeAccAndDrumStyle());                 // original = C major (default)
+            engine.setActiveChord ({ 2, ChordQuality::Maj, 2 });    // play D major (+2)
+            engine.renderRange (0.0, 1.0);
+
+            bool accShifted = false, drumKept = false;
+            for (auto& m : captured)
+            {
+                if (m.isNoteOn() && m.getChannel() == 2  && m.getNoteNumber() == 62) accShifted = true;
+                if (m.isNoteOn() && m.getChannel() == 10 && m.getNoteNumber() == 36) drumKept   = true;
+            }
+            expect (accShifted, "Acc note 60 should shift to 62 under D major");
+            expect (drumKept,   "Drum note 36 should be unchanged");
+        }
+
+        beginTest ("transposed note-off matches the transposed note-on pitch (no hung notes)");
+        {
+            ArrangerEngine engine (std::weak_ptr<juce::MidiOutput>{});
+            std::vector<juce::MidiMessage> captured;
+            engine.onMidiMessage = [&] (const juce::MidiMessage& m) { captured.push_back (m); };
+
+            engine.setStyle (makeAccHeldNoteStyle());               // original C major
+            engine.setActiveChord ({ 2, ChordQuality::Maj, 2 });    // D major (+2): 60 -> 62
+            engine.renderRange (0.0, 4.5);                          // cross the seam -> synthetic off
+
+            int on62 = 0, off62 = 0, on60 = 0, off60 = 0;
+            for (auto& m : captured)
+            {
+                if (m.getChannel() == 2 && m.isNoteOn()  && m.getNoteNumber() == 62) ++on62;
+                if (m.getChannel() == 2 && m.isNoteOff() && m.getNoteNumber() == 62) ++off62;
+                if (m.getChannel() == 2 && m.isNoteOn()  && m.getNoteNumber() == 60) ++on60;
+                if (m.getChannel() == 2 && m.isNoteOff() && m.getNoteNumber() == 60) ++off60;
+            }
+            expect (on62  >= 1, "note-on should sound the transposed pitch 62");
+            expect (off62 >= 1, "the seam note-off must use the same transposed pitch 62");
+            expectEquals (on60,  0);   // nothing at the original pitch
+            expectEquals (off60, 0);
         }
     }
 };

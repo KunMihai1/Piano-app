@@ -1,4 +1,4 @@
-#include "ArrangerEngine.h"
+﻿#include "ArrangerEngine.h"
 #include "ArrangerTime.h"
 
 ArrangerEngine::ArrangerEngine (std::weak_ptr<juce::MidiOutput> out) : outputDevice (out) {}
@@ -26,13 +26,19 @@ void ArrangerEngine::rebuildFromStyle()
     for (const auto& sec : style.sections)
     {
         std::vector<TimedBeatEvent> merged;
+        std::vector<PartKind>       parts;
         for (const auto& tr : sec.tracks)
-            for (const auto& ev : tr.pattern)
-                merged.push_back (ev);
+        {
+            // Drums/Perc never transpose; Bass honours bass inversion; Acc is plain harmony.
+            const PartKind pk = (tr.partType == ArrangerPartType::Bass) ? PartKind::Bass
+                              : (tr.partType == ArrangerPartType::Acc)  ? PartKind::Acc
+                                                                        : PartKind::Fixed;
+            for (const auto& ev : tr.pattern) { merged.push_back (ev); parts.push_back (pk); }
+        }
 
         const double bars = (double) juce::jmax (1, sec.lengthBars);
         ArrangerScheduler s;
-        s.setLoop (std::move (merged), bars * bpb);
+        s.setLoop (std::move (merged), std::move (parts), bars * bpb);
         schedulers.push_back (std::move (s));
     }
 
@@ -93,6 +99,22 @@ void ArrangerEngine::setStyle (ArrangerStyle newStyle)
     style = std::move (newStyle);
     if (style.originalTempo > 0.0) currentBpm = style.originalTempo;
     rebuildFromStyle();
+    // The recorded chord the NTT maps out of (style-level). bassNote = root (no inversion baked in).
+    transposer.setOriginalChord ({ style.originalRoot, style.originalQuality, style.originalRoot });
+}
+
+void ArrangerEngine::setActiveChord (ArrangerChord played)
+{
+    // Called from the MIDI input thread. Hand the chord to the timer thread via a guarded mailbox;
+    // it is applied to the transposer at the top of renderRange (timer thread only).
+    const juce::ScopedLock sl (chordLock);
+    pendingChord   = played;
+    hasChordUpdate = true;
+}
+
+void ArrangerEngine::setOriginalChord (ArrangerChord recorded)
+{
+    transposer.setOriginalChord (recorded);
 }
 
 void ArrangerEngine::dispatch (const juce::MidiMessage& m)
@@ -101,6 +123,34 @@ void ArrangerEngine::dispatch (const juce::MidiMessage& m)
         out->sendMessageNow (m);
     if (onMidiMessage)
         onMidiMessage (m);
+}
+
+void ArrangerEngine::dispatchEmitted (const EmittedEvent& e)
+{
+    juce::MidiMessage m = e.message;
+
+    if (m.isNoteOn() && m.getVelocity() > 0 && e.part != PartKind::Fixed)
+    {
+        // Transpose the pitched note and remember the played pitch, keyed by its ORIGINAL note, so
+        // the matching note-off (which carries the original pitch) closes the same sounding note even
+        // if the chord changed in between.
+        const int orig   = m.getNoteNumber();
+        const int played = transposer.transpose (orig, e.part);
+        activePlayedNote[{ m.getChannel(), orig }] = played;
+        m = juce::MidiMessage::noteOn (m.getChannel(), played, m.getVelocity());
+    }
+    else if (m.isNoteOff() || (m.isNoteOn() && m.getVelocity() == 0))
+    {
+        const auto key = std::make_pair (m.getChannel(), m.getNoteNumber());
+        const auto it  = activePlayedNote.find (key);
+        if (it != activePlayedNote.end())
+        {
+            m = juce::MidiMessage::noteOff (m.getChannel(), it->second);
+            activePlayedNote.erase (it);
+        }
+    }
+
+    dispatch (m);
 }
 
 void ArrangerEngine::sendAllNotesOff()
@@ -141,6 +191,16 @@ void ArrangerEngine::renderRange (double fromBeats, double toBeats)
         }
     }
 
+    // Apply the latest played chord (from the MIDI input thread) before emitting this window's notes.
+    {
+        const juce::ScopedLock sl (chordLock);
+        if (hasChordUpdate)
+        {
+            transposer.setActiveChord (pendingChord);
+            hasChordUpdate = false;
+        }
+    }
+
     SequencerStep step = sequencer.advance (fromBeats, toBeats);
 
     for (const auto& seg : step.segments)
@@ -152,7 +212,7 @@ void ArrangerEngine::renderRange (double fromBeats, double toBeats)
             if (currentSchedulerIndex >= 0 && currentSchedulerIndex < (int) schedulers.size())
             {
                 for (auto& e : schedulers[currentSchedulerIndex].flushActiveNotes (0.0))
-                    dispatch (e.message);
+                    dispatchEmitted (e);
                 schedulers[currentSchedulerIndex].reset();
             }
             currentSchedulerIndex = seg.sectionIndex;
@@ -162,7 +222,7 @@ void ArrangerEngine::renderRange (double fromBeats, double toBeats)
 
         if (seg.sectionIndex >= 0 && seg.sectionIndex < (int) schedulers.size())
             for (auto& e : schedulers[seg.sectionIndex].advance (seg.localFromBeats, seg.localToBeats))
-                dispatch (e.message);
+                dispatchEmitted (e);
     }
 
     if (step.stopRequested)
@@ -182,6 +242,7 @@ void ArrangerEngine::start()
 
     for (auto& s : schedulers) s.reset();
     sequencer.reset();
+    activePlayedNote.clear();
     if (pendingStartIndex >= 0)
         sequencer.startAt (pendingStartIndex);
     pendingStartIndex = -1;
@@ -209,6 +270,7 @@ void ArrangerEngine::haltAudio()
     sendAllNotesOff();
     for (auto& s : schedulers) s.reset();
     sequencer.reset();
+    activePlayedNote.clear();
     currentSchedulerIndex = -1;
     pendingStartIndex = -1;
     playheadBeats = 0.0;
