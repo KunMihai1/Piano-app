@@ -345,7 +345,7 @@ void MIDIWindow::setBounds_components()
 
 void MIDIWindow::panelInit()
 {
-    settingsPanel.setSize(480, 250);
+    settingsPanel.setSize(480, 420);   // tall enough for the arranger + Phase 4 chord toggles
 
     setBackgroundColour(panelBg);
 
