@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include "Chord.h"
 
 /**
@@ -10,15 +10,15 @@
 class ChordTransposer
 {
 public:
-    void setOriginalChord (Chord recorded) { original = recorded; }
-    void setActiveChord   (Chord played)   { active = played; }
+    void setOriginalChord (ArrangerChord recorded) { original = recorded; }
+    void setActiveChord   (ArrangerChord played)   { active = played; }
     void setBassInversion (bool shouldInvert) { bassInversion = shouldInvert; }
 
     /** Map one note for a part. Fixed parts and invalid chords return the note unchanged. */
     int transpose (int noteNumber, PartKind part) const;
 
 private:
-    Chord original { 0, ChordQuality::Maj, 0 };   // default C major
-    Chord active;
+    ArrangerChord original { 0, ChordQuality::Maj, 0 };   // default C major
+    ArrangerChord active;
     bool  bassInversion = false;
 };

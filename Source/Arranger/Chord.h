@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <juce_core/juce_core.h>
 #include <vector>
 
@@ -11,16 +11,16 @@ enum class PartKind { Fixed, Acc, Bass };
 
 /** A recognized chord: pitch-class root (0=C..11=B), quality, and the lowest fingered pitch
     class (for Bass Inversion). root=-1 / quality=None means "no chord". */
-struct Chord
+struct ArrangerChord
 {
     int          root     = -1;   // 0..11, -1 = none
     ChordQuality quality  = ChordQuality::None;
     int          bassNote = -1;   // pitch class of lowest note; -1 = use root
 
     bool isValid() const { return root >= 0 && quality != ChordQuality::None; }
-    bool operator== (const Chord& o) const
+    bool operator== (const ArrangerChord& o) const
         { return root == o.root && quality == o.quality && bassNote == o.bassNote; }
-    bool operator!= (const Chord& o) const { return ! (*this == o); }
+    bool operator!= (const ArrangerChord& o) const { return ! (*this == o); }
 };
 
 inline juce::String toString (ChordQuality q)

@@ -1,4 +1,4 @@
-#include <juce_core/juce_core.h>
+﻿#include <juce_core/juce_core.h>
 #include <juce_audio_basics/juce_audio_basics.h>
 #include "Arranger/ChordDetector.h"
 
@@ -7,7 +7,7 @@ class ChordDetectorTest : public juce::UnitTest
 public:
     ChordDetectorTest() : juce::UnitTest ("ChordDetector", "Arranger") {}
 
-    static Chord detect (std::initializer_list<int> notes, bool full = false)
+    static ArrangerChord detect (std::initializer_list<int> notes, bool full = false)
     {
         ChordDetector d; d.setFullKeyboardMode (full);
         for (int n : notes) d.noteOn (n);
@@ -19,7 +19,7 @@ public:
         beginTest ("no held notes -> invalid chord");
         {
             ChordDetector d;
-            Chord c = d.current();
+            ArrangerChord c = d.current();
             expect (! c.isValid(), "empty detector gave root=" + juce::String (c.root)
                                    + " q=" + toString (c.quality));
         }
@@ -67,7 +67,7 @@ public:
         {
             ChordDetector d; d.setFullKeyboardMode (true);
             for (int n : {48,52,55}) d.noteOn (n);   // C major (low)
-            Chord before = d.current();
+            ArrangerChord before = d.current();
             expect (before.quality == ChordQuality::Maj);
             d.noteOn (84);                            // high C (a chord tone)
             expect (d.current() == before);
@@ -77,7 +77,7 @@ public:
         {
             ChordDetector d; d.setFullKeyboardMode (true);
             d.noteOn (60); d.noteOn (84);             // only 2 notes
-            Chord c = d.current();
+            ArrangerChord c = d.current();
             expect (! c.isValid(), "2-note full-kb gave root=" + juce::String (c.root)
                                    + " q=" + toString (c.quality));
         }
@@ -96,7 +96,7 @@ public:
             std::vector<TimedBeatEvent> evs;
             for (int n : { 60,64,67, 60,64,67, 60, 67 })
                 evs.push_back ({ 0.0, juce::MidiMessage::noteOn (2, n, (juce::uint8)100) });
-            Chord k = detectKeyFromEvents (evs);
+            ArrangerChord k = detectKeyFromEvents (evs);
             expectEquals (k.root, 0);
             expect (k.quality == ChordQuality::Maj);
         }
@@ -106,11 +106,11 @@ public:
             std::vector<TimedBeatEvent> minor;
             for (int n : { 57,60,64, 57,60,64, 57 })   // A C E -> A minor
                 minor.push_back ({ 0.0, juce::MidiMessage::noteOn (2, n, (juce::uint8)100) });
-            Chord k = detectKeyFromEvents (minor);
+            ArrangerChord k = detectKeyFromEvents (minor);
             expectEquals (k.root, 9);                  // A
             expect (k.quality == ChordQuality::Min);
 
-            Chord fb = detectKeyFromEvents ({});
+            ArrangerChord fb = detectKeyFromEvents ({});
             expectEquals (fb.root, 0);
             expect (fb.quality == ChordQuality::Maj);
         }

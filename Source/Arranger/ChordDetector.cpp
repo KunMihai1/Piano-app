@@ -1,4 +1,4 @@
-#include "ChordDetector.h"
+﻿#include "ChordDetector.h"
 #include <array>
 
 namespace
@@ -38,10 +38,10 @@ void ChordDetector::noteOff (int n) { heldNotes.erase  (n); recompute(); }
 void ChordDetector::reset()
 {
     heldNotes.clear();
-    recognized = Chord{};
+    recognized = ArrangerChord{};
 }
 
-Chord ChordDetector::recognizeSet (const std::set<int>& notes)
+ArrangerChord ChordDetector::recognizeSet (const std::set<int>& notes)
 {
     if (notes.empty()) return {};
 
@@ -50,10 +50,10 @@ Chord ChordDetector::recognizeSet (const std::set<int>& notes)
     const int lowestPc = (*notes.begin()) % 12;   // std::set is ascending
 
     // Some pitch-class sets name two chords that are inversions of each other (e.g. C-F-G is both
-    // Csus4 and Fsus2). Prefer the interpretation whose root IS the lowest (bass) note — the Fingered
+    // Csus4 and Fsus2). Prefer the interpretation whose root IS the lowest (bass) note â€” the Fingered
     // convention. If no match is rooted on the bass (a true inversion like E-G-C = C major), fall back
     // to the highest-priority template match.
-    Chord firstMatch { -1, ChordQuality::None, lowestPc };
+    ArrangerChord firstMatch { -1, ChordQuality::None, lowestPc };
     for (const auto& tpl : templates())
         for (int root = 0; root < 12; ++root)
             if (matches (pcs, root, tpl.intervals))
@@ -82,7 +82,7 @@ void ChordDetector::recompute()
         return;   // keep the previously recognized chord (hysteresis / hold)
 
     // Try the full set, then the lowest 4, then the lowest 3 (the chord is usually in the lower hand).
-    Chord c = recognizeSet (heldNotes);
+    ArrangerChord c = recognizeSet (heldNotes);
     if (! c.isValid())
     {
         for (int take : { 4, 3 })
@@ -98,7 +98,7 @@ void ChordDetector::recompute()
         recognized = c;   // else: hold the previous chord
 }
 
-Chord detectKeyFromEvents (const std::vector<TimedBeatEvent>& events)
+ArrangerChord detectKeyFromEvents (const std::vector<TimedBeatEvent>& events)
 {
     std::array<int, 12> hist {};
     for (const auto& e : events)

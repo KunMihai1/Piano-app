@@ -1,10 +1,10 @@
-#include <juce_core/juce_core.h>
+﻿#include <juce_core/juce_core.h>
 #include "Arranger/Chord.h"
 
 class ChordTest : public juce::UnitTest
 {
 public:
-    ChordTest() : juce::UnitTest ("Chord", "Arranger") {}
+    ChordTest() : juce::UnitTest ("ArrangerChord", "Arranger") {}
 
     void runTest() override
     {
@@ -19,9 +19,9 @@ public:
         expect (chordQualityFromString ("not-a-quality") == ChordQuality::None);
 
         beginTest ("isValid requires a root and a real quality");
-        expect (! Chord{}.isValid());
-        expect (! (Chord{ 0, ChordQuality::None, -1 }).isValid());
-        expect ((Chord{ 0, ChordQuality::Maj, -1 }).isValid());
+        expect (! ArrangerChord{}.isValid());
+        expect (! (ArrangerChord{ 0, ChordQuality::None, -1 }).isValid());
+        expect ((ArrangerChord{ 0, ChordQuality::Maj, -1 }).isValid());
 
         beginTest ("chordIntervals start at the root and have the expected size");
         expect (chordIntervals (ChordQuality::Maj)  == (std::vector<int>{0,4,7}));
