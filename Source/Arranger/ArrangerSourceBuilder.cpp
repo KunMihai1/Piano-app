@@ -27,10 +27,16 @@ namespace ArrangerSourceBuilder
                     continue; // melodic budget exhausted; drop this track
             }
 
+            // A melodic track named like a bass ("Bass", "Bassline", ...) becomes the Bass part, so it
+            // transposes AND honours Bass Inversion (lowest fingered note drives it). Others are Acc.
+            const bool isBass = (! isPerc) && te.getDisplayName().containsIgnoreCase ("bass");
+
             SourceTrackFile st;
             st.id        = te.getUniqueID();
             st.name      = te.getDisplayName();
-            st.partType  = isPerc ? ArrangerPartType::Drum : ArrangerPartType::Acc;
+            st.partType  = isPerc ? ArrangerPartType::Drum
+                         : isBass ? ArrangerPartType::Bass
+                                  : ArrangerPartType::Acc;
             st.channel   = channel;
             st.instrument = te.instrumentAssociated;
             st.volume    = te.volumeAssociated;

@@ -50,11 +50,14 @@ namespace ArrangerPatternBuilder
         {
             const bool isPerc = (te.type == TrackType::Percussion);
             const int channel = isPerc ? 10 : melodicChannel++;
+            const bool isBass = (! isPerc) && te.getDisplayName().containsIgnoreCase ("bass");
 
             ArrangerTrack at;
             at.id = te.getUniqueID();
             at.name = te.getDisplayName();
-            at.partType = isPerc ? ArrangerPartType::Drum : ArrangerPartType::Acc;
+            at.partType = isPerc ? ArrangerPartType::Drum
+                        : isBass ? ArrangerPartType::Bass
+                                 : ArrangerPartType::Acc;
             at.instrument = te.instrumentAssociated;
             at.channel = channel;
             at.volume = te.volumeAssociated;
