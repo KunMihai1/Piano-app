@@ -101,6 +101,12 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     addAndMakeVisible(stopPlayingTracks);
     addAndMakeVisible(customBeatBar);
 
+    // Performance buttons must not steal keyboard focus when clicked, so the PC-keyboard keeps
+    // playing notes after you press Start / Stop or open the play settings.
+    startPlayingTracks.setMouseClickGrabsKeyboardFocus(false);
+    stopPlayingTracks.setMouseClickGrabsKeyboardFocus(false);
+    playSettingsTracks.setMouseClickGrabsKeyboardFocus(false);
+
 
     trackPlayer = std::make_unique<MultipleTrackPlayer>(outputDevice);
 
