@@ -439,6 +439,12 @@ void Display::setArrangerLiveChord(const ArrangerChord& chord)
         currentStyleComponent->setLiveChord(chord);
 }
 
+void Display::setArrangerBassInversion(bool shouldInvert)
+{
+    if (currentStyleComponent)
+        currentStyleComponent->setArrangerBassInversion(shouldInvert);
+}
+
 MultipleTrackPlayer* Display::getTrackPlayer()
 {
     if (currentStyleComponent)

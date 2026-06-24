@@ -335,6 +335,12 @@ void MIDIWindow::setBounds_components()
 
     y += buttonH + 14;
     arrangerModeToggle.setBounds(pad, y, 320, rowH);
+    y += rowH + 6;
+    chordBassInversionToggle.setBounds(pad, y, 320, rowH);
+    y += rowH + 6;
+    chordFullKeyboardToggle.setBounds(pad, y, 320, rowH);
+    y += rowH + 6;
+    chordMemoryToggle.setBounds(pad, y, 320, rowH);
 }
 
 void MIDIWindow::panelInit()
@@ -470,6 +476,25 @@ void MIDIWindow::allInit()
         if (propertyFile != nullptr) { propertyFile->setValue("ArrangerModeEnabled", on); propertyFile->saveIfNeeded(); }
         if (onArrangerModeChanged) onArrangerModeChanged(on);
     };
+
+    // Phase 4 arranger chord toggles. Defaults: bass inversion off, split scan, memory on.
+    auto setupChordToggle = [this](juce::ToggleButton& btn, const juce::String& key, bool dflt,
+                                   std::function<void(bool)>& cb)
+    {
+        settingsPanel.addAndMakeVisible(btn);
+        btn.setToggleState(propertyFile != nullptr ? propertyFile->getBoolValue(key, dflt) : dflt,
+                           juce::dontSendNotification);
+        btn.onClick = [this, &btn, key, &cb]()
+        {
+            const bool on = btn.getToggleState();
+            if (propertyFile != nullptr) { propertyFile->setValue(key, on); propertyFile->saveIfNeeded(); }
+            if (cb) cb(on);
+        };
+    };
+    setupChordToggle(chordBassInversionToggle, "ChordBassInversion", false, onChordBassInversionChanged);
+    setupChordToggle(chordFullKeyboardToggle,  "ChordFullKeyboard",  false, onChordFullKeyboardChanged);
+    setupChordToggle(chordMemoryToggle,        "ChordMemory",        true,  onChordMemoryChanged);
+
 	sfzButtonInit();
 }
 

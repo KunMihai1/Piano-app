@@ -37,6 +37,9 @@ public:
     std::function<juce::String()> getCurrentStyleName; // optional, set by owner
     std::function<void(int engineOption)> onOutputEngineChanged; // fired when engine changes while playing
     std::function<void(bool)> onArrangerModeChanged;             // fired when the Classic/Arranger toggle changes
+    std::function<void(bool)> onChordBassInversionChanged;       // Phase 4: bass follows the lowest fingered note
+    std::function<void(bool)> onChordFullKeyboardChanged;        // Phase 4: scan chords on whole keyboard vs split
+    std::function<void(bool)> onChordMemoryChanged;              // Phase 4: hold last chord when the zone empties
     std::function<void()> onSfzLibraryChanged;                  // fired when SFZ mappings are imported/changed
 
     /**
@@ -147,6 +150,9 @@ private:
     juce::ComboBox comboBoxDevicesOUT;        /**< ComboBox for selecting MIDI output devices */
     juce::ComboBox comboBoxOutputEngineType;  /**< ComboBox for selecting audio output engine type */
     juce::ToggleButton arrangerModeToggle { "Arranger mode (loop accompaniment)" }; /**< Classic vs Arranger playback */
+    juce::ToggleButton chordBassInversionToggle { "Bass inversion (slash chords)" };   /**< Phase 4 */
+    juce::ToggleButton chordFullKeyboardToggle  { "Full-keyboard chord scan" };         /**< Phase 4 */
+    juce::ToggleButton chordMemoryToggle        { "Chord memory (hold on release)" };   /**< Phase 4 */
 	juce::ComboBox comboBoxAudioDevicesOUT;       /**< ComboBox for selecting audio output devices */
     juce::Label midiDevicesLabelIN;           /**< Label for input devices */
     juce::Label midiDevicesLabelOUT;          /**< Label for output devices */

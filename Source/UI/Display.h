@@ -109,6 +109,9 @@ public:
     /** Phase 4: forward the live played chord to the style component's arranger engine. */
     void setArrangerLiveChord(const ArrangerChord& chord);
 
+    /** Phase 4: toggle Bass Inversion (slash chords) on the arranger engine. */
+    void setArrangerBassInversion(bool shouldInvert);
+
     /** Forwarded from the style component: true while an authoring overlay is shown (host hides the GL note layer). */
     std::function<void(bool)> onArrangerOverlayVisible;
 

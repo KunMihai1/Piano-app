@@ -947,6 +947,21 @@ void MainComponent::setCallBacksForOverlayWindow()
                 setSectionButtonsEngineDriven(enabled);
             };
 
+            // Phase 4 chord-mode toggles.
+            midiWindow->onChordBassInversionChanged = [this](bool on)
+            {
+                if (display != nullptr)
+                    display->setArrangerBassInversion(on);
+            };
+            midiWindow->onChordFullKeyboardChanged = [this](bool on)
+            {
+                midiHandler.setChordScanArea(on ? ChordScanArea::Full : ChordScanArea::Split);
+            };
+            midiWindow->onChordMemoryChanged = [this](bool on)
+            {
+                midiHandler.setChordMemory(on);
+            };
+
             midiWindow->onOutputEngineChanged = [this](int engineOption)
             {
                 disconnectCurrentOutput();
@@ -1997,6 +2012,13 @@ void MainComponent::playButtonOnClick()
                 for (auto* group : variationsFills->getSectionGroups())
                     if (auto* toggle = group->getToggleButton())
                         toggle->setToggleState(autoFillOn, juce::dontSendNotification);
+
+            // Phase 4: apply the remembered chord-mode choices (defaults: split scan, memory on,
+            // bass inversion off) so they take effect without needing to toggle them each launch.
+            display->setArrangerBassInversion(propertiesFile->getBoolValue("ChordBassInversion", false));
+            midiHandler.setChordScanArea(propertiesFile->getBoolValue("ChordFullKeyboard", false)
+                                             ? ChordScanArea::Full : ChordScanArea::Split);
+            midiHandler.setChordMemory(propertiesFile->getBoolValue("ChordMemory", true));
         }
 
         if (!keyboardInitialized)
