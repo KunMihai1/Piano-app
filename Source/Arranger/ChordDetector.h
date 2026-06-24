@@ -1,0 +1,45 @@
+#pragma once
+#include <juce_core/juce_core.h>
+#include <juce_audio_basics/juce_audio_basics.h>
+#include "Chord.h"
+#include "ArrangerModel.h"   // TimedBeatEvent
+#include <set>
+#include <vector>
+
+/**
+ * Tracks the notes held in the chord-recognition zone and reports the recognized Chord.
+ *
+ * Split mode (default): every held note is assumed to be a chord tone, so the held
+ * pitch-class set is matched directly against interval templates (Fingered recognition).
+ * Full-Keyboard mode: held notes mix chord + melody, so recognition only updates when >=3
+ * notes form a known chord (trying the whole set, then the lowest 3-4), and otherwise the last
+ * recognized chord is held (hysteresis) so a passing melody note never re-triggers the accomp.
+ *
+ * Pure: no JUCE GUI/threads. Lives on the MIDI input thread; only its Chord result crosses to
+ * the engine (via a mailbox), never its internal state.
+ */
+class ChordDetector
+{
+public:
+    void  noteOn  (int noteNumber);
+    void  noteOff (int noteNumber);
+    void  reset();
+
+    void  setFullKeyboardMode (bool shouldUseFullKeyboard) { fullKeyboard = shouldUseFullKeyboard; }
+    bool  isFullKeyboardMode() const { return fullKeyboard; }
+
+    /** Best chord for the currently-held notes, or Chord::none (root=-1) if unrecognized. */
+    Chord current() const { return recognized; }
+
+private:
+    void  recompute();                                   // re-run recognition after a held-note change
+    static Chord recognizeSet (const std::set<int>& notes);   // direct template match on a note set
+
+    std::set<int> heldNotes;     // absolute note numbers
+    bool          fullKeyboard = false;
+    Chord         recognized;    // current recognized chord (held across non-matches in full mode)
+};
+
+/** Offline key/chord finder for authoring: pitch-class histogram of an accompaniment's note-ons →
+    best root + major/minor. Empty/ambiguous input falls back to C major. Not used in playback. */
+Chord detectKeyFromEvents (const std::vector<TimedBeatEvent>& events);
