@@ -277,6 +277,7 @@ private:
     std::unique_ptr<MultipleTrackPlayer> trackPlayer = nullptr; ///< Handles multi-track playback.
     std::unique_ptr<ArrangerEngine> arrangerEngine = nullptr;   ///< Arranger-mode looping engine (parallel to trackPlayer).
     bool arrangerModeEnabled = false;                           ///< When true, play/stop route to arrangerEngine.
+    bool arrangerBassInversion = false;                         ///< Remembered Bass Inversion; re-applied on each Start.
 
     // --- Phase 3: self-contained style authoring (opened from the play-settings dropdown) ---
     ArrangerStyleListComponent arrangerStyleList;                ///< Full-bounds browser of saved *.style files.

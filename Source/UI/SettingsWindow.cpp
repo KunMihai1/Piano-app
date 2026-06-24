@@ -478,22 +478,37 @@ void MIDIWindow::allInit()
     };
 
     // Phase 4 arranger chord toggles. Defaults: bass inversion off, split scan, memory on.
-    auto setupChordToggle = [this](juce::ToggleButton& btn, const juce::String& key, bool dflt,
-                                   std::function<void(bool)>& cb)
+    // Each onClick captures `this` and references its own member directly (a previous helper captured
+    // a reference parameter that dangled, so the callback never fired).
+    settingsPanel.addAndMakeVisible(chordBassInversionToggle);
+    chordBassInversionToggle.setToggleState(propertyFile != nullptr && propertyFile->getBoolValue("ChordBassInversion", false),
+                                            juce::dontSendNotification);
+    chordBassInversionToggle.onClick = [this]()
     {
-        settingsPanel.addAndMakeVisible(btn);
-        btn.setToggleState(propertyFile != nullptr ? propertyFile->getBoolValue(key, dflt) : dflt,
-                           juce::dontSendNotification);
-        btn.onClick = [this, &btn, key, &cb]()
-        {
-            const bool on = btn.getToggleState();
-            if (propertyFile != nullptr) { propertyFile->setValue(key, on); propertyFile->saveIfNeeded(); }
-            if (cb) cb(on);
-        };
+        const bool on = chordBassInversionToggle.getToggleState();
+        if (propertyFile != nullptr) { propertyFile->setValue("ChordBassInversion", on); propertyFile->saveIfNeeded(); }
+        if (onChordBassInversionChanged) onChordBassInversionChanged(on);
     };
-    setupChordToggle(chordBassInversionToggle, "ChordBassInversion", false, onChordBassInversionChanged);
-    setupChordToggle(chordFullKeyboardToggle,  "ChordFullKeyboard",  false, onChordFullKeyboardChanged);
-    setupChordToggle(chordMemoryToggle,        "ChordMemory",        true,  onChordMemoryChanged);
+
+    settingsPanel.addAndMakeVisible(chordFullKeyboardToggle);
+    chordFullKeyboardToggle.setToggleState(propertyFile != nullptr && propertyFile->getBoolValue("ChordFullKeyboard", false),
+                                           juce::dontSendNotification);
+    chordFullKeyboardToggle.onClick = [this]()
+    {
+        const bool on = chordFullKeyboardToggle.getToggleState();
+        if (propertyFile != nullptr) { propertyFile->setValue("ChordFullKeyboard", on); propertyFile->saveIfNeeded(); }
+        if (onChordFullKeyboardChanged) onChordFullKeyboardChanged(on);
+    };
+
+    settingsPanel.addAndMakeVisible(chordMemoryToggle);
+    chordMemoryToggle.setToggleState(propertyFile == nullptr || propertyFile->getBoolValue("ChordMemory", true),
+                                     juce::dontSendNotification);
+    chordMemoryToggle.onClick = [this]()
+    {
+        const bool on = chordMemoryToggle.getToggleState();
+        if (propertyFile != nullptr) { propertyFile->setValue("ChordMemory", on); propertyFile->saveIfNeeded(); }
+        if (onChordMemoryChanged) onChordMemoryChanged(on);
+    };
 
 	sfzButtonInit();
 }

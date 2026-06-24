@@ -33,6 +33,7 @@ void CurrentStyleComponent::startPlaying()
         applyLiveTrackVolumes(cfg);
         arrangerEngine->setStyle(cfg);
         arrangerEngine->setBpm(currentTempo);
+        arrangerEngine->setBassInversion(arrangerBassInversion);   // re-apply: setStyle/rebuild may reset it
         arrangerEngine->selectStartSection(pendingStartType, pendingStartName);  // begin on the chosen start (stopPlaying cleared it)
         arrangerEngine->start();
         return;
@@ -337,6 +338,7 @@ void CurrentStyleComponent::setLiveChord(const ArrangerChord& chord)
 
 void CurrentStyleComponent::setArrangerBassInversion(bool shouldInvert)
 {
+    arrangerBassInversion = shouldInvert;   // remembered; re-applied on every Start (see startPlaying)
     if (arrangerEngine)
         arrangerEngine->setBassInversion(shouldInvert);
 }
