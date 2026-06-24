@@ -1001,9 +1001,9 @@ void MidiHandler::feedChordNote(int note, bool isOn)
 	if (! c.isValid() && chordMemory)
 		return;
 
-	if (c == lastChord)
-		return;
-	lastChord = c;
+	// Always forward the current chord. We deliberately do NOT skip "same as last time": the engine
+	// resets its chord to the style's home key on every Start, so re-pressing the same chord after a
+	// 2nd Play must reach it again. Re-applying an identical chord is cheap and harmless.
 	if (onChordChanged)
 		onChordChanged(c);
 }

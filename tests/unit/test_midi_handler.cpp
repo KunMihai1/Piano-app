@@ -10,6 +10,28 @@ public:
 
     void runTest() override
     {
+        beginTest("re-pressing the same chord re-sends it (not suppressed as a duplicate)");
+        {
+            MidiDevice device;
+            MidiHandler handler(device);
+            handler.set_left_right_bounds(0, 100);   // notes < 100 are in the chord (left) zone
+
+            int validSends = 0;
+            handler.onChordChanged = [&](const ArrangerChord& c) { if (c.isValid()) ++validSends; };
+
+            // Press C major -> one valid send.
+            handler.noteOnKeyboard(60, 100); handler.noteOnKeyboard(64, 100); handler.noteOnKeyboard(67, 100);
+            expect(validSends >= 1);
+            const int afterFirst = validSends;
+
+            // Release everything (chord memory holds; no send), then press the SAME C major again.
+            handler.noteOffKeyboard(60, 0); handler.noteOffKeyboard(64, 0); handler.noteOffKeyboard(67, 0);
+            handler.noteOnKeyboard(60, 100); handler.noteOnKeyboard(64, 100); handler.noteOnKeyboard(67, 100);
+
+            // Must be re-sent — the engine may have reset to its home key between presses (e.g. a 2nd Play).
+            expect(validSends > afterFirst);
+        }
+
         // ---- setPlayableRange ----
 
         beginTest("setPlayableRange - 25 keys");

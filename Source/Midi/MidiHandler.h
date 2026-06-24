@@ -497,7 +497,6 @@ private:
 	std::atomic<ChordScanArea> chordScanArea { ChordScanArea::Split };
 	ChordDetector chordDetector;
 	bool          chordMemory = true;
-	ArrangerChord lastChord;
 	bool inChordZone (int note) const;
 	void feedChordNote (int note, bool isOn);
 
