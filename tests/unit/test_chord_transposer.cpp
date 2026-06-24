@@ -98,16 +98,25 @@ public:
             }
         }
 
-        beginTest ("bass inversion targets the played bass note for the bass root");
+        beginTest ("bass inversion re-bases the WHOLE bass line on the played bass note");
         {
             ChordTransposer t;
-            t.setOriginalChord ({ 0, ChordQuality::Maj, 0 });   // C
+            t.setOriginalChord ({ 0, ChordQuality::Maj, 0 });   // recorded in C
             t.setActiveChord   ({ 0, ChordQuality::Maj, 4 });   // C major, bass = E (C/E)
+
             t.setBassInversion (true);
-            expectEquals (t.transpose (36, PartKind::Bass) % 12, 4);   // bass root -> E
-            // with inversion off, the bass root stays the chord root C
+            // the entire bass line shifts onto E: root C -> E, and the 5th G -> B (a 5th above E)
+            expectEquals (t.transpose (36, PartKind::Bass) % 12, 4);    // C -> E
+            expectEquals (t.transpose (43, PartKind::Bass) % 12, 11);   // G -> B (re-based, not just the root)
+
+            // with inversion off, the bass follows the chord root normally (C, G)
             t.setBassInversion (false);
-            expectEquals (t.transpose (36, PartKind::Bass) % 12, 0);   // -> C
+            expectEquals (t.transpose (36, PartKind::Bass) % 12, 0);    // C
+            expectEquals (t.transpose (43, PartKind::Bass) % 12, 7);    // G
+
+            // bass inversion only affects the Bass part, never Acc
+            t.setBassInversion (true);
+            expectEquals (t.transpose (43, PartKind::Acc) % 12, 7);     // Acc 5th stays G
         }
     }
 };

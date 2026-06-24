@@ -22,6 +22,17 @@ int ChordTransposer::transpose (int noteNumber, PartKind part) const
     if (part == PartKind::Fixed || ! active.isValid() || ! original.isValid())
         return noteNumber;
 
+    // Bass inversion (slash chords), the Korg/Yamaha way: re-base the WHOLE bass line onto the played
+    // bass note. The bass pattern's shape is preserved, just rooted on the lowest fingered note instead
+    // of the chord root — so a C/E voicing moves the entire bass line down to E.
+    if (part == PartKind::Bass && bassInversion && active.bassNote >= 0)
+    {
+        int b = noteNumber + (active.bassNote - original.root);
+        while (b < 0)   b += 12;
+        while (b > 127) b -= 12;
+        return b;
+    }
+
     // Base: shift every note by the root interval. This preserves the recording's melody, passing
     // tones and voicing EXACTLY — only the pitch level moves. (Snapping notes to chord tones, as a
     // naive NTT would, destroys all non-chord-tone content; we deliberately do not do that.)
@@ -37,14 +48,6 @@ int ChordTransposer::transpose (int noteNumber, PartKind part) const
         const int deg = ((shifted - active.root) % 12 + 12) % 12;   // semitones above the played root
         if (deg == origThird)
             shifted += (actThird - origThird);
-    }
-
-    // Bass inversion: a bass note sitting on the chord root follows the played bass note (slash chords).
-    if (part == PartKind::Bass && bassInversion && active.bassNote >= 0)
-    {
-        const int deg = ((shifted - active.root) % 12 + 12) % 12;
-        if (deg == 0)
-            shifted += (active.bassNote - active.root);
     }
 
     // Keep within the valid MIDI range, preserving octave.
