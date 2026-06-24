@@ -439,10 +439,11 @@ public:
 
 
 	/**
-	 * @brief Sets the correct MIDI channel based on which hand is playing a note
+	 * @brief Returns the MIDI channel for a note based on which hand zone it falls in.
 	 * @param note MIDI note number to determine the channel for
+	 * @return 16 for the right-hand zone, 1 otherwise. Pure: stores no state (per-note local).
 	 */
-	void setCorrectChannelBasedOnHand(int note);
+	int channelForHand(int note) const;
 
 
 	void setPlayableRange(int nrKeys);
@@ -472,7 +473,6 @@ private:
 	int endNoteSetting=-1;
 	int leftHandBoundSetting = -1;
 	int rightHandBoundSetting = -1;
-	int channel = 1;
 	int transposeValue = 0;
 
 	int lastCC91=-1; //reverb

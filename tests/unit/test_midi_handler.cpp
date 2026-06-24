@@ -79,45 +79,40 @@ public:
             // verified indirectly through setCorrectChannelBasedOnHand below
         }
 
-        // ---- setCorrectChannelBasedOnHand ----
+        // ---- channelForHand ----
 
-        beginTest("setCorrectChannelBasedOnHand - note below right bound uses channel 1");
+        beginTest("channelForHand - note below right bound uses channel 1");
         {
             MidiDevice device;
             MidiHandler handler(device);
             handler.set_left_right_bounds(55, 60);
 
             // note 59 is below rightHandBound (60), so channel should be 1
-            handler.setCorrectChannelBasedOnHand(59);
-            // channel is private, but we can verify indirectly:
-            // after calling this, the handler's internal channel == 1
-            // We verify this doesn't crash and the logic path works
+            expectEquals(handler.channelForHand(59), 1);
         }
 
-        beginTest("setCorrectChannelBasedOnHand - note at right bound uses channel 16");
+        beginTest("channelForHand - note at right bound uses channel 16");
         {
             MidiDevice device;
             MidiHandler handler(device);
             handler.set_left_right_bounds(55, 60);
-            handler.setCorrectChannelBasedOnHand(60);
-            // note >= rightHandBound sets channel to 16
+            expectEquals(handler.channelForHand(60), 16);   // note >= rightHandBound
         }
 
-        beginTest("setCorrectChannelBasedOnHand - note above right bound uses channel 16");
+        beginTest("channelForHand - note above right bound uses channel 16");
         {
             MidiDevice device;
             MidiHandler handler(device);
             handler.set_left_right_bounds(55, 60);
-            handler.setCorrectChannelBasedOnHand(80);
+            expectEquals(handler.channelForHand(80), 16);
         }
 
-        beginTest("setCorrectChannelBasedOnHand - no bounds set defaults to channel 1");
+        beginTest("channelForHand - no bounds set defaults to channel 1");
         {
             MidiDevice device;
             MidiHandler handler(device);
-            // rightHandBoundSetting is -1 by default, so condition (note >= -1) is true
-            // but -1 means "not set" — this just tests no crash
-            handler.setCorrectChannelBasedOnHand(60);
+            // rightHandBoundSetting is -1 by default => first condition false => channel 1
+            expectEquals(handler.channelForHand(60), 1);
         }
 
         // ---- Program Numbers ----
@@ -152,8 +147,8 @@ public:
             handler.playBackSettingsChanged(settings);
             // internally calls set_start_end_notes and set_left_right_bounds
             // verify channel routing works with the new bounds
-            handler.setCorrectChannelBasedOnHand(71);  // below 72 => ch 1
-            handler.setCorrectChannelBasedOnHand(72);  // at 72 => ch 16
+            expectEquals(handler.channelForHand(71), 1);   // below 72 => ch 1
+            expectEquals(handler.channelForHand(72), 16);  // at 72 => ch 16
         }
 
         // ---- handlePlayableRange ----

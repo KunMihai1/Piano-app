@@ -762,7 +762,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	{
 		int note = message.getNoteNumber();
 
-		setCorrectChannelBasedOnHand(note);
+		const int channel = channelForHand(note);
 		int transposedNote = juce::jlimit(0, 127, note + transposeValue);
 
 		float velocity = message.getFloatVelocity();
@@ -810,7 +810,7 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	if (message.isNoteOff())
 	{
 		int note = message.getNoteNumber();
-		setCorrectChannelBasedOnHand(note);
+		const int channel = channelForHand(note);
 		int transposedNote = juce::jlimit(0, 127, note + transposeValue);
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(message.getFloatVelocity());
 
@@ -837,7 +837,7 @@ void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample
 
 void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	int ok = 0;
-	setCorrectChannelBasedOnHand(note);
+	const int channel = channelForHand(note);
 	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
     
 	if (note != this->startNoteSetting && note!=this->endNoteSetting)
@@ -875,7 +875,7 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 }
 
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
-	setCorrectChannelBasedOnHand(note);
+	const int channel = channelForHand(note);
 	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
@@ -952,11 +952,9 @@ void MidiHandler::playBackSettingsTransposeChanged(int transposeValue)
 	allOffKeyboard();
 }
 
-void MidiHandler::setCorrectChannelBasedOnHand(int note)
+int MidiHandler::channelForHand(int note) const
 {
-	if (rightHandBoundSetting != -1 && note >= rightHandBoundSetting)
-		this->channel = 16;
-	else this->channel = 1;
+	return (rightHandBoundSetting != -1 && note >= rightHandBoundSetting) ? 16 : 1;
 }
 
 int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid, int nrKeys, bool isKeyboardInput)
