@@ -446,7 +446,7 @@ public:
             // passes if no crash
         }
 
-        beginTest("noteOnKeyboard - no listener notification without output device");
+        beginTest("noteOnKeyboard - notifies listeners even without an output device (UI feedback)");
         {
             MidiDevice device;
             MidiHandler handler(device);
@@ -461,8 +461,10 @@ public:
             NoteOnListener listener;
             handler.addListener(&listener);
 
+            // Playing the on-screen/PC keyboard is an INPUT action: listeners (on-screen key
+            // highlight, note display) must fire regardless of whether a MIDI output is connected.
             handler.noteOnKeyboard(60, 127);
-            expect(listener.noteOnCount == 0);
+            expect(listener.noteOnCount == 1);
 
             handler.removeListener(&listener);
         }
