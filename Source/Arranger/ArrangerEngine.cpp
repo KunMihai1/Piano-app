@@ -101,7 +101,10 @@ void ArrangerEngine::setStyle (ArrangerStyle newStyle)
     rebuildFromStyle();
     // The recorded chord the NTT maps out of (style-level). bassNote = root (no inversion baked in).
     transposer.setOriginalChord ({ style.originalRoot, style.originalQuality, style.originalRoot });
-    // Start the new style in its OWN home key — don't carry the chord held under the previous style.
+
+    // Start every Start/Play in the style's OWN home key (setStyle runs on each Start). Live chord
+    // changes during playback persist; pressing Start again resets to home rather than keeping the
+    // last chord, which is what a performer expects.
     transposer.setActiveChord ({});
     {
         const juce::ScopedLock sl (chordLock);
