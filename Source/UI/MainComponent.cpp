@@ -71,6 +71,14 @@ MainComponent::MainComponent()
         }
     };
 
+    // Phase 4: route the recognized left-hand/whole-keyboard chord to the arranger engine so the
+    // accompaniment transposes to what the player holds.
+    midiHandler.onChordChanged = [this](const ArrangerChord& chord)
+    {
+        if (display)
+            display->setArrangerLiveChord(chord);
+    };
+
     juce::Desktop::getInstance().addFocusChangeListener(this);
 
     juce::MessageManager::callAsync([this]()

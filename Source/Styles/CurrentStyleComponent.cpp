@@ -322,6 +322,19 @@ void CurrentStyleComponent::setArrangerAutoFillEnabled(bool enabled)
         arrangerEngine->setAutoFillEnabled(enabled);
 }
 
+void CurrentStyleComponent::setLiveChord(const ArrangerChord& chord)
+{
+    // Only steer the accompaniment while in arranger mode; the engine applies it on its next tick.
+    if (arrangerModeEnabled && arrangerEngine)
+        arrangerEngine->setActiveChord(chord);
+}
+
+void CurrentStyleComponent::setArrangerBassInversion(bool shouldInvert)
+{
+    if (arrangerEngine)
+        arrangerEngine->setBassInversion(shouldInvert);
+}
+
 void CurrentStyleComponent::restoreEngineBeatBar()
 {
     if (arrangerEngine)

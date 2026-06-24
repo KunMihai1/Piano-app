@@ -106,6 +106,9 @@ public:
     /** Enable/disable Auto Fill on variation switches (remembered across re-creation). */
     void setArrangerAutoFillEnabled(bool enabled);
 
+    /** Phase 4: forward the live played chord to the style component's arranger engine. */
+    void setArrangerLiveChord(const ArrangerChord& chord);
+
     /** Forwarded from the style component: true while an authoring overlay is shown (host hides the GL note layer). */
     std::function<void(bool)> onArrangerOverlayVisible;
 

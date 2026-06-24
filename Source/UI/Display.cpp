@@ -433,6 +433,12 @@ void Display::setArrangerAutoFillEnabled(bool enabled)
         currentStyleComponent->setArrangerAutoFillEnabled(enabled);
 }
 
+void Display::setArrangerLiveChord(const ArrangerChord& chord)
+{
+    if (currentStyleComponent)
+        currentStyleComponent->setLiveChord(chord);
+}
+
 MultipleTrackPlayer* Display::getTrackPlayer()
 {
     if (currentStyleComponent)

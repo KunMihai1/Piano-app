@@ -7,6 +7,12 @@
 #include "MidiHandlerAbstractSubject.h"
 #include "InstrumentHandler.h"
 #include "DisplayListener.h"
+#include "Arranger/ChordDetector.h"
+#include <atomic>
+#include <functional>
+
+/** Where the arranger scans for chords: the left-hand split zone, or the whole keyboard. */
+enum class ChordScanArea { Split, Full };
 
 class MidiDevice {
 public:
@@ -445,6 +451,17 @@ public:
 	 */
 	int channelForHand(int note) const;
 
+	// --- Phase 4: arranger chord recognition -------------------------------------------------
+	/** Fired (on the MIDI input thread) when the recognized left-hand/whole-keyboard chord changes.
+	    Wire this to ArrangerEngine::setActiveChord. */
+	std::function<void(const ArrangerChord&)> onChordChanged;
+
+	/** Choose whether chords are scanned in the split (left-hand) zone or the whole keyboard. */
+	void setChordScanArea(ChordScanArea area);
+	/** When true (default), the last recognized chord is held after the chord zone empties; when
+	    false, emptying the zone reverts the accompaniment to the recorded key. */
+	void setChordMemory(bool shouldHold) { chordMemory = shouldHold; }
+
 
 	void setPlayableRange(int nrKeys);
 
@@ -474,6 +491,15 @@ private:
 	int leftHandBoundSetting = -1;
 	int rightHandBoundSetting = -1;
 	int transposeValue = 0;
+
+	// Phase 4: chord recognition fed from the live input. The detector lives on the input thread;
+	// only the resulting ArrangerChord crosses to the engine (via onChordChanged).
+	std::atomic<ChordScanArea> chordScanArea { ChordScanArea::Split };
+	ChordDetector chordDetector;
+	bool          chordMemory = true;
+	ArrangerChord lastChord;
+	bool inChordZone (int note) const;
+	void feedChordNote (int note, bool isOn);
 
 	int lastCC91=-1; //reverb
 	int lastCC74 = -1;  //brightness

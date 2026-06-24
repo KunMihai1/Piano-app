@@ -197,6 +197,13 @@ public:
     void setArrangerModeEnabled(bool shouldEnable);
     bool isArrangerModeEnabled() const { return arrangerModeEnabled; }
 
+    /** Phase 4: feed the live played chord (from the keyboard) to the arranger engine, which
+        transposes the accompaniment to it. No-op outside arranger mode. */
+    void setLiveChord(const ArrangerChord& chord);
+
+    /** Phase 4: toggle Bass Inversion on the arranger engine (slash chords). */
+    void setArrangerBassInversion(bool shouldInvert);
+
     /** Enable/disable Auto Fill on variation switches (forwarded to the arranger engine). */
     void setArrangerAutoFillEnabled(bool enabled);
 

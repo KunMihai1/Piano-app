@@ -765,6 +765,9 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		const int channel = channelForHand(note);
 		int transposedNote = juce::jlimit(0, 127, note + transposeValue);
 
+		if (note != this->startNoteSetting && note != this->endNoteSetting)
+			feedChordNote(note, true);
+
 		float velocity = message.getFloatVelocity();
 
 		float volume = this->midiDevice.getVolume(message.getChannel());
@@ -812,6 +815,10 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		int note = message.getNoteNumber();
 		const int channel = channelForHand(note);
 		int transposedNote = juce::jlimit(0, 127, note + transposeValue);
+
+		if (note != this->startNoteSetting && note != this->endNoteSetting)
+			feedChordNote(note, false);
+
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(message.getFloatVelocity());
 
 		if (auto midiOut = midiDevice.getDeviceOUT().lock())
@@ -839,6 +846,9 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	int ok = 0;
 	const int channel = channelForHand(note);
 	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
+
+	if (note != this->startNoteSetting && note != this->endNoteSetting)
+		feedChordNote(note, true);
     
 	if (note != this->startNoteSetting && note!=this->endNoteSetting)
 	{
@@ -877,6 +887,10 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
 	const int channel = channelForHand(note);
 	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
+
+	if (note != this->startNoteSetting && note != this->endNoteSetting)
+		feedChordNote(note, false);
+
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, transposedNote,velocity));
@@ -955,6 +969,43 @@ void MidiHandler::playBackSettingsTransposeChanged(int transposeValue)
 int MidiHandler::channelForHand(int note) const
 {
 	return (rightHandBoundSetting != -1 && note >= rightHandBoundSetting) ? 16 : 1;
+}
+
+void MidiHandler::setChordScanArea(ChordScanArea area)
+{
+	chordScanArea.store(area);
+	chordDetector.setFullKeyboardMode(area == ChordScanArea::Full);
+}
+
+bool MidiHandler::inChordZone(int note) const
+{
+	if (chordScanArea.load() == ChordScanArea::Full)
+		return true;
+	// Split mode: the left-hand zone (below the split). With no split set, the whole keyboard is
+	// the left zone (matches channelForHand semantics).
+	return (rightHandBoundSetting == -1) ? true : note < rightHandBoundSetting;
+}
+
+void MidiHandler::feedChordNote(int note, bool isOn)
+{
+	if (! inChordZone(note))
+		return;
+
+	if (isOn) chordDetector.noteOn(note);
+	else      chordDetector.noteOff(note);
+
+	ArrangerChord c = chordDetector.current();
+
+	// Chord Memory: when the zone empties to "no chord", hold the last chord (memory on) instead of
+	// telling the engine to revert. With memory off, push the invalid chord so it reverts to the key.
+	if (! c.isValid() && chordMemory)
+		return;
+
+	if (c == lastChord)
+		return;
+	lastChord = c;
+	if (onChordChanged)
+		onChordChanged(c);
 }
 
 int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid, int nrKeys, bool isKeyboardInput)
