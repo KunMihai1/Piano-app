@@ -26,6 +26,14 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
 
     updateTracksBtn.setEnabled (false);   // only meaningful when editing an existing saved config
 
+    addAndMakeVisible (keyLabel);
+    addAndMakeVisible (keyRootBox);
+    addAndMakeVisible (keyQualityBox);
+    keyLabel.setColour (juce::Label::textColourId, juce::Colours::white);
+    populateKeyControls();
+    keyRootBox.onChange    = [this] { originalRoot = keyRootBox.getSelectedId() - 1; rebuildPreview(); };
+    keyQualityBox.onChange = [this] { originalQuality = (ChordQuality) keyQualityBox.getSelectedId(); rebuildPreview(); };
+
     // Full-screen "working" overlay, styled like the app's "Preparing style..." overlay. Eats mouse
     // clicks so nothing behind it can be triggered while a save/update runs on the background thread.
     busyOverlay.setJustificationType (juce::Justification::centred);
@@ -126,6 +134,7 @@ void ArrangerStyleEditor::loadRecording (const std::vector<TrackEntry>& tracks, 
 
     sourceTracks = ArrangerSourceBuilder::fromTrackEntries (tracks, referenceBpm);
     autoDetectOriginalChord();   // guess the recorded key from the fresh recording
+    populateKeyControls();
     windows = ArrangerDefaults::defaultWindowsForBars (1);
     recomputeTotalBars();
     windows = ArrangerDefaults::defaultWindowsForBars (totalBars);
@@ -144,6 +153,7 @@ void ArrangerStyleEditor::loadFromFile (const ArrangerStyleFile& f)
     referenceBpm = (f.originalTempo > 0.0 ? f.originalTempo : 120.0);
     timeSigNum = f.timeSigNum; timeSigDenom = f.timeSigDenom;
     originalRoot = f.originalRoot; originalQuality = f.originalQuality;   // keep the saved recorded key
+    populateKeyControls();
     sourceTracks = f.sourceTracks;
     windows = f.sections;
     if (windows.empty())
@@ -183,10 +193,32 @@ void ArrangerStyleEditor::autoDetectOriginalChord()
     originalQuality = k.quality;
 }
 
+void ArrangerStyleEditor::populateKeyControls()
+{
+    static const char* const noteNames[12] =
+        { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+
+    if (keyRootBox.getNumItems() == 0)   // first call: fill the lists
+    {
+        for (int i = 0; i < 12; ++i)
+            keyRootBox.addItem (noteNames[i], i + 1);   // id = root + 1 (ComboBox ids must be != 0)
+        for (auto q : { ChordQuality::Maj, ChordQuality::Min, ChordQuality::Dom7, ChordQuality::Maj7,
+                        ChordQuality::Min7, ChordQuality::Dim, ChordQuality::HalfDim, ChordQuality::Aug,
+                        ChordQuality::Sus2, ChordQuality::Sus4 })
+            keyQualityBox.addItem (toString (q), (int) q);   // id = enum value (Maj=1..)
+    }
+
+    keyRootBox.setSelectedId (juce::jlimit (0, 11, originalRoot) + 1, juce::dontSendNotification);
+    keyQualityBox.setSelectedId ((int) originalQuality, juce::dontSendNotification);
+}
+
 ArrangerStyle ArrangerStyleEditor::buildStyle() const
 {
-    return ArrangerPatternBuilder::buildStyleFromWindows (
+    ArrangerStyle s = ArrangerPatternBuilder::buildStyleFromWindows (
         sourceTracks, windows, timeSigNum, timeSigDenom, referenceBpm);
+    s.originalRoot    = originalRoot;      // so the preview engine transposes from the right key
+    s.originalQuality = originalQuality;
+    return s;
 }
 
 void ArrangerStyleEditor::rebuildPreview()
@@ -316,6 +348,7 @@ void ArrangerStyleEditor::updateTracksFromRecording()
                     safe->sourceTracks = std::move (*applied);
                     safe->originalRoot = file->originalRoot;        // keep the re-detected key
                     safe->originalQuality = file->originalQuality;
+                    safe->populateKeyControls();
                     safe->recomputeTotalBars();
                     safe->timeline.setTotalBars (safe->totalBars);
                     safe->timeline.setWindows (safe->windows);
@@ -445,6 +478,13 @@ void ArrangerStyleEditor::resized()
     for (auto* b : { &addIntroBtn, &addVariationBtn, &addFillBtn, &addBreakBtn, &addEndingBtn,
                      &removeBtn, &previewBtn, &stopBtn, &updateTracksBtn, &saveBtn, &closeBtn })
         b->setBounds (top.removeFromLeft (84).reduced (2));
+
+    area.removeFromTop (6);
+    auto keyRow = area.removeFromTop (26);                        // second row: recorded-key picker
+    keyLabel.setBounds (keyRow.removeFromLeft (90));
+    keyRootBox.setBounds (keyRow.removeFromLeft (60).reduced (0, 2));
+    keyRow.removeFromLeft (6);
+    keyQualityBox.setBounds (keyRow.removeFromLeft (90).reduced (0, 2));
 
     area.removeFromTop (6);
     timelineViewport.setBounds (area);

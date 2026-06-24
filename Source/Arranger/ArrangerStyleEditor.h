@@ -68,6 +68,12 @@ private:
                      previewBtn { "Preview" }, stopBtn { "Stop" }, updateTracksBtn { "Update Tracks" },
                      saveBtn { "Save" }, closeBtn { "Close" };
 
+    // Phase 4: recorded-key picker (pre-filled by auto-detect; editable to correct a wrong guess).
+    juce::Label    keyLabel { {}, "Recorded key:" };
+    juce::ComboBox keyRootBox;
+    juce::ComboBox keyQualityBox;
+    void populateKeyControls();        // fill the combos and select the current originalRoot/quality
+
     juce::Label busyOverlay;   // full-screen dim + centered label shown while save/update runs off-thread
 
     std::vector<SourceTrackFile> sourceTracks;
