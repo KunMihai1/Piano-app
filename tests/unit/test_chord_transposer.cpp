@@ -33,6 +33,39 @@ public:
             expectEquals (t.transpose (60, PartKind::Bass), 60);
         }
 
+        beginTest ("non-chord tones are PRESERVED at identity (not snapped to chord tones)");
+        {
+            ChordTransposer t;
+            t.setOriginalChord ({ 0, ChordQuality::Maj, 0 });
+            t.setActiveChord   ({ 0, ChordQuality::Maj, 0 });   // identity
+            expectEquals (t.transpose (62, PartKind::Acc), 62);  // D stays D
+            expectEquals (t.transpose (65, PartKind::Acc), 65);  // F stays F
+            expectEquals (t.transpose (69, PartKind::Acc), 69);  // A stays A
+            expectEquals (t.transpose (70, PartKind::Acc), 70);  // Bb stays Bb
+        }
+
+        beginTest ("melodic/passing notes shift by the root interval (kept relative to the root)");
+        {
+            ChordTransposer t;
+            t.setOriginalChord ({ 0, ChordQuality::Maj, 0 });   // C
+            t.setActiveChord   ({ 2, ChordQuality::Maj, 2 });   // D (+2)
+            expectEquals (t.transpose (62, PartKind::Acc), 64);  // D (2nd) -> E (2nd above D)
+            expectEquals (t.transpose (65, PartKind::Acc), 67);  // F (4th) -> G (4th above D)
+            expectEquals (t.transpose (69, PartKind::Acc), 71);  // A (6th) -> B (6th above D)
+        }
+
+        beginTest ("only the 3rd flips on major->minor; other notes just shift");
+        {
+            ChordTransposer t;
+            t.setOriginalChord ({ 0, ChordQuality::Maj, 0 });   // C major
+            t.setActiveChord   ({ 0, ChordQuality::Min, 0 });   // C minor (same root)
+            expectEquals (t.transpose (64, PartKind::Acc), 63);  // E (maj 3rd) -> Eb (min 3rd)
+            expectEquals (t.transpose (60, PartKind::Acc), 60);  // C (root) unchanged
+            expectEquals (t.transpose (67, PartKind::Acc), 67);  // G (5th) unchanged
+            expectEquals (t.transpose (62, PartKind::Acc), 62);  // D (2nd passing) unchanged
+            expectEquals (t.transpose (65, PartKind::Acc), 65);  // F (4th passing) unchanged
+        }
+
         beginTest ("NTT maps the 3rd differently from root/5th (C maj -> A min)");
         {
             ChordTransposer t;
