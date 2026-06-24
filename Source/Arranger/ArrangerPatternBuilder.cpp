@@ -187,6 +187,8 @@ namespace ArrangerPatternBuilder
                                                      file.timeSigNum, file.timeSigDenom, file.originalTempo);
         style.id   = file.id;
         style.name = file.name;
+        style.originalRoot    = file.originalRoot;      // Phase 4: carry the recorded chord through
+        style.originalQuality = file.originalQuality;
         return style;
     }
 }

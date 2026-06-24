@@ -28,10 +28,12 @@ struct SectionWindow
 /** A whole self-contained arranger style as stored on disk. */
 struct ArrangerStyleFile
 {
-    int schemaVersion = 3;
+    int schemaVersion = 4;                             // v4: adds the style-level original chord
     juce::String id, name;
     double originalTempo = 120.0;
     int timeSigNum = 4, timeSigDenom = 4;
+    int          originalRoot    = 0;                  // Phase 4: recorded key root (0=C..11=B)
+    ChordQuality originalQuality = ChordQuality::Maj;  // ...and quality; default C major
     std::vector<SourceTrackFile> sourceTracks;
     std::vector<SectionWindow>   sections;
 };

@@ -45,7 +45,7 @@ public:
             const bool ok = ArrangerStyleIOHelper::loadFromFile (file, loaded, err);
             expect (ok, err);
 
-            expectEquals (loaded.schemaVersion, 3);
+            expectEquals (loaded.schemaVersion, 4);
             expectEquals (loaded.name, juce::String ("Sunset Groove"));
             expectEquals (loaded.timeSigNum, 4);
             expectEquals ((int) loaded.sourceTracks.size(), 1);
@@ -65,6 +65,40 @@ public:
             expectEquals (sec.lengthBars, 8);
             expect (sec.afterComplete == ArrangerAfterComplete::Loop);
 
+            file.deleteFile();
+        }
+
+        beginTest ("v4 round-trips the style-level original chord");
+        {
+            auto file = juce::File::createTempFile (".style");
+            auto s = makeSample();
+            s.originalRoot = 9; s.originalQuality = ChordQuality::Min;   // A minor
+            ArrangerStyleIOHelper::saveToFile (file, s);
+
+            ArrangerStyleFile loaded; juce::String err;
+            expect (ArrangerStyleIOHelper::loadFromFile (file, loaded, err), err);
+            expectEquals (loaded.originalRoot, 9);
+            expect (loaded.originalQuality == ChordQuality::Min);
+
+            // and it survives the conversion to the runtime style
+            ArrangerStyle st = ArrangerPatternBuilder::buildStyleFromFile (loaded);
+            expectEquals (st.originalRoot, 9);
+            expect (st.originalQuality == ChordQuality::Min);
+            file.deleteFile();
+        }
+
+        beginTest ("a v3 file with no original chord loads as C major");
+        {
+            // Write a minimal v3-style JSON by hand (no originalRoot/originalQuality keys).
+            auto file = juce::File::createTempFile (".style");
+            file.replaceWithText (
+                "{ \"schemaVersion\": 3, \"kind\": \"arrangerStyle\", \"id\": \"x\", \"name\": \"Old\","
+                "  \"originalTempo\": 120.0, \"timeSigNum\": 4, \"timeSigDenom\": 4,"
+                "  \"sourceTracks\": [], \"sections\": [] }");
+            ArrangerStyleFile loaded; juce::String err;
+            expect (ArrangerStyleIOHelper::loadFromFile (file, loaded, err), err);
+            expectEquals (loaded.originalRoot, 0);                 // C
+            expect (loaded.originalQuality == ChordQuality::Maj);  // major
             file.deleteFile();
         }
 
