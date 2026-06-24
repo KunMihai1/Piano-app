@@ -78,6 +78,12 @@ private:
     int    timeSigNum = 4, timeSigDenom = 4;
     int    totalBars  = 1;
     juce::String styleId = juce::Uuid().toString();
+
+    // Phase 4: the chord this config was recorded in (auto-detected from the source tracks on a new
+    // recording, loaded from file, persisted on save; editable in a future UI).
+    int          originalRoot    = 0;
+    ChordQuality originalQuality = ChordQuality::Maj;
+    void autoDetectOriginalChord();   // sets the two from the pitched source tracks
     bool   followPlayhead     = true;   // auto-scroll the viewport to keep the playhead in view
     bool   programmaticScroll = false;  // true while WE move the viewport (so it isn't seen as manual)
 };

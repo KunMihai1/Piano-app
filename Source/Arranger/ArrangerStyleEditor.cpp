@@ -5,6 +5,7 @@
 #include "ArrangerStyleIOHelper.h"
 #include "ArrangerEnums.h"
 #include "ArrangerTime.h"
+#include "ChordDetector.h"
 #include "IOHelper.h"
 #include <cmath>
 
@@ -124,6 +125,7 @@ void ArrangerStyleEditor::loadRecording (const std::vector<TrackEntry>& tracks, 
     updateTracksBtn.setEnabled (false);   // brand-new config: nothing on disk to update yet
 
     sourceTracks = ArrangerSourceBuilder::fromTrackEntries (tracks, referenceBpm);
+    autoDetectOriginalChord();   // guess the recorded key from the fresh recording
     windows = ArrangerDefaults::defaultWindowsForBars (1);
     recomputeTotalBars();
     windows = ArrangerDefaults::defaultWindowsForBars (totalBars);
@@ -141,6 +143,7 @@ void ArrangerStyleEditor::loadFromFile (const ArrangerStyleFile& f)
     nameEditor.setText (name, juce::dontSendNotification);
     referenceBpm = (f.originalTempo > 0.0 ? f.originalTempo : 120.0);
     timeSigNum = f.timeSigNum; timeSigDenom = f.timeSigDenom;
+    originalRoot = f.originalRoot; originalQuality = f.originalQuality;   // keep the saved recorded key
     sourceTracks = f.sourceTracks;
     windows = f.sections;
     if (windows.empty())
@@ -160,9 +163,24 @@ ArrangerStyleFile ArrangerStyleEditor::toStyleFile() const
     f.id = styleId; f.name = name;
     f.originalTempo = referenceBpm;
     f.timeSigNum = timeSigNum; f.timeSigDenom = timeSigDenom;
+    f.originalRoot = originalRoot; f.originalQuality = originalQuality;
     f.sourceTracks = sourceTracks;
     f.sections = windows;
     return f;
+}
+
+void ArrangerStyleEditor::autoDetectOriginalChord()
+{
+    // Detect the recorded key from the pitched (Bass/Acc) tracks only — drums/perc carry no harmony.
+    std::vector<TimedBeatEvent> pitched;
+    for (const auto& t : sourceTracks)
+        if (t.partType == ArrangerPartType::Bass || t.partType == ArrangerPartType::Acc)
+            for (const auto& e : t.events)
+                pitched.push_back (e);
+
+    const ArrangerChord k = detectKeyFromEvents (pitched);   // C major fallback on empty/ambiguous
+    originalRoot    = k.root;
+    originalQuality = k.quality;
 }
 
 ArrangerStyle ArrangerStyleEditor::buildStyle() const
@@ -269,11 +287,22 @@ void ArrangerStyleEditor::updateTracksFromRecording()
             juce::Thread::launch ([safe, tracks, file, target, refBpm]
             {
                 file->sourceTracks = ArrangerSourceBuilder::fromTrackEntries (*tracks, refBpm);
+
+                // Re-detect the recorded key from the new pitched tracks (off the message thread).
+                {
+                    std::vector<TimedBeatEvent> pitched;
+                    for (const auto& t : file->sourceTracks)
+                        if (t.partType == ArrangerPartType::Bass || t.partType == ArrangerPartType::Acc)
+                            for (const auto& e : t.events) pitched.push_back (e);
+                    const ArrangerChord k = detectKeyFromEvents (pitched);
+                    file->originalRoot = k.root; file->originalQuality = k.quality;
+                }
+
                 ArrangerStyleIOHelper::saveToFile (target, *file);
                 const bool ok = target.existsAsFile();
                 auto applied = std::make_shared<std::vector<SourceTrackFile>> (file->sourceTracks);
 
-                juce::MessageManager::callAsync ([safe, applied, target, ok]
+                juce::MessageManager::callAsync ([safe, applied, file, target, ok]
                 {
                     if (safe == nullptr)
                         return;
@@ -285,6 +314,8 @@ void ArrangerStyleEditor::updateTracksFromRecording()
                         return;
                     }
                     safe->sourceTracks = std::move (*applied);
+                    safe->originalRoot = file->originalRoot;        // keep the re-detected key
+                    safe->originalQuality = file->originalQuality;
                     safe->recomputeTotalBars();
                     safe->timeline.setTotalBars (safe->totalBars);
                     safe->timeline.setWindows (safe->windows);
