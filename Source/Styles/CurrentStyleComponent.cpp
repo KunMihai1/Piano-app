@@ -137,6 +137,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
         customBeatBar.setCurrentBeatsElapsed(0.0);
         customBeatBar.repaint();
         highlightPendingStartSection();   // back to the chosen start (Var 1 by default)
+        if (arrangerModeEnabled) tempoSlider.setEnabled(true);   // unlock BPM after a self-stop (Ending)
     };
 
     // Phase 3: arranger-style authoring overlay (opened from the play-settings dropdown).
@@ -162,6 +163,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     {
         isPlaying = true;
         startPlaying();
+        if (arrangerModeEnabled) tempoSlider.setEnabled(false);   // lock BPM while the arranger plays
     };
 
     stopPlayingTracks.onClick = [this]
@@ -169,6 +171,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
         isPlaying = false;
         stopPlaying();
         highlightPendingStartSection();   // back to the chosen start (Var 1 by default)
+        if (arrangerModeEnabled) tempoSlider.setEnabled(true);    // unlock BPM when stopped
     };
 
     customBeatBar.isPlayingCheck = [this]()
@@ -309,6 +312,7 @@ void CurrentStyleComponent::setArrangerModeEnabled(bool shouldEnable)
 
     arrangerModeEnabled = shouldEnable;
     isPlaying = false;
+    tempoSlider.setEnabled(true);   // switching modes isn't playing -> BPM editable again
     customBeatBar.repaint();
 
     if (! shouldEnable)
