@@ -58,6 +58,11 @@ public:
         closes. The host hides the OpenGL note layer while true (it would punch through the overlay). */
     std::function<void(bool)> onAuthoringOverlayVisible;
 
+    /** Asks the host to return keyboard focus to the play surface (so the PC keyboard keeps
+        playing). Fired after Start, since starting the arranger rebuilds the scene and can leave
+        focus on a freshly created child. */
+    std::function<void()> onRequestPlayFocus;
+
     /** Shows/hides the app's full-screen "working" overlay during off-thread load operations (the
         editor's own save/update overlay is internal). Routed host-side to MainComponent's overlay. */
     std::function<void(bool show, const juce::String& text)> onBusy;

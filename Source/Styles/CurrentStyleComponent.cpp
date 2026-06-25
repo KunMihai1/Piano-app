@@ -164,6 +164,11 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
         isPlaying = true;
         startPlaying();
         if (arrangerModeEnabled) tempoSlider.setEnabled(false);   // lock BPM while the arranger plays
+
+        // Starting rebuilds the play scene, which can land keyboard focus on a freshly created
+        // child — return it to the play surface so the PC keyboard plays without a stray screen click.
+        if (onRequestPlayFocus)
+            onRequestPlayFocus();
     };
 
     stopPlayingTracks.onClick = [this]

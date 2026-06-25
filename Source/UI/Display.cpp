@@ -266,6 +266,12 @@ void Display::showCurrentStyleTab(const juce::String& name)
             onArrangerOverlayVisible(visible);
     };
 
+    currentStyleComponent->onRequestPlayFocus = [this]()
+    {
+        if (onRequestPlayFocus)
+            onRequestPlayFocus();
+    };
+
     currentStyleComponent->onBusy = [this](bool show, const juce::String& text)
     {
         if (onArrangerBusy)

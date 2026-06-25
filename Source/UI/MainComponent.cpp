@@ -81,6 +81,11 @@ MainComponent::MainComponent()
 
     juce::Desktop::getInstance().addFocusChangeListener(this);
 
+    // Korg/Yamaha-style focus policy: listen to mouse clicks on the whole play
+    // scene (this component and every nested child) so we can always return
+    // keyboard focus to the play surface — see mouseDown().
+    addMouseListener(this, true);
+
     juce::MessageManager::callAsync([this]()
         {
             if (isVisible())
@@ -187,6 +192,16 @@ void MainComponent::paintOverChildren(juce::Graphics& g)
         {
             playButtonOnClick();
             openingAudioLabel.setVisible(false);
+
+            // The play scene is now fully built (devices opened, samples loaded,
+            // child components created). Reclaim keyboard focus once more — the
+            // scene setup can land focus on a freshly created child, which is why
+            // you sometimes had to click the screen before the PC keyboard played.
+            juce::MessageManager::callAsync([this]()
+            {
+                if (isVisible())
+                    grabKeyboardFocus();
+            });
         });
     }
 }
@@ -236,6 +251,38 @@ void MainComponent::globalFocusChanged(juce::Component* focusedComponent)
         if (soundEffectWindow && !soundEffectWindow->isVisible() && soundEffecttWindowShouldBeVisible)
             soundEffectWindow->setVisible(true);
     }
+}
+
+void MainComponent::mouseDown(const juce::MouseEvent& e)
+{
+    // Korg/Yamaha-style: the instrument keeps listening to the PC keyboard.
+    // Any click on the play scene that isn't text entry returns keyboard focus
+    // to the play surface, so the player can always keep playing after touching
+    // a transport/section button, the config browser, etc.  Without this, focus
+    // could drift onto a clicked control and never come back, silencing the
+    // PC keyboard until the app was restarted.
+
+    // Don't fight modal popups (combo menus, alert dialogs) or the in-app
+    // overlay menu — those manage their own focus (and the overlay has a
+    // documented native-window focus dance we must not disturb).
+    if (juce::Component::getCurrentlyModalComponent() != nullptr)
+        return;
+    if (overlayWindow && overlayWindow->isVisible())
+        return;
+
+    // Leave focus alone while the user is typing into a text field.
+    for (auto* c = e.eventComponent; c != nullptr; c = c->getParentComponent())
+        if (dynamic_cast<juce::TextEditor*>(c) != nullptr)
+            return;
+
+    // Defer to after the click is fully handled (e.g. a button's own action),
+    // then pull focus back to the play surface.
+    juce::MessageManager::callAsync(
+        [safeThis = juce::Component::SafePointer<MainComponent>(this)]()
+        {
+            if (safeThis != nullptr && safeThis->isVisible())
+                safeThis->grabKeyboardFocus();
+        });
 }
 
 void MainComponent::resized()
@@ -1547,6 +1594,18 @@ void MainComponent::displayInit()
         // playing surface so you can play immediately. Deferred so it lands after the overlay is gone.
         if (! visible)
             juce::MessageManager::callAsync([this]() { if (isVisible()) grabKeyboardFocus(); });
+    };
+
+    // Arranger Start rebuilds the play scene and can leave focus on a freshly created child, so the
+    // PC keyboard sometimes stayed dead until you clicked. Return focus to the play surface (deferred
+    // so it lands after the scene is built; skipped if a modal dialog is up).
+    display->onRequestPlayFocus = [this]()
+    {
+        juce::MessageManager::callAsync([this]()
+        {
+            if (isVisible() && juce::Component::getCurrentlyModalComponent() == nullptr)
+                grabKeyboardFocus();
+        });
     };
 
     display->onArrangerBusy = [this](bool show, const juce::String& text)

@@ -115,6 +115,9 @@ public:
     /** Forwarded from the style component: true while an authoring overlay is shown (host hides the GL note layer). */
     std::function<void(bool)> onArrangerOverlayVisible;
 
+    /** Forwarded from the style component: asks the host to return keyboard focus to the play surface after Start. */
+    std::function<void()> onRequestPlayFocus;
+
     /** Forwarded from the style component: show/hide the app's "working" overlay during off-thread loads. */
     std::function<void(bool show, const juce::String& text)> onArrangerBusy;
 
