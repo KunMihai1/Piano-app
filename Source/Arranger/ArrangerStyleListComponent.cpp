@@ -12,6 +12,10 @@ ArrangerStyleListComponent::ArrangerStyleListComponent()
     addAndMakeVisible (loadBtn);
     addAndMakeVisible (closeBtn);
 
+    // Browsing/opening configs must not steal keyboard focus, so the PC-keyboard keeps playing.
+    for (auto* b : { &newBtn, &editBtn, &deleteBtn, &loadBtn, &closeBtn })
+        b->setMouseClickGrabsKeyboardFocus (false);
+
     closeBtn.onClick = [this] { if (onClose) onClose(); };
     newBtn.onClick  = [this] { if (onCreateNew) onCreateNew(); };
     editBtn.onClick = [this]
