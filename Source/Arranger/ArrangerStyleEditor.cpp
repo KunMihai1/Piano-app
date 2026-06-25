@@ -22,18 +22,13 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
     nameEditor.setText ("New configuration", juce::dontSendNotification);
     for (auto* b : { &addIntroBtn, &addVariationBtn, &addFillBtn, &addBreakBtn, &addEndingBtn,
                      &removeBtn, &previewBtn, &stopBtn, &updateTracksBtn, &saveBtn, &closeBtn })
-    {
         addAndMakeVisible (b);
-        b->setMouseClickGrabsKeyboardFocus (false);   // keep PC-keyboard focus while editing
-    }
 
     updateTracksBtn.setEnabled (false);   // only meaningful when editing an existing saved config
 
     addAndMakeVisible (keyLabel);
     addAndMakeVisible (keyRootBox);
     addAndMakeVisible (keyQualityBox);
-    keyRootBox.setMouseClickGrabsKeyboardFocus (false);     // combos don't need to steal focus
-    keyQualityBox.setMouseClickGrabsKeyboardFocus (false);
     keyLabel.setColour (juce::Label::textColourId, juce::Colours::white);
     populateKeyControls();
     keyRootBox.onChange    = [this] { originalRoot = keyRootBox.getSelectedId() - 1; rebuildPreview(); };
