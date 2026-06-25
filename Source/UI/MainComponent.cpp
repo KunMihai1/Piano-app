@@ -1541,6 +1541,12 @@ void MainComponent::displayInit()
     display->onArrangerOverlayVisible = [this](bool visible)
     {
         setArrangerOverlaySceneHidden(visible);
+
+        // When the config browser/editor closes (e.g. after Load), the Load/Close button still holds
+        // keyboard focus, so the PC-keyboard note layer goes dead until you click. Return focus to the
+        // playing surface so you can play immediately. Deferred so it lands after the overlay is gone.
+        if (! visible)
+            juce::MessageManager::callAsync([this]() { if (isVisible()) grabKeyboardFocus(); });
     };
 
     display->onArrangerBusy = [this](bool show, const juce::String& text)
