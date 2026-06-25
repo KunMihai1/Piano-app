@@ -127,6 +127,11 @@ void ArrangerEngine::setOriginalChord (ArrangerChord recorded)
     transposer.setOriginalChord (recorded);
 }
 
+void ArrangerEngine::setBassInversion (bool shouldInvert)
+{
+    transposer.setBassInversion (shouldInvert);
+}
+
 void ArrangerEngine::dispatch (const juce::MidiMessage& m)
 {
     if (auto out = outputDevice.lock())

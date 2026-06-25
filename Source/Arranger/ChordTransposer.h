@@ -13,6 +13,7 @@ public:
     void setOriginalChord (ArrangerChord recorded) { original = recorded; }
     void setActiveChord   (ArrangerChord played)   { active = played; }
     void setBassInversion (bool shouldInvert) { bassInversion = shouldInvert; }
+    bool isBassInversionOn() const { return bassInversion; }
 
     /** Map one note for a part. Fixed parts and invalid chords return the note unchanged. */
     int transpose (int noteNumber, PartKind part) const;

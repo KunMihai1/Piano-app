@@ -44,7 +44,7 @@ public:
     /** Phase 4: set the recorded chord the style was authored in (the NTT "from" reference). */
     void setOriginalChord (ArrangerChord recorded);
     /** Phase 4: toggle Bass Inversion (lowest fingered note drives the bass; slash chords). */
-    void setBassInversion (bool shouldInvert) { transposer.setBassInversion (shouldInvert); }
+    void setBassInversion (bool shouldInvert);
 
     /** Enable/disable Auto Fill on variation switches (delegates to the sequencer). */
     void setAutoFillEnabled (bool enabled) { sequencer.setAutoFillEnabled (enabled); }

@@ -228,6 +228,7 @@ private:
     std::function<void(const juce::MidiMessage&)> pendingMidiInjectCallback;
     bool arrangerModeEnabled = false;   ///< Remembered Arranger-mode state, applied when a style component is created.
     bool arrangerAutoFillEnabled = false;   ///< Remembered Auto Fill state, applied when a style component is created.
+    bool arrangerBassInversion = false;     ///< Remembered Bass Inversion, applied when a style component is created.
 
     std::unique_ptr<TrackListComponent> trackListComp; ///< Track selection component
     juce::var allStylesJsonVar; ///< Root JSON object storing all styles

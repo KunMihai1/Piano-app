@@ -243,6 +243,7 @@ void Display::showCurrentStyleTab(const juce::String& name)
 
         currentStyleComponent->setArrangerModeEnabled(arrangerModeEnabled);
         currentStyleComponent->setArrangerAutoFillEnabled(arrangerAutoFillEnabled);
+        currentStyleComponent->setArrangerBassInversion(arrangerBassInversion);
     }
     else
     {
@@ -441,6 +442,7 @@ void Display::setArrangerLiveChord(const ArrangerChord& chord)
 
 void Display::setArrangerBassInversion(bool shouldInvert)
 {
+    arrangerBassInversion = shouldInvert;   // remembered, re-applied when currentStyleComponent is rebuilt
     if (currentStyleComponent)
         currentStyleComponent->setArrangerBassInversion(shouldInvert);
 }
