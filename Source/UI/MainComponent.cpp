@@ -71,7 +71,20 @@ MainComponent::MainComponent()
         }
     };
 
+    // Phase 4: route the recognized left-hand/whole-keyboard chord to the arranger engine so the
+    // accompaniment transposes to what the player holds.
+    midiHandler.onChordChanged = [this](const ArrangerChord& chord)
+    {
+        if (display)
+            display->setArrangerLiveChord(chord);
+    };
+
     juce::Desktop::getInstance().addFocusChangeListener(this);
+
+    // Korg/Yamaha-style focus policy: listen to mouse clicks on the whole play
+    // scene (this component and every nested child) so we can always return
+    // keyboard focus to the play surface — see mouseDown().
+    addMouseListener(this, true);
 
     juce::MessageManager::callAsync([this]()
         {
@@ -179,6 +192,16 @@ void MainComponent::paintOverChildren(juce::Graphics& g)
         {
             playButtonOnClick();
             openingAudioLabel.setVisible(false);
+
+            // The play scene is now fully built (devices opened, samples loaded,
+            // child components created). Reclaim keyboard focus once more — the
+            // scene setup can land focus on a freshly created child, which is why
+            // you sometimes had to click the screen before the PC keyboard played.
+            juce::MessageManager::callAsync([this]()
+            {
+                if (isVisible())
+                    grabKeyboardFocus();
+            });
         });
     }
 }
@@ -228,6 +251,38 @@ void MainComponent::globalFocusChanged(juce::Component* focusedComponent)
         if (soundEffectWindow && !soundEffectWindow->isVisible() && soundEffecttWindowShouldBeVisible)
             soundEffectWindow->setVisible(true);
     }
+}
+
+void MainComponent::mouseDown(const juce::MouseEvent& e)
+{
+    // Korg/Yamaha-style: the instrument keeps listening to the PC keyboard.
+    // Any click on the play scene that isn't text entry returns keyboard focus
+    // to the play surface, so the player can always keep playing after touching
+    // a transport/section button, the config browser, etc.  Without this, focus
+    // could drift onto a clicked control and never come back, silencing the
+    // PC keyboard until the app was restarted.
+
+    // Don't fight modal popups (combo menus, alert dialogs) or the in-app
+    // overlay menu — those manage their own focus (and the overlay has a
+    // documented native-window focus dance we must not disturb).
+    if (juce::Component::getCurrentlyModalComponent() != nullptr)
+        return;
+    if (overlayWindow && overlayWindow->isVisible())
+        return;
+
+    // Leave focus alone while the user is typing into a text field.
+    for (auto* c = e.eventComponent; c != nullptr; c = c->getParentComponent())
+        if (dynamic_cast<juce::TextEditor*>(c) != nullptr)
+            return;
+
+    // Defer to after the click is fully handled (e.g. a button's own action),
+    // then pull focus back to the play surface.
+    juce::MessageManager::callAsync(
+        [safeThis = juce::Component::SafePointer<MainComponent>(this)]()
+        {
+            if (safeThis != nullptr && safeThis->isVisible())
+                safeThis->grabKeyboardFocus();
+        });
 }
 
 void MainComponent::resized()
@@ -937,6 +992,36 @@ void MainComponent::setCallBacksForOverlayWindow()
                 if (display != nullptr)
                     display->setArrangerModeEnabled(enabled);
                 setSectionButtonsEngineDriven(enabled);
+                midiHandler.setArrangerEngaged(enabled);   // gates chord-zone muting (off => normal playing)
+            };
+
+            // Phase 4 chord-mode toggles.
+            midiWindow->onChordBassInversionChanged = [this](bool on)
+            {
+                if (display != nullptr)
+                    display->setArrangerBassInversion(on);
+            };
+            midiWindow->onChordModeChanged = [this](ChordMode m)
+            {
+                midiHandler.setChordMode(m);
+            };
+            midiWindow->onChordMemoryChanged = [this](bool on)
+            {
+                midiHandler.setChordMemory(on);
+            };
+            midiWindow->onSynchroStartChanged = [this](bool on)
+            {
+                if (display != nullptr)
+                    display->setArrangerSynchroStart(on);
+            };
+            midiWindow->onCountInChanged = [this](bool on)
+            {
+                if (display != nullptr)
+                    display->setArrangerCountIn(on);
+            };
+            midiWindow->onChordZoneMuteChanged = [this](bool on)
+            {
+                midiHandler.setChordZoneMute(on);   // Korg-style: silence the chord keys when the arranger is engaged
             };
 
             midiWindow->onOutputEngineChanged = [this](int engineOption)
@@ -1518,6 +1603,33 @@ void MainComponent::displayInit()
     display->onArrangerOverlayVisible = [this](bool visible)
     {
         setArrangerOverlaySceneHidden(visible);
+
+        // When the config browser/editor closes (e.g. after Load), the Load/Close button still holds
+        // keyboard focus, so the PC-keyboard note layer goes dead until you click. Return focus to the
+        // playing surface so you can play immediately. Deferred so it lands after the overlay is gone.
+        if (! visible)
+            juce::MessageManager::callAsync([this]() { if (isVisible()) grabKeyboardFocus(); });
+    };
+
+    // Arranger Start rebuilds the play scene and can leave focus on a freshly created child, so the
+    // PC keyboard sometimes stayed dead until you clicked. Return focus to the play surface (deferred
+    // so it lands after the scene is built; skipped if a modal dialog is up).
+    display->onRequestPlayFocus = [this]()
+    {
+        juce::MessageManager::callAsync([this]()
+        {
+            if (isVisible() && juce::Component::getCurrentlyModalComponent() == nullptr)
+                grabKeyboardFocus();
+        });
+    };
+
+    // So the arranger can begin on a chord the player is already holding when Start is pressed
+    // (a steady hold sends no note event, so it otherwise wouldn't reach the engine until release).
+    // heldChord() returns invalid when nothing is physically held, so a chord merely remembered by
+    // Chord Memory does not hijack Start — that case starts in the home key.
+    display->getHeldChord = [this]() -> ArrangerChord
+    {
+        return midiHandler.heldChord();
     };
 
     display->onArrangerBusy = [this](bool show, const juce::String& text)
@@ -1980,6 +2092,7 @@ void MainComponent::playButtonOnClick()
             const bool arrangerOn = propertiesFile->getBoolValue("ArrangerModeEnabled", false);
             display->setArrangerModeEnabled(arrangerOn);
             setSectionButtonsEngineDriven(arrangerOn);
+            midiHandler.setArrangerEngaged(arrangerOn);   // restore the chord-zone-mute gate
 
             // Restore the remembered Auto Fill choice (app-wide, not per style): apply to the engine
             // and reflect the tick in the toggle button.
@@ -1989,6 +2102,22 @@ void MainComponent::playButtonOnClick()
                 for (auto* group : variationsFills->getSectionGroups())
                     if (auto* toggle = group->getToggleButton())
                         toggle->setToggleState(autoFillOn, juce::dontSendNotification);
+
+            // Phase 4/5: apply the remembered chord choices (defaults: Fingered mode, memory on,
+            // bass inversion off) so they take effect without needing to toggle them each launch.
+            display->setArrangerBassInversion(propertiesFile->getBoolValue("ChordBassInversion", false));
+            {
+                ChordMode m = ChordMode::Fingered;
+                if (propertiesFile->containsKey("ChordMode"))
+                    m = (ChordMode) juce::jlimit(0, 2, propertiesFile->getIntValue("ChordMode", 0));
+                else if (propertiesFile->getBoolValue("ChordFullKeyboard", false))
+                    m = ChordMode::FullKeyboard;   // migrate legacy bool
+                midiHandler.setChordMode(m);
+            }
+            midiHandler.setChordMemory(propertiesFile->getBoolValue("ChordMemory", true));
+            midiHandler.setChordZoneMute(propertiesFile->getBoolValue("ChordZoneMute", false));
+            display->setArrangerSynchroStart(propertiesFile->getBoolValue("SynchroStart", false));
+            display->setArrangerCountIn(propertiesFile->getBoolValue("CountIn", false));
         }
 
         if (!keyboardInitialized)
@@ -2626,7 +2755,13 @@ void MainComponent::setLoadingOverlayVisible(bool show, const juce::String& text
     {
         openingAudioLabel.setVisible(false);
         if (loadingOverlayActive && noteLayer)
+        {
+            // The animation timer was stopped when the layer was hidden (visibilityChanged),
+            // so any notes that were mid-flight would otherwise stay frozen on screen until the
+            // next note-on restarts the timer. Clear them, matching the arranger-overlay/menu paths.
+            noteLayer->resetState();
             noteLayer->setVisible(noteLayerVisibleBeforeLabel);
+        }
         loadingOverlayActive = false;
     }
     repaint();

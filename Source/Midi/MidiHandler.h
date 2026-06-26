@@ -7,6 +7,9 @@
 #include "MidiHandlerAbstractSubject.h"
 #include "InstrumentHandler.h"
 #include "DisplayListener.h"
+#include "Arranger/ChordDetector.h"
+#include <atomic>
+#include <functional>
 
 class MidiDevice {
 public:
@@ -439,10 +442,38 @@ public:
 
 
 	/**
-	 * @brief Sets the correct MIDI channel based on which hand is playing a note
+	 * @brief Returns the MIDI channel for a note based on which hand zone it falls in.
 	 * @param note MIDI note number to determine the channel for
+	 * @return 16 for the right-hand zone, 1 otherwise. Pure: stores no state (per-note local).
 	 */
-	void setCorrectChannelBasedOnHand(int note);
+	int channelForHand(int note) const;
+
+	// --- Phase 4: arranger chord recognition -------------------------------------------------
+	/** Fired (on the MIDI input thread) when the recognized left-hand/whole-keyboard chord changes.
+	    Wire this to ArrangerEngine::setActiveChord. */
+	std::function<void(const ArrangerChord&)> onChordChanged;
+
+	/** The chord PHYSICALLY held in the chord zone right now, for seeding the arranger at Start.
+	    Returns an invalid chord when nothing is held, so a chord only *remembered* by Chord Memory
+	    (from an earlier, released press) does NOT seed Start — that case keeps the home key. */
+	ArrangerChord heldChord() const
+	{
+	    return chordDetector.hasHeldNotes() ? chordDetector.current() : ArrangerChord{};
+	}
+
+	/** Choose the chord-recognition mode (Fingered / Single-Finger / Full-Keyboard). */
+	void setChordMode(ChordMode mode);
+	/** When true (default), the last recognized chord is held after the chord zone empties; when
+	    false, emptying the zone reverts the accompaniment to the recorded key. */
+	void setChordMemory(bool shouldHold) { chordMemory = shouldHold; }
+
+	/** Chord-zone mute (Korg-style): when on AND the arranger is engaged, the chord-recognition keys
+	    drive the accompaniment WITHOUT sounding their raw notes -- so a one-finger cluster (e.g. C+B+Bb)
+	    is never heard, only the clean backing. Has no effect when the arranger is off (normal playing). */
+	void setChordZoneMute(bool shouldMute) { chordZoneMute = shouldMute; }
+	/** Tell the handler whether Arranger mode is currently on; gates chord-zone muting so plain piano
+	    playing (arranger off) always sounds. */
+	void setArrangerEngaged(bool engaged)  { arrangerEngaged = engaged; }
 
 
 	void setPlayableRange(int nrKeys);
@@ -472,8 +503,19 @@ private:
 	int endNoteSetting=-1;
 	int leftHandBoundSetting = -1;
 	int rightHandBoundSetting = -1;
-	int channel = 1;
 	int transposeValue = 0;
+
+	// Phase 4: chord recognition fed from the live input. The detector lives on the input thread;
+	// only the resulting ArrangerChord crosses to the engine (via onChordChanged).
+	std::atomic<ChordMode> chordMode { ChordMode::Fingered };
+	ChordDetector chordDetector;
+	bool          chordMemory = true;
+	bool          chordZoneMute = false;    // silence the chord-recognition keys when the arranger is engaged
+	bool          arrangerEngaged = false;  // true while Arranger mode is on; gates chordZoneMute
+	bool inChordZone (int note) const;
+	/** True when this note's onset should be muted: chord-zone-mute on, arranger engaged, note in the zone. */
+	bool muteChordZoneNote (int note) const { return chordZoneMute && arrangerEngaged && inChordZone (note); }
+	void feedChordNote (int note, bool isOn);
 
 	int lastCC91=-1; //reverb
 	int lastCC74 = -1;  //brightness

@@ -1,5 +1,6 @@
 #pragma once
 #include <JuceHeader.h>
+#include "Chord.h"     // ChordQuality (style-level original chord)
 #include <vector>
 
 /** Schema version for arranger styles, bumped when the model changes. */
@@ -33,9 +34,6 @@ struct ArrangerTrack
     double volume = 100.0;
 
     std::vector<TimedBeatEvent> pattern;   // Phase 1: the section's loop for this track
-
-    // --- reserved for later phases, inert in Phase 1 ---
-    juce::String originalChord;            // Phase 4/5: recorded key/chord
 };
 
 /** One style element / section (e.g. Variation 1), an independent loop. */
@@ -58,5 +56,11 @@ struct ArrangerStyle
     double originalTempo = 120.0;          // BPM patterns were authored at
     int timeSigNum = 4;
     int timeSigDenom = 4;
+
+    // Phase 4: the chord/key the accompaniment was recorded in (the "from" reference the NTT maps
+    // out of). Defaults to C major; auto-detected at authoring and editable, persisted in the .style.
+    int          originalRoot    = 0;                  // 0=C .. 11=B
+    ChordQuality originalQuality = ChordQuality::Maj;
+
     std::vector<ArrangerSection> sections;
 };

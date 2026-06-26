@@ -39,5 +39,9 @@ public:
     void resized() override;
 
 private:
+    /** Size the tooltip so the full string fits inside the label's inset bounds (see resized()),
+        so no edge glyph (e.g. the 'E' in "Enable") clips. */
+    void updateSizeForText(const juce::String& text);
+
     juce::Label label; ///< Label showing the tooltip text
 };

@@ -1,8 +1,10 @@
 #pragma once
 #include <JuceHeader.h>
 #include "ArrangerModel.h"
+#include "Chord.h"     // PartKind
 #include <vector>
 #include <set>
+#include <map>
 #include <utility>
 
 /** One event to emit, positioned at a monotonic beat within the advance window. */
@@ -10,6 +12,7 @@ struct EmittedEvent
 {
     double beats = 0.0;
     juce::MidiMessage message;
+    PartKind part = PartKind::Fixed;   // Phase 4: how the engine should transpose this note (Fixed = not)
 };
 
 /**
@@ -21,7 +24,11 @@ struct EmittedEvent
 class ArrangerScheduler
 {
 public:
+    /** Legacy: every event is non-transposable (PartKind::Fixed). */
     void setLoop (std::vector<TimedBeatEvent> events, double loopLengthBeats);
+    /** Phase 4: each event carries a PartKind (parallel to `events`) so the engine knows how to
+        transpose it. `parts` shorter than `events` pads with Fixed. */
+    void setLoop (std::vector<TimedBeatEvent> events, std::vector<PartKind> parts, double loopLengthBeats);
     void reset();   // forget which notes are currently sounding
 
     /** Emit note-offs for every currently-sounding note (used when switching sections
@@ -32,9 +39,11 @@ public:
     std::vector<EmittedEvent> advance (double fromBeats, double toBeats);
 
 private:
-    void trackActiveNote (const juce::MidiMessage& m);
+    void trackActiveNote (const juce::MidiMessage& m, PartKind part);
 
     std::vector<TimedBeatEvent> sortedEvents;          // sorted by beats
+    std::vector<PartKind>       sortedParts;           // aligned with sortedEvents
     double loopLen = 0.0;
     std::set<std::pair<int,int>> activeNotes;          // (channel, noteNumber) currently sounding
+    std::map<std::pair<int,int>, PartKind> activeNoteParts;   // part of each sounding note (for seam offs)
 };

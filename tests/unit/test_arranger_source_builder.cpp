@@ -34,6 +34,10 @@ public:
             expect (src[1].partType == ArrangerPartType::Drum);
             expectEquals (src[2].channel, 3);   // second melodic
 
+            // part-type classification: "Keys" -> Acc, "Bass" -> Bass (name-based), "Drums" -> Drum
+            expect (src[0].partType == ArrangerPartType::Acc);
+            expect (src[2].partType == ArrangerPartType::Bass);
+
             // events converted + channel overridden
             expectEquals ((int) src[0].events.size(), 2);
             expectWithinAbsoluteError (src[0].events[1].beats, 2.0, 1e-9);

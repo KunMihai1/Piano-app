@@ -49,6 +49,8 @@ void ArrangerStyleIOHelper::saveToFile (const juce::File& file, const ArrangerSt
     root->setProperty ("originalTempo", style.originalTempo);
     root->setProperty ("timeSigNum", style.timeSigNum);
     root->setProperty ("timeSigDenom", style.timeSigDenom);
+    root->setProperty ("originalRoot", style.originalRoot);
+    root->setProperty ("originalQuality", toString (style.originalQuality));
 
     juce::Array<var> tracks;
     for (const auto& t : style.sourceTracks) tracks.add (trackToVar (t));
@@ -77,6 +79,9 @@ bool ArrangerStyleIOHelper::loadFromFile (const juce::File& file, ArrangerStyleF
     out.originalTempo = (double) root.getProperty ("originalTempo", 120.0);
     out.timeSigNum    = (int)    root.getProperty ("timeSigNum", 4);
     out.timeSigDenom  = (int)    root.getProperty ("timeSigDenom", 4);
+    out.originalRoot  = (int)    root.getProperty ("originalRoot", 0);   // v3 files: default C
+    out.originalQuality = chordQualityFromString (root.getProperty ("originalQuality", "Maj").toString());
+    if (out.originalQuality == ChordQuality::None) out.originalQuality = ChordQuality::Maj;
 
     if (auto* tracks = root.getProperty ("sourceTracks", var()).getArray())
         for (const auto& tv : *tracks)

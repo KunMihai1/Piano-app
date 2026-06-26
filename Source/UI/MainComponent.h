@@ -155,6 +155,10 @@ public:
      */
     bool keyPressed(const juce::KeyPress& key, juce::Component* component) override;
 
+    /** @brief Reclaims keyboard focus on any non-text click so the PC keyboard
+     *         can always keep playing after touching a button/pad/config browser. */
+    void mouseDown(const juce::MouseEvent& e) override;
+
     /** @brief Callback for change events */
     void changeListenerCallback(juce::ChangeBroadcaster* source) override;
 

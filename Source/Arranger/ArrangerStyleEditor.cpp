@@ -5,6 +5,7 @@
 #include "ArrangerStyleIOHelper.h"
 #include "ArrangerEnums.h"
 #include "ArrangerTime.h"
+#include "ChordDetector.h"
 #include "IOHelper.h"
 #include <cmath>
 
@@ -25,6 +26,14 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
 
     updateTracksBtn.setEnabled (false);   // only meaningful when editing an existing saved config
 
+    addAndMakeVisible (keyLabel);
+    addAndMakeVisible (keyRootBox);
+    addAndMakeVisible (keyQualityBox);
+    keyLabel.setColour (juce::Label::textColourId, juce::Colours::white);
+    populateKeyControls();
+    keyRootBox.onChange    = [this] { originalRoot = keyRootBox.getSelectedId() - 1; rebuildPreview(); };
+    keyQualityBox.onChange = [this] { originalQuality = (ChordQuality) keyQualityBox.getSelectedId(); rebuildPreview(); };
+
     // Full-screen "working" overlay, styled like the app's "Preparing style..." overlay. Eats mouse
     // clicks so nothing behind it can be triggered while a save/update runs on the background thread.
     busyOverlay.setJustificationType (juce::Justification::centred);
@@ -38,6 +47,7 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
     {
         windows = w;
         rebuildPreview();
+        restIdlePlayhead();   // when not previewing, keep the arrow parked at the first section's start
     };
 
     // Clicking a region while previewing switches to that section at the next bar line.
@@ -53,7 +63,7 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
     addBreakBtn.onClick     = [this] { addSectionOfType (ArrangerSectionType::Break); };
     addEndingBtn.onClick    = [this] { addSectionOfType (ArrangerSectionType::Ending); };
     removeBtn.onClick       = [this] { removeSelectedSection(); };
-    previewBtn.onClick   = [this] { followPlayhead = true; rebuildPreview(); engine.setBpm (referenceBpm); engine.start(); };
+    previewBtn.onClick   = [this] { followPlayhead = true; rebuildPreview(); engine.setBpm (referenceBpm); engine.start (false); };  // preview always starts now (no Synchro/Count-In)
     stopBtn.onClick      = [this] { engine.stop(); };
     updateTracksBtn.onClick = [this] { updateTracksFromRecording(); };
     saveBtn.onClick      = [this] { requestSave(); };
@@ -124,6 +134,8 @@ void ArrangerStyleEditor::loadRecording (const std::vector<TrackEntry>& tracks, 
     updateTracksBtn.setEnabled (false);   // brand-new config: nothing on disk to update yet
 
     sourceTracks = ArrangerSourceBuilder::fromTrackEntries (tracks, referenceBpm);
+    autoDetectOriginalChord();   // guess the recorded key from the fresh recording
+    populateKeyControls();
     windows = ArrangerDefaults::defaultWindowsForBars (1);
     recomputeTotalBars();
     windows = ArrangerDefaults::defaultWindowsForBars (totalBars);
@@ -132,6 +144,7 @@ void ArrangerStyleEditor::loadRecording (const std::vector<TrackEntry>& tracks, 
     timeline.setWindows (windows);
     layoutTimeline();
     rebuildPreview();
+    restIdlePlayhead();   // park the arrow at the first section's start, not bar 1
 }
 
 void ArrangerStyleEditor::loadFromFile (const ArrangerStyleFile& f)
@@ -141,6 +154,8 @@ void ArrangerStyleEditor::loadFromFile (const ArrangerStyleFile& f)
     nameEditor.setText (name, juce::dontSendNotification);
     referenceBpm = (f.originalTempo > 0.0 ? f.originalTempo : 120.0);
     timeSigNum = f.timeSigNum; timeSigDenom = f.timeSigDenom;
+    originalRoot = f.originalRoot; originalQuality = f.originalQuality;   // keep the saved recorded key
+    populateKeyControls();
     sourceTracks = f.sourceTracks;
     windows = f.sections;
     if (windows.empty())
@@ -152,6 +167,7 @@ void ArrangerStyleEditor::loadFromFile (const ArrangerStyleFile& f)
     timeline.setWindows (windows);
     layoutTimeline();
     rebuildPreview();
+    restIdlePlayhead();   // park the arrow at the first section's start, not bar 1
 }
 
 ArrangerStyleFile ArrangerStyleEditor::toStyleFile() const
@@ -160,20 +176,75 @@ ArrangerStyleFile ArrangerStyleEditor::toStyleFile() const
     f.id = styleId; f.name = name;
     f.originalTempo = referenceBpm;
     f.timeSigNum = timeSigNum; f.timeSigDenom = timeSigDenom;
+    f.originalRoot = originalRoot; f.originalQuality = originalQuality;
     f.sourceTracks = sourceTracks;
     f.sections = windows;
     return f;
 }
 
+void ArrangerStyleEditor::autoDetectOriginalChord()
+{
+    // Detect the recorded key from the pitched (Bass/Acc) tracks only — drums/perc carry no harmony.
+    std::vector<TimedBeatEvent> pitched;
+    for (const auto& t : sourceTracks)
+        if (t.partType == ArrangerPartType::Bass || t.partType == ArrangerPartType::Acc)
+            for (const auto& e : t.events)
+                pitched.push_back (e);
+
+    const ArrangerChord k = detectKeyFromEvents (pitched);   // C major fallback on empty/ambiguous
+    originalRoot    = k.root;
+    originalQuality = k.quality;
+}
+
+void ArrangerStyleEditor::populateKeyControls()
+{
+    static const char* const noteNames[12] =
+        { "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B" };
+
+    if (keyRootBox.getNumItems() == 0)   // first call: fill the lists
+    {
+        for (int i = 0; i < 12; ++i)
+            keyRootBox.addItem (noteNames[i], i + 1);   // id = root + 1 (ComboBox ids must be != 0)
+        for (auto q : { ChordQuality::Maj, ChordQuality::Min, ChordQuality::Dom7, ChordQuality::Maj7,
+                        ChordQuality::Min7, ChordQuality::Dim, ChordQuality::HalfDim, ChordQuality::Aug,
+                        ChordQuality::Sus2, ChordQuality::Sus4 })
+            keyQualityBox.addItem (toString (q), (int) q);   // id = enum value (Maj=1..)
+    }
+
+    keyRootBox.setSelectedId (juce::jlimit (0, 11, originalRoot) + 1, juce::dontSendNotification);
+    keyQualityBox.setSelectedId ((int) originalQuality, juce::dontSendNotification);
+}
+
 ArrangerStyle ArrangerStyleEditor::buildStyle() const
 {
-    return ArrangerPatternBuilder::buildStyleFromWindows (
+    ArrangerStyle s = ArrangerPatternBuilder::buildStyleFromWindows (
         sourceTracks, windows, timeSigNum, timeSigDenom, referenceBpm);
+    s.originalRoot    = originalRoot;      // so the preview engine transposes from the right key
+    s.originalQuality = originalQuality;
+    return s;
 }
 
 void ArrangerStyleEditor::rebuildPreview()
 {
     engine.setStyle (buildStyle());
+}
+
+int ArrangerStyleEditor::firstSectionStartBar() const
+{
+    int bar = -1;
+    for (const auto& w : windows)
+        if (bar < 0 || w.startBar < bar)
+            bar = w.startBar;
+    return bar < 0 ? 1 : bar;
+}
+
+void ArrangerStyleEditor::restIdlePlayhead()
+{
+    // While stopped, the playhead has no live position to report, so park it at the start of the first
+    // section (Korg-style) instead of leaving it at bar 1 -- which may now hold no section at all. During
+    // preview the engine drives the arrow via onElapsedBeats, so don't fight it.
+    if (! engine.isPlaying())
+        timeline.setPlayheadBar ((double) firstSectionStartBar());
 }
 
 void ArrangerStyleEditor::setBusy (bool busy, const juce::String& text)
@@ -269,11 +340,22 @@ void ArrangerStyleEditor::updateTracksFromRecording()
             juce::Thread::launch ([safe, tracks, file, target, refBpm]
             {
                 file->sourceTracks = ArrangerSourceBuilder::fromTrackEntries (*tracks, refBpm);
+
+                // Re-detect the recorded key from the new pitched tracks (off the message thread).
+                {
+                    std::vector<TimedBeatEvent> pitched;
+                    for (const auto& t : file->sourceTracks)
+                        if (t.partType == ArrangerPartType::Bass || t.partType == ArrangerPartType::Acc)
+                            for (const auto& e : t.events) pitched.push_back (e);
+                    const ArrangerChord k = detectKeyFromEvents (pitched);
+                    file->originalRoot = k.root; file->originalQuality = k.quality;
+                }
+
                 ArrangerStyleIOHelper::saveToFile (target, *file);
                 const bool ok = target.existsAsFile();
                 auto applied = std::make_shared<std::vector<SourceTrackFile>> (file->sourceTracks);
 
-                juce::MessageManager::callAsync ([safe, applied, target, ok]
+                juce::MessageManager::callAsync ([safe, applied, file, target, ok]
                 {
                     if (safe == nullptr)
                         return;
@@ -285,6 +367,9 @@ void ArrangerStyleEditor::updateTracksFromRecording()
                         return;
                     }
                     safe->sourceTracks = std::move (*applied);
+                    safe->originalRoot = file->originalRoot;        // keep the re-detected key
+                    safe->originalQuality = file->originalQuality;
+                    safe->populateKeyControls();
                     safe->recomputeTotalBars();
                     safe->timeline.setTotalBars (safe->totalBars);
                     safe->timeline.setWindows (safe->windows);
@@ -414,6 +499,13 @@ void ArrangerStyleEditor::resized()
     for (auto* b : { &addIntroBtn, &addVariationBtn, &addFillBtn, &addBreakBtn, &addEndingBtn,
                      &removeBtn, &previewBtn, &stopBtn, &updateTracksBtn, &saveBtn, &closeBtn })
         b->setBounds (top.removeFromLeft (84).reduced (2));
+
+    area.removeFromTop (6);
+    auto keyRow = area.removeFromTop (26);                        // second row: recorded-key picker
+    keyLabel.setBounds (keyRow.removeFromLeft (90));
+    keyRootBox.setBounds (keyRow.removeFromLeft (60).reduced (0, 2));
+    keyRow.removeFromLeft (6);
+    keyQualityBox.setBounds (keyRow.removeFromLeft (90).reduced (0, 2));
 
     area.removeFromTop (6);
     timelineViewport.setBounds (area);

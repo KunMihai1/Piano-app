@@ -21,6 +21,7 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
         auto btn = std::make_unique<juce::TextButton>(name);
         btn->setButtonText(name);
         btn->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+        btn->setMouseClickGrabsKeyboardFocus(false);   // keep PC-keyboard focus when clicking sections
         activationMap[name] = false;
 
         btn->setLookAndFeel(&laf);
@@ -34,6 +35,7 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
     {
         toggleButton = std::make_unique<juce::ToggleButton>();
         toggleButton->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+        toggleButton->setMouseClickGrabsKeyboardFocus(false);
         toggleButton->setToggleState(false, juce::dontSendNotification);
 
         toggleButton->setColour(juce::ToggleButton::tickColourId, juce::Colours::green);      
@@ -68,6 +70,7 @@ SectionGroupComponent::SectionGroupComponent(const juce::String& title, const st
         auto btn = std::make_unique<juce::TextButton>("Break");
         btn->setButtonText("Break");
         btn->setMouseCursor(juce::MouseCursor::PointingHandCursor);
+        btn->setMouseClickGrabsKeyboardFocus(false);
         btn->setLookAndFeel(&laf);
         btn->setColour(juce::TextButton::buttonColourId, AppColours::accent2);
         addAndMakeVisible(*btn);

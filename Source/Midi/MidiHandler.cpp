@@ -762,8 +762,15 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	{
 		int note = message.getNoteNumber();
 
-		setCorrectChannelBasedOnHand(note);
+		const int channel = channelForHand(note);
 		int transposedNote = juce::jlimit(0, 127, note + transposeValue);
+
+		if (note != this->startNoteSetting && note != this->endNoteSetting)
+			feedChordNote(note, true);
+
+		// Korg-style chord-zone mute: recognition above still runs, but we don't SOUND this onset when
+		// muting. Only note-ONs are gated -- note-offs always pass, so a note can never get stuck.
+		const bool muteChordZone = muteChordZoneNote(note);
 
 		float velocity = message.getFloatVelocity();
 
@@ -782,7 +789,8 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 				ok = 1;
 				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+9, velocityByte));
 				midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
-				midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocityByte));
+				if (! muteChordZone)
+					midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocityByte));
 				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+10, velocityByte));
 			}
 			else if (note == this->startNoteSetting)
@@ -802,7 +810,8 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 			listeners.call(&MidiHandlerListener::noteOnReceived, note);
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
-			listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocityByte));
+			if (! muteChordZone)
+				listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocityByte));
 		}
 
 	}
@@ -810,8 +819,12 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 	if (message.isNoteOff())
 	{
 		int note = message.getNoteNumber();
-		setCorrectChannelBasedOnHand(note);
+		const int channel = channelForHand(note);
 		int transposedNote = juce::jlimit(0, 127, note + transposeValue);
+
+		if (note != this->startNoteSetting && note != this->endNoteSetting)
+			feedChordNote(note, false);
+
 		juce::uint8 velocityByte = juce::MidiMessage::floatValueToMidiByte(message.getFloatVelocity());
 
 		if (auto midiOut = midiDevice.getDeviceOUT().lock())
@@ -837,9 +850,14 @@ void MidiHandler::getNextMidiBlock(juce::MidiBuffer& destBuffer, int startSample
 
 void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 	int ok = 0;
-	setCorrectChannelBasedOnHand(note);
+	const int channel = channelForHand(note);
 	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
-    
+
+	if (note != this->startNoteSetting && note != this->endNoteSetting)
+		feedChordNote(note, true);
+
+	const bool muteChordZone = muteChordZoneNote(note);   // Korg-style: drive the chord, don't sound the keys
+
 	if (note != this->startNoteSetting && note!=this->endNoteSetting)
 	{
 		ok = 1;
@@ -860,23 +878,31 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 		if (ok)
 		{
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
-			midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocity));
+			if (! muteChordZone)
+				midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocity));
 		}
 	}
 
 	if (ok)
 	{
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
-		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocity));
+		if (! muteChordZone)
+		{
+			listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocity));
 
-		const juce::ScopedLock lock(midiMutex);
-		incomingMidiMessages.addEvent(juce::MidiMessage::noteOn(channel, transposedNote, velocity), 0);
+			const juce::ScopedLock lock(midiMutex);
+			incomingMidiMessages.addEvent(juce::MidiMessage::noteOn(channel, transposedNote, velocity), 0);
+		}
 	}
 }
 
 void MidiHandler::noteOffKeyboard(int note, juce::uint8 velocity) {
-	setCorrectChannelBasedOnHand(note);
+	const int channel = channelForHand(note);
 	int transposedNote = juce::jlimit(0, 127, note + transposeValue);
+
+	if (note != this->startNoteSetting && note != this->endNoteSetting)
+		feedChordNote(note, false);
+
 	if (auto midiOut = midiDevice.getDeviceOUT().lock())
 	{
 		midiOut->sendMessageNow(juce::MidiMessage::noteOff(channel, transposedNote,velocity));
@@ -952,11 +978,46 @@ void MidiHandler::playBackSettingsTransposeChanged(int transposeValue)
 	allOffKeyboard();
 }
 
-void MidiHandler::setCorrectChannelBasedOnHand(int note)
+int MidiHandler::channelForHand(int note) const
 {
-	if (rightHandBoundSetting != -1 && note >= rightHandBoundSetting)
-		this->channel = 16;
-	else this->channel = 1;
+	return (rightHandBoundSetting != -1 && note >= rightHandBoundSetting) ? 16 : 1;
+}
+
+void MidiHandler::setChordMode(ChordMode mode)
+{
+	chordMode.store(mode);
+	chordDetector.setMode(mode);
+}
+
+bool MidiHandler::inChordZone(int note) const
+{
+	if (chordMode.load() == ChordMode::FullKeyboard)
+		return true;
+	// Split-zone modes (Fingered, Single-Finger): the left-hand zone (below the split). With no
+	// split set, the whole keyboard is the left zone (matches channelForHand semantics).
+	return (rightHandBoundSetting == -1) ? true : note < rightHandBoundSetting;
+}
+
+void MidiHandler::feedChordNote(int note, bool isOn)
+{
+	if (! inChordZone(note))
+		return;
+
+	if (isOn) chordDetector.noteOn(note);
+	else      chordDetector.noteOff(note);
+
+	ArrangerChord c = chordDetector.current();
+
+	// Chord Memory: when the zone empties to "no chord", hold the last chord (memory on) instead of
+	// telling the engine to revert. With memory off, push the invalid chord so it reverts to the key.
+	if (! c.isValid() && chordMemory)
+		return;
+
+	// Always forward the current chord. We deliberately do NOT skip "same as last time": the engine
+	// resets its chord to the style's home key on every Start, so re-pressing the same chord after a
+	// 2nd Play must reach it again. Re-applying an identical chord is cheap and harmless.
+	if (onChordChanged)
+		onChordChanged(c);
 }
 
 int MidiHandler::handlePlayableRange(const juce::String& vid, const juce::String& pid, int nrKeys, bool isKeyboardInput)

@@ -106,8 +106,23 @@ public:
     /** Enable/disable Auto Fill on variation switches (remembered across re-creation). */
     void setArrangerAutoFillEnabled(bool enabled);
 
+    /** Phase 4: forward the live played chord to the style component's arranger engine. */
+    void setArrangerLiveChord(const ArrangerChord& chord);
+
+    /** Phase 4: toggle Bass Inversion (slash chords) on the arranger engine. */
+    void setArrangerBassInversion(bool shouldInvert);
+    void setArrangerSynchroStart(bool enabled);   // Phase 6: start the groove on the first chord
+    void setArrangerCountIn(bool enabled);        // Phase 6b: one metronome bar before the groove
+
     /** Forwarded from the style component: true while an authoring overlay is shown (host hides the GL note layer). */
     std::function<void(bool)> onArrangerOverlayVisible;
+
+    /** Forwarded from the style component: asks the host to return keyboard focus to the play surface after Start. */
+    std::function<void()> onRequestPlayFocus;
+
+    /** Wired host-side to MidiHandler::currentChord; lets the style component seed the arranger
+        with an already-held chord at Start. */
+    std::function<ArrangerChord()> getHeldChord;
 
     /** Forwarded from the style component: show/hide the app's "working" overlay during off-thread loads. */
     std::function<void(bool show, const juce::String& text)> onArrangerBusy;
@@ -222,6 +237,9 @@ private:
     std::function<void(const juce::MidiMessage&)> pendingMidiInjectCallback;
     bool arrangerModeEnabled = false;   ///< Remembered Arranger-mode state, applied when a style component is created.
     bool arrangerAutoFillEnabled = false;   ///< Remembered Auto Fill state, applied when a style component is created.
+    bool arrangerBassInversion = false;     ///< Remembered Bass Inversion, applied when a style component is created.
+    bool arrangerSynchroStart = false;      ///< Remembered Synchro Start, applied when a style component is created.
+    bool arrangerCountIn = false;           ///< Remembered Count-In, applied when a style component is created.
 
     std::unique_ptr<TrackListComponent> trackListComp; ///< Track selection component
     juce::var allStylesJsonVar; ///< Root JSON object storing all styles

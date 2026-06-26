@@ -54,6 +54,8 @@ private:
     void removeSelectedSection();   // remove the section currently selected on the timeline
     void renumberSectionsByType();  // assign unique per-type names (Intro 1, Intro 2, ...)
     void recomputeTotalBars();      // longest source track / furthest window, in whole bars
+    int  firstSectionStartBar() const;  // earliest section's start bar (1 if none) — where the idle arrow rests
+    void restIdlePlayhead();        // park the playhead at the first section when not previewing
     void layoutTimeline();          // size the (scrollable) timeline to totalBars * kPixelsPerBar
     void scrollBarMoved (juce::ScrollBar*, double newRangeStart) override;  // detect manual scroll
 
@@ -68,6 +70,12 @@ private:
                      previewBtn { "Preview" }, stopBtn { "Stop" }, updateTracksBtn { "Update Tracks" },
                      saveBtn { "Save" }, closeBtn { "Close" };
 
+    // Phase 4: recorded-key picker (pre-filled by auto-detect; editable to correct a wrong guess).
+    juce::Label    keyLabel { {}, "Recorded key:" };
+    juce::ComboBox keyRootBox;
+    juce::ComboBox keyQualityBox;
+    void populateKeyControls();        // fill the combos and select the current originalRoot/quality
+
     juce::Label busyOverlay;   // full-screen dim + centered label shown while save/update runs off-thread
 
     std::vector<SourceTrackFile> sourceTracks;
@@ -78,6 +86,12 @@ private:
     int    timeSigNum = 4, timeSigDenom = 4;
     int    totalBars  = 1;
     juce::String styleId = juce::Uuid().toString();
+
+    // Phase 4: the chord this config was recorded in (auto-detected from the source tracks on a new
+    // recording, loaded from file, persisted on save; editable in a future UI).
+    int          originalRoot    = 0;
+    ChordQuality originalQuality = ChordQuality::Maj;
+    void autoDetectOriginalChord();   // sets the two from the pitched source tracks
     bool   followPlayhead     = true;   // auto-scroll the viewport to keep the playhead in view
     bool   programmaticScroll = false;  // true while WE move the viewport (so it isn't seen as manual)
 };

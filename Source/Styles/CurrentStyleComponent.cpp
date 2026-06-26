@@ -33,8 +33,10 @@ void CurrentStyleComponent::startPlaying()
         applyLiveTrackVolumes(cfg);
         arrangerEngine->setStyle(cfg);
         arrangerEngine->setBpm(currentTempo);
+        arrangerEngine->setBassInversion(arrangerBassInversion);   // re-apply: setStyle/rebuild may reset it
         arrangerEngine->selectStartSection(pendingStartType, pendingStartName);  // begin on the chosen start (stopPlaying cleared it)
         arrangerEngine->start();
+        seedHeldChordIntoArranger();   // honour a chord already held when Start was pressed
         return;
     }
 
@@ -75,6 +77,7 @@ void CurrentStyleComponent::startPlaying()
         arrangerEngine->setBpm(currentTempo);   // user's tempo slider wins over the style's original tempo
         arrangerEngine->selectStartSection(pendingStartType, pendingStartName);  // begin on the chosen start
         arrangerEngine->start();
+        seedHeldChordIntoArranger();   // honour a chord already held when Start was pressed
         return;
     }
 
@@ -82,6 +85,18 @@ void CurrentStyleComponent::startPlaying()
     trackPlayer->syncPlaybackSettings();
     trackPlayer->start();
 
+}
+
+void CurrentStyleComponent::seedHeldChordIntoArranger()
+{
+    // A steady held chord sends no note event, so without this it wouldn't reach the engine until the
+    // next press/release. Apply it right after start() so a chord held when Start was pressed plays
+    // immediately, instead of starting on the home key and only catching up on the first key change.
+    if (!arrangerEngine || !getHeldChord)
+        return;
+    const ArrangerChord held = getHeldChord();
+    if (held.isValid())
+        arrangerEngine->setActiveChord(held);
 }
 
 CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice,
@@ -100,6 +115,12 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     addAndMakeVisible(startPlayingTracks);
     addAndMakeVisible(stopPlayingTracks);
     addAndMakeVisible(customBeatBar);
+
+    // Performance buttons must not steal keyboard focus when clicked, so the PC-keyboard keeps
+    // playing notes after you press Start / Stop or open the play settings.
+    startPlayingTracks.setMouseClickGrabsKeyboardFocus(false);
+    stopPlayingTracks.setMouseClickGrabsKeyboardFocus(false);
+    playSettingsTracks.setMouseClickGrabsKeyboardFocus(false);
 
 
     trackPlayer = std::make_unique<MultipleTrackPlayer>(outputDevice);
@@ -130,6 +151,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
         customBeatBar.setCurrentBeatsElapsed(0.0);
         customBeatBar.repaint();
         highlightPendingStartSection();   // back to the chosen start (Var 1 by default)
+        if (arrangerModeEnabled) tempoSlider.setEnabled(true);   // unlock BPM after a self-stop (Ending)
     };
 
     // Phase 3: arranger-style authoring overlay (opened from the play-settings dropdown).
@@ -155,6 +177,12 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
     {
         isPlaying = true;
         startPlaying();
+        if (arrangerModeEnabled) tempoSlider.setEnabled(false);   // lock BPM while the arranger plays
+
+        // Starting rebuilds the play scene, which can land keyboard focus on a freshly created
+        // child — return it to the play surface so the PC keyboard plays without a stray screen click.
+        if (onRequestPlayFocus)
+            onRequestPlayFocus();
     };
 
     stopPlayingTracks.onClick = [this]
@@ -162,6 +190,7 @@ CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unor
         isPlaying = false;
         stopPlaying();
         highlightPendingStartSection();   // back to the chosen start (Var 1 by default)
+        if (arrangerModeEnabled) tempoSlider.setEnabled(true);    // unlock BPM when stopped
     };
 
     customBeatBar.isPlayingCheck = [this]()
@@ -302,6 +331,7 @@ void CurrentStyleComponent::setArrangerModeEnabled(bool shouldEnable)
 
     arrangerModeEnabled = shouldEnable;
     isPlaying = false;
+    tempoSlider.setEnabled(true);   // switching modes isn't playing -> BPM editable again
     customBeatBar.repaint();
 
     if (! shouldEnable)
@@ -320,6 +350,34 @@ void CurrentStyleComponent::setArrangerAutoFillEnabled(bool enabled)
 {
     if (arrangerEngine)
         arrangerEngine->setAutoFillEnabled(enabled);
+}
+
+void CurrentStyleComponent::setLiveChord(const ArrangerChord& chord)
+{
+    // Only steer the accompaniment while in arranger mode; the engine applies it on its next tick.
+    if (arrangerModeEnabled && arrangerEngine)
+        arrangerEngine->setActiveChord(chord);
+}
+
+void CurrentStyleComponent::setSynchroStartEnabled(bool enabled)
+{
+    synchroStartEnabled = enabled;   // remembered; re-applied on every Start (see startPlaying)
+    if (arrangerEngine)
+        arrangerEngine->setSynchroStartEnabled(enabled);
+}
+
+void CurrentStyleComponent::setCountInEnabled(bool enabled)
+{
+    countInEnabled = enabled;
+    if (arrangerEngine)
+        arrangerEngine->setCountInEnabled(enabled);
+}
+
+void CurrentStyleComponent::setArrangerBassInversion(bool shouldInvert)
+{
+    arrangerBassInversion = shouldInvert;   // remembered; re-applied on every Start (see startPlaying)
+    if (arrangerEngine)
+        arrangerEngine->setBassInversion(shouldInvert);
 }
 
 void CurrentStyleComponent::restoreEngineBeatBar()
