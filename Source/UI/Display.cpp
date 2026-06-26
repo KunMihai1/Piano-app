@@ -244,6 +244,8 @@ void Display::showCurrentStyleTab(const juce::String& name)
         currentStyleComponent->setArrangerModeEnabled(arrangerModeEnabled);
         currentStyleComponent->setArrangerAutoFillEnabled(arrangerAutoFillEnabled);
         currentStyleComponent->setArrangerBassInversion(arrangerBassInversion);
+        currentStyleComponent->setSynchroStartEnabled(arrangerSynchroStart);
+        currentStyleComponent->setCountInEnabled(arrangerCountIn);
     }
     else
     {
@@ -270,6 +272,11 @@ void Display::showCurrentStyleTab(const juce::String& name)
     {
         if (onRequestPlayFocus)
             onRequestPlayFocus();
+    };
+
+    currentStyleComponent->getHeldChord = [this]() -> ArrangerChord
+    {
+        return getHeldChord ? getHeldChord() : ArrangerChord{};
     };
 
     currentStyleComponent->onBusy = [this](bool show, const juce::String& text)
@@ -451,6 +458,20 @@ void Display::setArrangerBassInversion(bool shouldInvert)
     arrangerBassInversion = shouldInvert;   // remembered, re-applied when currentStyleComponent is rebuilt
     if (currentStyleComponent)
         currentStyleComponent->setArrangerBassInversion(shouldInvert);
+}
+
+void Display::setArrangerSynchroStart(bool enabled)
+{
+    arrangerSynchroStart = enabled;   // remembered, re-applied when currentStyleComponent is rebuilt
+    if (currentStyleComponent)
+        currentStyleComponent->setSynchroStartEnabled(enabled);
+}
+
+void Display::setArrangerCountIn(bool enabled)
+{
+    arrangerCountIn = enabled;   // remembered, re-applied when currentStyleComponent is rebuilt
+    if (currentStyleComponent)
+        currentStyleComponent->setCountInEnabled(enabled);
 }
 
 MultipleTrackPlayer* Display::getTrackPlayer()

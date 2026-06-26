@@ -92,9 +92,41 @@ public:
 
         beginTest("7th chord");
         {
-            Chord c; c.name = "C7";  
+            Chord c; c.name = "C7";
             auto notes = ChordHelper::getNotesForChord(c);
-            expect(notes == std::vector<int>({ 60, 64, 67, 70 }));  
+            expect(notes == std::vector<int>({ 60, 64, 67, 70 }));
+        }
+
+        beginTest("getNotesForChord - unknown root returns empty for every quality");
+        {
+            for (const char* q : { "Major", "Minor", "Diminished", "Augmented" })
+            {
+                Chord c; c.name = juce::String("H ") + q;   // H is not a note
+                expect(ChordHelper::getNotesForChord(c).empty());
+            }
+        }
+
+        // NOTE: we deliberately do NOT assert imgRoot.isValid() across all 48 names — that decodes
+        // PNGs (JUCE's job) from compile-time-guaranteed BinaryData symbols, so it tests the framework,
+        // not our code. We only test OUR control flow: the matched-branch flag, the early-return guard,
+        // and the unknown-name fallback.
+
+        beginTest("loadChordNeeded - a matched name sets imagesLoaded and is idempotent");
+        {
+            Chord c; c.name = "C Major";
+            expect(! c.imagesLoaded);
+            ChordHelper::loadChordNeeded(c);
+            expect(c.imagesLoaded);
+            ChordHelper::loadChordNeeded(c);     // already loaded -> early-return guard, no change
+            expect(c.imagesLoaded);
+        }
+
+        beginTest("loadChordNeeded - unknown chord still marks loaded but assigns no image");
+        {
+            Chord c; c.name = "Z Wonky";         // no branch matches
+            ChordHelper::loadChordNeeded(c);
+            expect(c.imagesLoaded);              // flag is still set (our fallback path)
+            expect(! c.imgRoot.isValid());       // ...and no image was assigned
         }
     }
 

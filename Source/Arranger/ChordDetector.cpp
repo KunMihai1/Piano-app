@@ -67,12 +67,43 @@ ArrangerChord ChordDetector::recognizeSet (const std::set<int>& notes)
     return firstMatch;   // invalid if nothing matched
 }
 
+ArrangerChord ChordDetector::recognizeSingleFinger (const std::set<int>& notes)
+{
+    // Korg "One Finger" / Yamaha "Single Finger": the highest held note is the root; keys to its left
+    // pick the quality by colour. root alone = Major; + white-left = Dom7; + black-left = Min;
+    // + white & black-left = Min7.
+    if (notes.empty()) return {};
+
+    const int root   = *notes.rbegin();          // highest held note is the root
+    const int rootPc = ((root % 12) + 12) % 12;
+
+    auto isBlack = [] (int n)
+    {
+        const int pc = ((n % 12) + 12) % 12;
+        return pc == 1 || pc == 3 || pc == 6 || pc == 8 || pc == 10;
+    };
+
+    bool hasWhiteBelow = false, hasBlackBelow = false;
+    for (int n : notes)
+        if (n < root) { (isBlack (n) ? hasBlackBelow : hasWhiteBelow) = true; }
+
+    const ChordQuality q = (hasWhiteBelow && hasBlackBelow) ? ChordQuality::Min7
+                         : hasBlackBelow                    ? ChordQuality::Min
+                         : hasWhiteBelow                    ? ChordQuality::Dom7
+                         :                                    ChordQuality::Maj;
+
+    return { rootPc, q, rootPc };   // bassNote = root (no slash in single-finger)
+}
+
 void ChordDetector::recompute()
 {
-    if (! fullKeyboard)
+    if (mode != ChordMode::FullKeyboard)
     {
-        // Split mode: every held note is a chord tone -> match directly. Empty -> no chord.
-        recognized = recognizeSet (heldNotes);
+        // Split-zone modes: Fingered matches every held note as a chord tone; Single-Finger uses the
+        // Korg one-finger convention (1-2 keys). Empty -> no chord.
+        recognized = (mode == ChordMode::SingleFinger)
+                       ? recognizeSingleFinger (heldNotes)
+                       : recognizeSet (heldNotes);
         return;
     }
 
@@ -81,21 +112,25 @@ void ChordDetector::recompute()
     if ((int) heldNotes.size() < 3)
         return;   // keep the previously recognized chord (hysteresis / hold)
 
-    // Try the full set, then the lowest 4, then the lowest 3 (the chord is usually in the lower hand).
-    ArrangerChord c = recognizeSet (heldNotes);
-    if (! c.isValid())
+    // Favour the bass hand: try the lowest 3 (the core triad), then the lowest 4 (a bass 7th), then
+    // the full set as a last resort. The first valid match wins, so a melody played on top is ignored.
+    // Pure and instant (no debounce); stability comes from order + hysteresis, not from delay.
+    auto lowest = [this] (int take)
     {
-        for (int take : { 4, 3 })
-        {
-            std::set<int> lowest;
-            for (int n : heldNotes) { lowest.insert (n); if ((int) lowest.size() == take) break; }
-            c = recognizeSet (lowest);
-            if (c.isValid()) break;
-        }
-    }
+        std::set<int> s;
+        for (int n : heldNotes) { s.insert (n); if ((int) s.size() == take) break; }
+        return s;
+    };
 
-    if (c.isValid())
-        recognized = c;   // else: hold the previous chord
+    for (int take : { 3, 4 })
+    {
+        ArrangerChord c = recognizeSet (lowest (take));
+        if (c.isValid()) { recognized = c; return; }
+    }
+    ArrangerChord cFull = recognizeSet (heldNotes);
+    if (cFull.isValid())
+        recognized = cFull;
+    // else: hold the previously recognized chord (hysteresis)
 }
 
 ArrangerChord detectKeyFromEvents (const std::vector<TimedBeatEvent>& events)

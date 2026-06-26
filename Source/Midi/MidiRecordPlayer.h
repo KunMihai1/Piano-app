@@ -99,6 +99,17 @@ public:
     /** @brief Loads a MIDI recording from a file */
     bool parseRecordingFromFile(const juce::File& fileToParse, juce::String& errorMsg);
 
+    /** @brief Serializes the recorded sequence to any output stream (the disk-free core of
+        saveRecordingToFile). Unit-testable with a juce::MemoryOutputStream. */
+    bool writeRecordingToStream(juce::OutputStream& outputStream, juce::String& errorMsg, double tempo = 120.0);
+
+    /** @brief Parses a recording from any input stream into the file-playback buffer (the disk-free
+        core of parseRecordingFromFile). Unit-testable with a juce::MemoryInputStream. */
+    bool readRecordingFromStream(juce::InputStream& inputStream, juce::String& errorMsg);
+
+    /** @brief The events parsed from a file/stream (read-only; for tests + the file-playback path). */
+    const std::vector<RecordedEvent>& getParsedEvents() const { return allEventsPlayedFile; }
+
     /** @brief Returns the number of recorded events */
     int getSizeRecorded();
 

@@ -54,6 +54,8 @@ private:
     void removeSelectedSection();   // remove the section currently selected on the timeline
     void renumberSectionsByType();  // assign unique per-type names (Intro 1, Intro 2, ...)
     void recomputeTotalBars();      // longest source track / furthest window, in whole bars
+    int  firstSectionStartBar() const;  // earliest section's start bar (1 if none) — where the idle arrow rests
+    void restIdlePlayhead();        // park the playhead at the first section when not previewing
     void layoutTimeline();          // size the (scrollable) timeline to totalBars * kPixelsPerBar
     void scrollBarMoved (juce::ScrollBar*, double newRangeStart) override;  // detect manual scroll
 

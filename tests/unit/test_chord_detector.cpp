@@ -7,9 +7,9 @@ class ChordDetectorTest : public juce::UnitTest
 public:
     ChordDetectorTest() : juce::UnitTest ("ChordDetector", "Arranger") {}
 
-    static ArrangerChord detect (std::initializer_list<int> notes, bool full = false)
+    static ArrangerChord detect (std::initializer_list<int> notes, ChordMode mode = ChordMode::Fingered)
     {
-        ChordDetector d; d.setFullKeyboardMode (full);
+        ChordDetector d; d.setMode (mode);
         for (int n : notes) d.noteOn (n);
         return d.current();
     }
@@ -63,9 +63,42 @@ public:
             expect (! d.current().isValid());
         }
 
+        beginTest ("single-finger: Korg one-finger mapping");
+        {
+            using M = ChordMode;
+            expect (detect({60},       M::SingleFinger).quality == ChordQuality::Maj);   // C alone
+            expect (detect({60,59},    M::SingleFinger).quality == ChordQuality::Dom7);  // C + B  (white left)
+            expect (detect({60,58},    M::SingleFinger).quality == ChordQuality::Min);   // C + Bb (black left)
+            expect (detect({60,59,58}, M::SingleFinger).quality == ChordQuality::Min7);  // C + B + Bb
+            expectEquals (detect({60}, M::SingleFinger).root, 0);                        // root C
+            // root is the HIGHEST held note; lower notes are modifiers:
+            expect (detect({55,60},    M::SingleFinger).quality == ChordQuality::Dom7);  // root C(60), G(55) white-left
+            expectEquals (detect({55,60}, M::SingleFinger).root, 0);
+            {
+                ChordDetector d; d.setMode (M::SingleFinger);
+                expect (! d.current().isValid());
+            }
+        }
+
+        beginTest ("full-keyboard: bass triad wins, melody on top never lurches");
+        {
+            ChordDetector d; d.setMode (ChordMode::FullKeyboard);
+            for (int n : {48,52,55}) d.noteOn (n);            // C major in the bass hand
+            expect (d.current().quality == ChordQuality::Maj);
+            d.noteOn (70);                                    // Bb melody on top: full set would read C7
+            expect (d.current().quality == ChordQuality::Maj, "lurched to a 7th on a melody note");
+            expectEquals (d.current().root, 0);
+
+            // Moving the bass hand DOES change the chord (responsive, no debounce):
+            for (int n : {48,52,55}) d.noteOff (n);
+            for (int n : {41,45,48}) d.noteOn (n);            // F major in the bass
+            expectEquals (d.current().root, 5);               // F
+            expect (d.current().quality == ChordQuality::Maj);
+        }
+
         beginTest ("full-keyboard: a chord-tone melody note does not change the chord");
         {
-            ChordDetector d; d.setFullKeyboardMode (true);
+            ChordDetector d; d.setMode (ChordMode::FullKeyboard);
             for (int n : {48,52,55}) d.noteOn (n);   // C major (low)
             ArrangerChord before = d.current();
             expect (before.quality == ChordQuality::Maj);
@@ -75,7 +108,7 @@ public:
 
         beginTest ("full-keyboard: requires >=3 notes forming a known chord");
         {
-            ChordDetector d; d.setFullKeyboardMode (true);
+            ChordDetector d; d.setMode (ChordMode::FullKeyboard);
             d.noteOn (60); d.noteOn (84);             // only 2 notes
             ArrangerChord c = d.current();
             expect (! c.isValid(), "2-note full-kb gave root=" + juce::String (c.root)
@@ -84,10 +117,40 @@ public:
 
         beginTest ("full-keyboard: holds the chord when a non-chord melody note is added");
         {
-            ChordDetector d; d.setFullKeyboardMode (true);
+            ChordDetector d; d.setMode (ChordMode::FullKeyboard);
             for (int n : {48,52,55}) d.noteOn (n);    // C major
             d.noteOn (86);                            // D (not a C-major tone) -> hold C major
             expect (d.current().quality == ChordQuality::Maj);
+            expectEquals (d.current().root, 0);
+        }
+
+        beginTest ("single-finger: roots track the highest note; colour rules with extra keys");
+        {
+            using M = ChordMode;
+            expect (detect({65}, M::SingleFinger).quality == ChordQuality::Maj);   // F alone
+            expectEquals (detect({65}, M::SingleFinger).root, 5);                  // F
+            expect (detect({65,67}, M::SingleFinger).quality == ChordQuality::Dom7); // G(67)+F(65 white) -> G7
+            expectEquals (detect({65,67}, M::SingleFinger).root, 7);              // G
+            expectEquals (detect({66}, M::SingleFinger).root, 6);                 // F# major
+            // any white AND any black below the root -> minor 7, regardless of how many keys
+            expect (detect({72,71,70,68}, M::SingleFinger).quality == ChordQuality::Min7); // C; B(white)+Bb,Ab(black)
+        }
+
+        beginTest ("full-keyboard: recognises a bass-hand inversion (E-G-C low)");
+        {
+            ChordDetector d; d.setMode (ChordMode::FullKeyboard);
+            for (int n : {52,55,60}) d.noteOn (n);   // E G C low = C major, first inversion
+            expectEquals (d.current().root, 0);
+            expect (d.current().quality == ChordQuality::Maj);
+        }
+
+        beginTest ("mode switch re-recognises the currently held notes");
+        {
+            ChordDetector d; d.setMode (ChordMode::Fingered);
+            d.noteOn (60); d.noteOn (59);            // C + B: not a Fingered chord
+            expect (! d.current().isValid());
+            d.setMode (ChordMode::SingleFinger);     // setMode() recomputes from the held notes
+            expect (d.current().quality == ChordQuality::Dom7);   // C7 (root C, B is a white key to the left)
             expectEquals (d.current().root, 0);
         }
 

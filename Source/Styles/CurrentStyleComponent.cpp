@@ -36,6 +36,7 @@ void CurrentStyleComponent::startPlaying()
         arrangerEngine->setBassInversion(arrangerBassInversion);   // re-apply: setStyle/rebuild may reset it
         arrangerEngine->selectStartSection(pendingStartType, pendingStartName);  // begin on the chosen start (stopPlaying cleared it)
         arrangerEngine->start();
+        seedHeldChordIntoArranger();   // honour a chord already held when Start was pressed
         return;
     }
 
@@ -76,6 +77,7 @@ void CurrentStyleComponent::startPlaying()
         arrangerEngine->setBpm(currentTempo);   // user's tempo slider wins over the style's original tempo
         arrangerEngine->selectStartSection(pendingStartType, pendingStartName);  // begin on the chosen start
         arrangerEngine->start();
+        seedHeldChordIntoArranger();   // honour a chord already held when Start was pressed
         return;
     }
 
@@ -83,6 +85,18 @@ void CurrentStyleComponent::startPlaying()
     trackPlayer->syncPlaybackSettings();
     trackPlayer->start();
 
+}
+
+void CurrentStyleComponent::seedHeldChordIntoArranger()
+{
+    // A steady held chord sends no note event, so without this it wouldn't reach the engine until the
+    // next press/release. Apply it right after start() so a chord held when Start was pressed plays
+    // immediately, instead of starting on the home key and only catching up on the first key change.
+    if (!arrangerEngine || !getHeldChord)
+        return;
+    const ArrangerChord held = getHeldChord();
+    if (held.isValid())
+        arrangerEngine->setActiveChord(held);
 }
 
 CurrentStyleComponent::CurrentStyleComponent(const juce::String& name, std::unordered_map<juce::Uuid, TrackEntry*>& map, std::weak_ptr<juce::MidiOutput> outputDevice,
@@ -343,6 +357,20 @@ void CurrentStyleComponent::setLiveChord(const ArrangerChord& chord)
     // Only steer the accompaniment while in arranger mode; the engine applies it on its next tick.
     if (arrangerModeEnabled && arrangerEngine)
         arrangerEngine->setActiveChord(chord);
+}
+
+void CurrentStyleComponent::setSynchroStartEnabled(bool enabled)
+{
+    synchroStartEnabled = enabled;   // remembered; re-applied on every Start (see startPlaying)
+    if (arrangerEngine)
+        arrangerEngine->setSynchroStartEnabled(enabled);
+}
+
+void CurrentStyleComponent::setCountInEnabled(bool enabled)
+{
+    countInEnabled = enabled;
+    if (arrangerEngine)
+        arrangerEngine->setCountInEnabled(enabled);
 }
 
 void CurrentStyleComponent::setArrangerBassInversion(bool shouldInvert)

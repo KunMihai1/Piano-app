@@ -63,6 +63,10 @@ public:
         focus on a freshly created child. */
     std::function<void()> onRequestPlayFocus;
 
+    /** Returns the chord the player is currently holding, so startPlaying() can seed the arranger
+        with an already-held chord instead of starting on the home key. Wired host-side. */
+    std::function<ArrangerChord()> getHeldChord;
+
     /** Shows/hides the app's full-screen "working" overlay during off-thread load operations (the
         editor's own save/update overlay is internal). Routed host-side to MainComponent's overlay. */
     std::function<void(bool show, const juce::String& text)> onBusy;
@@ -206,8 +210,19 @@ public:
         transposes the accompaniment to it. No-op outside arranger mode. */
     void setLiveChord(const ArrangerChord& chord);
 
+    /** Phase 4: on Start, apply any chord the player is already holding (via getHeldChord) so the
+        accompaniment begins on it rather than the home key. No-op if nothing valid is held. */
+    void seedHeldChordIntoArranger();
+
     /** Phase 4: toggle Bass Inversion on the arranger engine (slash chords). */
     void setArrangerBassInversion(bool shouldInvert);
+
+    /** Phase 6: enable/disable Synchro Start on the arranger engine (start the groove on the first
+        recognised chord). Remembered and re-applied on each Start. */
+    void setSynchroStartEnabled(bool enabled);
+
+    /** Phase 6b: enable/disable Count-In (one metronome bar before the groove). */
+    void setCountInEnabled(bool enabled);
 
     /** Enable/disable Auto Fill on variation switches (forwarded to the arranger engine). */
     void setArrangerAutoFillEnabled(bool enabled);
@@ -283,6 +298,8 @@ private:
     std::unique_ptr<ArrangerEngine> arrangerEngine = nullptr;   ///< Arranger-mode looping engine (parallel to trackPlayer).
     bool arrangerModeEnabled = false;                           ///< When true, play/stop route to arrangerEngine.
     bool arrangerBassInversion = false;                         ///< Remembered Bass Inversion; re-applied on each Start.
+    bool synchroStartEnabled = false;                           ///< Remembered Synchro Start; re-applied on each Start.
+    bool countInEnabled = false;                                ///< Remembered Count-In; re-applied on each Start.
 
     // --- Phase 3: self-contained style authoring (opened from the play-settings dropdown) ---
     ArrangerStyleListComponent arrangerStyleList;                ///< Full-bounds browser of saved *.style files.

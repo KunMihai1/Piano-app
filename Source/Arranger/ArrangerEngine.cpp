@@ -1,5 +1,6 @@
 ﻿#include "ArrangerEngine.h"
 #include "ArrangerTime.h"
+#include "ArrangerCountIn.h"
 
 ArrangerEngine::ArrangerEngine (std::weak_ptr<juce::MidiOutput> out) : outputDevice (out) {}
 
@@ -96,6 +97,23 @@ void ArrangerEngine::selectStartSection (ArrangerSectionType type, const juce::S
 
 void ArrangerEngine::setStyle (ArrangerStyle newStyle)
 {
+    // setStyle runs on the MESSAGE thread (every Start, and every editor preview rebuild -- moving a
+    // region, changing the recorded key, etc.). The render runs on the TIMER thread. When we're playing,
+    // mutating the schedulers from here would race that render (the old drone bug + a latent crash).
+    //
+    // Fix: if playing, stop the timer first. stopTimer() BLOCKS until any in-flight callback has
+    // returned, so once it returns the timer thread is guaranteed idle and we can swap the schedulers
+    // safely; then we resume. This locks nothing on the render path, and it blocks only this message
+    // thread for a fraction of a tick -- it never touches the real-time audio thread (which pulls MIDI
+    // from its own buffer independently). silenceArrangerNotes() first so the old notes get their
+    // note-offs before rebuildFromStyle() replaces the schedulers (no stranded drone).
+    const bool wasPlaying = playing.load();
+    if (wasPlaying)
+    {
+        stopTimer();
+        silenceArrangerNotes();
+    }
+
     style = std::move (newStyle);
     if (style.originalTempo > 0.0) currentBpm = style.originalTempo;
     rebuildFromStyle();
@@ -111,15 +129,34 @@ void ArrangerEngine::setStyle (ArrangerStyle newStyle)
         pendingChord   = {};
         hasChordUpdate = false;
     }
+
+    if (wasPlaying)
+    {
+        // rebuildFromStyle() resets the sequencer to the first section at activeStartAbs=0. Realign the
+        // engine playhead to 0 as well -- otherwise the resumed groove picks up at (old playhead % loop
+        // length), an arbitrary mid-loop phase that sounds like a glitchy jump. Zeroing it makes the
+        // rebuilt preview resume cleanly from the section's downbeat.
+        playheadBeats  = 0.0;
+        // Don't let the rebuild's wall-clock duration count as elapsed musical time:
+        lastNowSeconds = (double) juce::Time::getHighResolutionTicks()
+                         / (double) juce::Time::getHighResolutionTicksPerSecond();
+        startTimer (10);
+    }
 }
 
 void ArrangerEngine::setActiveChord (ArrangerChord played)
 {
     // Called from the MIDI input thread. Hand the chord to the timer thread via a guarded mailbox;
     // it is applied to the transposer at the top of renderRange (timer thread only).
-    const juce::ScopedLock sl (chordLock);
-    pendingChord   = played;
-    hasChordUpdate = true;
+    {
+        const juce::ScopedLock sl (chordLock);
+        pendingChord   = played;
+        hasChordUpdate = true;
+    }
+
+    // Phase 6: Synchro Start — the first recognised chord releases the gate so the groove begins.
+    if (played.isValid() && synchroArmed.load())
+        synchroArmed.store (false);
 }
 
 void ArrangerEngine::setOriginalChord (ArrangerChord recorded)
@@ -168,10 +205,21 @@ void ArrangerEngine::dispatchEmitted (const EmittedEvent& e)
     dispatch (m);
 }
 
-void ArrangerEngine::sendAllNotesOff()
+void ArrangerEngine::silenceArrangerNotes()
 {
-    for (int ch = 1; ch <= 16; ++ch)
-        dispatch (juce::MidiMessage::allNotesOff (ch));
+    // Silence ONLY the notes the arranger itself turned on. A blanket all-notes-off across channels
+    // 1-16 (the old behaviour) also killed the player's manually-held notes -- e.g. a chord held
+    // while pressing Start went silent. Flushing each scheduler emits note-offs for its active notes
+    // keyed by their ORIGINAL pitch; routing them through dispatchEmitted closes the matching SOUNDING
+    // note for pitched parts (and clears activePlayedNote) while leaving drums/Fixed as-is. Any pitched
+    // note still tracked (e.g. its scheduler was already reset) is then closed directly.
+    for (auto& s : schedulers)
+        for (auto& e : s.flushActiveNotes (0.0))
+            dispatchEmitted (e);
+
+    for (const auto& entry : activePlayedNote)
+        dispatch (juce::MidiMessage::noteOff (entry.first.first, entry.second));
+    activePlayedNote.clear();
 }
 
 void ArrangerEngine::sendInstrumentSetup()
@@ -187,6 +235,32 @@ void ArrangerEngine::sendInstrumentSetup()
 
             dispatch (juce::MidiMessage::controllerEvent (tr.channel, 7, juce::jlimit (0, 127, (int) tr.volume)));
         }
+}
+
+void ArrangerEngine::armCountIn()
+{
+    countInPlayhead    = 0.0;
+    countInLengthBeats = (double) juce::jmax (1, style.timeSigNum);   // one bar
+    countingIn.store (true);
+}
+
+bool ArrangerEngine::renderCountIn (double deltaBeats)
+{
+    if (! countingIn.load())
+        return false;
+
+    const double from = countInPlayhead;
+    const double to   = countInPlayhead + deltaBeats;
+    for (const auto& c : ArrangerCountIn::clicksInWindow (from, to, countInLengthBeats))
+        dispatch (juce::MidiMessage::noteOn (c.channel, c.note, (juce::uint8) c.velocity));
+
+    countInPlayhead = to;
+    if (countInPlayhead >= countInLengthBeats)
+    {
+        countingIn.store (false);
+        return false;   // count-in finished this tick; the section starts next tick at beat 0
+    }
+    return true;
 }
 
 void ArrangerEngine::renderRange (double fromBeats, double toBeats)
@@ -250,10 +324,15 @@ void ArrangerEngine::renderRange (double fromBeats, double toBeats)
     updateActiveLoopLength();
 }
 
-void ArrangerEngine::start()
+void ArrangerEngine::start (bool useTransportFeel)
 {
     if (schedulers.empty() || loopLengthBeats <= 0.0)
         return;
+
+    // A restart while already playing (e.g. pressing Preview again) must close the previous run's
+    // sounding notes first; the reset/clear below would otherwise strand them as an overlapping drone.
+    if (playing.load())
+        silenceArrangerNotes();
 
     for (auto& s : schedulers) s.reset();
     sequencer.reset();
@@ -269,6 +348,12 @@ void ArrangerEngine::start()
     playheadBeats = 0.0;
     lastNowSeconds = (double) juce::Time::getHighResolutionTicks()
                      / (double) juce::Time::getHighResolutionTicksPerSecond();
+    // Transport feel (Synchro Start / Count-In) applies only to live performance. The editor preview
+    // passes useTransportFeel=false so it never arms the Synchro gate (which would wait for a chord the
+    // preview never sends) or a count-in -- it just plays.
+    synchroArmed.store (useTransportFeel && synchroStartEnabled);   // Phase 6: wait for the first chord
+    if (useTransportFeel && countInEnabled) armCountIn();           // Phase 6b: pre-roll a count-in bar
+    else                                    countingIn.store (false);
     playing.store (true);
     startTimer (10);
 }
@@ -282,7 +367,9 @@ void ArrangerEngine::stop()
 void ArrangerEngine::haltAudio()
 {
     const bool wasPlaying = playing.exchange (false);
-    sendAllNotesOff();
+    synchroArmed.store (false);   // Phase 6: never leave the Synchro gate armed across a stop
+    countingIn.store (false);     // Phase 6b: cancel any in-progress count-in
+    silenceArrangerNotes();
     for (auto& s : schedulers) s.reset();
     sequencer.reset();
     activePlayedNote.clear();
@@ -327,15 +414,32 @@ void ArrangerEngine::hiResTimerCallback()
     if (! playing.load())
         return;
 
-    // Accumulate beats from the per-tick wall-clock delta so that a BPM change mid-playback
-    // changes the rate going forward without jumping the musical position.
     const double now = (double) juce::Time::getHighResolutionTicks()
                        / (double) juce::Time::getHighResolutionTicksPerSecond();
+
+    // Phase 6: Synchro Start — hold at the downbeat until the first chord clears the gate. Keep the
+    // clock fresh so the first tick after release has a normal ~10ms delta (the groove starts clean).
+    if (synchroArmed.load())
+    {
+        lastNowSeconds = now;
+        return;
+    }
+
+    // Accumulate beats from the per-tick wall-clock delta so that a BPM change mid-playback
+    // changes the rate going forward without jumping the musical position.
     const double deltaSeconds = now - lastNowSeconds;
     lastNowSeconds = now;
 
-    // (A UI-queued section switch is drained inside renderRange, below.)
     const double deltaBeats = ArrangerTime::secondsToBeats (deltaSeconds, currentBpm);
+
+    // Phase 6b: count-in pre-roll — play one bar of metronome clicks before the section advances.
+    if (countingIn.load())
+    {
+        renderCountIn (deltaBeats);
+        return;   // hold the section at beat 0 until the count-in bar elapses
+    }
+
+    // (A UI-queued section switch is drained inside renderRange, below.)
     const double from = playheadBeats;
     const double to   = playheadBeats + deltaBeats;
 

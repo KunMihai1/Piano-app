@@ -992,6 +992,7 @@ void MainComponent::setCallBacksForOverlayWindow()
                 if (display != nullptr)
                     display->setArrangerModeEnabled(enabled);
                 setSectionButtonsEngineDriven(enabled);
+                midiHandler.setArrangerEngaged(enabled);   // gates chord-zone muting (off => normal playing)
             };
 
             // Phase 4 chord-mode toggles.
@@ -1000,13 +1001,27 @@ void MainComponent::setCallBacksForOverlayWindow()
                 if (display != nullptr)
                     display->setArrangerBassInversion(on);
             };
-            midiWindow->onChordFullKeyboardChanged = [this](bool on)
+            midiWindow->onChordModeChanged = [this](ChordMode m)
             {
-                midiHandler.setChordScanArea(on ? ChordScanArea::Full : ChordScanArea::Split);
+                midiHandler.setChordMode(m);
             };
             midiWindow->onChordMemoryChanged = [this](bool on)
             {
                 midiHandler.setChordMemory(on);
+            };
+            midiWindow->onSynchroStartChanged = [this](bool on)
+            {
+                if (display != nullptr)
+                    display->setArrangerSynchroStart(on);
+            };
+            midiWindow->onCountInChanged = [this](bool on)
+            {
+                if (display != nullptr)
+                    display->setArrangerCountIn(on);
+            };
+            midiWindow->onChordZoneMuteChanged = [this](bool on)
+            {
+                midiHandler.setChordZoneMute(on);   // Korg-style: silence the chord keys when the arranger is engaged
             };
 
             midiWindow->onOutputEngineChanged = [this](int engineOption)
@@ -1608,6 +1623,15 @@ void MainComponent::displayInit()
         });
     };
 
+    // So the arranger can begin on a chord the player is already holding when Start is pressed
+    // (a steady hold sends no note event, so it otherwise wouldn't reach the engine until release).
+    // heldChord() returns invalid when nothing is physically held, so a chord merely remembered by
+    // Chord Memory does not hijack Start — that case starts in the home key.
+    display->getHeldChord = [this]() -> ArrangerChord
+    {
+        return midiHandler.heldChord();
+    };
+
     display->onArrangerBusy = [this](bool show, const juce::String& text)
     {
         setLoadingOverlayVisible(show, text);
@@ -2068,6 +2092,7 @@ void MainComponent::playButtonOnClick()
             const bool arrangerOn = propertiesFile->getBoolValue("ArrangerModeEnabled", false);
             display->setArrangerModeEnabled(arrangerOn);
             setSectionButtonsEngineDriven(arrangerOn);
+            midiHandler.setArrangerEngaged(arrangerOn);   // restore the chord-zone-mute gate
 
             // Restore the remembered Auto Fill choice (app-wide, not per style): apply to the engine
             // and reflect the tick in the toggle button.
@@ -2078,12 +2103,21 @@ void MainComponent::playButtonOnClick()
                     if (auto* toggle = group->getToggleButton())
                         toggle->setToggleState(autoFillOn, juce::dontSendNotification);
 
-            // Phase 4: apply the remembered chord-mode choices (defaults: split scan, memory on,
+            // Phase 4/5: apply the remembered chord choices (defaults: Fingered mode, memory on,
             // bass inversion off) so they take effect without needing to toggle them each launch.
             display->setArrangerBassInversion(propertiesFile->getBoolValue("ChordBassInversion", false));
-            midiHandler.setChordScanArea(propertiesFile->getBoolValue("ChordFullKeyboard", false)
-                                             ? ChordScanArea::Full : ChordScanArea::Split);
+            {
+                ChordMode m = ChordMode::Fingered;
+                if (propertiesFile->containsKey("ChordMode"))
+                    m = (ChordMode) juce::jlimit(0, 2, propertiesFile->getIntValue("ChordMode", 0));
+                else if (propertiesFile->getBoolValue("ChordFullKeyboard", false))
+                    m = ChordMode::FullKeyboard;   // migrate legacy bool
+                midiHandler.setChordMode(m);
+            }
             midiHandler.setChordMemory(propertiesFile->getBoolValue("ChordMemory", true));
+            midiHandler.setChordZoneMute(propertiesFile->getBoolValue("ChordZoneMute", false));
+            display->setArrangerSynchroStart(propertiesFile->getBoolValue("SynchroStart", false));
+            display->setArrangerCountIn(propertiesFile->getBoolValue("CountIn", false));
         }
 
         if (!keyboardInitialized)
@@ -2721,7 +2755,13 @@ void MainComponent::setLoadingOverlayVisible(bool show, const juce::String& text
     {
         openingAudioLabel.setVisible(false);
         if (loadingOverlayActive && noteLayer)
+        {
+            // The animation timer was stopped when the layer was hidden (visibilityChanged),
+            // so any notes that were mid-flight would otherwise stay frozen on screen until the
+            // next note-on restarts the timer. Clear them, matching the arranger-overlay/menu paths.
+            noteLayer->resetState();
             noteLayer->setVisible(noteLayerVisibleBeforeLabel);
+        }
         loadingOverlayActive = false;
     }
     repaint();

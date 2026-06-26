@@ -61,7 +61,6 @@ public:
             return;
         }
         */
-        
 
         mainWindow.reset(new MainWindow(getApplicationName()));
     }

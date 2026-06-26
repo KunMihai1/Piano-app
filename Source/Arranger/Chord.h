@@ -9,6 +9,11 @@ enum class ChordQuality { None, Maj, Min, Dom7, Maj7, Min7, Dim, HalfDim, Aug, S
     Fixed = Drum/Perc (never transposed); Acc = harmony; Bass = bass line (honours bass inversion). */
 enum class PartKind { Fixed, Acc, Bass };
 
+/** How the keyboard is scanned/interpreted for chord recognition.
+    Fingered = split-zone template match; SingleFinger = Korg one-finger (1-2 keys); FullKeyboard =
+    whole-keyboard, bass-driven recognition. */
+enum class ChordMode { Fingered, SingleFinger, FullKeyboard };
+
 /** A recognized chord: pitch-class root (0=C..11=B), quality, and the lowest fingered pitch
     class (for Bass Inversion). root=-1 / quality=None means "no chord". */
 struct ArrangerChord

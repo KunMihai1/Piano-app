@@ -216,15 +216,13 @@ bool MidiRecordPlayer::getIsPlaying()
     return isPlaying == true;
 }
 
-bool MidiRecordPlayer::saveRecordingToFile(const juce::File& fileToSaveTo, juce::String& errorMsg, double tempo)
+bool MidiRecordPlayer::writeRecordingToStream(juce::OutputStream& outputStream, juce::String& errorMsg, double tempo)
 {
     if (allEventsPlayed.size() <= 1)
     {
         errorMsg = "No recorded events to save!";
         return false;
     }
-    //applyPresetFunction();
-    //maybe mutex unti
 
     juce::MidiFile midiFile;
     const int ticksPerQuarterNote = 960;
@@ -240,14 +238,6 @@ bool MidiRecordPlayer::saveRecordingToFile(const juce::File& fileToSaveTo, juce:
     tempoSequence.addEvent(juce::MidiMessage::tempoMetaEvent(microsecondsPerQuarterNote), 0);
 
     midiFile.addTrack(tempoSequence);
-    //TODO to fix recording with these hardcoded messages sent
-    /*
-    sequence.addEvent(juce::MidiMessage::programChange(1, program), 0);
-    sequence.addEvent(juce::MidiMessage::controllerEvent(1, 91, 80), 0);
-    sequence.addEvent(juce::MidiMessage::controllerEvent(1, 74, 100), 0);
-    sequence.addEvent(juce::MidiMessage::controllerEvent(1, 11, reverb), 0);
-    sequence.addEvent(juce::MidiMessage::controllerEvent(1, 93, 70), 0);
-    */
 
     for (const auto& event : allEventsPlayed)
     {
@@ -257,31 +247,29 @@ bool MidiRecordPlayer::saveRecordingToFile(const juce::File& fileToSaveTo, juce:
 
     midiFile.addTrack(sequence);
 
+    midiFile.writeTo(outputStream);
+    return true;
+}
+
+bool MidiRecordPlayer::saveRecordingToFile(const juce::File& fileToSaveTo, juce::String& errorMsg, double tempo)
+{
+    if (allEventsPlayed.size() <= 1)
+    {
+        errorMsg = "No recorded events to save!";
+        return false;
+    }
+
     juce::FileOutputStream outputStream(fileToSaveTo);
     if (!outputStream.openedOk())
     {
         errorMsg = "Failed to open file for saving!";
         return false;
     }
-    midiFile.writeTo(outputStream);
-    return true;
+    return writeRecordingToStream(outputStream, errorMsg, tempo);
 }
 
-bool MidiRecordPlayer::parseRecordingFromFile(const juce::File& fileToParse, juce::String& errorMsg)
+bool MidiRecordPlayer::readRecordingFromStream(juce::InputStream& inputStream, juce::String& errorMsg)
 {
-    if (!fileToParse.existsAsFile())
-    {
-        errorMsg = "Selected file does not exist.";
-        return false;
-    }
-
-    juce::FileInputStream inputStream(fileToParse);
-    if (!inputStream.openedOk())
-    {
-        errorMsg = "Failed to open file for reading.";
-        return false;
-    }
-
     juce::MidiFile midiFile;
     if (!midiFile.readFrom(inputStream))
     {
@@ -316,6 +304,24 @@ bool MidiRecordPlayer::parseRecordingFromFile(const juce::File& fileToParse, juc
         });
 
     return true;
+}
+
+bool MidiRecordPlayer::parseRecordingFromFile(const juce::File& fileToParse, juce::String& errorMsg)
+{
+    if (!fileToParse.existsAsFile())
+    {
+        errorMsg = "Selected file does not exist.";
+        return false;
+    }
+
+    juce::FileInputStream inputStream(fileToParse);
+    if (!inputStream.openedOk())
+    {
+        errorMsg = "Failed to open file for reading.";
+        return false;
+    }
+
+    return readRecordingFromStream(inputStream, errorMsg);
 }
 
 int MidiRecordPlayer::getSizeRecorded()

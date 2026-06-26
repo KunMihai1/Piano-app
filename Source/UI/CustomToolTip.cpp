@@ -19,12 +19,19 @@ CustomToolTip::CustomToolTip(const juce::String& text)
     label.setJustificationType(juce::Justification::centredLeft);
     addAndMakeVisible(label);
 
-    int textWidth = juce::GlyphArrangement::getStringWidthInt(label.getFont(), text);
-    int textHeight = (int)label.getFont().getHeight();
+    updateSizeForText(text);
+}
 
-    int padding = 5;
+void CustomToolTip::updateSizeForText(const juce::String& text)
+{
+    const int textWidth  = juce::GlyphArrangement::getStringWidthInt(label.getFont(), text);
+    const int textHeight = (int) label.getFont().getHeight();
 
-    setSize(textWidth + padding * 2, textHeight + padding);
+    // resized() lays the label out with getLocalBounds().reduced(hInset, vInset), so the tooltip must
+    // be that much larger than the text or the inset would shrink the label below the string width and
+    // clip an edge glyph. The small extra guards against getStringWidthInt under-measuring.
+    const int hInset = 10, vInset = 5;   // must match resized()
+    setSize(textWidth + hInset * 2 + 4, textHeight + vInset * 2 + 2);
 }
 
 void CustomToolTip::paint(juce::Graphics& g)
@@ -36,6 +43,7 @@ void CustomToolTip::paint(juce::Graphics& g)
 void CustomToolTip::setNewText(const juce::String& newText)
 {
     label.setText(newText, juce::dontSendNotification);
+    updateSizeForText(newText);   // re-fit so a longer string doesn't clip
 }
 
 void CustomToolTip::resized()

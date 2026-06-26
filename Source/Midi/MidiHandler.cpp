@@ -768,6 +768,10 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 		if (note != this->startNoteSetting && note != this->endNoteSetting)
 			feedChordNote(note, true);
 
+		// Korg-style chord-zone mute: recognition above still runs, but we don't SOUND this onset when
+		// muting. Only note-ONs are gated -- note-offs always pass, so a note can never get stuck.
+		const bool muteChordZone = muteChordZoneNote(note);
+
 		float velocity = message.getFloatVelocity();
 
 		float volume = this->midiDevice.getVolume(message.getChannel());
@@ -785,7 +789,8 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 				ok = 1;
 				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+9, velocityByte));
 				midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
-				midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocityByte));
+				if (! muteChordZone)
+					midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocityByte));
 				//midiOut->sendMessageNow(juce::MidiMessage::noteOn(2, note+10, velocityByte));
 			}
 			else if (note == this->startNoteSetting)
@@ -805,7 +810,8 @@ void MidiHandler::handleIncomingMidiMessage(juce::MidiInput* source, const juce:
 			listeners.call(&MidiHandlerListener::noteOnReceived, note);
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 91, 80));
 			//listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::controllerEvent(1, 74, 100));
-			listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocityByte));
+			if (! muteChordZone)
+				listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocityByte));
 		}
 
 	}
@@ -849,7 +855,9 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 
 	if (note != this->startNoteSetting && note != this->endNoteSetting)
 		feedChordNote(note, true);
-    
+
+	const bool muteChordZone = muteChordZoneNote(note);   // Korg-style: drive the chord, don't sound the keys
+
 	if (note != this->startNoteSetting && note!=this->endNoteSetting)
 	{
 		ok = 1;
@@ -870,17 +878,21 @@ void MidiHandler::noteOnKeyboard(int note, juce::uint8 velocity) {
 		if (ok)
 		{
 			midiOut->sendMessageNow(juce::MidiMessage::pitchWheel(channel, 0x2000));
-			midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocity));
+			if (! muteChordZone)
+				midiOut->sendMessageNow(juce::MidiMessage::noteOn(channel, transposedNote, velocity));
 		}
 	}
 
 	if (ok)
 	{
 		listeners.call(&MidiHandlerListener::noteOnReceived, note);
-		listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocity));
+		if (! muteChordZone)
+		{
+			listeners.call(&MidiHandlerListener::handleIncomingMessage, juce::MidiMessage::noteOn(channel, note, velocity));
 
-		const juce::ScopedLock lock(midiMutex);
-		incomingMidiMessages.addEvent(juce::MidiMessage::noteOn(channel, transposedNote, velocity), 0);
+			const juce::ScopedLock lock(midiMutex);
+			incomingMidiMessages.addEvent(juce::MidiMessage::noteOn(channel, transposedNote, velocity), 0);
+		}
 	}
 }
 
@@ -971,18 +983,18 @@ int MidiHandler::channelForHand(int note) const
 	return (rightHandBoundSetting != -1 && note >= rightHandBoundSetting) ? 16 : 1;
 }
 
-void MidiHandler::setChordScanArea(ChordScanArea area)
+void MidiHandler::setChordMode(ChordMode mode)
 {
-	chordScanArea.store(area);
-	chordDetector.setFullKeyboardMode(area == ChordScanArea::Full);
+	chordMode.store(mode);
+	chordDetector.setMode(mode);
 }
 
 bool MidiHandler::inChordZone(int note) const
 {
-	if (chordScanArea.load() == ChordScanArea::Full)
+	if (chordMode.load() == ChordMode::FullKeyboard)
 		return true;
-	// Split mode: the left-hand zone (below the split). With no split set, the whole keyboard is
-	// the left zone (matches channelForHand semantics).
+	// Split-zone modes (Fingered, Single-Finger): the left-hand zone (below the split). With no
+	// split set, the whole keyboard is the left zone (matches channelForHand semantics).
 	return (rightHandBoundSetting == -1) ? true : note < rightHandBoundSetting;
 }
 

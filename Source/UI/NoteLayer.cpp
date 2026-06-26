@@ -49,11 +49,17 @@ void NoteLayer::paint(juce::Graphics& g)
 {
     g.reduceClipRegion(getLocalBounds());
 
+    // "Still held" cue: a soft amber glow that breathes along the leading (top) edge of every held
+    // note, so a note that has grown to full height reads as alive rather than frozen/blocked. One
+    // shared phase makes a held chord pulse in unison. (paint() is driven by the 60Hz timer.)
+    const float heldPulse = 0.5f + 0.5f * std::sin((float) juce::Time::getMillisecondCounterHiRes() * 0.004f);
+    const juce::Colour heldGlow = juce::Colour::fromHSV(0.12f, 0.9f, 1.0f, 1.0f); // app gold/amber
+
     for (const auto& [midiNote, note] : activeNotes)
     {
         auto bounds = note.bounds.toFloat();
-        
-       
+
+
         float cornerRadius = std::min(bounds.getWidth(), bounds.getHeight()) * 0.25f;
 
         // Elegant frosted glass gradient using whitesmoke/neutral colors
@@ -65,6 +71,16 @@ void NoteLayer::paint(juce::Graphics& g)
         // Clean whitesmoke outline
         g.setColour(juce::Colours::whitesmoke.withAlpha(0.9f));
         g.drawRoundedRectangle(bounds, cornerRadius, 1.5f);
+
+        // Pulsing amber glow on the leading edge (soft band fading downward + a crisp top line).
+        const float glowHeight = std::min(bounds.getHeight(), 16.0f);
+        juce::ColourGradient glowGrad(heldGlow.withAlpha(0.18f + 0.55f * heldPulse), bounds.getX(), bounds.getY(),
+                                      heldGlow.withAlpha(0.0f), bounds.getX(), bounds.getY() + glowHeight, false);
+        g.setGradientFill(glowGrad);
+        g.fillRoundedRectangle(bounds.getX(), bounds.getY(), bounds.getWidth(), glowHeight, cornerRadius);
+
+        g.setColour(heldGlow.withAlpha(0.35f + 0.55f * heldPulse));
+        g.fillRoundedRectangle(bounds.getX(), bounds.getY(), bounds.getWidth(), 2.5f, 1.25f);
     }
     
     for (const auto& note : fallingNotes)

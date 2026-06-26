@@ -25,18 +25,23 @@ public:
     void  noteOff (int noteNumber);
     void  reset();
 
-    void  setFullKeyboardMode (bool shouldUseFullKeyboard) { fullKeyboard = shouldUseFullKeyboard; }
-    bool  isFullKeyboardMode() const { return fullKeyboard; }
+    void  setMode (ChordMode m) { mode = m; recompute(); }
+    ChordMode getMode() const { return mode; }
 
     /** Best chord for the currently-held notes, or ArrangerChord::none (root=-1) if unrecognized. */
     ArrangerChord current() const { return recognized; }
 
+    /** Whether any notes are physically held in the chord zone right now. Distinguishes "a chord is
+        being held" from "Chord Memory is still remembering a released chord". */
+    bool hasHeldNotes() const { return ! heldNotes.empty(); }
+
 private:
     void  recompute();                                   // re-run recognition after a held-note change
     static ArrangerChord recognizeSet (const std::set<int>& notes);   // direct template match on a note set
+    static ArrangerChord recognizeSingleFinger (const std::set<int>& notes);   // Korg one-finger: 1-2 keys
 
     std::set<int> heldNotes;     // absolute note numbers
-    bool          fullKeyboard = false;
+    ChordMode     mode = ChordMode::Fingered;
     ArrangerChord         recognized;    // current recognized chord (held across non-matches in full mode)
 };
 

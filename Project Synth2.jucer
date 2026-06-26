@@ -49,6 +49,12 @@
               file="tests/unit/test_arranger_style_io.cpp"/>
         <FILE id="arrTs9" name="test_arranger_channels.cpp" compile="1" resource="0"
               file="tests/unit/test_arranger_channels.cpp"/>
+        <FILE id="chTst0" name="test_chord.cpp" compile="1" resource="0"
+              file="tests/unit/test_chord.cpp"/>
+        <FILE id="chTst1" name="test_chord_detector.cpp" compile="1" resource="0"
+              file="tests/unit/test_chord_detector.cpp"/>
+        <FILE id="chTst2" name="test_chord_transposer.cpp" compile="1" resource="0"
+              file="tests/unit/test_chord_transposer.cpp"/>
         <FILE id="arrTsA" name="test_arranger_timeline_geometry.cpp" compile="1"
               resource="0" file="tests/unit/test_arranger_timeline_geometry.cpp"/>
         <FILE id="arrTsB" name="test_arranger_source_builder.cpp" compile="1"
@@ -510,6 +516,16 @@
               file="Source/Arranger/ArrangerScheduler.cpp"/>
         <FILE id="arrSc2" name="ArrangerScheduler.h" compile="0" resource="0"
               file="Source/Arranger/ArrangerScheduler.h"/>
+        <FILE id="chrd01" name="Chord.h" compile="0" resource="0"
+              file="Source/Arranger/Chord.h"/>
+        <FILE id="chDet1" name="ChordDetector.cpp" compile="1" resource="0"
+              file="Source/Arranger/ChordDetector.cpp"/>
+        <FILE id="chDet2" name="ChordDetector.h" compile="0" resource="0"
+              file="Source/Arranger/ChordDetector.h"/>
+        <FILE id="chTra1" name="ChordTransposer.cpp" compile="1" resource="0"
+              file="Source/Arranger/ChordTransposer.cpp"/>
+        <FILE id="chTra2" name="ChordTransposer.h" compile="0" resource="0"
+              file="Source/Arranger/ChordTransposer.h"/>
         <FILE id="arrPb1" name="ArrangerPatternBuilder.cpp" compile="1" resource="0"
               file="Source/Arranger/ArrangerPatternBuilder.cpp"/>
         <FILE id="arrPb2" name="ArrangerPatternBuilder.h" compile="0" resource="0"

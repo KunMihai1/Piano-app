@@ -338,14 +338,26 @@ void MIDIWindow::setBounds_components()
     y += rowH + 6;
     chordBassInversionToggle.setBounds(pad, y, 320, rowH);
     y += rowH + 6;
-    chordFullKeyboardToggle.setBounds(pad, y, 320, rowH);
+    {
+        chordModeLabel.setBounds(pad, y, 92, rowH);
+        const int bx = pad + 96, bw = 104, gap = 6;
+        chordModeFingered.setBounds(bx,                  y, bw, rowH);
+        chordModeSingle.setBounds  (bx + (bw + gap),     y, bw, rowH);
+        chordModeFull.setBounds    (bx + 2 * (bw + gap), y, bw, rowH);
+    }
     y += rowH + 6;
     chordMemoryToggle.setBounds(pad, y, 320, rowH);
+    y += rowH + 6;
+    synchroStartToggle.setBounds(pad, y, 320, rowH);
+    y += rowH + 6;
+    countInToggle.setBounds(pad, y, 320, rowH);
+    y += rowH + 6;
+    chordZoneMuteToggle.setBounds(pad, y, 320, rowH);
 }
 
 void MIDIWindow::panelInit()
 {
-    settingsPanel.setSize(480, 420);   // tall enough for the arranger + Phase 4 chord toggles
+    settingsPanel.setSize(480, 540);   // tall enough for the arranger + Phase 4/5/6 chord rows
 
     setBackgroundColour(panelBg);
 
@@ -490,15 +502,48 @@ void MIDIWindow::allInit()
         if (onChordBassInversionChanged) onChordBassInversionChanged(on);
     };
 
-    settingsPanel.addAndMakeVisible(chordFullKeyboardToggle);
-    chordFullKeyboardToggle.setToggleState(propertyFile != nullptr && propertyFile->getBoolValue("ChordFullKeyboard", false),
-                                           juce::dontSendNotification);
-    chordFullKeyboardToggle.onClick = [this]()
+    // Phase 5: 3-way chord-recognition mode selector (replaces the old Full-Keyboard on/off toggle).
+    auto readStoredMode = [this]() -> ChordMode
     {
-        const bool on = chordFullKeyboardToggle.getToggleState();
-        if (propertyFile != nullptr) { propertyFile->setValue("ChordFullKeyboard", on); propertyFile->saveIfNeeded(); }
-        if (onChordFullKeyboardChanged) onChordFullKeyboardChanged(on);
+        if (propertyFile == nullptr) return ChordMode::Fingered;
+        if (propertyFile->containsKey("ChordMode"))
+            return (ChordMode) juce::jlimit(0, 2, propertyFile->getIntValue("ChordMode", 0));
+        // migrate legacy bool: Full-Keyboard on -> FullKeyboard, else Fingered
+        return propertyFile->getBoolValue("ChordFullKeyboard", false) ? ChordMode::FullKeyboard
+                                                                      : ChordMode::Fingered;
     };
+
+    chordModeLabel.setText("Chord Mode", juce::dontSendNotification);
+    settingsPanel.addAndMakeVisible(chordModeLabel);
+
+    const int kChordModeRadio = 0x5C40DE;   // unique non-zero radio group id
+    for (auto* b : { &chordModeFingered, &chordModeSingle, &chordModeFull })
+    {
+        b->setClickingTogglesState(true);
+        b->setRadioGroupId(kChordModeRadio);
+        b->setMouseClickGrabsKeyboardFocus(false);   // keep the PC keyboard playable
+        // Selected = warm-orange fill with dark text; unselected = dark card with muted text, so the
+        // active mode reads at a glance (the default TextButton on/off states were near-identical).
+        b->setColour(juce::TextButton::buttonColourId,   cardBg);
+        b->setColour(juce::TextButton::buttonOnColourId, accent1);
+        b->setColour(juce::TextButton::textColourOffId,  subtitleText);
+        b->setColour(juce::TextButton::textColourOnId,   background);
+        settingsPanel.addAndMakeVisible(*b);
+    }
+
+    const ChordMode storedMode = readStoredMode();
+    (storedMode == ChordMode::FullKeyboard   ? chordModeFull
+     : storedMode == ChordMode::SingleFinger ? chordModeSingle
+     :                                         chordModeFingered).setToggleState(true, juce::dontSendNotification);
+
+    auto pickMode = [this](ChordMode m)
+    {
+        if (propertyFile != nullptr) { propertyFile->setValue("ChordMode", (int) m); propertyFile->saveIfNeeded(); }
+        if (onChordModeChanged) onChordModeChanged(m);
+    };
+    chordModeFingered.onClick = [pickMode]{ pickMode(ChordMode::Fingered); };
+    chordModeSingle.onClick   = [pickMode]{ pickMode(ChordMode::SingleFinger); };
+    chordModeFull.onClick     = [pickMode]{ pickMode(ChordMode::FullKeyboard); };
 
     settingsPanel.addAndMakeVisible(chordMemoryToggle);
     chordMemoryToggle.setToggleState(propertyFile == nullptr || propertyFile->getBoolValue("ChordMemory", true),
@@ -508,6 +553,36 @@ void MIDIWindow::allInit()
         const bool on = chordMemoryToggle.getToggleState();
         if (propertyFile != nullptr) { propertyFile->setValue("ChordMemory", on); propertyFile->saveIfNeeded(); }
         if (onChordMemoryChanged) onChordMemoryChanged(on);
+    };
+
+    settingsPanel.addAndMakeVisible(synchroStartToggle);
+    synchroStartToggle.setToggleState(propertyFile != nullptr && propertyFile->getBoolValue("SynchroStart", false),
+                                      juce::dontSendNotification);
+    synchroStartToggle.onClick = [this]()
+    {
+        const bool on = synchroStartToggle.getToggleState();
+        if (propertyFile != nullptr) { propertyFile->setValue("SynchroStart", on); propertyFile->saveIfNeeded(); }
+        if (onSynchroStartChanged) onSynchroStartChanged(on);
+    };
+
+    settingsPanel.addAndMakeVisible(countInToggle);
+    countInToggle.setToggleState(propertyFile != nullptr && propertyFile->getBoolValue("CountIn", false),
+                                 juce::dontSendNotification);
+    countInToggle.onClick = [this]()
+    {
+        const bool on = countInToggle.getToggleState();
+        if (propertyFile != nullptr) { propertyFile->setValue("CountIn", on); propertyFile->saveIfNeeded(); }
+        if (onCountInChanged) onCountInChanged(on);
+    };
+
+    settingsPanel.addAndMakeVisible(chordZoneMuteToggle);
+    chordZoneMuteToggle.setToggleState(propertyFile != nullptr && propertyFile->getBoolValue("ChordZoneMute", false),
+                                       juce::dontSendNotification);
+    chordZoneMuteToggle.onClick = [this]()
+    {
+        const bool on = chordZoneMuteToggle.getToggleState();
+        if (propertyFile != nullptr) { propertyFile->setValue("ChordZoneMute", on); propertyFile->saveIfNeeded(); }
+        if (onChordZoneMuteChanged) onChordZoneMuteChanged(on);
     };
 
 	sfzButtonInit();

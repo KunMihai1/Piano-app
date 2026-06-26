@@ -124,6 +124,72 @@ public:
             expect(device.getReverb(7) == 50);
         }
 
+        // ---- Per-hand CC / sound-shaping accessors (channel 1 = first hand, 16 = second) ----
+
+        beginTest("brightness/expression/chorus/resonance - round-trip per channel, independent hands");
+        {
+            MidiDevice d;
+            d.setBrightness(20, 1);  d.setBrightness(80, 16);
+            d.setExpression(33, 1);  d.setExpression(99, 16);
+            d.setChorus(10, 1);      d.setChorus(70, 16);
+            d.setResonance(5, 1);    d.setResonance(60, 16);
+
+            expectEquals(d.getBrightness(1), 20);  expectEquals(d.getBrightness(16), 80);
+            expectEquals(d.getExpression(1), 33);  expectEquals(d.getExpression(16), 99);
+            expectEquals(d.getChorus(1), 10);      expectEquals(d.getChorus(16), 70);
+            expectEquals(d.getResonance(1), 5);    expectEquals(d.getResonance(16), 60);
+        }
+
+        beginTest("brightness/expression/chorus/resonance - unknown channel returns 50");
+        {
+            MidiDevice d;
+            expectEquals(d.getBrightness(7), 50);
+            expectEquals(d.getExpression(7), 50);
+            expectEquals(d.getChorus(7), 50);
+            expectEquals(d.getResonance(7), 50);
+        }
+
+        beginTest("sustain toggle - round-trip per channel, unknown channel defaults true");
+        {
+            MidiDevice d;
+            d.setSustainToggle(false, 1);
+            d.setSustainToggle(true, 16);
+            expect(d.getSustainToggle(1) == false);
+            expect(d.getSustainToggle(16) == true);
+            expect(d.getSustainToggle(7) == true);   // unknown -> default
+        }
+
+        beginTest("envelope/mod accessors (attack/decay/release/vibrato/delay) - round-trip + default 0");
+        {
+            MidiDevice d;
+            d.setAttack(15, 1);   d.setAttack(45, 16);
+            d.setDecay(25, 1);    d.setDecay(55, 16);
+            d.setRelease(35, 1);  d.setRelease(65, 16);
+            d.setVibrato(12, 1);  d.setVibrato(72, 16);
+            d.setDelay(18, 1);    d.setDelay(88, 16);
+
+            expectEquals(d.getAttack(1), 15);   expectEquals(d.getAttack(16), 45);
+            expectEquals(d.getDecay(1), 25);    expectEquals(d.getDecay(16), 55);
+            expectEquals(d.getRelease(1), 35);  expectEquals(d.getRelease(16), 65);
+            expectEquals(d.getVibrato(1), 12);  expectEquals(d.getVibrato(16), 72);
+            expectEquals(d.getDelay(1), 18);    expectEquals(d.getDelay(16), 88);
+
+            expectEquals(d.getAttack(7), 0);
+            expectEquals(d.getDecay(7), 0);
+            expectEquals(d.getRelease(7), 0);
+            expectEquals(d.getVibrato(7), 0);
+            expectEquals(d.getDelay(7), 0);
+        }
+
+        beginTest("setters ignore channels other than 1 and 16 (no first/second-hand change)");
+        {
+            MidiDevice d;
+            const int b1 = d.getBrightness(1), b16 = d.getBrightness(16);
+            d.setBrightness(123, 5);   // channel 5 is neither hand -> ignored
+            expectEquals(d.getBrightness(1), b1);
+            expectEquals(d.getBrightness(16), b16);
+        }
+
         // ---- Device Index ----
 
         beginTest("setDeviceIN / getDeviceIndexIN");

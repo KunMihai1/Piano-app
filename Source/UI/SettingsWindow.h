@@ -38,8 +38,11 @@ public:
     std::function<void(int engineOption)> onOutputEngineChanged; // fired when engine changes while playing
     std::function<void(bool)> onArrangerModeChanged;             // fired when the Classic/Arranger toggle changes
     std::function<void(bool)> onChordBassInversionChanged;       // Phase 4: bass follows the lowest fingered note
-    std::function<void(bool)> onChordFullKeyboardChanged;        // Phase 4: scan chords on whole keyboard vs split
+    std::function<void(ChordMode)> onChordModeChanged;           // Phase 5: Fingered / Single-Finger / Full-Keyboard
     std::function<void(bool)> onChordMemoryChanged;              // Phase 4: hold last chord when the zone empties
+    std::function<void(bool)> onSynchroStartChanged;            // Phase 6: start the groove on the first chord
+    std::function<void(bool)> onCountInChanged;                 // Phase 6b: one metronome bar before the groove
+    std::function<void(bool)> onChordZoneMuteChanged;          // silence the chord-recognition keys (Korg-style)
     std::function<void()> onSfzLibraryChanged;                  // fired when SFZ mappings are imported/changed
 
     /**
@@ -151,8 +154,14 @@ private:
     juce::ComboBox comboBoxOutputEngineType;  /**< ComboBox for selecting audio output engine type */
     juce::ToggleButton arrangerModeToggle { "Arranger mode (loop accompaniment)" }; /**< Classic vs Arranger playback */
     juce::ToggleButton chordBassInversionToggle { "Bass inversion (slash chords)" };   /**< Phase 4 */
-    juce::ToggleButton chordFullKeyboardToggle  { "Full-keyboard chord scan" };         /**< Phase 4 */
+    juce::Label        chordModeLabel;                                                  /**< Phase 5 */
+    juce::TextButton   chordModeFingered { "Fingered" };                                /**< Phase 5 */
+    juce::TextButton   chordModeSingle   { "1-Finger" };                                /**< Phase 5 */
+    juce::TextButton   chordModeFull     { "Full-Kbd" };                                /**< Phase 5 */
     juce::ToggleButton chordMemoryToggle        { "Chord memory (hold on release)" };   /**< Phase 4 */
+    juce::ToggleButton synchroStartToggle       { "Synchro Start (begin on first chord)" }; /**< Phase 6 */
+    juce::ToggleButton countInToggle            { "Count-In (1 bar before start)" };        /**< Phase 6b */
+    juce::ToggleButton chordZoneMuteToggle      { "Mute chord keys (hear only the backing)" };
 	juce::ComboBox comboBoxAudioDevicesOUT;       /**< ComboBox for selecting audio output devices */
     juce::Label midiDevicesLabelIN;           /**< Label for input devices */
     juce::Label midiDevicesLabelOUT;          /**< Label for output devices */

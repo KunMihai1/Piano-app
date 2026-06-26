@@ -47,6 +47,7 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
     {
         windows = w;
         rebuildPreview();
+        restIdlePlayhead();   // when not previewing, keep the arrow parked at the first section's start
     };
 
     // Clicking a region while previewing switches to that section at the next bar line.
@@ -62,7 +63,7 @@ ArrangerStyleEditor::ArrangerStyleEditor (ArrangerEngine& e) : engine (e)
     addBreakBtn.onClick     = [this] { addSectionOfType (ArrangerSectionType::Break); };
     addEndingBtn.onClick    = [this] { addSectionOfType (ArrangerSectionType::Ending); };
     removeBtn.onClick       = [this] { removeSelectedSection(); };
-    previewBtn.onClick   = [this] { followPlayhead = true; rebuildPreview(); engine.setBpm (referenceBpm); engine.start(); };
+    previewBtn.onClick   = [this] { followPlayhead = true; rebuildPreview(); engine.setBpm (referenceBpm); engine.start (false); };  // preview always starts now (no Synchro/Count-In)
     stopBtn.onClick      = [this] { engine.stop(); };
     updateTracksBtn.onClick = [this] { updateTracksFromRecording(); };
     saveBtn.onClick      = [this] { requestSave(); };
@@ -143,6 +144,7 @@ void ArrangerStyleEditor::loadRecording (const std::vector<TrackEntry>& tracks, 
     timeline.setWindows (windows);
     layoutTimeline();
     rebuildPreview();
+    restIdlePlayhead();   // park the arrow at the first section's start, not bar 1
 }
 
 void ArrangerStyleEditor::loadFromFile (const ArrangerStyleFile& f)
@@ -165,6 +167,7 @@ void ArrangerStyleEditor::loadFromFile (const ArrangerStyleFile& f)
     timeline.setWindows (windows);
     layoutTimeline();
     rebuildPreview();
+    restIdlePlayhead();   // park the arrow at the first section's start, not bar 1
 }
 
 ArrangerStyleFile ArrangerStyleEditor::toStyleFile() const
@@ -224,6 +227,24 @@ ArrangerStyle ArrangerStyleEditor::buildStyle() const
 void ArrangerStyleEditor::rebuildPreview()
 {
     engine.setStyle (buildStyle());
+}
+
+int ArrangerStyleEditor::firstSectionStartBar() const
+{
+    int bar = -1;
+    for (const auto& w : windows)
+        if (bar < 0 || w.startBar < bar)
+            bar = w.startBar;
+    return bar < 0 ? 1 : bar;
+}
+
+void ArrangerStyleEditor::restIdlePlayhead()
+{
+    // While stopped, the playhead has no live position to report, so park it at the start of the first
+    // section (Korg-style) instead of leaving it at bar 1 -- which may now hold no section at all. During
+    // preview the engine drives the arrow via onElapsedBeats, so don't fight it.
+    if (! engine.isPlaying())
+        timeline.setPlayheadBar ((double) firstSectionStartBar());
 }
 
 void ArrangerStyleEditor::setBusy (bool busy, const juce::String& text)
